@@ -31,6 +31,11 @@ __all__ = [
     "ExactTransportResult",
     "NonRepresentableTransportWitness",
     "compile_exact_joint_transport",
+    "ActionBlockContract",
+    "ContractCompatibility",
+    "ExecutableActionContract",
+    "compare_action_blocks",
+    "compare_executable_contracts",
 ]
 
 from .compiler import (
@@ -39,4 +44,12 @@ from .compiler import (
     ExactTransportResult,
     NonRepresentableTransportWitness,
     compile_exact_joint_transport,
+)
+
+from .action_contract import (
+    ActionBlockContract,
+    ContractCompatibility,
+    ExecutableActionContract,
+    compare_action_blocks,
+    compare_executable_contracts,
 )
