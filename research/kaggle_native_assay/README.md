@@ -33,3 +33,7 @@ This is one deterministic, native PickCube controller assay on one software stac
 ## Public rerun (v10)
 
 Kernel version 10 is public and completed successfully: <https://www.kaggle.com/code/oblivicore/maniskill-native-delta-pose-assay>. The run emitted the same orientation measurements as v9 on the frozen test source commit. See [esults/v10/](results/v10/) for the raw JSON outputs. The repeated run confirms execution reproducibility for this one deterministic setup; it is not independent seed replication or statistical validation. v9 and v10 report Tesla T4 hardware and GPU rendering, while PhysX remains CPU-based.
+
+## Relation to upstream PR #1495
+
+The frozen assay commit is on the fork's esearch/native-delta-pose-assay branch. It includes a sign compensation for the installed controller's negative normalized rotation scaling. The current upstream PR head (cdd6db713ffe7edc3e0df3abfab51ea5320c1c0b, [#1495](https://github.com/mani-skill/ManiSkill/pull/1495)) instead emits positive XYZ Euler values and states that it should follow the separate controller sign fix. Consequently, this Kaggle run is **not exact-head validation of #1495** and must not be read as evidence that the current upstream PR alone passes the native production controller. The PR remains open and awaiting review.
