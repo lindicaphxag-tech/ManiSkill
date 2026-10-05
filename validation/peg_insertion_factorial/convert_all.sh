@@ -10,7 +10,7 @@ for cond in 00 10 01 11; do
   asset="$ROOT/assets/$cond"
   dst="$asset/demos/PegInsertionSide-v1/motionplanning"
   mkdir -p "$dst" "$ROOT/logs"
-  cp --reflink=auto "$RAW_DIR/trajectory.h5" "$dst/trajectory.h5"
+  cp "$RAW_DIR/trajectory.h5" "$dst/trajectory.h5"
   cp "$RAW_DIR/trajectory.json" "$dst/trajectory.json"
 
   (
