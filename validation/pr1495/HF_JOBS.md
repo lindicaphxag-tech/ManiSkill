@@ -83,6 +83,15 @@ Identical except:
 VARIANT=fixed
 ```
 
+## Frozen launcher identities
+
+- bootstrap / entrypoint SHA: `1f778f58dbfd9c94cb5e6b64affbf26f11fa18ee`
+- experiment-harness SHA: `7e3ee79fd50979c15bd9d234d4a120d04e05a7e3`
+
+The bootstrap commit only needs to contain the launcher. The launcher then clones
+the separately frozen experiment harness, so updating this documentation cannot
+silently change the experiment.
+
 ## Cloud bootstrap command
 
 HF Jobs starts from a Docker image, so the practical command clones only the
@@ -90,8 +99,9 @@ small validation harness and invokes the committed entrypoint:
 
 ```bash
 set -euo pipefail
-git clone --filter=blob:none --branch validation/maniskill1495-maintainer-request \
-  https://github.com/lindicaphxag-tech/ManiSkill.git /tmp/harness
+git clone --filter=blob:none https://github.com/lindicaphxag-tech/ManiSkill.git /tmp/harness
+git -C /tmp/harness fetch origin 1f778f58dbfd9c94cb5e6b64affbf26f11fa18ee
+git -C /tmp/harness checkout --detach 1f778f58dbfd9c94cb5e6b64affbf26f11fa18ee
 exec bash /tmp/harness/validation/pr1495/hf_job_entrypoint.sh
 ```
 
