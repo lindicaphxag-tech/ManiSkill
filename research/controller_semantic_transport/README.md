@@ -47,15 +47,20 @@ semantic mismatch before rollout.
 
 ## Public upstream anchor
 
-ManiSkill issue #429 reports 0% success for pd_joint_delta_pos to pd_joint_pos
-trajectory conversion. The current conversion path exhibits the bug class CST
-was designed to expose: a normalized delta action is converted to a physical
-target qpos, and the physical qpos is then passed directly to a normalized
-absolute-position controller, where it is interpreted as a native normalized
-action again.
+ManiSkill issue #429 reports 0% success for a joint-controller
+trajectory conversion path. It is a motivating public failure, but CST does
+not assign a root cause before base-vs-patch trajectory replay.
 
-A separate minimal branch keeps that upstream bug fix small. This branch
-generalizes the mechanism.
+Current source inspection exposes at least two semantic hazards worth testing:
+offline trajectory rows are NumPy arrays while the runtime scaling helper is
+torch-based, and a generic converter must distinguish normalized from
+unnormalized target charts. Importantly, Panda's production pd_joint_pos
+controller is explicitly unnormalized, so "double normalization" is not
+claimed as the explanation for the reported Panda failure.
+
+A separate minimal branch keeps the upstream diagnostic/fix small. This
+research branch generalizes the controller-semantic abstraction while the
+trajectory-level cause remains an empirical question.
 
 ## Why this is more than the single bug
 
