@@ -24,6 +24,10 @@ __all__ = [
     "TraceTransportCertificate",
     "TraceTransportStep",
     "solve_counterfactual_trace_transport",
+    "OSCInverseCertificate",
+    "OSCState",
+    "absolute_pose_to_delta_action",
+    "inverse_affine_action_scale",
 ]
 
 from .semantic_types import (
@@ -38,4 +42,11 @@ from .trace_transport import (
     TraceTransportCertificate,
     TraceTransportStep,
     solve_counterfactual_trace_transport,
+)
+
+from .robosuite_osc import (
+    OSCInverseCertificate,
+    OSCState,
+    absolute_pose_to_delta_action,
+    inverse_affine_action_scale,
 )
