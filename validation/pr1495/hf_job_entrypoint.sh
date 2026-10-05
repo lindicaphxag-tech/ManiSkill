@@ -3,7 +3,7 @@ set -euo pipefail
 
 : "${VARIANT:?VARIANT must be baseline or fixed}"
 SEED="${SEED:-1}"
-HARNESS_SHA="${HARNESS_SHA:-6b4b5dc6e39bb28e109e5541b4ce06231fc040a5}"
+HARNESS_SHA="${HARNESS_SHA:-7e3ee79fd50979c15bd9d234d4a120d04e05a7e3}"
 HARNESS_REPO="${HARNESS_REPO:-https://github.com/lindicaphxag-tech/ManiSkill.git}"
 HARNESS_DIR="${HARNESS_DIR:-/tmp/pr1495-harness}"
 WORK_ROOT="${WORK_ROOT:-/tmp/pr1495-work-${VARIANT}-seed${SEED}}"
