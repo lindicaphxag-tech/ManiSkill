@@ -42,6 +42,10 @@ jobs:
               "env": "PegInsertionSide-v1",
               "control": "pd_ee_delta_pose",
               "iters": "100000",
+              "private_demo_root": "DEMO_ROOT=\"$WORK_ROOT/demos/$VARIANT-$TARGET_SHA\"",
+              "unconditional_replay": "rm -f \"$DEMO\" \"$DEMO_JSON\"",
+              "raw_hash": "\"raw_demo_sha256\"",
+              "converted_hash": "\"converted_demo_sha256\"",
           }
           for key, value in required.items():
               assert value in text, f"missing frozen {key}: {value}"
