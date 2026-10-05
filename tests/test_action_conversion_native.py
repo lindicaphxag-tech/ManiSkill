@@ -30,7 +30,7 @@ def _compact_axis_angle(quaternion: np.ndarray) -> np.ndarray:
 
 
 def _rollout_orientation_error(
-    env, repaired: bool, steps: int
+    env, repaired: bool, steps: int, target_delta_euler_xyz
 ) -> tuple[float, float, float, dict]:
     env.reset(seed=2026)
     base_env = env.unwrapped
@@ -39,7 +39,7 @@ def _rollout_orientation_error(
     start_pose = arm.ee_pose_at_base
     start_q = start_pose.q[0].clone()
     desired_delta = rotation_conversions.euler_angles_to_matrix(
-        torch.tensor([0.55, -0.48, 0.62], dtype=start_q.dtype), "XYZ"
+        torch.tensor(target_delta_euler_xyz, dtype=start_q.dtype), "XYZ"
     )
     desired_delta_q = rotation_conversions.matrix_to_quaternion(desired_delta)
     target_q = rotation_conversions.quaternion_multiply(desired_delta_q, start_q)
@@ -85,7 +85,14 @@ def _rollout_orientation_error(
             )[0]
             command_details = {
                 "normalized_arm_rotation": arm_action_tensor[0, 3:6].cpu().tolist(),
+                "requested_euler_xyz_rad": (
+                    arm_action_tensor[0, 3:6] * arm.config.rot_lower
+                ).cpu().tolist(),
                 "processed_euler_xyz_rad": processed[0, 3:6].cpu().tolist(),
+                "rotation_action_limits_rad": [
+                    arm.config.rot_lower,
+                    arm.config.rot_upper,
+                ],
                 "start_q_wxyz": start_q.cpu().tolist(),
                 "expected_target_q_wxyz": target_q.cpu().tolist(),
                 "first_controller_target_q_wxyz": arm._target_pose.q[0].cpu().tolist(),
@@ -107,30 +114,61 @@ def test_native_pickcube_controller_reconstructs_multiaxis_delta_rotation():
         robot_init_qpos_noise=0.0,
     )
     try:
-        horizons = {}
-        for steps in (16, 64):
-            before, legacy_target_error, legacy_error, legacy_details = _rollout_orientation_error(
-                env, repaired=False, steps=steps
-            )
-            repaired_before, repaired_target_error, repaired_error, repaired_details = (
-                _rollout_orientation_error(env, repaired=True, steps=steps)
-            )
-            horizons[str(steps)] = {
-                "initial_error_rad": before,
-                "legacy_first_command_error_rad": legacy_target_error,
-                "repaired_first_command_error_rad": repaired_target_error,
-                "legacy_final_error_rad": legacy_error,
-                "repaired_final_error_rad": repaired_error,
-                "legacy_command_details": legacy_details,
-                "repaired_command_details": repaired_details,
-            }
+        cases = {
+            "within_single_step_rotation_limit": {
+                "target_delta_euler_xyz_rad": [0.035, -0.028, 0.042],
+                "horizons": (1, 16),
+            },
+            "multi_step_composed_rotation": {
+                "target_delta_euler_xyz_rad": [0.55, -0.48, 0.62],
+                "horizons": (16, 64),
+            },
+        }
+        results = {}
+        for case_name, case in cases.items():
+            results[case_name] = {}
+            for steps in case["horizons"]:
+                before, legacy_target_error, legacy_error, legacy_details = (
+                    _rollout_orientation_error(
+                        env,
+                        repaired=False,
+                        steps=steps,
+                        target_delta_euler_xyz=case["target_delta_euler_xyz_rad"],
+                    )
+                )
+                repaired_before, repaired_target_error, repaired_error, repaired_details = (
+                    _rollout_orientation_error(
+                        env,
+                        repaired=True,
+                        steps=steps,
+                        target_delta_euler_xyz=case["target_delta_euler_xyz_rad"],
+                    )
+                )
+                results[case_name][str(steps)] = {
+                    "initial_error_rad": before,
+                    "legacy_first_command_error_rad": legacy_target_error,
+                    "repaired_first_command_error_rad": repaired_target_error,
+                    "legacy_final_error_rad": legacy_error,
+                    "repaired_final_error_rad": repaired_error,
+                    "legacy_command_details": legacy_details,
+                    "repaired_command_details": repaired_details,
+                }
     finally:
         env.close()
 
-    for values in horizons.values():
-        assert 0.5 < values["initial_error_rad"] < np.pi
-        assert values["repaired_final_error_rad"] < values["initial_error_rad"]
-    print(json.dumps(horizons, indent=2))
+    small = results["within_single_step_rotation_limit"]
+    for values in small.values():
+        assert values["repaired_first_command_error_rad"] < 1e-5
+        assert (
+            values["repaired_first_command_error_rad"]
+            < values["legacy_first_command_error_rad"]
+        )
+    assert small["16"]["repaired_final_error_rad"] < 1e-3
+    large = results["multi_step_composed_rotation"]
+    assert 0.5 < large["16"]["initial_error_rad"] < np.pi
+    assert large["16"]["repaired_final_error_rad"] < large["16"]["initial_error_rad"]
+    assert large["64"]["repaired_final_error_rad"] < 1e-3
+    print(json.dumps(results, indent=2))
 
     result_path = os.environ.get("MANISKILL_ASSAY_RESULT")
     if result_path:
@@ -143,10 +181,13 @@ def test_native_pickcube_controller_reconstructs_multiaxis_delta_rotation():
             "sapien": getattr(sapien, "__version__", "unknown"),
             "torch_cuda_available": torch.cuda.is_available(),
             "render_backend": os.environ.get("MANISKILL_RENDER_BACKEND", "gpu"),
-            "horizon_results": horizons,
-            "steps": [16, 64],
+            "horizon_results": results,
+            "steps": [1, 16, 64],
             "seed": 2026,
-            "target_delta_xyz_euler_rad": [0.55, -0.48, 0.62],
+            "target_delta_euler_xyz_rad": {
+                "within_single_step_rotation_limit": [0.035, -0.028, 0.042],
+                "multi_step_composed_rotation": [0.55, -0.48, 0.62],
+            },
         }
         Path(result_path).write_text(json.dumps(result, indent=2) + "\n")
         print(json.dumps(result, indent=2))
