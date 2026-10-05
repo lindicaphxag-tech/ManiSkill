@@ -28,6 +28,9 @@ jobs:
       - name: Compile evidence summarizer
         run: python -m py_compile validation/pr1495/summarize_tensorboard.py
 
+      - name: Validate online notebook JSON
+        run: python -m json.tool validation/pr1495/online_gpu.ipynb >/dev/null
+
       - name: Verify frozen comparison identities
         run: |
           python - <<'PY'
