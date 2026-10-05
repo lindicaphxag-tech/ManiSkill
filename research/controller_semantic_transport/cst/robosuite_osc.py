@@ -44,8 +44,9 @@ def _as_rot(x, name: str) -> np.ndarray:
 
 def _rotation_geodesic(a: np.ndarray, b: np.ndarray) -> float:
     relative = a.T @ b
-    value = np.clip((np.trace(relative) - 1.0) / 2.0, -1.0, 1.0)
-    return float(np.arccos(value))
+    # Rotation.magnitude uses a stable SO(3) logarithm near the identity,
+    # avoiding the loss of precision from acos((trace(R)-1)/2).
+    return float(Rotation.from_matrix(relative).magnitude())
 
 
 def inverse_affine_action_scale(
