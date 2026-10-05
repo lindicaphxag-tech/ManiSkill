@@ -36,7 +36,7 @@ def run(command, **kwargs):
 try:
     if REPO.exists():
         raise RuntimeError(f"Refusing to overwrite existing checkout: {REPO}")
-    run(["git", "clone", "--depth", "1", "--branch", BRANCH, GITHUB_REPO, str(REPO)])
+    run(["git", "clone", "--branch", BRANCH, GITHUB_REPO, str(REPO)])
     run(["git", "-C", str(REPO), "checkout", COMMIT])
     commit = subprocess.check_output(
         ["git", "-C", str(REPO), "rev-parse", "HEAD"], text=True
