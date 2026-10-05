@@ -2,6 +2,7 @@
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -12,7 +13,7 @@ WORK = Path("/kaggle/working")
 REPO = WORK / "ManiSkill"
 GITHUB_REPO = "https://github.com/lindicaphxag-tech/ManiSkill.git"
 BRANCH = "research/native-delta-pose-assay"
-COMMIT = "06f6224a428916050c24fe090ca190a384988a09"
+COMMIT = "40fe12e654e1df7216f650228bf67c4c9dc853c0"
 started = time.time()
 log = {
     "assay": "native-pickcube-multiaxis-delta-pose",
@@ -107,6 +108,8 @@ except Exception as error:
     raise
 finally:
     log["elapsed_seconds"] = round(time.time() - started, 3)
+    if REPO.exists():
+        shutil.rmtree(REPO)
     (WORK / "experiment_log.json").write_text(json.dumps(log, indent=2) + "\n")
     (WORK / "artifacts_manifest.json").write_text(
         json.dumps(
