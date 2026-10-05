@@ -1,0 +1,27 @@
+name: CST semantic core
+
+on:
+  push:
+    branches:
+      - "research/controller-semantic-transport-v0"
+    paths:
+      - "research/controller_semantic_transport/**"
+      - ".github/workflows/cst-semantic-core.yml"
+  workflow_dispatch:
+
+jobs:
+  exact-family:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install numpy pytest
+      - name: Compile CST core
+        run: python -m py_compile research/controller_semantic_transport/cst/core.py
+      - name: Run exact-family semantic tests
+        env:
+          PYTHONPATH: research/controller_semantic_transport
+        run: python -m pytest -q research/controller_semantic_transport/tests/test_core.py
