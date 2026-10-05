@@ -18,7 +18,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 034e40c3c3540e68487171fc8095554f5748ec7a
+          ref: fix/delta-pose-euler-action
+
+      - name: Resolve exact PR head
+        id: prhead
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-python@v5
         with:
@@ -35,11 +39,14 @@ jobs:
           python -m pytest -q tests/test_action_conversion.py
 
       - name: Measure non-commuting rotation witness
+        env:
+          PR_HEAD: ${{ steps.prhead.outputs.sha }}
         run: |
           python - <<'PY'
           import json
           import math
           import numpy as np
+          import os
           import torch
           from transforms3d.quaternions import quat2axangle
 
@@ -75,7 +82,7 @@ jobs:
               return math.degrees(float(torch.acos(cos_theta)))
 
           report = {
-              "pr_head": "034e40c3c3540e68487171fc8095554f5748ec7a",
+              "pr_head": os.environ["PR_HEAD"],
               "witness_euler_xyz_rad": expected_euler.tolist(),
               "old_axis_angle_as_euler_error_deg": angular_error_deg(
                   old_matrix, expected_matrix
