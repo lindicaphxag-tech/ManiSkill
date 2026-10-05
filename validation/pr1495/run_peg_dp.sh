@@ -163,8 +163,11 @@ CMD=(
   --exp-name "$RUN_NAME"
   --demo_type motionplanning
 )
-if [[ -n "$WANDB_ENTITY" ]]; then
-  CMD+=(--wandb-entity "$WANDB_ENTITY")
+if [[ "$TRACK_MODE" == "wandb" ]]; then
+  CMD+=(--track --wandb-project-name "$WANDB_PROJECT")
+  if [[ -n "$WANDB_ENTITY" ]]; then
+    CMD+=(--wandb-entity "$WANDB_ENTITY")
+  fi
 fi
 
 "${CMD[@]}"
