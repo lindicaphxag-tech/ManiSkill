@@ -74,12 +74,28 @@ def audit_task(task: str) -> dict:
     sha = hashlib.sha256(h5_path.read_bytes()).hexdigest()
 
     dc_all, dt_all, hc_all, ht_all, traj_rows = [], [], [], [], []
+    articulation_keys = set()
     with h5py.File(h5_path, "r") as f:
         keys = sorted(f.keys(), key=lambda x: int(x.split("_", 1)[1]))
         for key in keys:
             g = f[key]
             actions = np.asarray(g["actions"], dtype=np.float64)
-            panda = np.asarray(g["env_states/articulations/panda"], dtype=np.float64)
+            articulations = g["env_states/articulations"]
+            candidates = [
+                name
+                for name in articulations.keys()
+                if isinstance(articulations[name], h5py.Dataset)
+                and articulations[name].ndim == 2
+                and articulations[name].shape[1] == 31
+            ]
+            if len(candidates) != 1:
+                raise RuntimeError(
+                    f"{task}/{key}: expected exactly one 31D Panda articulation, "
+                    f"found {candidates} among {list(articulations.keys())}"
+                )
+            articulation_key = candidates[0]
+            articulation_keys.add(articulation_key)
+            panda = np.asarray(articulations[articulation_key], dtype=np.float64)
             if actions.ndim != 2 or actions.shape[1] != 8:
                 raise RuntimeError(f"{task}/{key}: actions shape {actions.shape}")
             if panda.ndim != 2 or panda.shape[1] != 31:
@@ -122,6 +138,7 @@ def audit_task(task: str) -> dict:
         "h5_bytes": h5_path.stat().st_size,
         "trajectories": len(traj_rows),
         "total_actions": int(len(hc)),
+        "articulation_keys": sorted(articulation_keys),
         "delta_current": surface(hc, dc, 0),
         "delta_target": surface(ht, dt, 1),
     }
