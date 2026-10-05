@@ -26,4 +26,17 @@ __all__ = [
     "HorizonReachabilityCertificate",
     "certify_joint_goal_horizon",
     "construct_delta_target_sequence",
+    "AmbiguousTransportWitness",
+    "CompiledTransport",
+    "ExactTransportResult",
+    "NonRepresentableTransportWitness",
+    "compile_exact_joint_transport",
 ]
+
+from .compiler import (
+    AmbiguousTransportWitness,
+    CompiledTransport,
+    ExactTransportResult,
+    NonRepresentableTransportWitness,
+    compile_exact_joint_transport,
+)
