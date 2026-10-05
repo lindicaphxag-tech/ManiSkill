@@ -1,0 +1,26 @@
+name: native-delta-pose
+
+on:
+  push:
+    branches: [research/native-delta-pose-assay]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pickcube-cpu:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install CPU PyTorch
+        run: python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Install ManiSkill and test dependencies
+        run: python -m pip install -e . pytest
+      - name: Run unit and native controller regressions
+        run: python -m pytest -q tests/test_action_conversion.py tests/test_action_conversion_native.py
