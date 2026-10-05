@@ -1,4 +1,8 @@
+import json
+import os
+import platform
 from math import acos
+from pathlib import Path
 
 import gymnasium as gym
 import numpy as np
@@ -72,7 +76,7 @@ def test_native_pickcube_controller_reduces_multiaxis_delta_rotation_error():
         obs_mode="state",
         control_mode="pd_ee_delta_pose",
         sim_backend="physx_cpu",
-        render_backend="cpu",
+        render_backend=os.environ.get("MANISKILL_RENDER_BACKEND", "gpu"),
         render_mode=None,
         robot_init_qpos_noise=0.0,
     )
@@ -85,3 +89,26 @@ def test_native_pickcube_controller_reduces_multiaxis_delta_rotation_error():
     assert abs(before - repaired_before) < 1e-6
     assert repaired_error < before
     assert repaired_error < legacy_error
+
+    result_path = os.environ.get("MANISKILL_ASSAY_RESULT")
+    if result_path:
+        result = {
+            "assay": "native-pickcube-multiaxis-delta-pose",
+            "status": "passed",
+            "platform": platform.platform(),
+            "python": platform.python_version(),
+            "torch": torch.__version__,
+            "sapien": getattr(sapien, "__version__", "unknown"),
+            "torch_cuda_available": torch.cuda.is_available(),
+            "render_backend": os.environ.get("MANISKILL_RENDER_BACKEND", "gpu"),
+            "initial_geodesic_error_rad": before,
+            "legacy_axis_angle_final_error_rad": legacy_error,
+            "repaired_xyz_euler_final_error_rad": repaired_error,
+            "repaired_relative_error_reduction": 1.0 - repaired_error / before,
+            "legacy_relative_error_reduction": 1.0 - legacy_error / before,
+            "steps": 16,
+            "seed": 2026,
+            "target_delta_xyz_euler_rad": [0.55, -0.48, 0.62],
+        }
+        Path(result_path).write_text(json.dumps(result, indent=2) + "\n")
+        print(json.dumps(result, indent=2))
