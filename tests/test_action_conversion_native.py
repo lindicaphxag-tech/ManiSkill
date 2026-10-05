@@ -61,9 +61,14 @@ def _rollout_orientation_error(env, repaired: bool) -> tuple[float, float]:
                 0.5 * (high - arm_action)
             )
 
-        action = env.action_space.sample()
-        action["arm"] = arm_action
-        action["gripper"] = np.zeros_like(action["gripper"])
+        action_dict = combined.to_action_dict(combined.action_space.sample())
+        action_dict = {
+            key: torch.as_tensor(value, device=base_env.device)
+            for key, value in action_dict.items()
+        }
+        action_dict["arm"] = torch.as_tensor(arm_action, device=base_env.device)
+        action_dict["gripper"] = torch.zeros_like(action_dict["gripper"])
+        action = combined.from_action_dict(action_dict)
         env.step(action)
 
     final_error = _orientation_error(target_q, arm.ee_pose_at_base.q[0])
