@@ -1,0 +1,59 @@
+name: PegInsertion DP factorial harness
+
+on:
+  push:
+    branches:
+      - validation/peg-insertion-dp-factorial
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-harness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile harness
+        run: python -m py_compile validation/run_peg_insertion_dp_factorial.py
+
+      - name: Validate frozen variant identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          for sha in             62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3             a231074ef562a9638e24c3f9a4d35bb70d4960d1             cdd6db713ffe7edc3e0df3abfab51ea5320c1c0b             24dcccba3d0aeae56b6fba1f5168e22cc340ab71
+          do
+            git cat-file -e "$sha^{commit}"
+          done
+
+      - name: Cross-check code and manifest SHAs
+        run: |
+          python - <<'PY'
+          import ast, json
+          from pathlib import Path
+
+          source = Path("validation/run_peg_insertion_dp_factorial.py").read_text()
+          module = ast.parse(source)
+          variants = None
+          for node in module.body:
+              if isinstance(node, ast.Assign):
+                  for target in node.targets:
+                      if isinstance(target, ast.Name) and target.id == "VARIANTS":
+                          variants = ast.literal_eval(node.value)
+          assert variants is not None
+          manifest = json.loads(
+              Path("validation/peg_insertion_dp_factorial_manifest.json").read_text()
+          )
+          frozen = {k: v["sha"] for k, v in manifest["variants"].items()}
+          assert variants == frozen, (variants, frozen)
+          assert manifest["official_training"]["num_demos"] == 100
+          assert manifest["official_training"]["total_iters"] == 100000
+          print("factorial harness identity: pass")
+          PY
