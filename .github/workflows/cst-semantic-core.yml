@@ -18,10 +18,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: python -m pip install numpy pytest
+      - run: python -m pip install numpy scipy pytest
       - name: Compile CST core
         run: python -m py_compile research/controller_semantic_transport/cst/core.py
       - name: Run exact-family semantic tests
         env:
           PYTHONPATH: research/controller_semantic_transport
-        run: python -m pytest -q research/controller_semantic_transport/tests/test_core.py research/controller_semantic_transport/tests/test_semantic_types.py research/controller_semantic_transport/tests/test_property_witnesses.py research/controller_semantic_transport/tests/test_trace_transport.py
+        run: python -m pytest -q research/controller_semantic_transport/tests/test_core.py research/controller_semantic_transport/tests/test_semantic_types.py research/controller_semantic_transport/tests/test_property_witnesses.py research/controller_semantic_transport/tests/test_trace_transport.py research/controller_semantic_transport/tests/test_robosuite_osc.py
