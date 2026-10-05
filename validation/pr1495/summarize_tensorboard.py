@@ -7,13 +7,21 @@ from pathlib import Path
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
 
-def latest_and_best(values):
+def summarize(values):
     if not values:
         return None
     return {
         "latest_step": int(values[-1].step),
         "latest": float(values[-1].value),
         "best": float(max(v.value for v in values)),
+        "series": [
+            {
+                "step": int(v.step),
+                "value": float(v.value),
+                "wall_time": float(v.wall_time),
+            }
+            for v in values
+        ],
     }
 
 
@@ -40,11 +48,12 @@ def main():
         "schema_version": 1,
         "run_dir": str(args.run_dir),
         "event_files": [str(x) for x in event_files],
+        "available_scalar_tags": sorted(tags),
         "metrics": {},
     }
     for tag in wanted:
         report["metrics"][tag] = (
-            latest_and_best(acc.Scalars(tag)) if tag in tags else None
+            summarize(acc.Scalars(tag)) if tag in tags else None
         )
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
