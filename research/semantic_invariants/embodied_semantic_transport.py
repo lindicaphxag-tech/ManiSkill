@@ -13,11 +13,11 @@ factorial repair analysis should be mandatory.
 
 from __future__ import annotations
 
+import json
+from collections.abc import Sequence
 from dataclasses import dataclass
 from hashlib import sha256
-import json
 from math import isfinite
-from typing import Sequence
 
 
 Vector = tuple[float, ...]
@@ -42,7 +42,7 @@ class MonomialSemanticTransport:
             raise ValueError("all transport scales must be finite and non-zero")
 
     @classmethod
-    def identity(cls, dimension: int) -> "MonomialSemanticTransport":
+    def identity(cls, dimension: int) -> MonomialSemanticTransport:
         if dimension <= 0:
             raise ValueError("dimension must be positive")
         return cls(tuple(range(dimension)), (1.0,) * dimension)
@@ -61,8 +61,8 @@ class MonomialSemanticTransport:
 
     def then(
         self,
-        other: "MonomialSemanticTransport",
-    ) -> "MonomialSemanticTransport":
+        other: MonomialSemanticTransport,
+    ) -> MonomialSemanticTransport:
         """Compose transports in execution order: other(self(x))."""
 
         if self.dimension != other.dimension:
@@ -77,7 +77,7 @@ class MonomialSemanticTransport:
         )
         return MonomialSemanticTransport(source, scale)
 
-    def inverse(self) -> "MonomialSemanticTransport":
+    def inverse(self) -> MonomialSemanticTransport:
         source = [0] * self.dimension
         scale = [0.0] * self.dimension
         for output_index, source_index in enumerate(self.source_for_output):
