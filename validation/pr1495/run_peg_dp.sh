@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 VARIANT="${VARIANT:-}"
 SEED="${SEED:-1}"
 NUM_DEMOS="${NUM_DEMOS:-100}"
