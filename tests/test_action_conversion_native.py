@@ -1,7 +1,7 @@
 import json
 import os
 import platform
-from math import acos
+from math import atan2
 from pathlib import Path
 
 import gymnasium as gym
@@ -19,7 +19,10 @@ def _orientation_error(target: torch.Tensor, actual: torch.Tensor) -> float:
     relative = rotation_conversions.quaternion_multiply(
         target, rotation_conversions.quaternion_invert(actual)
     )
-    return 2.0 * acos(min(1.0, abs(float(relative[0]))))
+    relative = relative / torch.linalg.norm(relative)
+    sin_half = float(torch.linalg.norm(relative[1:]))
+    cos_half = abs(float(relative[0]))
+    return 2.0 * atan2(sin_half, cos_half)
 
 
 def _compact_axis_angle(quaternion: np.ndarray) -> np.ndarray:
