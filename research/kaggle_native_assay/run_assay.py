@@ -12,6 +12,7 @@ WORK = Path("/kaggle/working")
 REPO = WORK / "ManiSkill"
 GITHUB_REPO = "https://github.com/lindicaphxag-tech/ManiSkill.git"
 BRANCH = "research/native-delta-pose-assay"
+COMMIT = "4fdae02288bb08af44856c082efaf319dcb37252"
 started = time.time()
 log = {
     "assay": "native-pickcube-multiaxis-delta-pose",
@@ -36,9 +37,12 @@ try:
     if REPO.exists():
         raise RuntimeError(f"Refusing to overwrite existing checkout: {REPO}")
     run(["git", "clone", "--depth", "1", "--branch", BRANCH, GITHUB_REPO, str(REPO)])
+    run(["git", "-C", str(REPO), "checkout", COMMIT])
     commit = subprocess.check_output(
         ["git", "-C", str(REPO), "rev-parse", "HEAD"], text=True
     ).strip()
+    if commit != COMMIT:
+        raise RuntimeError(f"Checked out {commit}, expected frozen commit {COMMIT}")
     log["commit"] = commit
     run([sys.executable, "-m", "pip", "install", "-e", str(REPO)])
     run([sys.executable, "-m", "pip", "install", "pin", "pytest"])
