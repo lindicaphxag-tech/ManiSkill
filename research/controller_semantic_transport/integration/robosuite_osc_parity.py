@@ -35,9 +35,7 @@ def controller_for_state(state: OSCState, mode: str):
 
 def geodesic(a, b):
     relative = a.T @ b
-    return float(
-        np.arccos(np.clip((np.trace(relative) - 1.0) / 2.0, -1.0, 1.0))
-    )
+    return float(Rotation.from_matrix(relative).magnitude())
 
 
 def run(seed: int = 20261006, samples_per_mode: int = 500):
