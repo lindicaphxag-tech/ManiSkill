@@ -24,9 +24,15 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y mesa-vulkan-drivers vulkan-tools
-          test -f /usr/share/vulkan/icd.d/lvp_icd.x86_64.json
-          echo "VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json" >> "$GITHUB_ENV"
-          VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json vulkaninfo --summary
+          LVP_ICD="$(find /usr/share/vulkan /etc/vulkan -type f -path '*/icd.d/*' -name '*lvp*.json' -print -quit 2>/dev/null || true)"
+          if [ -n "$LVP_ICD" ]; then
+            echo "VK_ICD_FILENAMES=$LVP_ICD" >> "$GITHUB_ENV"
+            VK_ICD_FILENAMES="$LVP_ICD" vulkaninfo --summary
+          else
+            echo "No explicit Lavapipe ICD file found; testing Mesa auto-discovery"
+            find /usr/share/vulkan /etc/vulkan -type f -path '*/icd.d/*' -name '*.json' -print 2>/dev/null || true
+            vulkaninfo --summary
+          fi
       - name: Install ManiSkill
         run: |
           python -m pip install --upgrade pip
