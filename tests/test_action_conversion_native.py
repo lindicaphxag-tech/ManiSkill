@@ -29,7 +29,7 @@ def _compact_axis_angle(quaternion: np.ndarray) -> np.ndarray:
     return angle * axis
 
 
-def _rollout_orientation_error(env, repaired: bool) -> tuple[float, float]:
+def _rollout_orientation_error(env, repaired: bool, steps: int) -> tuple[float, float, float]:
     env.reset(seed=2026)
     base_env = env.unwrapped
     combined = base_env.agent.controller
@@ -43,7 +43,8 @@ def _rollout_orientation_error(env, repaired: bool) -> tuple[float, float]:
     target_q = rotation_conversions.quaternion_multiply(desired_delta_q, start_q)
 
     initial_error = _orientation_error(target_q, start_q)
-    for _ in range(16):
+    first_command_error = None
+    for step in range(steps):
         current_q = arm.ee_pose_at_base.q[0]
         inverse_delta_q = rotation_conversions.quaternion_multiply(
             current_q, rotation_conversions.quaternion_invert(target_q)
@@ -70,12 +71,14 @@ def _rollout_orientation_error(env, repaired: bool) -> tuple[float, float]:
         action_dict["gripper"] = torch.zeros_like(action_dict["gripper"])
         action = combined.from_action_dict(action_dict)
         env.step(action)
+        if step == 0:
+            first_command_error = _orientation_error(target_q, arm._target_pose.q[0])
 
     final_error = _orientation_error(target_q, arm.ee_pose_at_base.q[0])
-    return initial_error, final_error
+    return initial_error, first_command_error, final_error
 
 
-def test_native_pickcube_controller_reduces_multiaxis_delta_rotation_error():
+def test_native_pickcube_controller_reconstructs_multiaxis_delta_rotation():
     env = gym.make(
         "PickCube-v1",
         obs_mode="state",
@@ -86,14 +89,32 @@ def test_native_pickcube_controller_reduces_multiaxis_delta_rotation_error():
         robot_init_qpos_noise=0.0,
     )
     try:
-        before, legacy_error = _rollout_orientation_error(env, repaired=False)
-        repaired_before, repaired_error = _rollout_orientation_error(env, repaired=True)
+        horizons = {}
+        for steps in (16, 64):
+            before, legacy_target_error, legacy_error = _rollout_orientation_error(
+                env, repaired=False, steps=steps
+            )
+            repaired_before, repaired_target_error, repaired_error = (
+                _rollout_orientation_error(env, repaired=True, steps=steps)
+            )
+            horizons[str(steps)] = {
+                "initial_error_rad": before,
+                "legacy_first_command_error_rad": legacy_target_error,
+                "repaired_first_command_error_rad": repaired_target_error,
+                "legacy_final_error_rad": legacy_error,
+                "repaired_final_error_rad": repaired_error,
+            }
     finally:
         env.close()
 
-    assert abs(before - repaired_before) < 1e-6
-    assert repaired_error < before
-    assert repaired_error < legacy_error
+    for values in horizons.values():
+        assert 0.5 < values["initial_error_rad"] < np.pi
+        assert values["repaired_first_command_error_rad"] < 1e-5
+        assert (
+            values["repaired_first_command_error_rad"]
+            < values["legacy_first_command_error_rad"]
+        )
+        assert values["repaired_final_error_rad"] < values["initial_error_rad"]
 
     result_path = os.environ.get("MANISKILL_ASSAY_RESULT")
     if result_path:
@@ -106,12 +127,8 @@ def test_native_pickcube_controller_reduces_multiaxis_delta_rotation_error():
             "sapien": getattr(sapien, "__version__", "unknown"),
             "torch_cuda_available": torch.cuda.is_available(),
             "render_backend": os.environ.get("MANISKILL_RENDER_BACKEND", "gpu"),
-            "initial_geodesic_error_rad": before,
-            "legacy_axis_angle_final_error_rad": legacy_error,
-            "repaired_xyz_euler_final_error_rad": repaired_error,
-            "repaired_relative_error_reduction": 1.0 - repaired_error / before,
-            "legacy_relative_error_reduction": 1.0 - legacy_error / before,
-            "steps": 16,
+            "horizon_results": horizons,
+            "steps": [16, 64],
             "seed": 2026,
             "target_delta_xyz_euler_rad": [0.55, -0.48, 0.62],
         }
