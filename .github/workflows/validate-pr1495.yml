@@ -1,4 +1,4 @@
-# trigger-v3
+# trigger-v4
 name: Validate ManiSkill PR 1495 geometry
 
 on:
@@ -50,6 +50,9 @@ jobs:
           import torch
           from transforms3d.quaternions import quat2axangle
 
+          from mani_skill.trajectory.utils.actions.conversion import (
+              inverse_delta_to_pd_ee_euler,
+          )
           from mani_skill.utils.geometry import rotation_conversions
 
           expected_euler = torch.tensor([0.31, -0.27, 0.42], dtype=torch.float64)
@@ -59,21 +62,22 @@ jobs:
           desired_quat = rotation_conversions.matrix_to_quaternion(expected_matrix)
           inverse_delta = rotation_conversions.quaternion_invert(desired_quat)
 
-          axis, angle = quat2axangle(inverse_delta.numpy())
-          old_physical = np.asarray(axis) * float(angle)
-          # inv_scale_action maps symmetric [-2pi, 2pi] to x/(2pi), while
-          # PDEEPoseController multiplies normalized rotation by rot_lower=-2pi.
-          old_controller_euler = torch.as_tensor(
-              -old_physical, dtype=torch.float64
+          # Isolate the representation mismatch itself: interpret the same
+          # desired rotation first as an axis-angle vector (old converter
+          # representation) and then as XYZ Euler angles (controller contract).
+          axis, angle = quat2axangle(desired_quat.numpy())
+          old_axis_angle = torch.as_tensor(
+              np.asarray(axis) * float(angle), dtype=torch.float64
           )
           old_matrix = rotation_conversions.euler_angles_to_matrix(
-              old_controller_euler, "XYZ"
+              old_axis_angle, "XYZ"
           )
 
-          # The patched converter causes the controller to receive exactly the
-          # XYZ Euler representation of the desired relative rotation.
+          encoded_euler = torch.from_numpy(
+              inverse_delta_to_pd_ee_euler(inverse_delta.numpy())
+          )
           fixed_matrix = rotation_conversions.euler_angles_to_matrix(
-              expected_euler, "XYZ"
+              encoded_euler, "XYZ"
           )
 
           def angular_error_deg(actual, expected):
@@ -127,12 +131,8 @@ jobs:
           encoded = torch.from_numpy(
               inverse_delta_to_pd_ee_euler(inverse_delta.numpy())
           )
-          # With the default symmetric [-2pi, 2pi] action bounds,
-          # inv_scale_action followed by PDEEPoseController's rot_lower=-2pi
-          # makes the controller receive -encoded.
-          controller_euler = -encoded
           actual = rotation_conversions.euler_angles_to_matrix(
-              controller_euler, "XYZ"
+              encoded, "XYZ"
           )
           expected = rotation_conversions.quaternion_to_matrix(desired_q)
 
@@ -164,7 +164,7 @@ jobs:
               inverse_delta_to_pd_ee_euler(gimbal_input.numpy())
           )
           gimbal_actual = rotation_conversions.euler_angles_to_matrix(
-              -gimbal_encoded, "XYZ"
+              gimbal_encoded, "XYZ"
           )
           gimbal_rel = gimbal_actual.transpose(-1, -2) @ gimbal_matrix
           gimbal_trace = gimbal_rel.diagonal(dim1=-2, dim2=-1).sum(-1)
@@ -221,7 +221,7 @@ jobs:
               {
                   "state": "success",
                   "target_url": os.environ["RUN_URL"],
-                  "description": "rotation regression + 50k SO(3) sweep passed",
+                  "description": "Euler encoding + 50k SO(3) sweep passed",
                   "context": "fork/geometry-validation",
               }
           ).encode()
