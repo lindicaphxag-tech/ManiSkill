@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+from scipy.optimize import lsq_linear
 
 
 @dataclass(frozen=True)
@@ -89,16 +90,21 @@ class AffineControllerIR:
 @dataclass(frozen=True)
 class AffineTransportCertificate:
     target_action: np.ndarray
+    bounded_target_action: np.ndarray
     source_goal: np.ndarray
     reconstructed_goal: np.ndarray
     residual_norm: float
     relative_residual: float
+    bounded_residual_norm: float
+    bounded_relative_residual: float
     target_rank: int
     target_nullity: int
     algebraically_representable: bool
     bounded_representable: bool
     unique_if_exact: bool
     native_margin: np.ndarray
+    bounded_native_margin: np.ndarray
+    bounded_solver_success: bool
     reason: str
 
 
@@ -119,15 +125,14 @@ def compile_affine_transport(
     atol: float = 1e-10,
     rtol: float = 1e-10,
 ) -> AffineTransportCertificate:
-    """Compile the minimum-norm exact/least-squares target action.
+    """Compile and certify unconstrained and bounded target transports.
 
-    The compiler first solves the equality in canonical-goal space with the
-    Moore-Penrose pseudoinverse. It reports algebraic representability
-    separately from native-bound representability. A pseudoinverse candidate
-    outside the target bounds is *not* sufficient to prove that no bounded
-    exact solution exists when the target has a non-trivial nullspace; such a
-    case is conservatively marked as not bounded-representable by this v0.1
-    compiler and can be promoted by a later bounded-feasibility solver.
+    The Moore-Penrose solution determines whether the source canonical goal is
+    in the target controller's algebraic image. A bounded convex least-squares
+    solve then determines whether the same goal is reachable inside native
+    action limits. When exact bounded transport is impossible, the bounded
+    solution is still returned as the closest admissible goal-level
+    approximation, together with its residual.
     """
     if source.goal_dim != target.goal_dim:
         raise ValueError("source and target canonical goal dimensions must match")
@@ -139,51 +144,68 @@ def compile_affine_transport(
         + target.b
     )
     rhs = y_source - target_offset
+    scale = max(float(np.linalg.norm(y_source)), 1.0)
+    threshold = atol + rtol * scale
 
     target_action = np.linalg.pinv(target.U) @ rhs
     reconstructed = target.U @ target_action + target_offset
     residual = float(np.linalg.norm(reconstructed - y_source))
-    scale = max(float(np.linalg.norm(y_source)), 1.0)
-    relative = residual / scale
-    threshold = atol + rtol * scale
     algebraic = bool(residual <= threshold)
+
+    bounded_result = lsq_linear(
+        target.U,
+        rhs,
+        bounds=(target.native_low, target.native_high),
+        lsmr_tol="auto",
+        tol=max(atol, 1e-12),
+    )
+    bounded_action = np.asarray(bounded_result.x, dtype=float)
+    bounded_reconstructed = target.U @ bounded_action + target_offset
+    bounded_residual = float(np.linalg.norm(bounded_reconstructed - y_source))
+    bounded = bool(bounded_result.success and bounded_residual <= threshold)
 
     rank = int(np.linalg.matrix_rank(target.U))
     nullity = int(target.action_dim - rank)
-    margin = _native_margin(
-        target_action,
-        target.native_low,
-        target.native_high,
+    margin = _native_margin(target_action, target.native_low, target.native_high)
+    bounded_margin = _native_margin(
+        bounded_action, target.native_low, target.native_high
     )
-    candidate_inside = bool(np.all(margin >= -atol))
-    bounded = bool(algebraic and candidate_inside)
 
     if not algebraic:
-        reason = "target controller image does not contain the source canonical goal"
-    elif not candidate_inside and nullity > 0:
         reason = (
-            "minimum-norm exact action violates native bounds; bounded exact "
-            "feasibility is unresolved because target has nullspace freedom"
+            "target algebraic image does not contain the source goal; bounded "
+            "action is the closest admissible approximation"
         )
-    elif not candidate_inside:
-        reason = "unique exact target action lies outside native action bounds"
-    elif nullity > 0:
-        reason = "exact bounded transport exists but is non-unique"
-    else:
+    elif bounded and nullity > 0:
+        reason = (
+            "bounded exact transport exists; target action is algebraically "
+            "non-unique because the target map has nullspace freedom"
+        )
+    elif bounded:
         reason = "unique bounded action exactly preserves the canonical physical goal"
+    else:
+        reason = (
+            "source goal is algebraically representable but no exact action "
+            "exists inside the target native bounds"
+        )
 
     return AffineTransportCertificate(
         target_action=target_action,
+        bounded_target_action=bounded_action,
         source_goal=y_source,
         reconstructed_goal=reconstructed,
         residual_norm=residual,
-        relative_residual=relative,
+        relative_residual=residual / scale,
+        bounded_residual_norm=bounded_residual,
+        bounded_relative_residual=bounded_residual / scale,
         target_rank=rank,
         target_nullity=nullity,
         algebraically_representable=algebraic,
         bounded_representable=bounded,
         unique_if_exact=bool(algebraic and nullity == 0),
         native_margin=margin,
+        bounded_native_margin=bounded_margin,
+        bounded_solver_success=bool(bounded_result.success),
         reason=reason,
     )
 
