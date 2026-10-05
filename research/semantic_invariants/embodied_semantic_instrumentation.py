@@ -25,11 +25,11 @@ selected taps diagnose arbitrary unknown faults outside the frozen family.
 
 from __future__ import annotations
 
+import json
+from collections.abc import Sequence
 from dataclasses import dataclass
 from hashlib import sha256
 from itertools import combinations
-import json
-from typing import Sequence
 
 from .embodied_semantic_transport import (
     MonomialSemanticTransport,
