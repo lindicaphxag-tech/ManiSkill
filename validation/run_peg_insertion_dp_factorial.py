@@ -257,6 +257,9 @@ def train_variant(
     *,
     profile: str,
     seed: int,
+    track: bool,
+    wandb_project_name: str,
+    wandb_entity: str | None,
 ) -> dict:
     cfg = PROFILES[profile]
     worktree = root / "code" / name
@@ -267,8 +270,7 @@ def train_variant(
     log = root / "logs" / name / f"{profile}-seed{seed}.train.log"
 
     start = time.time()
-    run(
-        [
+    train_cmd = [
             sys.executable,
             "train.py",
             "--env-id",
@@ -297,7 +299,20 @@ def train_variant(
             run_name,
             "--demo_type",
             "motionplanning",
-        ],
+        ]
+    if track:
+        train_cmd.extend(
+            [
+                "--track",
+                "--wandb_project_name",
+                wandb_project_name,
+            ]
+        )
+        if wandb_entity:
+            train_cmd.extend(["--wandb_entity", wandb_entity])
+
+    run(
+        train_cmd,
         cwd=baseline,
         env=env_for(worktree),
         log=log,
@@ -312,6 +327,9 @@ def train_variant(
         "train_log": str(log),
         "run_dir": str(baseline / "runs" / run_name),
         "wall_seconds": time.time() - start,
+        "wandb_tracking": bool(track),
+        "wandb_project_name": wandb_project_name if track else None,
+        "wandb_entity": wandb_entity if track else None,
     }
     out = root / "results" / f"{name}.{profile}.seed{seed}.json"
     out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -326,6 +344,16 @@ def main() -> int:
     p.add_argument("--phase", choices=("replay", "train", "all"), default="all")
     p.add_argument("--profile", choices=tuple(PROFILES), default="smoke")
     p.add_argument("--seed", type=int, default=1)
+    p.add_argument(
+        "--track",
+        action="store_true",
+        help="Enable the official train.py Weights & Biases integration.",
+    )
+    p.add_argument(
+        "--wandb-project-name",
+        default="SemRepair-ManiSkill-Factorial",
+    )
+    p.add_argument("--wandb-entity", default=None)
     args = p.parse_args()
 
     repo = args.repo.resolve()
@@ -341,6 +369,9 @@ def main() -> int:
         "profile": args.profile,
         "seed": args.seed,
         "variants": VARIANTS,
+        "wandb_tracking": bool(args.track),
+        "wandb_project_name": args.wandb_project_name if args.track else None,
+        "wandb_entity": args.wandb_entity if args.track else None,
     }
     (root / "run_manifest.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n",
@@ -367,6 +398,9 @@ def main() -> int:
                 replay[name],
                 profile=args.profile,
                 seed=args.seed,
+                track=args.track,
+                wandb_project_name=args.wandb_project_name,
+                wandb_entity=args.wandb_entity,
             )
 
     print(
