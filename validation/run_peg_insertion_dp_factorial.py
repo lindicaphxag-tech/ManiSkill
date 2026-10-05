@@ -11,6 +11,7 @@ It fails closed before official training if replayed episode counts differ.
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import json
 import os
@@ -336,6 +337,123 @@ def train_variant(
     return result
 
 
+
+def extract_tensorboard_metrics(run_dir: Path) -> dict:
+    """Extract compact upstream-facing metrics from TensorBoard event files."""
+    try:
+        from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+    except Exception as exc:
+        return {"status": "unavailable", "reason": repr(exc)}
+
+    event_files = sorted(run_dir.glob("events.out.tfevents.*"))
+    if not event_files:
+        return {"status": "missing", "event_files": []}
+
+    # The official baseline writes one SummaryWriter stream per run directory.
+    # Loading the directory lets TensorBoard merge rotated event files.
+    accumulator = EventAccumulator(str(run_dir))
+    accumulator.Reload()
+    tags = set(accumulator.Tags().get("scalars", []))
+    wanted = (
+        "eval/success_once",
+        "eval/success_at_end",
+        "losses/total_loss",
+    )
+    metrics = {}
+    for tag in wanted:
+        if tag not in tags:
+            continue
+        points = accumulator.Scalars(tag)
+        if not points:
+            continue
+        values = [float(point.value) for point in points]
+        metrics[tag] = {
+            "last": values[-1],
+            "best": max(values) if tag.startswith("eval/") else min(values),
+            "steps": [int(point.step) for point in points],
+            "values": values,
+        }
+    return {
+        "status": "ok",
+        "event_files": [str(path) for path in event_files],
+        "metrics": metrics,
+    }
+
+
+def build_factorial_summary(root: Path, profile: str, seed: int) -> dict:
+    cells = {}
+    for name in VARIANTS:
+        result_path = root / "results" / f"{name}.{profile}.seed{seed}.json"
+        if not result_path.is_file():
+            raise RuntimeError(f"missing training result: {result_path}")
+        result = json.loads(result_path.read_text(encoding="utf-8"))
+        tb = extract_tensorboard_metrics(Path(result["run_dir"]))
+        result["tensorboard"] = tb
+        cells[name] = result
+
+    summary = {
+        "schema_version": 1,
+        "experiment": "PegInsertionSide Diffusion Policy semantic 2x2",
+        "profile": profile,
+        "seed": seed,
+        "cells": cells,
+        "interpretation_boundary": (
+            "Policy metrics must be interpreted with the independent SO(3) "
+            "factorial because the two old semantic faults can partially cancel."
+        ),
+    }
+    summary_path = root / "results" / f"factorial_summary.{profile}.seed{seed}.json"
+    summary_path.write_text(
+        json.dumps(summary, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+    csv_path = root / "results" / f"factorial_summary.{profile}.seed{seed}.csv"
+    with csv_path.open("w", encoding="utf-8", newline="") as fh:
+        import csv
+
+        writer = csv.writer(fh)
+        writer.writerow(
+            [
+                "cell",
+                "sha",
+                "episodes",
+                "dataset_sha256",
+                "success_once_last",
+                "success_once_best",
+                "success_at_end_last",
+                "success_at_end_best",
+                "loss_last",
+                "loss_best",
+                "wall_seconds",
+            ]
+        )
+        for name, result in cells.items():
+            metrics = result.get("tensorboard", {}).get("metrics", {})
+            once = metrics.get("eval/success_once", {})
+            end = metrics.get("eval/success_at_end", {})
+            loss = metrics.get("losses/total_loss", {})
+            writer.writerow(
+                [
+                    name,
+                    result["sha"],
+                    result["episodes"],
+                    result["dataset_sha256"],
+                    once.get("last"),
+                    once.get("best"),
+                    end.get("last"),
+                    end.get("best"),
+                    loss.get("last"),
+                    loss.get("best"),
+                    result["wall_seconds"],
+                ]
+            )
+
+    summary["summary_json"] = str(summary_path)
+    summary["summary_csv"] = str(csv_path)
+    return summary
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--repo", type=Path, default=Path.cwd())
@@ -388,6 +506,7 @@ def main() -> int:
 
     assert_training_gate(replay, args.profile)
 
+    summary = None
     if args.phase in ("train", "all"):
         for name, sha in VARIANTS.items():
             train_variant(
@@ -402,6 +521,7 @@ def main() -> int:
                 wandb_project_name=args.wandb_project_name,
                 wandb_entity=args.wandb_entity,
             )
+        summary = build_factorial_summary(root, args.profile, args.seed)
 
     print(
         json.dumps(
@@ -413,6 +533,7 @@ def main() -> int:
                 "episode_counts": {
                     name: replay[name]["episodes"] for name in VARIANTS
                 },
+                "summary": summary,
             },
             indent=2,
             sort_keys=True,
