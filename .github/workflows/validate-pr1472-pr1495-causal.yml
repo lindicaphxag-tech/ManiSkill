@@ -1,0 +1,42 @@
+name: PR1472 + PR1495 causal closure
+
+on:
+  push:
+    branches:
+      - validation/pr1495-with-pr1472
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prove overlay identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          PR1495=cdd6db713ffe7edc3e0df3abfab51ea5320c1c0b
+          git merge-base --is-ancestor "$PR1495" HEAD
+          test "$(git show "$PR1495":mani_skill/trajectory/utils/actions/conversion.py | git hash-object --stdin)" =                "$(git hash-object mani_skill/trajectory/utils/actions/conversion.py)"
+          git diff "$PR1495"..24dcccba3d0aeae56b6fba1f5168e22cc340ab71 --             mani_skill/agents/controllers/pd_ee_pose.py | grep -q 'rot_upper'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install focused ManiSkill environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+
+      - name: Run both upstream-focused suites
+        run: |
+          python -m pytest -q             tests/test_action_conversion.py             tests/test_pr1472_pr1495_factorial.py
+
+      - name: Emit factorial evidence
+        run: |
+          python -m pytest -q -s tests/test_pr1472_pr1495_factorial.py
