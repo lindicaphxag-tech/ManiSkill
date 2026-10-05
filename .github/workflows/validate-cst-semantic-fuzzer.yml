@@ -1,0 +1,28 @@
+name: Validate CST semantic fuzzer
+
+on:
+  push:
+    branches:
+      - "fix/joint-delta-to-joint-pos-semantics"
+    paths:
+      - "cst_validation/**"
+      - ".github/workflows/validate-cst-semantic-fuzzer.yml"
+  workflow_dispatch:
+
+jobs:
+  cst:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install numpy pytest
+      - name: Compile method and fuzzer
+        run: |
+          python -m py_compile             cst_validation/controller_semantic_transport.py             cst_validation/semantic_fuzz.py
+      - name: Run semantic transport and oracle-fuzz tests
+        working-directory: cst_validation
+        run: |
+          python -m pytest -vv             test_controller_semantic_transport.py             test_semantic_fuzz.py
