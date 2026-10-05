@@ -102,11 +102,106 @@ jobs:
           assert report["patched_xyz_euler_error_deg"] < 1e-5
           PY
 
+      - name: Stress-test patched representation over seeded SO(3) sweep
+        env:
+          PR_HEAD: ${{ steps.prhead.outputs.sha }}
+        run: |
+          python - <<'PY'
+          import json
+          import math
+          import os
+          import torch
+
+          from mani_skill.trajectory.utils.actions.conversion import (
+              inverse_delta_to_pd_ee_euler,
+          )
+          from mani_skill.utils.geometry import rotation_conversions
+
+          torch.manual_seed(1495)
+          n = 50000
+          desired_q = rotation_conversions.random_quaternions(
+              n, dtype=torch.float64
+          )
+          inverse_delta = rotation_conversions.quaternion_invert(desired_q)
+
+          encoded = torch.from_numpy(
+              inverse_delta_to_pd_ee_euler(inverse_delta.numpy())
+          )
+          # With the default symmetric [-2pi, 2pi] action bounds,
+          # inv_scale_action followed by PDEEPoseController's rot_lower=-2pi
+          # makes the controller receive -encoded.
+          controller_euler = -encoded
+          actual = rotation_conversions.euler_angles_to_matrix(
+              controller_euler, "XYZ"
+          )
+          expected = rotation_conversions.quaternion_to_matrix(desired_q)
+
+          relative = actual.transpose(-1, -2) @ expected
+          trace = relative.diagonal(dim1=-2, dim2=-1).sum(-1)
+          cos_theta = ((trace - 1.0) / 2.0).clamp(-1.0, 1.0)
+          errors_deg = torch.rad2deg(torch.acos(cos_theta))
+          normalized_norm = torch.linalg.norm(
+              encoded / (2.0 * math.pi), dim=-1
+          )
+
+          # Explicitly probe near the XYZ Tait-Bryan singular surface too.
+          eps = 1e-5
+          near_gimbal = torch.tensor(
+              [
+                  [0.7, math.pi / 2 - eps, -0.9],
+                  [-1.2, math.pi / 2 - eps, 1.1],
+                  [0.4, -math.pi / 2 + eps, 1.3],
+                  [-0.8, -math.pi / 2 + eps, -1.0],
+              ],
+              dtype=torch.float64,
+          )
+          gimbal_matrix = rotation_conversions.euler_angles_to_matrix(
+              near_gimbal, "XYZ"
+          )
+          gimbal_q = rotation_conversions.matrix_to_quaternion(gimbal_matrix)
+          gimbal_input = rotation_conversions.quaternion_invert(gimbal_q)
+          gimbal_encoded = torch.from_numpy(
+              inverse_delta_to_pd_ee_euler(gimbal_input.numpy())
+          )
+          gimbal_actual = rotation_conversions.euler_angles_to_matrix(
+              -gimbal_encoded, "XYZ"
+          )
+          gimbal_rel = gimbal_actual.transpose(-1, -2) @ gimbal_matrix
+          gimbal_trace = gimbal_rel.diagonal(dim1=-2, dim2=-1).sum(-1)
+          gimbal_cos = ((gimbal_trace - 1.0) / 2.0).clamp(-1.0, 1.0)
+          gimbal_errors_deg = torch.rad2deg(torch.acos(gimbal_cos))
+
+          report = {
+              "pr_head": os.environ["PR_HEAD"],
+              "seed": 1495,
+              "samples": n,
+              "max_roundtrip_error_deg": float(errors_deg.max()),
+              "p999_roundtrip_error_deg": float(
+                  torch.quantile(errors_deg, 0.999)
+              ),
+              "near_gimbal_max_error_deg": float(gimbal_errors_deg.max()),
+              "max_normalized_rotation_norm": float(normalized_norm.max()),
+              "claim_boundary": (
+                  "representation round-trip stress test; not a policy "
+                  "training-success claim"
+              ),
+          }
+          print(json.dumps(report, indent=2, sort_keys=True))
+          with open("/tmp/maniskill-pr1495-sweep.json", "w") as f:
+              json.dump(report, f, indent=2, sort_keys=True)
+
+          assert report["max_roundtrip_error_deg"] < 1e-4
+          assert report["near_gimbal_max_error_deg"] < 1e-3
+          assert report["max_normalized_rotation_norm"] < 1.0
+          PY
+
       - name: Upload geometry evidence
         uses: actions/upload-artifact@v4
         with:
           name: maniskill-pr1495-geometry
-          path: /tmp/maniskill-pr1495-geometry.json
+          path: |
+            /tmp/maniskill-pr1495-geometry.json
+            /tmp/maniskill-pr1495-sweep.json
           if-no-files-found: error
       - name: Publish PR-head commit status
         env:
@@ -126,7 +221,7 @@ jobs:
               {
                   "state": "success",
                   "target_url": os.environ["RUN_URL"],
-                  "description": "rotation regression + SO(3) witness passed",
+                  "description": "rotation regression + 50k SO(3) sweep passed",
                   "context": "fork/geometry-validation",
               }
           ).encode()
