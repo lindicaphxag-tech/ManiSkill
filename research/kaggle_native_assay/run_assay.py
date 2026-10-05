@@ -12,7 +12,7 @@ WORK = Path("/kaggle/working")
 REPO = WORK / "ManiSkill"
 GITHUB_REPO = "https://github.com/lindicaphxag-tech/ManiSkill.git"
 BRANCH = "research/native-delta-pose-assay"
-COMMIT = "ffa576c51a09c6c8fe0430773ea8cd0ac858a6bb"
+COMMIT = "06f6224a428916050c24fe090ca190a384988a09"
 started = time.time()
 log = {
     "assay": "native-pickcube-multiaxis-delta-pose",
