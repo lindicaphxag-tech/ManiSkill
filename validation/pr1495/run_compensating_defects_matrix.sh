@@ -82,6 +82,8 @@ COMP_SRC="$ROOT/src-composed"
 rm -rf "$COMP_SRC"
 git clone --filter=blob:none https://github.com/mani-skill/ManiSkill.git "$COMP_SRC"
 git -C "$COMP_SRC" checkout --detach "$MAIN_SHA"
+git -C "$COMP_SRC" config user.email "validation@semrepair.local"
+git -C "$COMP_SRC" config user.name "SemRepair validation"
 git -C "$COMP_SRC" remote add controller https://github.com/VihaanAgarwal/ManiSkill.git
 git -C "$COMP_SRC" fetch controller "$CONTROLLER_SHA"
 git -C "$COMP_SRC" cherry-pick "$CONTROLLER_SHA"
