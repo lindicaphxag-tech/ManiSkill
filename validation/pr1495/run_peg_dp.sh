@@ -9,7 +9,24 @@ NUM_DEMOS="${NUM_DEMOS:-100}"
 TOTAL_ITERS="${TOTAL_ITERS:-100000}"
 WANDB_PROJECT="${WANDB_PROJECT:-maniskill-pr1495-peg-dp}"
 WANDB_ENTITY="${WANDB_ENTITY:-}"
+TRACK_MODE="${TRACK_MODE:-auto}"
 WORK_ROOT="${WORK_ROOT:-$PWD/.validation-pr1495}"
+
+case "$TRACK_MODE" in
+  auto)
+    if [[ -n "${WANDB_API_KEY:-}" ]]; then
+      TRACK_MODE="wandb"
+    else
+      TRACK_MODE="tensorboard"
+    fi
+    ;;
+  wandb|tensorboard)
+    ;;
+  *)
+    echo "TRACK_MODE must be auto, wandb, or tensorboard" >&2
+    exit 2
+    ;;
+esac
 
 BASE_SHA="62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3"
 FIX_SHA="cdd6db713ffe7edc3e0df3abfab51ea5320c1c0b"
@@ -117,6 +134,8 @@ print(json.dumps({
     "control_mode": "pd_ee_delta_pose",
     "sim_backend": "physx_cpu",
     "max_episode_steps": 300,
+    "tracking_mode": "$TRACK_MODE",
+    "wandb_project": "$WANDB_PROJECT" if "$TRACK_MODE" == "wandb" else None,
     "raw_demo_sha256": file_sha256("$RAW_VARIANT"),
     "converted_demo_sha256": file_sha256("$DEMO"),
     "raw_episode_count": len(raw_meta.get("episodes", [])),
@@ -143,8 +162,6 @@ CMD=(
   --seed "$SEED"
   --exp-name "$RUN_NAME"
   --demo_type motionplanning
-  --track
-  --wandb-project-name "$WANDB_PROJECT"
 )
 if [[ -n "$WANDB_ENTITY" ]]; then
   CMD+=(--wandb-entity "$WANDB_ENTITY")
