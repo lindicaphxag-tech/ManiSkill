@@ -23,7 +23,9 @@ jobs:
           python-version: "3.12"
 
       - name: Check shell syntax
-        run: bash -n validation/pr1495/run_peg_dp.sh
+        run: |
+          bash -n validation/pr1495/run_peg_dp.sh
+          bash -n validation/pr1495/hf_job_entrypoint.sh
 
       - name: Compile evidence summarizer
         run: python -m py_compile validation/pr1495/summarize_tensorboard.py
@@ -51,6 +53,8 @@ jobs:
           }
           for key, value in required.items():
               assert value in text, f"missing frozen {key}: {value}"
+          entrypoint = Path("validation/pr1495/hf_job_entrypoint.sh").read_text()
+          assert "7e3ee79fd50979c15bd9d234d4a120d04e05a7e3" in entrypoint
           summary = Path("validation/pr1495/summarize_tensorboard.py").read_text()
           assert '"series"' in summary
           assert '"available_scalar_tags"' in summary
