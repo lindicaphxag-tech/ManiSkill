@@ -44,8 +44,40 @@ try:
     if commit != COMMIT:
         raise RuntimeError(f"Checked out {commit}, expected frozen commit {COMMIT}")
     log["commit"] = commit
-    run([sys.executable, "-m", "pip", "install", "-e", str(REPO)])
-    run([sys.executable, "-m", "pip", "install", "pin", "pytest"])
+    # ManiSkill's Linux extra pins mplib==0.1.1, which has no Python 3.13
+    # distribution. This PickCube controller path does not use motion planning.
+    # Install the project without dependency resolution, then install every
+    # declared runtime dependency except that unrelated motion-planning package.
+    run([sys.executable, "-m", "pip", "install", "--no-deps", "-e", str(REPO)])
+    run(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "numpy>=1.22",
+            "scipy",
+            "dacite",
+            "gymnasium>=0.29.1",
+            "h5py",
+            "pyyaml",
+            "tqdm",
+            "GitPython",
+            "tabulate",
+            "transforms3d",
+            "trimesh",
+            "imageio[ffmpeg]",
+            "IPython",
+            "pytorch_kinematics==0.7.6",
+            "defusedxml",
+            "nvidia-ml-py",
+            "tyro>=0.8.5",
+            "huggingface_hub",
+            "sapien>=3.0.3",
+            "pin",
+            "pytest",
+        ]
+    )
 
     import torch
 
