@@ -29,3 +29,7 @@ The native controller clips each Euler axis to `[-0.1, 0.1]` rad per step. The l
 ## Scope and evidence limits
 
 This is one deterministic, native PickCube controller assay on one software stack and one GPU-rendering configuration. It does not test pick success, policy learning, multiple robots, hardware transfer, GPU physics, seed variance, or statistical significance. The T4 accelerates rendering; the dynamics simulation is not claimed to run on GPU. The result supports a narrowly scoped controller-space conversion regression only. It does not establish upstream adoption, maintainer acceptance, merge, or an L8/L9 research gate.
+
+## Public rerun (v10)
+
+Kernel version 10 is public and completed successfully: <https://www.kaggle.com/code/oblivicore/maniskill-native-delta-pose-assay>. The run emitted the same orientation measurements as v9 on the frozen test source commit. See [esults/v10/](results/v10/) for the raw JSON outputs. The repeated run confirms execution reproducibility for this one deterministic setup; it is not independent seed replication or statistical validation. v9 and v10 report Tesla T4 hardware and GPU rendering, while PhysX remains CPU-based.
