@@ -72,6 +72,7 @@ def test_native_pickcube_controller_reduces_multiaxis_delta_rotation_error():
         obs_mode="state",
         control_mode="pd_ee_delta_pose",
         sim_backend="physx_cpu",
+        render_backend=None,
         render_mode=None,
         robot_init_qpos_noise=0.0,
     )
