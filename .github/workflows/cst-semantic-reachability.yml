@@ -1,0 +1,31 @@
+name: Validate CST semantic reachability
+
+on:
+  push:
+    branches:
+      - "validation/cst-semantic-reachability"
+    paths:
+      - "cst_validation/**"
+      - ".github/workflows/cst-semantic-reachability.yml"
+  workflow_dispatch:
+
+jobs:
+  semantic-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install minimal dependencies
+        run: python -m pip install "numpy>=1.24" "pytest>=8"
+      - name: Compile public CST mirror
+        run: |
+          python -m py_compile cst_validation/cst/core.py
+          python -m py_compile cst_validation/cst/reachability.py
+      - name: Run semantic transport and reachability tests
+        env:
+          PYTHONPATH: cst_validation
+        run: |
+          pytest -q             cst_validation/tests/test_core.py             cst_validation/tests/test_reachability.py
