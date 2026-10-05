@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "experiment": "ManiSkill PegInsertionSide Diffusion Policy 2x2 semantic-factorial",
+  "claim_boundary": "validation-only evidence for upstream issues/PRs; not external adoption or prospective I2",
+  "upstream_base": "62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3",
+  "variants": {
+    "A_old_old": {
+      "sha": "62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3",
+      "converter": "#1495 absent",
+      "controller": "#1472 absent"
+    },
+    "B_old_pr1472": {
+      "sha": "a231074ef562a9638e24c3f9a4d35bb70d4960d1",
+      "converter": "#1495 absent",
+      "controller": "#1472 present"
+    },
+    "C_pr1495_old": {
+      "sha": "cdd6db713ffe7edc3e0df3abfab51ea5320c1c0b",
+      "converter": "#1495 present",
+      "controller": "#1472 absent"
+    },
+    "D_pr1495_pr1472": {
+      "sha": "24dcccba3d0aeae56b6fba1f5168e22cc340ab71",
+      "converter": "#1495 present",
+      "controller": "#1472 present"
+    }
+  },
+  "raw_demo": "PegInsertionSide-v1/motionplanning/trajectory.h5",
+  "replay": {
+    "command_semantics": "use-first-env-state; target control pd_ee_delta_pose; obs state; save trajectory; 10 envs; physx_cpu",
+    "rule": "Each variant MUST replay/convert the same raw trajectory independently. Reusing one preconverted state/action H5 across variants invalidates the factorial because #1495 acts in conversion.py."
+  },
+  "official_training": {
+    "algorithm": "ManiSkill examples/baselines/diffusion_policy/train.py",
+    "env_id": "PegInsertionSide-v1",
+    "control_mode": "pd_ee_delta_pose",
+    "sim_backend": "physx_cpu",
+    "num_demos": 100,
+    "max_episode_steps": 300,
+    "total_iters": 100000,
+    "eval_freq": 5000,
+    "num_eval_episodes": 100,
+    "seeds": [
+      1,
+      2,
+      3
+    ],
+    "note": "Start with seed 1 across all four cells. Only expand to seeds 2/3 after the complete four-cell seed-1 run succeeds."
+  },
+  "fail_closed_gates": [
+    "all four code worktrees exactly match frozen SHAs",
+    "each variant independently regenerates the converted dataset from the same raw demonstration",
+    "converted companion JSON exists and episode counts match across all four variants",
+    "official profile requires at least 100 converted episodes in every variant",
+    "same training hyperparameters and seed within each four-cell block",
+    "do not interpret smoke/pilot runs as final policy-performance evidence"
+  ],
+  "primary_metrics": [
+    "conversion/replay episode count and failure rate",
+    "eval success_once",
+    "eval success_at_end",
+    "training loss curve",
+    "rotation/trajectory diagnostic",
+    "wall-clock and environment manifest"
+  ]
+}
