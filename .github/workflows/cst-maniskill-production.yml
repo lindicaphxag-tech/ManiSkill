@@ -20,6 +20,13 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
+      - name: Install software Vulkan
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mesa-vulkan-drivers vulkan-tools
+          test -f /usr/share/vulkan/icd.d/lvp_icd.x86_64.json
+          echo "VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json" >> "$GITHUB_ENV"
+          VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json vulkaninfo --summary
       - name: Install ManiSkill
         run: |
           python -m pip install --upgrade pip
