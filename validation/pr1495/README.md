@@ -29,6 +29,24 @@ The core training settings are copied from ManiSkill's own
 `examples/baselines/diffusion_policy/baselines.sh`. They are not tuned from
 the outcome of this comparison.
 
+### Causal hygiene: variant-private demo conversion
+
+The raw official motion-planning trajectory is copied into a directory named by
+`VARIANT + TARGET_SHA`, then replayed/conversion-generated **unconditionally**
+under that exact source revision. Baseline and fixed runs therefore cannot reuse
+the same derived `pd_ee_delta_pose` trajectory even when executed sequentially
+on one machine.
+
+Each manifest records:
+
+- SHA-256 of the common raw trajectory copy;
+- SHA-256 of the variant-derived trajectory;
+- raw and converted episode counts;
+- exact source SHA and GPU identity.
+
+This prevents a subtle false-null failure mode in which the fixed run would
+silently train on a trajectory converted by the baseline implementation.
+
 ## Online-GPU execution
 
 The runner is designed for an ephemeral cloud notebook/VM such as Kaggle or
