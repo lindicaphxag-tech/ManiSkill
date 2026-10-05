@@ -1,0 +1,45 @@
+name: PR1495 maintainer-request validation smoke
+
+on:
+  push:
+    branches:
+      - "validation/maniskill1495-maintainer-request"
+    paths:
+      - "validation/pr1495/**"
+      - ".github/workflows/maniskill1495-validation-smoke.yml"
+  pull_request:
+    paths:
+      - "validation/pr1495/**"
+      - ".github/workflows/maniskill1495-validation-smoke.yml"
+
+jobs:
+  protocol-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check shell syntax
+        run: bash -n validation/pr1495/run_peg_dp.sh
+
+      - name: Compile evidence summarizer
+        run: python -m py_compile validation/pr1495/summarize_tensorboard.py
+
+      - name: Verify frozen comparison identities
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path("validation/pr1495/run_peg_dp.sh").read_text()
+          required = {
+              "baseline": "62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3",
+              "fixed": "cdd6db713ffe7edc3e0df3abfab51ea5320c1c0b",
+              "env": "PegInsertionSide-v1",
+              "control": "pd_ee_delta_pose",
+              "iters": "100000",
+          }
+          for key, value in required.items():
+              assert value in text, f"missing frozen {key}: {value}"
+          PY
