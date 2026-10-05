@@ -1,0 +1,32 @@
+name: Audit official multi-task CST reachability
+
+on:
+  push:
+    branches:
+      - "validation/cst-semantic-reachability"
+    paths:
+      - "cst_validation/audit_official_multitask_reachability.py"
+      - "cst_validation/OFFICIAL_MULTITASK_REACHABILITY_PROTOCOL_V0.md"
+      - ".github/workflows/cst-official-multitask-reachability.yml"
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install audit dependencies
+        run: python -m pip install numpy h5py
+      - name: Run frozen multi-task official-data audit
+        run: python cst_validation/audit_official_multitask_reachability.py
+      - name: Upload frozen summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: cst-official-multitask-reachability-v0
+          path: /tmp/cst_official_multitask_reachability_v0.json
+          if-no-files-found: error
+          retention-days: 90
