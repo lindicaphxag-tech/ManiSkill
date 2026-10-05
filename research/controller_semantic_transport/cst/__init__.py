@@ -21,6 +21,9 @@ __all__ = [
     "TransportKind",
     "classify_transport",
     "joint_position_semantic_type",
+    "TraceTransportCertificate",
+    "TraceTransportStep",
+    "solve_counterfactual_trace_transport",
 ]
 
 from .semantic_types import (
@@ -29,4 +32,10 @@ from .semantic_types import (
     TransportKind,
     classify_transport,
     joint_position_semantic_type,
+)
+
+from .trace_transport import (
+    TraceTransportCertificate,
+    TraceTransportStep,
+    solve_counterfactual_trace_transport,
 )
