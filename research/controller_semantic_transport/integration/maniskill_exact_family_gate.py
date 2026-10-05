@@ -27,6 +27,7 @@ def run(seed: int = 20261006, samples: int = 64) -> dict:
         control_mode="pd_joint_delta_pos",
         sim_backend="cpu",
         render_mode=None,
+        render_backend="none",
     )
     try:
         env.reset(seed=seed)
