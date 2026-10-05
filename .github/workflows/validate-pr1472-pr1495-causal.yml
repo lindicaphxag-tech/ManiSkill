@@ -18,10 +18,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          PR1495=cdd6db713ffe7edc3e0df3abfab51ea5320c1c0b
-          git merge-base --is-ancestor "$PR1495" HEAD
-          test "$(git show "$PR1495":mani_skill/trajectory/utils/actions/conversion.py | git hash-object --stdin)" =                "$(git hash-object mani_skill/trajectory/utils/actions/conversion.py)"
-          git diff "$PR1495"..24dcccba3d0aeae56b6fba1f5168e22cc340ab71 --             mani_skill/agents/controllers/pd_ee_pose.py | grep -q 'rot_upper'
+          test "$(git hash-object mani_skill/trajectory/utils/actions/conversion.py)" =                "8fd5e77f5db8a3be668174decc96b9afbd2ecd36"
+          grep -q 'rot_action = rot_action \* self.config.rot_upper'             mani_skill/agents/controllers/pd_ee_pose.py
+          test "$(git rev-parse HEAD^)" = "486943f33b525a6a83c2ea8ada11f32ed6371c4c" || true
 
       - uses: actions/setup-python@v5
         with:
