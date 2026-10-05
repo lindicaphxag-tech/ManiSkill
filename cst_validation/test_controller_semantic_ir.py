@@ -60,6 +60,8 @@ def test_compiler_exposes_current_vs_target_hidden_state_difference():
     assert cert.algebraically_representable
     assert not cert.bounded_representable
     assert cert.native_margin[0] < 0
+    np.testing.assert_allclose(cert.bounded_target_action, [-1.0], atol=1e-8)
+    assert cert.bounded_residual_norm > 0.14
 
 
 def test_rank_deficient_target_reports_unrepresentable_goal():
@@ -201,3 +203,48 @@ def test_random_full_rank_affine_compiler_reconstructs_exact_goals():
             atol=1e-9,
             rtol=1e-9,
         )
+
+
+def test_nullspace_shift_recovers_bounded_exact_solution():
+    source = AffineControllerIR(
+        U=np.array([[1.0]]), X=np.zeros((1, 0)), Z=np.zeros((1, 0)),
+        b=np.zeros(1), native_low=np.array([-2.0]), native_high=np.array([2.0]),
+    )
+    target = AffineControllerIR(
+        U=np.array([[1.0, 1.0]]), X=np.zeros((1, 0)), Z=np.zeros((1, 0)),
+        b=np.zeros(1), native_low=np.array([0.9, -1.0]), native_high=np.array([1.0, 1.0]),
+    )
+    cert = compile_affine_transport(
+        source=source, target=target, source_action=np.array([1.2]),
+        source_state=np.empty(0), source_hidden=np.empty(0),
+        target_state=np.empty(0), target_hidden=np.empty(0),
+    )
+    np.testing.assert_allclose(cert.target_action, [0.6, 0.6], atol=1e-12)
+    assert cert.native_margin[0] < 0
+    assert cert.algebraically_representable
+    assert cert.bounded_representable
+    assert cert.bounded_solver_success
+    assert cert.bounded_residual_norm < 1e-9
+    assert cert.bounded_target_action[0] >= 0.9 - 1e-9
+    np.testing.assert_allclose(target.U @ cert.bounded_target_action, cert.source_goal, atol=1e-9)
+
+
+def test_algebraically_exact_but_bounded_impossible_returns_best_approximation():
+    source = AffineControllerIR(
+        U=np.array([[1.0]]), X=np.zeros((1, 0)), Z=np.zeros((1, 0)),
+        b=np.zeros(1), native_low=np.array([-2.0]), native_high=np.array([2.0]),
+    )
+    target = AffineControllerIR(
+        U=np.array([[1.0, 1.0]]), X=np.zeros((1, 0)), Z=np.zeros((1, 0)),
+        b=np.zeros(1), native_low=np.array([0.0, 0.0]), native_high=np.array([0.4, 0.4]),
+    )
+    cert = compile_affine_transport(
+        source=source, target=target, source_action=np.array([1.0]),
+        source_state=np.empty(0), source_hidden=np.empty(0),
+        target_state=np.empty(0), target_hidden=np.empty(0),
+    )
+    assert cert.algebraically_representable
+    assert not cert.bounded_representable
+    assert cert.bounded_solver_success
+    np.testing.assert_allclose(cert.bounded_target_action, [0.4, 0.4], atol=1e-7)
+    np.testing.assert_allclose(cert.bounded_residual_norm, 0.2, atol=1e-7)
