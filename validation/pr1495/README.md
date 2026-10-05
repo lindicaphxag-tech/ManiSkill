@@ -64,6 +64,21 @@ VARIANT=fixed    SEED=1 bash validation/pr1495/run_peg_dp.sh
 If seed 1 shows a material divergence, repeat with `SEED=2` and `SEED=3`.
 Do not change hyperparameters between variants.
 
+### Durable curve capture
+
+The experiment does not require a W&B credential to remain useful.
+
+- `TRACK_MODE=auto` uses W&B when `WANDB_API_KEY` is present and otherwise
+  falls back to local TensorBoard;
+- `summary.json` stores the **full scalar series** (step, value, wall time) for
+  both success metrics, total loss, and learning rate;
+- the runner prints both `manifest.json` and `summary.json` at the end, so an
+  ephemeral cloud job still leaves a recoverable curve in its immutable job
+  log even if its local filesystem is destroyed.
+
+This preserves the maintainer-requested training curves without making a
+third-party experiment tracker part of the causal comparison.
+
 ## Evidence boundary
 
 A single-seed curve can satisfy the maintainer's requested reproduction, but it
