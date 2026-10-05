@@ -44,9 +44,39 @@ python -m pip install -e "$SRC/examples/baselines/diffusion_policy"
 python -m mani_skill.utils.download_demo "PegInsertionSide-v1"
 
 RAW="$HOME/.maniskill/demos/PegInsertionSide-v1/motionplanning/trajectory.h5"
-DEMO="$HOME/.maniskill/demos/PegInsertionSide-v1/motionplanning/trajectory.state.pd_ee_delta_pose.physx_cpu.h5"
-if [[ ! -f "$DEMO" ]]; then
-  python -m mani_skill.trajectory.replay_trajectory     --traj-path "$RAW"     --use-first-env-state     -c pd_ee_delta_pose     -o state     --save-traj     --num-envs 10     -b physx_cpu
+RAW_JSON="${RAW%.h5}.json"
+if [[ ! -f "$RAW" || ! -f "$RAW_JSON" ]]; then
+  echo "downloaded raw PegInsertionSide trajectory or metadata is missing" >&2
+  exit 1
+fi
+
+# Never let baseline/fixed share a derived trajectory. replay_trajectory writes
+# converted files beside its input, so a shared ~/.maniskill path can silently
+# make the second variant reuse the first variant's conversion. Copy the same
+# raw source into a variant-private directory, then regenerate unconditionally.
+DEMO_ROOT="$WORK_ROOT/demos/$VARIANT-$TARGET_SHA"
+mkdir -p "$DEMO_ROOT"
+RAW_VARIANT="$DEMO_ROOT/trajectory.h5"
+RAW_VARIANT_JSON="$DEMO_ROOT/trajectory.json"
+cp "$RAW" "$RAW_VARIANT"
+cp "$RAW_JSON" "$RAW_VARIANT_JSON"
+
+DEMO="$DEMO_ROOT/trajectory.state.pd_ee_delta_pose.physx_cpu.h5"
+DEMO_JSON="${DEMO%.h5}.json"
+rm -f "$DEMO" "$DEMO_JSON"
+
+python -m mani_skill.trajectory.replay_trajectory \
+  --traj-path "$RAW_VARIANT" \
+  --use-first-env-state \
+  -c pd_ee_delta_pose \
+  -o state \
+  --save-traj \
+  --num-envs 10 \
+  -b physx_cpu
+
+if [[ ! -f "$DEMO" || ! -f "$DEMO_JSON" ]]; then
+  echo "variant-private replay did not produce expected converted trajectory" >&2
+  exit 1
 fi
 
 RUN_NAME="pr1495-${VARIANT}-PegInsertionSide-v1-state-${NUM_DEMOS}d-seed${SEED}"
@@ -60,6 +90,20 @@ def cmd(*args):
         return subprocess.check_output(args, text=True).strip()
     except Exception:
         return None
+from hashlib import sha256
+
+def file_sha256(path):
+    h = sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+with open("$RAW_VARIANT_JSON", "r", encoding="utf-8") as handle:
+    raw_meta = json.load(handle)
+with open("$DEMO_JSON", "r", encoding="utf-8") as handle:
+    converted_meta = json.load(handle)
+
 print(json.dumps({
     "schema_version": 1,
     "variant": "$VARIANT",
@@ -73,6 +117,11 @@ print(json.dumps({
     "control_mode": "pd_ee_delta_pose",
     "sim_backend": "physx_cpu",
     "max_episode_steps": 300,
+    "raw_demo_sha256": file_sha256("$RAW_VARIANT"),
+    "converted_demo_sha256": file_sha256("$DEMO"),
+    "raw_episode_count": len(raw_meta.get("episodes", [])),
+    "converted_episode_count": len(converted_meta.get("episodes", [])),
+    "demo_derivation": "variant-private-unconditional-replay",
     "python": sys.version,
     "platform": platform.platform(),
     "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
@@ -107,3 +156,7 @@ cp -a "runs/$RUN_NAME" "$OUT/run"
 python "$SCRIPT_DIR/summarize_tensorboard.py"   "$OUT/run"   --output "$OUT/summary.json"
 
 echo "Evidence written to $OUT"
+echo "----- manifest.json -----"
+cat "$OUT/manifest.json"
+echo "----- summary.json -----"
+cat "$OUT/summary.json"
