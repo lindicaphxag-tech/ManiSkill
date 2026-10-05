@@ -104,6 +104,6 @@ fi
 "${CMD[@]}"
 
 cp -a "runs/$RUN_NAME" "$OUT/run"
-python "$OLDPWD/validation/pr1495/summarize_tensorboard.py"   "$OUT/run"   --output "$OUT/summary.json"
+python "$SCRIPT_DIR/summarize_tensorboard.py"   "$OUT/run"   --output "$OUT/summary.json"
 
 echo "Evidence written to $OUT"
