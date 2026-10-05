@@ -12,5 +12,8 @@
 | C8 | The same abstraction transfers to robomimic / robosuite. | Unproven; robomimic #270 is a candidate second stack. |
 | C9 | Cross-family joint / Cartesian / velocity transport can be certified. | Not claimed in v0. |
 | C10 | CST has maintained external adoption. | False currently. |
+| C11 | CT-CST can compile cross-family actions by matching exact-state physical traces. | Synthetic implementation only; public simulator evidence pending. |
+| C12 | CT-CST certificate rejects ill-conditioned or saturated target mappings even when optimization residual is low. | Implemented in synthetic tests; public false-accept rate unknown. |
+| C13 | CT-CST acceptance predicts held-out trajectory or task preservation. | Unproven. |
 
-C6-C10 must not be promoted in a paper or profile until external evidence exists.
+C6-C13 must not be promoted in a paper or profile beyond their stated evidence level.
