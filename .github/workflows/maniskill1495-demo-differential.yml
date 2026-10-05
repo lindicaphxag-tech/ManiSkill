@@ -34,12 +34,15 @@ jobs:
       - name: Install headless simulation prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1 libegl1
+          sudo apt-get install -y libgl1 libegl1 mesa-vulkan-drivers vulkan-tools
+          test -f /usr/share/vulkan/icd.d/lvp_icd.x86_64.json
+          VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json vulkaninfo --summary
 
       - name: Run paired official-demo conversion differential
         env:
           COUNT: ${{ inputs.count || '10' }}
           MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+          VK_ICD_FILENAMES: /usr/share/vulkan/icd.d/lvp_icd.x86_64.json
         run: |
           bash validation/pr1495/run_demo_rotation_diff.sh
 
