@@ -1,0 +1,51 @@
+name: SemRepair semantic observability public validation
+
+on:
+  push:
+    branches:
+      - validation/semrepair-observability-mincut
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.12", "3.13"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install dependency-light test tools
+        run: python -m pip install pytest ruff
+
+      - name: Verify mirrored source blob identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/semantic_invariants/embodied_semantic_transport.py)" = "76c31116e168db761514efd269db36372706ba9d"
+          test "$(git hash-object research/semantic_invariants/embodied_semantic_instrumentation.py)" = "d79f903abd9fdce614a949b6375e1126759d04bc"
+          test "$(git hash-object research/semantic_invariants/tests/test_embodied_semantic_instrumentation.py)" = "bfc9c2d86a25fa92616065b3c8ad6cdc1ed99553"
+
+      - name: Lint exact mirrored source
+        run: |
+          ruff check \
+            research/semantic_invariants/embodied_semantic_transport.py \
+            research/semantic_invariants/embodied_semantic_instrumentation.py \
+            research/semantic_invariants/tests/test_embodied_semantic_instrumentation.py
+          ruff format --check \
+            research/semantic_invariants/embodied_semantic_transport.py \
+            research/semantic_invariants/embodied_semantic_instrumentation.py \
+            research/semantic_invariants/tests/test_embodied_semantic_instrumentation.py
+
+      - name: Run exact mirrored semantic instrumentation tests
+        run: |
+          python -m pytest -q \
+            research/semantic_invariants/tests/test_embodied_semantic_instrumentation.py
