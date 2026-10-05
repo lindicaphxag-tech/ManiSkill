@@ -249,6 +249,7 @@ def assert_training_gate(results: dict[str, dict], profile: str) -> None:
 
 
 def train_variant(
+    repo: Path,
     root: Path,
     name: str,
     sha: str,
@@ -259,7 +260,7 @@ def train_variant(
 ) -> dict:
     cfg = PROFILES[profile]
     worktree = root / "code" / name
-    ensure_worktree(Path.cwd(), worktree, sha)
+    ensure_worktree(repo, worktree, sha)
     baseline = worktree / "examples" / "baselines" / "diffusion_policy"
     dataset = Path(replay["converted_h5"]).resolve()
     run_name = f"semrepair-factorial-{profile}-{name}-seed{seed}"
@@ -280,21 +281,21 @@ def train_variant(
             "physx_cpu",
             "--num-demos",
             str(cfg["num_demos"]),
-            "--max-episode-steps",
+            "--max_episode_steps",
             "300",
-            "--total-iters",
+            "--total_iters",
             str(cfg["total_iters"]),
-            "--eval-freq",
+            "--eval_freq",
             str(cfg["eval_freq"]),
-            "--num-eval-episodes",
+            "--num_eval_episodes",
             str(cfg["num_eval_episodes"]),
-            "--num-eval-envs",
+            "--num_eval_envs",
             str(cfg["num_eval_envs"]),
             "--seed",
             str(seed),
             "--exp-name",
             run_name,
-            "--demo-type",
+            "--demo_type",
             "motionplanning",
         ],
         cwd=baseline,
@@ -359,6 +360,7 @@ def main() -> int:
     if args.phase in ("train", "all"):
         for name, sha in VARIANTS.items():
             train_variant(
+                repo,
                 root,
                 name,
                 sha,
