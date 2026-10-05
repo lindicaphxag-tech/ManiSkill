@@ -44,6 +44,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--n-common", type=int, default=100)
+    parser.add_argument("--attempted-prefix", type=int, default=150)
     args = parser.parse_args()
 
     conditions = ["00", "10", "01", "11"]
@@ -60,7 +61,7 @@ def main():
     selected = [ep for ep in baseline_order if ep in common][: args.n_common]
 
     report = {
-        "attempted_prefix": 150,
+        "attempted_prefix": args.attempted_prefix,
         "requested_common": args.n_common,
         "saved_counts": {c: len(sets[c]) for c in conditions},
         "common_count": len(common),
