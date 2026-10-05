@@ -1,0 +1,145 @@
+name: Validate PR1495 with PR1472 dependency
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/validate-pr1495-with-pr1472.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: validation/pr1495-with-pr1472
+
+      - name: Resolve source identities
+        id: ids
+        run: |
+          echo "integration_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "pr1495_sha=cdd6db713ffe7edc3e0df3abfab51ea5320c1c0b" >> "$GITHUB_OUTPUT"
+          git log --oneline -2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install focused ManiSkill environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+
+      - name: Run PR1495 focused regressions
+        run: python -m pytest -q tests/test_action_conversion.py
+
+      - name: Validate converter to controller scaling composition
+        run: |
+          python - <<'PY'
+          import json
+          import math
+          from types import SimpleNamespace
+
+          import numpy as np
+          import sapien
+          import torch
+
+          from mani_skill.agents.controllers import PDEEPoseController
+          from mani_skill.trajectory.utils.actions.conversion import delta_pose_to_pd_ee_delta
+          from mani_skill.utils.geometry import rotation_conversions
+
+          controller = object.__new__(PDEEPoseController)
+          controller.config = SimpleNamespace(
+              use_delta=True,
+              normalize_action=True,
+              rot_lower=-2 * math.pi,
+              rot_upper=2 * math.pi,
+          )
+          controller.action_space_low = torch.tensor(
+              [-0.1] * 3 + [-2 * math.pi] * 3, dtype=torch.float64
+          )
+          controller.action_space_high = torch.tensor(
+              [0.1] * 3 + [2 * math.pi] * 3, dtype=torch.float64
+          )
+
+          rng = np.random.default_rng(14951472)
+          errors = []
+          samples = 2000
+          for _ in range(samples):
+              # Stay away from the exact XYZ singularity; near-gimbal behavior is
+              # covered separately by the exact-head #1495 representation gate.
+              euler = torch.tensor(
+                  [
+                      rng.uniform(-1.2, 1.2),
+                      rng.uniform(-1.35, 1.35),
+                      rng.uniform(-1.2, 1.2),
+                  ],
+                  dtype=torch.float64,
+              )
+              expected = rotation_conversions.euler_angles_to_matrix(euler, "XYZ")
+              desired_q = rotation_conversions.matrix_to_quaternion(expected)
+              inverse_delta = rotation_conversions.quaternion_invert(desired_q)
+
+              delta_pose = sapien.Pose(
+                  np.zeros(3, dtype=np.float64),
+                  inverse_delta.numpy(),
+              )
+              normalized = delta_pose_to_pd_ee_delta(controller, delta_pose)
+              normalized_t = torch.from_numpy(normalized).to(torch.float64).unsqueeze(0)
+              physical = controller._clip_and_scale_action(normalized_t)[0, 3:]
+              actual = rotation_conversions.euler_angles_to_matrix(physical, "XYZ")
+              rel = actual.transpose(-1, -2) @ expected
+              cos_theta = ((torch.trace(rel) - 1.0) / 2.0).clamp(-1.0, 1.0)
+              errors.append(math.degrees(float(torch.acos(cos_theta))))
+
+          report = {
+              "pr1495_head": "cdd6db713ffe7edc3e0df3abfab51ea5320c1c0b",
+              "pr1472_overlay": "rot_action *= rot_upper",
+              "samples": samples,
+              "max_end_to_end_rotation_error_deg": max(errors),
+              "p999_end_to_end_rotation_error_deg": float(np.quantile(errors, 0.999)),
+              "claim_boundary": (
+                  "validation-only composition of upstream PR1495 converter semantics "
+                  "with the one-line PR1472 controller sign fix; not part of either upstream diff"
+              ),
+          }
+          print(json.dumps(report, indent=2, sort_keys=True))
+          assert report["max_end_to_end_rotation_error_deg"] < 1e-4
+          PY
+
+      - name: Publish dependency-integration status on PR1495 head
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_HEAD: cdd6db713ffe7edc3e0df3abfab51ea5320c1c0b
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          url = f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/statuses/{os.environ['PR_HEAD']}"
+          payload = json.dumps({
+              "state": "success",
+              "target_url": os.environ["RUN_URL"],
+              "description": "PR1495 composes with PR1472 sign fix end-to-end",
+              "context": "fork/pr1495+1472-integration",
+          }).encode()
+          request = urllib.request.Request(
+              url, data=payload, method="POST",
+              headers={
+                  "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
+                  "Accept": "application/vnd.github+json",
+                  "X-GitHub-Api-Version": "2022-11-28",
+                  "Content-Type": "application/json",
+              },
+          )
+          with urllib.request.urlopen(request) as response:
+              print(response.read().decode())
+          PY
