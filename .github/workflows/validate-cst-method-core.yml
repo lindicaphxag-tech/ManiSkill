@@ -1,0 +1,28 @@
+name: Validate CST method core
+
+on:
+  push:
+    branches:
+      - "fix/joint-delta-to-joint-pos-semantics"
+    paths:
+      - ".github/workflows/validate-cst-method-core.yml"
+  workflow_dispatch:
+
+jobs:
+  cst:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: lindicaphxag-tech/lindicaphxag-tech
+          ref: 8e1e25125733da1d5844d73a7be080d98de37027
+          path: cst-repo
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install numpy pytest
+      - name: Compile CST
+        run: python -m py_compile cst-repo/research/action_transport/controller_semantic_transport.py
+      - name: Run CST semantic and property tests
+        run: python -m pytest -vv cst-repo/research/action_transport/test_controller_semantic_transport.py
