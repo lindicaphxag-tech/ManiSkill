@@ -1,0 +1,53 @@
+name: Validate official-base joint conversion
+
+on:
+  push:
+    branches:
+      - "fix/joint-delta-to-pos-upstream-clean"
+    paths:
+      - "mani_skill/trajectory/utils/actions/conversion.py"
+      - "tests/test_action_conversion_joint_semantics.py"
+      - "tests/test_pd_joint_delta_to_pos_regression.py"
+      - ".github/workflows/validate-official-base-joint-conversion.yml"
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install focused dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Preserve regression outside worktree
+        run: cp tests/test_pd_joint_delta_to_pos_regression.py /tmp/test_pd_joint_delta_to_pos_regression.py
+      - name: Confirm official ManiSkill base fails
+        shell: bash
+        run: |
+          OFFICIAL_SHA="62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3"
+          git checkout --detach "$OFFICIAL_SHA"
+          set +e
+          python -m pytest -q /tmp/test_pd_joint_delta_to_pos_regression.py
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo "Expected official base to fail, but it passed."
+            exit 1
+          fi
+          echo "OFFICIAL_BASE_FAIL_CONFIRMED=1" >> "$GITHUB_ENV"
+          git checkout --detach "$GITHUB_SHA"
+      - name: Confirm clean patch passes
+        run: |
+          python -m py_compile mani_skill/trajectory/utils/actions/conversion.py
+          python -m pytest -q             tests/test_action_conversion_joint_semantics.py             tests/test_pd_joint_delta_to_pos_regression.py
+      - name: Record evidence contract
+        run: |
+          test "$OFFICIAL_BASE_FAIL_CONFIRMED" = "1"
+          echo "official-base-fail / clean-patch-pass complete"
