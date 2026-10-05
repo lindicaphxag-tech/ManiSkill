@@ -12,6 +12,8 @@ jobs:
   pickcube-cpu:
     runs-on: ubuntu-22.04
     timeout-minutes: 30
+    env:
+      VK_ICD_FILENAMES: /usr/share/vulkan/icd.d/lvp_icd.x86_64.json
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -20,6 +22,12 @@ jobs:
           cache: pip
       - name: Install CPU PyTorch
         run: python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Install software Vulkan device
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mesa-vulkan-drivers vulkan-tools
+          test -f "$VK_ICD_FILENAMES"
+          vulkaninfo --summary
       - name: Install ManiSkill and test dependencies
         run: python -m pip install -e . pytest
       - name: Run unit and native controller regressions
