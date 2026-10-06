@@ -20,7 +20,8 @@ The local effect Jacobian is estimated by least squares:
 
 An identified map is accepted only when:
 
-- the probe design is numerically well-conditioned;
+- the probe design has full column rank over the action space;
+- the full-rank probe design is numerically well-conditioned;
 - an independent held-out set of action directions is predicted with low residual.
 
 This is deliberately parallel to CASJ's held-out intervention gate. A low training residual alone is not enough.
@@ -39,3 +40,5 @@ No claim is made that every task has a stable low-dimensional effect representat
 ## Kill criterion
 
 If effect maps require privileged simulator state, fail held-out locality, or add no predictive value over a simpler shared descriptor, the cross-embodiment extension is removed from the main method.
+
+A finite condition number on the observed singular values is not sufficient when the number of independent probe directions is smaller than the action dimension. Such an underdetermined design can fit training and held-out directions inside the same subspace perfectly while leaving an entire action direction unidentified. The executable certificate therefore requires full action-column rank before a local effect map can be treated as identified.
