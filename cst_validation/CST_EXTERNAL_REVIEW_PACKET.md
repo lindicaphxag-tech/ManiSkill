@@ -78,6 +78,11 @@ boundary.
 
 ### LeRobot differential witness
 
+LeRobot's 0.7.0 community roadmap explicitly lists **ARCH-05 — Refactor
+relative actions** as an unassigned community/high-impact item.  The witness
+below is scoped as a correctness question inside that existing roadmap area,
+not as a request for a parallel framework.
+
 Pinned LeRobot PI0.5 proprioceptive-memory metadata orders history offsets from
 oldest to current, ending in delta 0.  The shared relative-action helper
 currently collapses a rank-3 state tensor with `state[:, 0]`, while PI0.5's
