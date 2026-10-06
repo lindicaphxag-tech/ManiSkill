@@ -49,7 +49,9 @@ accept a PR.
 
 CST's second-stack prototype derives the inverse from current robosuite OSC
 controller semantics, including scaling, SO(3), desired-goal memory,
-saturation, and action remainder.
+saturation, action remainder, and legacy/current runtime controller layouts.
+A staged upstream-style `robosuite_add_delta_actions.py` candidate now mirrors
+the existing robomimic delta->absolute script.
 
 ## Implemented method stack
 
@@ -101,7 +103,7 @@ saturation, and action remainder.
 
 Latest public run:
 
-`59 passed in 1.30s`
+`75 passed in 3.20s`
 
 ### ManiSkill contract matrix
 
@@ -185,7 +187,7 @@ Checkout branch:
 Then:
 
 ```
-python -m pip install numpy pytest
+python -m pip install numpy scipy pytest
 cd cst_research
 python -m pytest -q test_*.py
 ```
