@@ -49,18 +49,20 @@ matched false-accept rate.
 **Falsifier:** dense/coded fixed-budget probing uses no more policy evaluations
 or yields materially safer decisions.
 
-## C5 — higher local model order is conditional, not automatic
+## C5 — higher local model order — falsified for the flagship
 
-**Claim under test:** a richer response jet is admitted only if it predicts a
-held-out finer-scale response after first-order locality fails.
+The richer response-jet extension was prospectively tested on five frozen
+states.
 
-**Frozen five-state promotion rule:**
+Result:
 
-- 0 jet rescues → drop jet from flagship;
-- 1–2 rescues → secondary mechanism only;
-- >=3 rescues → broader prospective test.
+- jet upgrades: **0/5**;
+- jet rescues: **0/5**;
+- frozen decision: `DROP_JET_FROM_FLAGSHIP`.
 
-**Falsifier:** held-out jet prediction fails the frozen gate.
+This extension is therefore **not a flagship claim**. It remains a negative
+model-order result showing that extra local polynomial complexity should not be
+introduced without held-out physical evidence.
 
 ## C6 — external validation
 
