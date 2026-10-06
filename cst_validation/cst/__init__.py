@@ -40,6 +40,12 @@ __all__ = [
     "SequenceStateRequirement",
     "reconstruct_joint_goal_trace",
     "sequence_state_requirement",
+    "JointTransportProof",
+    "JointTransportVerification",
+    "emit_exact_joint_transport_proof",
+    "joint_chart_digest",
+    "joint_context_digest",
+    "verify_exact_joint_transport_proof",
 ]
 
 from .compiler import (
@@ -63,4 +69,13 @@ from .provenance import (
     SequenceStateRequirement,
     reconstruct_joint_goal_trace,
     sequence_state_requirement,
+)
+
+from .proof import (
+    JointTransportProof,
+    JointTransportVerification,
+    emit_exact_joint_transport_proof,
+    joint_chart_digest,
+    joint_context_digest,
+    verify_exact_joint_transport_proof,
 )
