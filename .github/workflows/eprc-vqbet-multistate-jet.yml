@@ -1,0 +1,98 @@
+name: EPRC Prospective VQ-BeT Jet Gate
+
+on:
+  pull_request:
+    paths:
+      - "research/eprc/directional_jet.py"
+      - "research/eprc/multistate_jet_adjudicator.py"
+      - "research/eprc/PROSPECTIVE_MULTISTATE_JET_GATE.md"
+      - "research/eprc/real_policy/vqbet_pusht_probe.py"
+      - ".github/workflows/eprc-vqbet-multistate-jet.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eprc-vqbet-multistate-jet-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        seed: [101, 211, 307, 401, 503]
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install frozen LeRobot PushT runtime
+        run: |
+          git clone -q https://github.com/huggingface/lerobot.git /tmp/lerobot
+          git -C /tmp/lerobot checkout -q 3c0a209f9fac4d2a57617e686a7f2a2309144ba2
+          sed -i 's/^pyav = ">=12.0.5"/av = ">=12.0.5"/' /tmp/lerobot/pyproject.toml
+          grep -q '^av = ">=12.0.5"' /tmp/lerobot/pyproject.toml
+          python -m pip install -q -e '/tmp/lerobot[pusht]'
+          python -m pip install -q --force-reinstall --no-deps 'pymunk==6.11.1'
+          python -c 'import pymunk; assert hasattr(pymunk.Space, "add_collision_handler")'
+      - name: Run frozen prospective state
+        run: |
+          mkdir -p /tmp/eprc-jet
+          python research/eprc/real_policy/vqbet_pusht_probe.py \
+            --locality-refinement \
+            --reset-seed ${{ matrix.seed }} \
+            --output /tmp/eprc-jet/seed_${{ matrix.seed }}.json
+      - name: Validate held-out jet protocol
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          seed=int(os.environ["STATE_SEED"])
+          p=Path(f"/tmp/eprc-jet/seed_{seed}.json")
+          d=json.loads(p.read_text())
+          assert d["environment_reset_seed"] == seed
+          r=d["locality_refinement"]
+          assert r["status"] == "executed_prospective_protocol"
+          j=r["response_jet_diagnostic"]
+          assert j["fit_scales"] == [0.5, 0.25]
+          assert j["held_out_scale"] == 0.125
+          assert j["required_improvement_ratio"] == 0.5
+          assert j["max_relative_jet_error"] == 0.25
+          assert isinstance(j["supports_model_order_upgrade"], bool)
+          print(seed, r["routing_decision"], j["improvement_ratio"], j["supports_model_order_upgrade"])
+          PY
+        env:
+          STATE_SEED: ${{ matrix.seed }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eprc-vqbet-jet-seed-${{ matrix.seed }}
+          path: /tmp/eprc-jet/seed_${{ matrix.seed }}.json
+          if-no-files-found: error
+          retention-days: 30
+
+  adjudicate:
+    needs: probe
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: eprc-vqbet-jet-seed-*
+          path: /tmp/eprc-jet-results
+          merge-multiple: true
+      - name: Apply frozen promotion rule
+        run: |
+          python research/eprc/multistate_jet_adjudicator.py \
+            /tmp/eprc-jet-results \
+            --output /tmp/eprc-jet-results/adjudication.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eprc-vqbet-jet-adjudication
+          path: /tmp/eprc-jet-results/adjudication.json
+          retention-days: 30
