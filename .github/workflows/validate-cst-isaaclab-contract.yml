@@ -1,0 +1,37 @@
+name: Validate CST external IsaacLab contract
+
+on:
+  push:
+    branches:
+      - "fix/joint-delta-to-joint-pos-semantics"
+    paths:
+      - "cst_validation/external_contract_audit.py"
+      - "cst_validation/test_external_contract_audit.py"
+      - ".github/workflows/validate-cst-isaaclab-contract.yml"
+  workflow_dispatch:
+
+jobs:
+  isaaclab-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install pytest
+      - name: Test the source-contract auditor
+        run: PYTHONPATH=. python -m pytest -q cst_validation/test_external_contract_audit.py
+      - name: Checkout pinned current IsaacLab
+        uses: actions/checkout@v4
+        with:
+          repository: isaac-sim/IsaacLab
+          ref: 95235d2f02c93187fc488de51458f4b62d5a456a
+          path: external/IsaacLab
+      - name: Audit current external action semantics
+        run: |
+          mkdir -p cst_validation/results
+          PYTHONPATH=. python cst_validation/external_contract_audit.py             external/IsaacLab             --commit 95235d2f02c93187fc488de51458f4b62d5a456a             --output cst_validation/results/isaaclab_task_space_clip_contract.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cst-isaaclab-contract-evidence
+          path: cst_validation/results/isaaclab_task_space_clip_contract.json
