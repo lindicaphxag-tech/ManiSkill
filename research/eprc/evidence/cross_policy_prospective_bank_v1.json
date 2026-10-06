@@ -1,0 +1,96 @@
+{
+  "schema": "eprc-cross-policy-prospective-bank-v1",
+  "frozen_before_diffusion_outcome": true,
+  "policies": [
+    {
+      "model_id": "lerobot/vqbet_pusht",
+      "revision": "390e5e4c079c880b22e873dad53ecfac706bc78a"
+    },
+    {
+      "model_id": "lerobot/diffusion_pusht",
+      "revision": "d3d143b0342488252497853815b27ce3c0384c6b"
+    }
+  ],
+  "lerobot_commit": "3c0a209f9fac4d2a57617e686a7f2a2309144ba2",
+  "support": {
+    "coordinates": [
+      "block_x_px",
+      "block_y_px",
+      "block_theta_rad"
+    ],
+    "scale": [
+      16,
+      16,
+      0.08
+    ],
+    "probe_epsilon": 0.125,
+    "physical_probe": [
+      2,
+      2,
+      0.01
+    ]
+  },
+  "environment_reset_seeds": [
+    17,
+    29,
+    43,
+    59,
+    71,
+    89,
+    101,
+    131,
+    151,
+    181
+  ],
+  "heldout_disturbances": [
+    {
+      "id": "A",
+      "physical_delta": [
+        4,
+        -2,
+        0.02
+      ]
+    },
+    {
+      "id": "B",
+      "physical_delta": [
+        -5,
+        3,
+        -0.025
+      ]
+    }
+  ],
+  "paired_policy_randomness_seeds": [
+    123,
+    456,
+    789
+  ],
+  "primary_gate": {
+    "n_pairs": 20,
+    "target": "fresh held-out first-action physical-response relative distance",
+    "metric": "Spearman correlation between pairwise DEC distance and held-out response distance",
+    "min_dec_spearman": 0.5,
+    "required_margin_over_best_frozen_baseline": 0.1,
+    "baselines": [
+      "raw_action_jacobian_distance",
+      "support_set_distance",
+      "static_metadata_distance",
+      "coarse_contract_class_distance"
+    ]
+  },
+  "secondary_gate": {
+    "target": "CRG runtime-decision agreement",
+    "min_pairs": 20,
+    "min_dec_auc": 0.7,
+    "required_auc_margin": 0.05,
+    "apply_only_if": "both agreement and disagreement labels occur"
+  },
+  "no_posthoc": [
+    "environment seeds",
+    "heldout disturbance bank",
+    "policy revisions",
+    "probe scale",
+    "randomness seeds",
+    "gate thresholds"
+  ]
+}
