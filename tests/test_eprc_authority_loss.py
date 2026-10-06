@@ -1,5 +1,7 @@
 import numpy as np
 
+from research.eprc.contract_signature import signature_distance
+
 from research.eprc.authority_loss import (
     SaturatingController,
     authority_aware_equivalence,
@@ -67,7 +69,7 @@ def test_same_raw_action_support_jacobian_can_have_different_physical_contract_a
     assert cert_interior.local_rank == 3
     assert cert_sat.local_rank == 2
     assert not np.allclose(phys_interior, phys_sat)
-    assert sig_interior.rank != sig_sat.rank
+    assert signature_distance(sig_interior, sig_sat) > 0.1
 
 
 def test_equivalent_interior_reparameterizations_pass():
