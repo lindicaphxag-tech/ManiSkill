@@ -97,22 +97,22 @@ def _pd_ee_rotation_gains(controller: PDEEPoseController) -> torch.Tensor:
 def _normalized_pd_ee_rotation_action(
     controller: PDEEPoseController, desired_euler: np.ndarray
 ) -> tuple[np.ndarray, bool]:
-    """Invert the controller rotation contract inside its feasible unit ball.
+    """Invert the controller rotation contract without stealing clipping authority.
 
-    Returns the normalized rotation action and whether the requested Euler
-    delta had to be radially saturated. Saturation is explicit so callers and
-    tests cannot silently mistake an infeasible one-step request for an exact
-    semantic inverse.
+    The trajectory-conversion caller intentionally detects rotation actions with
+    norm greater than one, clips them, and performs additional residual-control
+    steps. Returning an already-clipped action here would hide that signal and
+    prematurely terminate the caller's correction loop.
+
+    Returns the *unclipped* normalized action together with whether one-step
+    execution is outside the controller's normalized unit ball.
     """
     gains = _pd_ee_rotation_gains(controller)
     desired = torch.as_tensor(
         desired_euler, dtype=gains.dtype, device=gains.device
     )
     normalized = desired / gains
-    norm = torch.linalg.norm(normalized)
-    saturated = bool((norm > 1).item())
-    if saturated:
-        normalized = normalized / norm
+    saturated = bool((torch.linalg.norm(normalized) > 1).item())
     return normalized.cpu().numpy(), saturated
 
 
