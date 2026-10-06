@@ -24,9 +24,14 @@ from research.eprc.contract_signature import contract_signature, signature_dista
 from research.eprc.dec_uncertainty import estimate_dec_uncertainty
 from research.eprc.linear_authority import LinearActionAuthority
 from research.eprc.robust_repairability import (
+    RobustRepairDecision,
     empirical_operator_envelope,
     robust_repair_certificate,
     robust_support_radius_linear_authority,
+)
+from research.eprc.robust_repairability_witness import (
+    build_robust_separation_witness,
+    verify_robust_separation_witness,
 )
 from research.eprc.real_policy.pusht_exact_state import (
     STATE_RESTORE_PROTOCOL,
@@ -229,6 +234,38 @@ def main(output: Path) -> int:
         candidate_probes=candidate_probe_bank,
         max_additional_probes=6,
     )
+    robust_witness_payload = None
+    if robust_cert.decision is RobustRepairDecision.CERTIFIED_IMPOSSIBLE:
+        robust_normal = heldout_first_action_response - robust_cert.nominal_physical_repair
+        robust_witness = build_robust_separation_witness(
+            robust_center,
+            heldout_first_action_response,
+            certified_radius=robust_radius.certified_radius,
+            epsilon_g=robust_envelope.epsilon_g,
+            residual_tolerance=ROBUST_ACTION_RESIDUAL_TOLERANCE,
+            normal=robust_normal,
+        )
+        robust_witness_verified = verify_robust_separation_witness(
+            robust_center,
+            heldout_first_action_response,
+            certified_radius=robust_radius.certified_radius,
+            epsilon_g=robust_envelope.epsilon_g,
+            witness=robust_witness,
+        )
+        if not robust_witness_verified:
+            raise RuntimeError("robust CRG impossibility decision lacks a valid dual witness")
+        robust_witness_payload = {
+            "verified": True,
+            "normal": robust_witness.normal.tolist(),
+            "target_projection": float(robust_witness.target_projection),
+            "nominal_support": float(robust_witness.nominal_support),
+            "uncertainty_support": float(robust_witness.uncertainty_support),
+            "robust_support": float(robust_witness.robust_support),
+            "distance_lower_bound": float(robust_witness.distance_lower_bound),
+            "residual_tolerance": float(robust_witness.residual_tolerance),
+            "margin_over_tolerance": float(robust_witness.margin_over_tolerance),
+        }
+
     uncertainty = estimate_dec_uncertainty(
         flat_replicates, min_replicates=5, max_q95_radius=0.15
     )
@@ -309,6 +346,7 @@ def main(output: Path) -> int:
                 "robust_best_case_lower", robust_cert.best_case_residual_lower
             ),
             "reason": robust_cert.reason,
+            "proof_carrying_impossibility_witness": robust_witness_payload,
             "evidence_scope": "empirical observed-max RNG envelope; not a formal confidence interval",
         },
         "active_minimal_certificate": {
