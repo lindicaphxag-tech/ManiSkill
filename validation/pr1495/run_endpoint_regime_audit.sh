@@ -13,6 +13,7 @@ rm -rf "$ROOT"
 mkdir -p "$ROOT"
 
 python -m pip install --upgrade pip
+python -m pip install -e .
 (
   cd /tmp
   python -m mani_skill.utils.download_demo "PegInsertionSide-v1"
