@@ -1,0 +1,79 @@
+name: EPRC LeRobot Plugin Compatibility
+
+on:
+  pull_request:
+    paths:
+      - "research/eprc/lerobot_plugin/**"
+      - ".github/workflows/eprc-lerobot-4592.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: eprc-lerobot-4592-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  upstream-plugin-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install source-anchored LeRobot PR 4592
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "git+https://github.com/huggingface/lerobot.git@a37961cb098cf3d0cb9fc18603e7922b09b4e311"
+
+      - name: Build and install EPRC processor plugin
+        run: |
+          python -m pip install ./research/eprc/lerobot_plugin
+
+      - name: Verify automatic discovery against exact upstream head
+        run: |
+          python - <<'PY'
+          from lerobot.processor import ProcessorStepRegistry
+          from lerobot.utils.import_utils import register_third_party_plugins
+
+          register_third_party_plugins()
+          cls = ProcessorStepRegistry.get("eprc_contract_gate")
+          assert cls.__name__ == "EPRCContractGateStep"
+          print("discovered:", cls)
+          PY
+
+      - name: Verify fail-closed EPRC contract behavior
+        run: |
+          python - <<'PY'
+          import lerobot_processor_eprc
+          from lerobot.lerobot_types import TransitionKey
+          from lerobot.processor import ProcessorStepRegistry
+
+          step_cls = ProcessorStepRegistry.get("eprc_contract_gate")
+          step = step_cls(fail_closed=False)
+
+          transition = {
+              TransitionKey.COMPLEMENTARY_DATA: {
+                  "eprc_provenance": ["policy=compat-smoke", "controller=test"],
+                  "eprc_evidence": {
+                      "semantics_known": False,
+                      "provenance_valid": True,
+                      "representability_margin": 1.0,
+                      "canonical_command_error": 1.0,
+                      "exact_transport_available": False,
+                      "support_stability": 1.0,
+                      "held_out_residual": 0.0,
+                      "transverse_norm": 0.0,
+                      "certified_repair_radius": 1.0,
+                      "contract_class": "DIRECT",
+                      "support_ids": [],
+                  },
+              }
+          }
+          out = step(transition)
+          cert = out[TransitionKey.COMPLEMENTARY_DATA]["eprc_certificate"]
+          assert cert["decision"] == "REJECT"
+          assert cert["reason"] == "action semantics are unresolved"
+          print(cert)
+          PY
