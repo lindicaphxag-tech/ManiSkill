@@ -7,6 +7,7 @@ VARIANT="${VARIANT:-}"
 SEED="${SEED:-1}"
 NUM_DEMOS="${NUM_DEMOS:-100}"
 REPLAY_COUNT="${REPLAY_COUNT:-$NUM_DEMOS}"
+ALLOW_FAILURE="${ALLOW_FAILURE:-0}"
 TOTAL_ITERS="${TOTAL_ITERS:-100000}"
 NUM_EVAL_ENVS="${NUM_EVAL_ENVS:-10}"
 NUM_EVAL_EPISODES="${NUM_EVAL_EPISODES:-100}"
@@ -104,15 +105,21 @@ DEMO="$DEMO_ROOT/trajectory.state.pd_ee_delta_pose.physx_cpu.h5"
 DEMO_JSON="${DEMO%.h5}.json"
 rm -f "$DEMO" "$DEMO_JSON"
 
-python -m mani_skill.trajectory.replay_trajectory \
-  --traj-path "$RAW_VARIANT" \
-  --use-first-env-state \
-  -c pd_ee_delta_pose \
-  -o state \
-  --save-traj \
-  --count "$REPLAY_COUNT" \
-  --num-envs 1 \
+REPLAY_CMD=(
+  python -m mani_skill.trajectory.replay_trajectory
+  --traj-path "$RAW_VARIANT"
+  --use-first-env-state
+  -c pd_ee_delta_pose
+  -o state
+  --save-traj
+  --count "$REPLAY_COUNT"
+  --num-envs 1
   -b physx_cpu
+)
+if [[ "$ALLOW_FAILURE" == "1" ]]; then
+  REPLAY_CMD+=(--allow-failure)
+fi
+"${REPLAY_CMD[@]}"
 
 if [[ ! -f "$DEMO" || ! -f "$DEMO_JSON" ]]; then
   echo "variant-private replay did not produce expected converted trajectory" >&2
@@ -178,6 +185,7 @@ print(json.dumps({
     "seed": int("$SEED"),
     "num_demos": int("$NUM_DEMOS"),
     "replay_count": int("$REPLAY_COUNT"),
+    "allow_failure_for_dataset_generation": bool(int("$ALLOW_FAILURE")),
     "total_iters": int("$TOTAL_ITERS"),
     "num_eval_envs": int("$NUM_EVAL_ENVS"),
     "num_eval_episodes": int("$NUM_EVAL_EPISODES"),
