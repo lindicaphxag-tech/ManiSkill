@@ -141,3 +141,41 @@ def test_nonrepresentable_transport_cannot_emit_exact_proof():
             source_context=JointControllerContext(),
             target_context=JointControllerContext(q_current=np.array([0.0])),
         )
+
+
+def test_latched_reference_is_bound_into_proof_identity():
+    source = JointGoalChart(
+        mode="relative_latched",
+        normalized=True,
+        lower=-0.1,
+        upper=0.1,
+    )
+    target = _absolute()
+    sx = JointControllerContext(q_latched=np.array([0.2, -0.3]))
+    proof = emit_exact_joint_transport_proof(
+        source_chart=source,
+        target_chart=target,
+        source_action=np.array([0.5, -0.5]),
+        source_context=sx,
+        target_context=JointControllerContext(),
+    )
+    verdict = verify_exact_joint_transport_proof(
+        proof,
+        source_chart=source,
+        target_chart=target,
+        source_context=sx,
+        target_context=JointControllerContext(),
+    )
+    assert verdict.valid
+
+    stale = verify_exact_joint_transport_proof(
+        proof,
+        source_chart=source,
+        target_chart=target,
+        source_context=JointControllerContext(
+            q_latched=np.array([0.21, -0.3])
+        ),
+        target_context=JointControllerContext(),
+    )
+    assert not stale.valid
+    assert not stale.identity_match
