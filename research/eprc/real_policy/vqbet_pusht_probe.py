@@ -30,6 +30,7 @@ from research.eprc.active_minimal_certificate import plan_minimal_certificate_pr
 from research.eprc.certificate_directed_probing import ProbeInformation
 from research.eprc.contract_signature import contract_signature, signature_distance
 from research.eprc.dec_uncertainty import estimate_dec_uncertainty
+from research.eprc.directional_jet import evaluate_directional_jet_prediction
 from research.eprc.evidence_action_router import route_inconclusive_certificate
 from research.eprc.linear_authority import LinearActionAuthority
 from research.eprc.locality_uncertainty import empirical_locality_envelope
@@ -76,7 +77,12 @@ def _finite(name: str, value: float) -> float:
     return value
 
 
-def main(output: Path, *, locality_refinement: bool = False) -> int:
+def main(
+    output: Path,
+    *,
+    locality_refinement: bool = False,
+    reset_seed: int = 17,
+) -> int:
     device = torch.device("cpu")
     policy = VQBeTPolicy.from_pretrained(
         MODEL_ID,
@@ -97,7 +103,7 @@ def main(output: Path, *, locality_refinement: bool = False) -> int:
         observation_width=96,
         observation_height=96,
     )
-    env.reset(seed=17)
+    env.reset(seed=int(reset_seed))
     base_snapshot = capture_snapshot(env)
 
     def render_snapshot(snapshot: PushTSnapshot):
@@ -321,6 +327,17 @@ def main(output: Path, *, locality_refinement: bool = False) -> int:
             quantile=1.0,
         )
 
+        response_jet = evaluate_directional_jet_prediction(
+            coarse_map=coarse_first_action_normalized_support_map,
+            fine_map=original_fine_center,
+            finer_map=refinement.refined_center,
+            coarse_radius=COARSE_EPSILON,
+            fine_radius=FINE_EPSILON,
+            finer_radius=FINEST_EPSILON,
+            required_improvement_ratio=0.5,
+            max_relative_jet_error=0.25,
+        )
+
         refined_cert_payload = None
         if refinement.contracting:
             refined_radius = robust_support_radius_linear_authority(
@@ -412,6 +429,27 @@ def main(output: Path, *, locality_refinement: bool = False) -> int:
                 else "REJECT_FIRST_ORDER_LOCAL_MODEL"
             ),
             "reason": refinement.reason,
+            "response_jet_diagnostic": {
+                "fit_scales": [COARSE_EPSILON, FINE_EPSILON],
+                "held_out_scale": FINEST_EPSILON,
+                "required_improvement_ratio": 0.5,
+                "max_relative_jet_error": 0.25,
+                "first_order_prediction_error": float(
+                    response_jet.first_order_prediction_error
+                ),
+                "jet_prediction_error": float(
+                    response_jet.jet_prediction_error
+                ),
+                "improvement_ratio": float(response_jet.improvement_ratio),
+                "relative_jet_error": float(response_jet.relative_jet_error),
+                "supports_model_order_upgrade": bool(
+                    response_jet.supports_model_order_upgrade
+                ),
+                "claim_boundary": (
+                    "finer scale held out from jet fitting; this diagnostic does "
+                    "not itself authorize runtime repair"
+                ),
+            },
             "refined_robust_crg": refined_cert_payload,
         }
     robust_witness_payload = None
@@ -478,7 +516,7 @@ def main(output: Path, *, locality_refinement: bool = False) -> int:
         "device": "cpu",
         "protocol_id": PROTOCOL_ID,
         "state_restore_protocol": STATE_RESTORE_PROTOCOL,
-        "environment_reset_seed": 17,
+        "environment_reset_seed": int(reset_seed),
         "base_snapshot": {
             "agent_position": base_snapshot.agent_position.tolist(),
             "agent_velocity": base_snapshot.agent_velocity.tolist(),
@@ -619,7 +657,17 @@ if __name__ == "__main__":
         action="store_true",
         help="execute the pre-registered 0.25-vs-0.125 matched-query locality gate",
     )
+    parser.add_argument(
+        "--reset-seed",
+        type=int,
+        default=17,
+        help="PushT reset seed; default preserves the frozen seed-17 witness",
+    )
     args = parser.parse_args()
     raise SystemExit(
-        main(args.output, locality_refinement=args.locality_refinement)
+        main(
+            args.output,
+            locality_refinement=args.locality_refinement,
+            reset_seed=args.reset_seed,
+        )
     )
