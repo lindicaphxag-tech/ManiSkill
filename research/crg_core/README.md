@@ -85,3 +85,14 @@ unobserved small-scale limit when multiple robust contraction ratios support it.
 
 This is deliberately fail-closed: more same-scale samples are not allowed to
 turn a stable but nonlocal Jacobian into false confidence.
+
+## Proof-carrying repairability
+
+CRG outcomes can be checked without trusting the solver that produced them.
+
+- A CERTIFIED_REPAIR carries a primal support-space witness xi. The verifier checks the certified radius and recomputes ||G_hat xi - d|| + epsilon_G ||xi|| <= tolerance.
+- A CERTIFIED_IMPOSSIBLE result carries a unit separation normal n. The verifier recomputes the robust support bound r (||G_hat^T n|| + epsilon_G) and checks that the separation margin exceeds the residual tolerance.
+
+The verifier never reruns the repair optimizer. Forged residual or margin fields are rejected because all scalar claims are recomputed from the frozen map, target, radius, uncertainty, and witness vector.
+
+The convex support inequalities are standard. The research question is whether intervention-identified repairability sets are stable and useful enough that these small proof objects predict real recoverability and non-recoverability.
