@@ -72,6 +72,17 @@ def sequence_state_requirement(chart: JointGoalChart) -> SequenceStateRequiremen
                 "all later target references at command semantics"
             ),
         )
+    if chart.mode == "relative_latched":
+        return SequenceStateRequirement(
+            status="identifiable",
+            required_initial_state=("q_latched",),
+            required_per_step_state=(),
+            recursively_reconstructible=(),
+            reason=(
+                "all actions in one chunk share the state latched at prediction "
+                "time; the latch is required once per chunk and does not accumulate"
+            ),
+        )
     raise ValueError(f"unsupported chart mode: {chart.mode}")
 
 
@@ -152,12 +163,35 @@ def reconstruct_joint_goal_trace(
                 JointControllerContext(q_target=reference),
             )
             goals.append(goal)
-            # Under delta-target semantics the decoded goal becomes the next
-            # controller target reference.
             reference = goal
         return ReconstructedGoalTrace(
             semantic_goals=np.stack(goals, axis=0),
             reference_trace=np.stack(refs, axis=0),
+            requirement=requirement,
+        )
+
+    if chart.mode == "relative_latched":
+        if context.q_latched is None:
+            raise ValueError(
+                "lossless relative_latched decoding requires q_latched for the chunk"
+            )
+        reference = np.asarray(context.q_latched, dtype=float)
+        if reference.shape != (native.shape[1],) or not np.all(np.isfinite(reference)):
+            raise ValueError("q_latched must be finite with shape [D]")
+        refs = np.repeat(reference[None, :], len(native), axis=0)
+        goals = np.stack(
+            [
+                chart.decode(
+                    action,
+                    JointControllerContext(q_latched=reference),
+                )
+                for action in native
+            ],
+            axis=0,
+        )
+        return ReconstructedGoalTrace(
+            semantic_goals=goals,
+            reference_trace=refs,
             requirement=requirement,
         )
 
