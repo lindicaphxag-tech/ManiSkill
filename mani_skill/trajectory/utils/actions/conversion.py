@@ -5,7 +5,6 @@ import numpy as np
 import sapien
 import torch
 from tqdm.auto import tqdm
-from transforms3d.quaternions import quat2axangle
 
 from mani_skill.agents.controllers import (
     PDEEPosController,
@@ -49,13 +48,143 @@ def qpos_to_pd_joint_vel(controller: PDJointVelController, qpos):
     return gym_utils.inv_scale_action(qvel, low, high)
 
 
-def compact_axis_angle_from_quaternion(quat: np.ndarray) -> np.ndarray:
-    theta, omega = quat2axangle(quat)
-    # - 2 * np.pi to make the angle symmetrical around 0
-    if omega > np.pi:
-        omega = omega - 2 * np.pi
-    return omega * theta
+def euler_xyz_from_quaternion(quat: np.ndarray) -> np.ndarray:
+    """Convert a quaternion to the XYZ Euler convention used by PDEEPoseController."""
+    quat = torch.as_tensor(quat)
+    matrix = rotation_conversions.quaternion_to_matrix(quat)
+    return rotation_conversions.matrix_to_euler_angles(matrix, "XYZ").cpu().numpy()
 
+
+def inverse_delta_to_pd_ee_euler(quat: np.ndarray) -> np.ndarray:
+    """Convert the converter's inverse relative quaternion to desired XYZ Euler."""
+    quat = torch.as_tensor(quat)
+    desired_delta = rotation_conversions.quaternion_invert(quat)
+    return euler_xyz_from_quaternion(desired_delta.numpy())
+
+
+def _pd_ee_rotation_gains(controller: PDEEPoseController) -> torch.Tensor:
+    """Probe the controller's actual normalized rotation mapping."""
+    if not isinstance(controller, PDEEPoseController):
+        raise TypeError("rotation conversion requires PDEEPoseController")
+
+    dtype = controller.action_space_low.dtype
+    device = controller.action_space_low.device
+    probe = torch.zeros((3, 6), dtype=dtype, device=device)
+    probe[:, 3:] = torch.eye(3, dtype=dtype, device=device)
+    scaled_rotation = controller._clip_and_scale_action(probe)[:, 3:]
+
+    gains = torch.diagonal(scaled_rotation)
+    off_diagonal = scaled_rotation - torch.diag(gains)
+    if not torch.allclose(
+        off_diagonal,
+        torch.zeros_like(off_diagonal),
+        atol=1e-7,
+        rtol=0.0,
+    ):
+        raise RuntimeError("PDEEPoseController rotation mapping is not axis-separable")
+    if torch.any(torch.abs(gains) <= torch.finfo(dtype).eps):
+        raise RuntimeError("PDEEPoseController rotation mapping has zero gain")
+    return gains
+
+
+def _normalized_pd_ee_rotation_action(
+    controller: PDEEPoseController, desired_euler: np.ndarray
+) -> np.ndarray:
+    """Invert the controller mapping when the target is directly reachable."""
+    gains = _pd_ee_rotation_gains(controller)
+    desired = torch.as_tensor(
+        desired_euler, dtype=gains.dtype, device=gains.device
+    )
+    return (desired / gains).cpu().numpy()
+
+
+def _bounded_pd_ee_rotation_action(
+    controller: PDEEPoseController,
+    desired_quaternion: np.ndarray,
+) -> np.ndarray:
+    """Compile a desired rotation into the controller's bounded action ball.
+
+    Reachable targets use the exact analytic inverse. Out-of-bound targets solve
+    the three-dimensional constrained problem
+
+        min 3 - trace(R(a)^T R_desired),  subject to ||a||_2 <= 1.
+
+    The objective is monotone in SO(3) geodesic angle. SLSQP starts from the
+    existing Euler-radial clip and the compiler *only* accepts the optimized
+    candidate when it is feasible and strictly no worse than that baseline.
+    Optimization failure therefore degrades to existing behavior, not to an
+    unverified action.
+    """
+    from scipy.optimize import minimize
+
+    gains = _pd_ee_rotation_gains(controller)
+    dtype = gains.dtype
+    device = gains.device
+
+    desired_q = torch.as_tensor(
+        desired_quaternion, dtype=dtype, device=device
+    )
+    desired_q = desired_q / torch.linalg.norm(desired_q)
+    desired_matrix = rotation_conversions.quaternion_to_matrix(desired_q)
+    desired_euler = rotation_conversions.matrix_to_euler_angles(
+        desired_matrix, "XYZ"
+    )
+    exact = desired_euler / gains
+
+    exact_norm = torch.linalg.norm(exact)
+    if exact_norm <= 1.0 + 1e-7:
+        return exact.cpu().numpy()
+
+    radial = (exact / exact_norm).detach()
+    gains64 = gains.detach().to(dtype=torch.float64)
+    desired64 = desired_matrix.detach().to(dtype=torch.float64)
+
+    def objective_and_grad(action_np):
+        action = torch.tensor(
+            action_np,
+            dtype=torch.float64,
+            device=device,
+            requires_grad=True,
+        )
+        realized = rotation_conversions.euler_angles_to_matrix(
+            action * gains64, "XYZ"
+        )
+        loss = 3.0 - torch.trace(
+            realized.transpose(-1, -2) @ desired64
+        )
+        (grad,) = torch.autograd.grad(loss, action)
+        return float(loss.detach().cpu()), grad.detach().cpu().numpy()
+
+    radial_np = radial.cpu().numpy().astype(np.float64, copy=True)
+    baseline_loss, _ = objective_and_grad(radial_np)
+
+    result = minimize(
+        objective_and_grad,
+        radial_np,
+        method="SLSQP",
+        jac=True,
+        bounds=[(-1.0, 1.0)] * 3,
+        constraints={
+            "type": "ineq",
+            "fun": lambda action: 1.0 - float(np.dot(action, action)),
+            "jac": lambda action: -2.0 * np.asarray(action, dtype=np.float64),
+        },
+        options={
+            "ftol": 1.0e-12,
+            "maxiter": 80,
+            "disp": False,
+        },
+    )
+
+    if result.success:
+        candidate = np.asarray(result.x, dtype=np.float64)
+        candidate_norm = float(np.linalg.norm(candidate))
+        if candidate_norm <= 1.0 + 1.0e-8:
+            candidate_loss, _ = objective_and_grad(candidate)
+            if candidate_loss <= baseline_loss + 1.0e-12:
+                return candidate.astype(radial_np.dtype, copy=False)
+
+    return radial_np
 
 def delta_pose_to_pd_ee_delta(
     controller: Union[PDEEPoseController, PDEEPosController],
@@ -74,11 +203,23 @@ def delta_pose_to_pd_ee_delta(
         return gym_utils.inv_scale_action(
             delta_pose.p, low.cpu().numpy(), high.cpu().numpy()
         )
-    delta_pose = np.r_[
+    position_action = gym_utils.inv_scale_action(
         delta_pose.p,
-        compact_axis_angle_from_quaternion(delta_pose.q),
-    ]
-    return gym_utils.inv_scale_action(delta_pose, low.cpu().numpy(), high.cpu().numpy())
+        low[:3].cpu().numpy(),
+        high[:3].cpu().numpy(),
+    )
+    desired_quaternion = rotation_conversions.quaternion_invert(
+        torch.as_tensor(
+            delta_pose.q,
+            dtype=controller.action_space_low.dtype,
+            device=controller.action_space_low.device,
+        )
+    )
+    rotation_action = _bounded_pd_ee_rotation_action(
+        controller,
+        desired_quaternion.cpu().numpy(),
+    )
+    return np.r_[position_action, rotation_action]
 
 
 def from_pd_joint_pos_to_ee(
