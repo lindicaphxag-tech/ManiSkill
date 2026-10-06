@@ -203,6 +203,15 @@ controller and dataset interfaces \cite{tao2025maniskill3,mimic2021}. CST is
 intended as a semantic layer around such interfaces, not a replacement for
 their controllers or datasets.
 
+Controller simulation and refinement have a substantial formal-methods
+literature; feedback refinement relations, for example, characterize when an
+abstract controller can be refined to a concrete system
+\cite{reissig2017frr}. CST does not claim a new general refinement relation.
+Its narrower goal is to compile the implementation-level semantics of modern
+robot-learning action interfaces---normalization, controller memory,
+substep interpolation, and native bounds---into executable conversion formulas
+and explicit refusal certificates.
+
 Our current affine IR does not establish equivalence under nonlinear IK branch
 changes, saturation outside declared action boxes, plant dynamics, contact,
 force/torque control, or task success. These are explicit promotion gates rather
