@@ -131,3 +131,36 @@ def test_exact_equivalence_has_no_non_equivalence_witnesses():
     assert witness.source_invisible_direction is None
     assert witness.target_ambiguity_direction is None
     assert witness.unrepresentable_residual_norm == 0.0
+
+
+
+def test_dual_separating_observable_certifies_nonrepresentability():
+    # Target can produce only the x-y plane; source can additionally request z.
+    A = np.eye(3)
+    B = np.array([[1.0, 0.0], [0.0, 1.0], [0.0, 0.0]])
+    witness = construct_linear_semantic_witness(A, B)
+
+    v = witness.unrepresentable_source_direction
+    w = witness.separating_observable
+    assert v is not None
+    assert w is not None
+
+    # Dual certificate: w annihilates every target-semantic direction.
+    np.testing.assert_allclose(w @ B, np.zeros(B.shape[1]), atol=1e-10)
+
+    # ...while separating the concrete source witness from the target image.
+    separated_source = float(w @ (A @ v))
+    assert abs(separated_source) > 0.99
+
+    # The dual score equals the norm of the primal orthogonal residual when w
+    # is the normalized residual direction.
+    np.testing.assert_allclose(
+        abs(separated_source),
+        witness.unrepresentable_residual_norm,
+        atol=1e-10,
+    )
+
+
+def test_exact_equivalence_has_no_dual_separation_certificate():
+    witness = construct_linear_semantic_witness(np.eye(2), np.eye(2))
+    assert witness.separating_observable is None
