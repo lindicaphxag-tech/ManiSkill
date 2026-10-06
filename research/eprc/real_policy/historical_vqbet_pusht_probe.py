@@ -189,6 +189,7 @@ def main() -> int:
             "environment_reset_seed": 17,
             "fine_physical_probe": [4.0, 4.0, 0.02],
             "coarse_physical_probe": [8.0, 8.0, 0.04],
+            "jacobian_support_units": ["pixel", "pixel", "radian"],
             "epsilon": float(args.epsilon),
             "support_scale": SUPPORT_SCALE.tolist(),
             "rng_seeds": seeds,
