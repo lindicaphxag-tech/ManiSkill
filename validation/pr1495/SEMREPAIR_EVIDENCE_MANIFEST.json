@@ -104,15 +104,21 @@
     },
     "maniskill_episode1_prefix_intervention": {
       "workflow_run": 37410040182,
-      "status": "pending",
+      "artifact_id": 11387854817,
+      "artifact_sha256": "3022c8e0529f0224b963a95bc411a262d46ad1b68c659ee335f28007b3be706f",
+      "status": "invalid_endpoint",
       "implementation_scope": {
         "current_main": "107c9528b23b55bd276cf723c260a45ae7ce00ec",
         "clean_adapter_v2": "bd0e4feae2491a0d433107210ce8c16b8e8fb69a"
       },
       "preregistered_protocol": "validation/pr1495/STABLE_EPISODE1_PREFIX_INTERVENTION_PROTOCOL.md",
-      "supports": [],
+      "supports": [
+        "the first monkeypatch-based causal path failed its preregistered endpoint-equivalence check",
+        "full-main interposition did not reproduce the direct current-main endpoint"
+      ],
       "does_not_support": [
-        "any causal-prefix claim until endpoint checks and workflow complete"
+        "any causal-prefix sufficiency claim",
+        "claim that no prefix can recover success"
       ]
     }
   },
