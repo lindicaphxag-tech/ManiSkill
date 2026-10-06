@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
 import gymnasium as gym
 import gym_pusht  # noqa: F401
 import numpy as np
+import packaging.version  # noqa: F401 - exposes packaging.version for pinned LeRobot loader
 import torch
 
 from lerobot.common.envs.utils import preprocess_observation
