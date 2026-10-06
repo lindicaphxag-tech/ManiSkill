@@ -151,6 +151,28 @@ def test_native_physx_cclat_improves_heldout_controller_swap():
     naive_errors = np.asarray(naive_errors)
     transported_errors = np.asarray(transported_errors)
 
+    print(
+        "CCLAT_NATIVE_METRICS",
+        {
+            "naive_errors": naive_errors.tolist(),
+            "transported_errors": transported_errors.tolist(),
+            "mean_naive_error": float(np.mean(naive_errors)),
+            "mean_transported_error": float(np.mean(transported_errors)),
+            "mean_error_ratio": float(
+                np.mean(transported_errors) / np.mean(naive_errors)
+            ),
+            "max_error_ratio": float(
+                np.max(transported_errors / naive_errors)
+            ),
+            "exact_linear_certificate": bool(cert.exact),
+            "unavoidable_operator_residual": float(
+                cert.unavoidable_operator_residual
+            ),
+            "state_gain": cert.state_gain.tolist(),
+            "action_gain": cert.action_gain.tolist(),
+        },
+    )
+
     # This is a frozen comparative criterion, not threshold tuning: the method
     # must improve every held-out point and reduce mean next-state error by at
     # least 2x relative to copying the source action unchanged.
