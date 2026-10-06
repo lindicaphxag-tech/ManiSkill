@@ -1,5 +1,7 @@
 # DEC / CRG — physical repairability of frozen robot policies
 
+**Compact evidence entrypoint:** [`FLAGSHIP_EVIDENCE_INDEX.md`](./FLAGSHIP_EVIDENCE_INDEX.md)
+
 This public research capsule asks one deployment question:
 
 > **Before executing a correction, can a frozen robot policy determine what is
