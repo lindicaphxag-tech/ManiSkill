@@ -26,6 +26,7 @@ jobs:
       - name: Compile research modules
         run: |
           python -m py_compile cst_validation/controller_semantic_ir.py
+          python -m py_compile cst_validation/blackbox_ir_identification.py
           python -m py_compile cst_validation/semantic_morphism.py
           python -m py_compile cst_validation/trace_semantics.py
           python -m py_compile cst_validation/global_trace_morphism.py
@@ -36,6 +37,10 @@ jobs:
       - name: Run controller semantic IR tests
         working-directory: cst_validation
         run: python -m pytest -q test_controller_semantic_ir.py
+
+      - name: Run black-box semantic IR identification tests
+        working-directory: cst_validation
+        run: python -m pytest -q test_blackbox_ir_identification.py
       - name: Run semantic morphism tests
         working-directory: cst_validation
         run: python -m pytest -q test_semantic_morphism.py
