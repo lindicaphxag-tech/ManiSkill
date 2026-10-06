@@ -4,7 +4,7 @@ This is a fail-closed research contract. Negative and missing evidence remain vi
 
 | ID | Claim | Status | Evidence |
 |---|---|---|---|
-| C1 | Native action tensors are insufficient to define controller-independent semantics when controller reference state differs. | **supported by construction/tests** | JointGoalChart distinguishes absolute, current-relative, and target-relative semantics; ambiguity witnesses are tested. |
+| C1 | Native action tensors are insufficient to define controller-independent semantics when controller reference state differs. | **supported by construction/tests** | JointGoalChart distinguishes absolute, current-relative, target-relative, and chunk-latched relative semantics; ambiguity witnesses are tested. |
 | C2 | E1 exact transport exists when source semantics are identifiable and the semantic goal lies in the target chart image. | **supported for joint charts** | compiler plus exact/ambiguous/nonrepresentable tests; independent round-trip residual gate. |
 | C3 | The current ManiSkill pd_joint_delta_pos -> pd_joint_pos path contains a native/physical chart mismatch. | **supported by focused regression** | upstream-ready branch decodes normalized source delta to physical delta, forms physical q_goal, then re-encodes in target chart; focused Actions run 37392694506 is green. |
 | C4 | On four official ManiSkill motion-planning datasets, delta-target one-step semantic reachability is complete under +/-0.1 rad bounds. | **supported on frozen public data** | 4 tasks, 4,000 trajectories, 519,006 actions; 100.000000% one-step exact. |
@@ -14,7 +14,9 @@ This is a fail-closed research contract. Negative and missing evidence remain vi
 | C8 | CST preserves realized simulator trajectories (E3) for the ManiSkill #429 conversion. | **unproven** | hosted runner cannot instantiate SAPIEN renderer; Lavapipe fails before conversion execution. No E3 claim. |
 | C9 | CST restores task success for issue #429 (E4). | **unproven** | requires real ManiSkill simulation on a Vulkan-capable runner. |
 | C10 | CST has maintained external adoption. | **false currently** | ManiSkill issue #429 is external and maintainer-recognized, but no CST patch is merged. |
-| C11 | CST generalizes to a second ecosystem. | **pending** | robomimic #270 explicitly welcomes absolute->delta functionality; no upstream implementation/adoption claimed yet. |
+| C11 | CST's relative_latched chart matches the pinned LeRobot relative-action reference semantics. | **supported as compatibility evidence** | LeRobot commit 8c920c4 / blob 3405402; run 37394287171: 480 randomized cases, max CST residual 4.44e-16 and 480/480 separation witnesses from per-step delta_current semantics. This is not adoption. |
+| C12 | The sequence compiler preserves E1 semantic goals across all four reference-machine modes when required state is available and the target image contains the goals. | **supported in method core** | run 37394936801: deterministic 4x4 reference-machine cross-product fuzz plus explicit LeRobot-style relative_latched -> delta_target tests; first out-of-image target step fails closed. |
+| C13 | CST has maintained adoption in a second ecosystem. | **false currently** | LeRobot ARCH-05 / TRAIN-01 are strong alignment targets and robomimic #270 explicitly welcomes absolute->delta functionality, but no external repository has retained CST code or contract yet. |
 
 ## Current paper-safe headline
 
@@ -26,4 +28,4 @@ CST does not yet solve arbitrary controller conversion, prove 100% realized traj
 
 ## Promotion gates
 
-C8 requires a Vulkan-capable simulator run with matched initial state and per-step target/realized trace reporting. C9 requires task-level replay on issue-relevant trajectories. C10 requires code or contract retained by an external maintained repository. C11 requires an independently maintained second stack, not a second fork owned by the author.
+C8 requires a Vulkan-capable simulator run with matched initial state and per-step target/realized trace reporting. C9 requires task-level replay on issue-relevant trajectories. C10 requires code or contract retained by an external maintained repository. C11 is compatibility evidence only and must never be described as LeRobot adoption. C12 remains E1 software semantics, not realized controller dynamics. C13 requires an independently maintained second stack, not a second fork owned by the author.
