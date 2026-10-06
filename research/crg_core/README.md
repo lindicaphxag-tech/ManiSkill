@@ -67,3 +67,21 @@ The capsule therefore supports two query modes:
 This turns intervention budget into a certificate-resolution problem rather than generic Jacobian reconstruction.
 
 Paper-level novelty is not claimed for optimal experimental design itself. The research question is whether certificate-directed physical probes reach a reliable repair/impossibility decision with materially fewer frozen-policy queries than random, coordinate, Rademacher/coded, or generic D/E-optimal probing.
+
+## Local-model admissibility before repairability
+
+CRG now treats the local model class itself as an authorization gate.
+
+A repeated finite-difference Jacobian is not automatically meaningful. Compare
+the physical-response map across progressively smaller intervention scales and
+separate two failure modes:
+
+- repeated same-scale disagreement -> collect more paired evidence;
+- repeatable but non-contracting scale drift -> reject the first-order model.
+
+Only a contracting scale ladder may authorize first-order CRG. A stronger
+multi-scale certificate can additionally export a conditional bound on the
+unobserved small-scale limit when multiple robust contraction ratios support it.
+
+This is deliberately fail-closed: more same-scale samples are not allowed to
+turn a stable but nonlocal Jacobian into false confidence.
