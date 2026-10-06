@@ -72,3 +72,29 @@ def test_large_probe_region_can_fail_held_out_locality_gate():
     )
     assert not cert.locally_valid
     assert cert.held_out_residual > 0.01
+
+
+def test_underdetermined_probe_subspace_cannot_certify_full_effect_map():
+    # Three action dimensions but probes only span the first two. Training and
+    # held-out residual can both be exactly zero inside that subspace, yet the
+    # third action direction is completely unidentified.
+    def effect(x):
+        return np.array([x[0] + 2.0 * x[1] + 7.0 * x[2]])
+
+    probes = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
+    held = np.array([[1.0, 1.0, 0.0], [-0.5, 0.2, 0.0]])
+
+    _, cert = estimate_effect_jacobian(
+        effect,
+        np.zeros(3),
+        probes,
+        held,
+        epsilon=1e-5,
+        max_held_out_residual=1e-8,
+    )
+
+    assert cert.training_residual < 1e-10
+    assert cert.held_out_residual < 1e-10
+    assert cert.probe_rank == 2
+    assert not cert.full_action_rank
+    assert not cert.locally_valid
