@@ -1,0 +1,66 @@
+name: Episode 8 first-divergence witness
+
+on:
+  push:
+    branches:
+      - "validation/maniskill1495-maintainer-request"
+    paths:
+      - "validation/pr1495/capture_episode8_trace.py"
+      - "validation/pr1495/summarize_episode8_divergence.py"
+      - "validation/pr1495/run_episode8_divergence.sh"
+      - ".github/workflows/episode8-first-divergence.yml"
+  pull_request:
+    paths:
+      - "validation/pr1495/capture_episode8_trace.py"
+      - "validation/pr1495/summarize_episode8_divergence.py"
+      - "validation/pr1495/run_episode8_divergence.sh"
+      - ".github/workflows/episode8-first-divergence.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  episode8-divergence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install software Vulkan
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libegl1 mesa-vulkan-drivers vulkan-tools
+          LVP_ICD="$(find /usr/share/vulkan/icd.d -maxdepth 1 -type f -name 'lvp_icd*.json' | head -n1)"
+          test -n "$LVP_ICD"
+          echo "VK_ICD_FILENAMES=$LVP_ICD" >> "$GITHUB_ENV"
+          VK_ICD_FILENAMES="$LVP_ICD" vulkaninfo --summary
+
+      - name: Capture episode-8 traces and summarize first divergence
+        env:
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+        run: bash validation/pr1495/run_episode8_divergence.sh
+
+      - name: Publish compact witness
+        if: always()
+        run: |
+          if [[ -f .validation-episode8-divergence/episode8_divergence.json ]]; then
+            cat .validation-episode8-divergence/episode8_divergence.json
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: episode8-first-divergence-witness
+          path: |
+            .validation-episode8-divergence/current_main.json
+            .validation-episode8-divergence/contract_adapter_v2.json
+            .validation-episode8-divergence/contract_adapter_v2_controller_fixed.json
+            .validation-episode8-divergence/episode8_divergence.json
+          if-no-files-found: warn
+          include-hidden-files: true
