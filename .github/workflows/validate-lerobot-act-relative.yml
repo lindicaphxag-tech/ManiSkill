@@ -25,8 +25,9 @@ jobs:
           git -C /tmp/lerobot checkout -q d40e8709cffb93644db66e30604ef50fdec003cb
       - name: Apply proposed upstream patch
         run: |
-          git -C /tmp/lerobot apply "$GITHUB_WORKSPACE/research/lerobot_act_relative_actions/act-relative-actions.patch"
+          python "$GITHUB_WORKSPACE/research/lerobot_act_relative_actions/apply_patch.py" /tmp/lerobot
           git -C /tmp/lerobot diff --check
+          git -C /tmp/lerobot diff > /tmp/lerobot-act-relative-actions.patch
       - name: Install focused LeRobot test environment
         run: |
           python -m pip install -q --upgrade pip
@@ -39,3 +40,11 @@ jobs:
         if: always()
         working-directory: /tmp/lerobot
         run: git diff --stat && git diff --check
+      - name: Upload exact upstream diff
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lerobot-act-relative-actions-patch
+          path: /tmp/lerobot-act-relative-actions.patch
+          if-no-files-found: warn
+          retention-days: 30
