@@ -1,0 +1,60 @@
+name: Joint delta-pos real simulator assay
+
+on:
+  push:
+    branches:
+      - "validation/joint-delta-closed-loop-assay"
+
+jobs:
+  assay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout validation harness
+        uses: actions/checkout@v4
+        with:
+          path: harness
+      - name: Checkout base
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: base
+      - name: Checkout proposed fix
+        uses: actions/checkout@v4
+        with:
+          ref: fix/joint-delta-to-joint-pos-pr
+          path: patch
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install ManiSkill runtime from proposed fix
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e "patch[dev]"
+      - name: Run baseline real-simulator assay
+        shell: bash
+        run: |
+          set +e
+          (cd base && PYTHONPATH=. python ../harness/cst_validation/joint_delta_closed_loop_assay.py) | tee base_assay.log
+          code=${PIPESTATUS[0]}
+          set -e
+          echo "BASE_EXIT=$code"
+          grep "CST_ASSAY_JSON=" base_assay.log
+      - name: Run proposed-fix real-simulator assay
+        run: |
+          cd patch
+          PYTHONPATH=. python ../harness/cst_validation/joint_delta_closed_loop_assay.py | tee ../patch_assay.log
+          grep "CST_ASSAY_JSON=" ../patch_assay.log
+      - name: Require patch closed-loop agreement
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          def load(path):
+              line=[x for x in pathlib.Path(path).read_text().splitlines() if x.startswith("CST_ASSAY_JSON=")][-1]
+              return json.loads(line.split("=",1)[1])
+          patch=load("patch_assay.log")
+          assert patch["status"]=="completed", patch
+          assert patch["max_abs_robot_qpos_error"] < 1e-5, patch
+          assert patch["max_abs_arm_target_error"] < 1e-10, patch
+          print("PATCH_CLOSED_LOOP_EQUIVALENCE=PASS", patch)
+          PY
