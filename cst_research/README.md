@@ -149,3 +149,8 @@ preserved.**
 CST's reference-ownership layer is validated against pinned public LeRobot source (`d40e8709...`). Across 500 random chunks (2,000 trajectories / 18,000 action vectors), CST reproduces LeRobot's chunk-relative absolute goals with maximum error `1.49e-7`; temporally stacked state selection matches exactly. A frozen counterexample also shows that numerically copying the same chunk into sequential-delta semantics changes the goal trace (max divergence 3.0).
 
 This is cross-stack validation, not external adoption.
+
+
+### 5. Causal deployability of action chunks
+
+CST distinguishes a trace that can be converted after rollout from a controller migration that can be executed online. If a whole action chunk is emitted at query time but a target native action for future step t needs the future measured state or controller-owned target at t, exact conversion cannot be precomputed. CST therefore returns PRECOMPUTABLE, REQUIRES_STEP_HOOK, EXECUTABLE_WITH_STEP_HOOK, or REFUSE_MISSING_RUNTIME_STATE. The latest full public suite contains 40 passing tests.
