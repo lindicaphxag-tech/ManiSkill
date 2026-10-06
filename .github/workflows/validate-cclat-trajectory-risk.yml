@@ -1,0 +1,23 @@
+name: Validate CCLAT episode risk certificate
+
+on:
+  push:
+    branches:
+      - "fix/joint-delta-to-joint-pos-semantics"
+    paths:
+      - "cst_validation/trajectory_risk.py"
+      - "cst_validation/test_trajectory_risk.py"
+      - ".github/workflows/validate-cclat-trajectory-risk.yml"
+
+jobs:
+  episode-risk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install numpy pytest
+      - name: Run episode-level risk certificate tests
+        run: python -m pytest -q cst_validation/test_trajectory_risk.py
