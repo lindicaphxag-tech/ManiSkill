@@ -193,7 +193,7 @@ def main() -> int:
                 "model_id": MODEL_ID,
                 "model_revision": MODEL_REVISION,
                 "execution_mode": "historical-native",
-                "packaging_compatibility": "pyproject dependency name pyav->av only; no policy code changed",
+                "packaging_compatibility": "pyav->av distribution-name fix; explicit packaging.version import; Pymunk 6.11.1 API pin; no policy weights or policy math changed",
             },
             "device": "cpu",
             "protocol_id": PROTOCOL_ID,
