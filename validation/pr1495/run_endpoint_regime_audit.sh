@@ -52,7 +52,7 @@ if expected not in actual.parents:
     raise SystemExit(f"wrong source imported: {actual}; expected {expected}")
 PY
     python -m mani_skill.trajectory.replay_trajectory       --traj-path "$demo/trajectory.h5"       --use-first-env-state -c pd_ee_delta_pose -o state --save-traj       --count "$count" --num-envs 1 -b physx_cpu
-  )
+  ) 2>&1 | tee "$ROOT/$name.replay.log"
 }
 
 MAIN2="$(clone_at main_count2 "$BASE_SHA")"
