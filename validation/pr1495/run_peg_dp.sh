@@ -7,6 +7,10 @@ VARIANT="${VARIANT:-}"
 SEED="${SEED:-1}"
 NUM_DEMOS="${NUM_DEMOS:-100}"
 TOTAL_ITERS="${TOTAL_ITERS:-100000}"
+NUM_EVAL_ENVS="${NUM_EVAL_ENVS:-10}"
+NUM_EVAL_EPISODES="${NUM_EVAL_EPISODES:-100}"
+EVAL_FREQ="${EVAL_FREQ:-5000}"
+BATCH_SIZE="${BATCH_SIZE:-1024}"
 WANDB_PROJECT="${WANDB_PROJECT:-maniskill-pr1495-peg-dp}"
 WANDB_ENTITY="${WANDB_ENTITY:-}"
 TRACK_MODE="${TRACK_MODE:-auto}"
@@ -78,6 +82,23 @@ RAW_VARIANT_JSON="$DEMO_ROOT/trajectory.json"
 cp "$RAW" "$RAW_VARIANT"
 cp "$RAW_JSON" "$RAW_VARIANT_JSON"
 
+# Validation-only transport override.  The state-only experiment does not use
+# rendered observations, so disable the renderer in the copied metadata.  This
+# avoids turning Vulkan/GPU availability into a confound in the action-conversion
+# intervention.
+python - "$RAW_VARIANT_JSON" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+data = json.loads(path.read_text())
+env_kwargs = data["env_info"]["env_kwargs"]
+env_kwargs["render_backend"] = "none"
+path.write_text(json.dumps(data, indent=2) + "\n")
+print("validation render_backend=", env_kwargs["render_backend"])
+PY
+
 DEMO="$DEMO_ROOT/trajectory.state.pd_ee_delta_pose.physx_cpu.h5"
 DEMO_JSON="${DEMO%.h5}.json"
 rm -f "$DEMO" "$DEMO_JSON"
@@ -88,7 +109,7 @@ python -m mani_skill.trajectory.replay_trajectory \
   -c pd_ee_delta_pose \
   -o state \
   --save-traj \
-  --num-envs 10 \
+  --num-envs 1 \
   -b physx_cpu
 
 if [[ ! -f "$DEMO" || ! -f "$DEMO_JSON" ]]; then
@@ -130,6 +151,12 @@ print(json.dumps({
     "seed": int("$SEED"),
     "num_demos": int("$NUM_DEMOS"),
     "total_iters": int("$TOTAL_ITERS"),
+    "num_eval_envs": int("$NUM_EVAL_ENVS"),
+    "num_eval_episodes": int("$NUM_EVAL_EPISODES"),
+    "eval_freq": int("$EVAL_FREQ"),
+    "batch_size": int("$BATCH_SIZE"),
+    "headless_train_patch_sha256": "$HEADLESS_PATCH_SHA",
+    "headless_patch_scope": "render_backend=none only; symmetric across baseline/fixed",
     "env_id": "PegInsertionSide-v1",
     "control_mode": "pd_ee_delta_pose",
     "sim_backend": "physx_cpu",
@@ -148,6 +175,31 @@ print(json.dumps({
 }, indent=2))
 PY
 
+# Infrastructure-only headless patch applied symmetrically to baseline and
+# fixed.  It changes neither the policy architecture nor the converted data; it
+# only forwards render_backend="none" into evaluation env construction so state
+# evaluation does not require a Vulkan device.
+TRAIN_PY="$SRC/examples/baselines/diffusion_policy/train.py"
+python - "$TRAIN_PY" <<'PY'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text()
+old = 'env_kwargs = dict(control_mode=args.control_mode, reward_mode="sparse", obs_mode="state", render_mode="rgb_array", human_render_camera_configs=dict(shader_pack="default"))'
+new = 'env_kwargs = dict(control_mode=args.control_mode, reward_mode="sparse", obs_mode="state", render_mode="rgb_array", render_backend="none", human_render_camera_configs=dict(shader_pack="default"))'
+if text.count(old) != 1:
+    raise SystemExit(f"headless patch anchor count={text.count(old)}")
+path.write_text(text.replace(old, new))
+print("applied symmetric headless evaluation patch")
+PY
+HEADLESS_PATCH_SHA="$(python - <<PY
+from hashlib import sha256
+from pathlib import Path
+print(sha256(Path("$TRAIN_PY").read_bytes()).hexdigest())
+PY
+)"
+
 cd "$SRC/examples/baselines/diffusion_policy"
 
 CMD=(
@@ -159,6 +211,11 @@ CMD=(
   --num-demos "$NUM_DEMOS"
   --max_episode_steps 300
   --total_iters "$TOTAL_ITERS"
+  --num-eval-envs "$NUM_EVAL_ENVS"
+  --num-eval-episodes "$NUM_EVAL_EPISODES"
+  --eval-freq "$EVAL_FREQ"
+  --batch-size "$BATCH_SIZE"
+  --no-capture-video
   --seed "$SEED"
   --exp-name "$RUN_NAME"
   --demo_type motionplanning
