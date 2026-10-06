@@ -1,0 +1,29 @@
+name: Validate joint delta to pos upstream patch
+
+on:
+  push:
+    branches:
+      - "fix/joint-delta-to-joint-pos-upstream"
+    paths:
+      - "mani_skill/trajectory/utils/actions/conversion.py"
+      - "tests/test_pd_joint_delta_to_pos_regression.py"
+      - ".github/workflows/validate-joint-delta-to-pos-upstream.yml"
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install ManiSkill test environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Compile changed module
+        run: python -m py_compile mani_skill/trajectory/utils/actions/conversion.py
+      - name: Run focused regression
+        run: python -m pytest -q tests/test_pd_joint_delta_to_pos_regression.py
