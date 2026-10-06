@@ -8,6 +8,8 @@ This public, fork-only capsule asks one deployment question:
 
 It is self-authored and counts as **zero external adoption**.
 
+**Start here:** [one-page research capsule](./RESEARCH_CAPSULE.md) · [claims & falsifiers](./CLAIMS_AND_FALSIFIERS.md) · [independent replication format](./evidence/replications/README.md)
+
 ## Core contribution chain
 
 ### 1. Differential Execution Contract (DEC)
