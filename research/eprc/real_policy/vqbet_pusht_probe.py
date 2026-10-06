@@ -23,7 +23,8 @@ from research.eprc.dec_uncertainty import estimate_dec_uncertainty
 
 MODEL_ID = "lerobot/vqbet_pusht"
 LEROBOT_COMMIT = "8c920c4270460851cedd2737657584586d3dc66f"
-SUPPORT_SCALE = np.array([20.0, 20.0, 0.15], dtype=np.float64)
+SUPPORT_SCALE = np.array([16.0, 16.0, 0.08], dtype=np.float64)
+PROTOCOL_ID = "pusht-block-xyt-fine-4px-4px-0.02rad-coarse-8px-8px-0.04rad-v1"
 
 
 def _finite_or_raise(name: str, value: float) -> float:
@@ -54,7 +55,7 @@ def main(output: Path) -> int:
         observation_width=96,
         observation_height=96,
     )
-    _, info0 = env.reset(seed=7)
+    _, info0 = env.reset(seed=17)
     base_state = np.concatenate([info0["pos_agent"], info0["block_pose"]]).astype(np.float64)
 
     def render_state(state: np.ndarray):
@@ -192,9 +193,13 @@ def main(output: Path) -> int:
         "lerobot_commit": LEROBOT_COMMIT,
         "device": str(device),
         "base_state": base_state.tolist(),
+        "protocol_id": PROTOCOL_ID,
+        "environment_reset_seed": 17,
         "support_scale": SUPPORT_SCALE.tolist(),
         "small_epsilon": 0.25,
         "large_epsilon": 0.50,
+        "fine_physical_probe": [4.0, 4.0, 0.02],
+        "coarse_physical_probe": [8.0, 8.0, 0.04],
         "preprocess_repeat_max_error": _finite_or_raise("preprocess_error", preprocess_error),
         "paired_policy_repeat_max_error": _finite_or_raise("repeat_error", repeat_error),
         "logical_policy_queries": int(query_calls + 2),
