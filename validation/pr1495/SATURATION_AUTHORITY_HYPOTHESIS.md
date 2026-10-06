@@ -13,7 +13,28 @@ regression.
 
 # Saturation-Authority Hypothesis — preregistered before rerun
 
-Status: **mechanistic hypothesis frozen before evaluating the revised candidate**
+Status: **historical preregistration; source-episode causal target superseded by provenance correction**
+
+## Source-identity correction
+
+The original hypothesis below was preregistered from a replay summary that treated saved output groups such as `traj_0..traj_7` as source demonstration IDs.
+
+That identity assumption is invalid: ManiSkill `RecordEpisode` renumbers retained output trajectories consecutively after failed trajectories are dropped.
+
+The public correction is:
+
+- `validation/pr1495/SOURCE_EPISODE_IDENTITY_CORRECTION.md`.
+
+The canonical repeatability-qualified execution result is now:
+
+- current main: `{0,1,3,4,5,6,7,8,9}` = **9/10 in 5/5 fresh-process repeats**;
+- clean adapter v2: `{0,3,4,5,6,7,8,9}` = **8/10 in 5/5 fresh-process repeats**;
+- stable baseline-only success: **source episode 1**;
+- shared failure: **source episode 2**.
+
+A direct source-episode-8 trace later showed episode 8 succeeds under main, v2, and v2+#1472. Therefore all historical text below that names episode 8 as the regression target is retained only as an audit trail and is **not current evidence**.
+
+The clipping/retry ownership observation remains a valid code-level protocol contract, but its causal responsibility for the stable execution regression is **not established**.
 
 ## Triggering negative result
 
