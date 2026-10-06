@@ -6,7 +6,7 @@ from typing import Literal
 import numpy as np
 
 
-Mode = Literal["absolute", "delta_current", "delta_target"]
+Mode = Literal["absolute", "delta_current", "delta_target", "relative_latched"]
 
 
 class MissingControllerStateError(ValueError):
@@ -17,6 +17,7 @@ class MissingControllerStateError(ValueError):
 class JointControllerContext:
     q_current: np.ndarray | None = None
     q_target: np.ndarray | None = None
+    q_latched: np.ndarray | None = None
 
 
 @dataclass(frozen=True)
@@ -59,7 +60,9 @@ class JointGoalChart:
       - absolute: native physical action is q_goal;
       - delta_current: physical delta is relative to measured q_current;
       - delta_target: physical delta is relative to the controller's internal
-        target q_target.
+        target q_target;
+      - relative_latched: every action in a chunk is relative to one state
+        latched at prediction/chunk start.
 
     If normalized=True, lower/upper are the physical values represented by
     native actions -1 and +1.
@@ -82,6 +85,8 @@ class JointGoalChart:
             return ("q_current",)
         if self.mode == "delta_target":
             return ("q_target",)
+        if self.mode == "relative_latched":
+            return ("q_latched",)
         raise ValueError(f"unknown mode {self.mode}")
 
     def _bounds(self, dim: int) -> tuple[np.ndarray | None, np.ndarray | None]:
@@ -170,6 +175,11 @@ class JointGoalChart:
                 self._state(context, "q_target", physical.size, self.mode)
                 + physical
             )
+        if self.mode == "relative_latched":
+            return (
+                self._state(context, "q_latched", physical.size, self.mode)
+                + physical
+            )
         raise ValueError(f"unknown mode {self.mode}")
 
     def encode(
@@ -187,6 +197,10 @@ class JointGoalChart:
         elif self.mode == "delta_target":
             physical = goal - self._state(
                 context, "q_target", goal.size, self.mode
+            )
+        elif self.mode == "relative_latched":
+            physical = goal - self._state(
+                context, "q_latched", goal.size, self.mode
             )
         else:
             raise ValueError(f"unknown mode {self.mode}")
