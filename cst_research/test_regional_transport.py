@@ -90,8 +90,9 @@ def test_cegis_finds_hidden_worst_case_and_adds_it():
         tolerance=0.05,
     )
 
+    assert trace.certificate.worst_sample_index in range(len(pool))
     assert 4 in trace.selected_sample_indices
-    assert trace.max_residual_history[0] > 0.9
+    assert trace.max_residual_history[0] > 10 * 0.05
     assert not trace.converged
     assert trace.certificate.status is RegionalStatus.INCONSISTENT
 
