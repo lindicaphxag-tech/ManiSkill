@@ -32,4 +32,13 @@ jobs:
         run: python -m pytest -q test_semantic_morphism.py
       - name: Run trace-semantic tests
         working-directory: cst_validation
-        run: python -m pytest -q test_trace_semantics.py
+        run: |
+          python -m pytest -q test_trace_semantics.py --junitxml=trace-junit.xml
+
+      - name: Upload trace-semantic test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cst-trace-junit
+          path: cst_validation/trace-junit.xml
+          if-no-files-found: warn
