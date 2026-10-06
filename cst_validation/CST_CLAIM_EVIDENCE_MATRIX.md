@@ -18,6 +18,7 @@ Frozen purpose: separate controller-semantic claims from task / plant claims.
 | C12 | CST is a cheaper or universally better action representation. | **not claimed** | CST decides semantic transportability; it does not claim one action representation is globally superior. |
 | C13 | Ordinary relative->absolute round-trip is sufficient to verify the temporal anchor semantics of a memory policy. | **refuted by pinned external witness, pending latest CI refresh** | On pinned LeRobot main and open ARCH-05 PR #4779, PI0.5 proprioceptive-memory delta metadata place current state at the final history slot while the shared relative-action helper anchors a rank-3 state tensor at the first slot. Subtracting and adding the same wrong slot still round-trips exactly. Promote to supported only when the current pinned workflow is green. |
 | C14 | The CST problem pattern appears in at least three independent embodied-AI software contexts. | **supported as problem evidence, not adoption** | ManiSkill #429 supplies an externally reported conversion failure; pinned robosuite supplies independent host-semantic parity / clipping structure; pinned LeRobot supplies a temporal-anchor differential witness. None of this counts as maintainer adoption. |
+| C15 | CST can recover a usable affine controller-semantic IR from a resettable black-box oracle without hand-writing its equations. | **pending latest CI** | Designed action/state/hidden probes fit a candidate StatefulTraceIR; independent held-out probes must pass. Saturating and hidden-state nonlinear oracles are explicitly required to fail closed. |
 
 ## Non-negotiable promotion rules
 
@@ -39,3 +40,9 @@ Frozen purpose: separate controller-semantic claims from task / plant claims.
   or accepts a corresponding fix.
 - C14 is evidence that the abstraction captures recurring software semantics;
   it is not evidence that three projects endorse CST.
+
+
+- C15 is identification machinery, not novelty in affine system identification.
+  Promotion requires held-out validation to accept known affine controller
+  semantics and reject clipped/nonlinear counterexamples without changing the
+  residual threshold after inspection.
