@@ -4,7 +4,7 @@ set -euo pipefail
 COUNT="${COUNT:-10}"
 ROOT="${ROOT:-$PWD/.validation-pr1495-compensating}"
 MAIN_SHA="62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3"
-CONVERTER_SHA="f96569f19688e4cee9415c491929541f0ebd1207"
+CONVERTER_SHA="cdd6db713ffe7edc3e0df3abfab51ea5320c1c0b"
 CONTROLLER_SHA="eed9be164797d41540421bda8adb3840377d7087"
 RAW_ROOT="$HOME/.maniskill/demos/PegInsertionSide-v1/motionplanning"
 RAW="$RAW_ROOT/trajectory.h5"
@@ -53,7 +53,7 @@ PY
     python -m mani_skill.trajectory.replay_trajectory \
       --traj-path "$demo_root/trajectory.h5" \
       --use-first-env-state -c pd_ee_delta_pose -o state --save-traj \
-      --count "$COUNT" --num-envs 2 -b physx_cpu
+      --count "$COUNT" --num-envs 1 -b physx_cpu
   )
 }
 
