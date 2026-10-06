@@ -1,0 +1,39 @@
+name: Validate CCLAT external LeRobot anchor contract
+
+on:
+  push:
+    branches:
+      - "fix/joint-delta-to-joint-pos-semantics"
+    paths:
+      - "cst_validation/lerobot_anchor_lifetime_audit.py"
+      - ".github/workflows/validate-cclat-lerobot-anchor.yml"
+
+jobs:
+  lerobot-anchor-differential:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout CST audit
+        uses: actions/checkout@v4
+      - name: Checkout LeRobot before official anchor fix
+        uses: actions/checkout@v4
+        with:
+          repository: huggingface/lerobot
+          ref: 240ea44cf9f887df944019cf46e18a0d496e1a56
+          path: lerobot-pre
+      - name: Checkout LeRobot official anchor fix
+        uses: actions/checkout@v4
+        with:
+          repository: huggingface/lerobot
+          ref: 7c98c1b2ce309f94e542bd4b9ee3fe176301edbf
+          path: lerobot-post
+      - name: Pre-fix must expose moving-anchor semantics
+        run: |
+          python cst_validation/lerobot_anchor_lifetime_audit.py \
+            --file lerobot-pre/src/lerobot/processor/relative_action_processor.py \
+            --expect moving_anchor
+      - name: Post-fix must expose chunk-held anchor semantics
+        run: |
+          python cst_validation/lerobot_anchor_lifetime_audit.py \
+            --file lerobot-post/src/lerobot/processor/relative_action_processor.py \
+            --expect chunk_held_anchor
