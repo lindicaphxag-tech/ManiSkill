@@ -160,3 +160,99 @@ def test_random_latched_to_target_delta_preserves_goals_when_representable():
             atol=1e-10,
             rtol=0.0,
         )
+
+
+def test_all_reference_machine_pairs_preserve_physical_goal_trace():
+    rng = np.random.default_rng(20261007)
+    modes = ("absolute", "delta_current", "delta_target", "relative_latched")
+
+    def chart(mode):
+        if mode == "absolute":
+            return JointGoalChart(mode, normalized=False)
+        return JointGoalChart(
+            mode,
+            normalized=False,
+            lower=-10.0,
+            upper=10.0,
+        )
+
+    def native_for(mode, goals, current, target0, latch):
+        if mode == "absolute":
+            return goals.copy()
+        if mode == "delta_current":
+            return goals - current
+        if mode == "relative_latched":
+            return goals - latch
+        if mode == "delta_target":
+            previous = np.vstack([target0, goals[:-1]])
+            return goals - previous
+        raise AssertionError(mode)
+
+    def initial_context(mode, target0, latch):
+        if mode == "delta_target":
+            return JointControllerContext(q_target=target0)
+        if mode == "relative_latched":
+            return JointControllerContext(q_latched=latch)
+        return JointControllerContext()
+
+    for source_mode in modes:
+        for target_mode in modes:
+            for _ in range(40):
+                horizon = int(rng.integers(2, 9))
+                dim = int(rng.integers(1, 7))
+                goals = rng.normal(scale=0.4, size=(horizon, dim))
+                source_current = rng.normal(scale=0.3, size=(horizon, dim))
+                target_current = rng.normal(scale=0.3, size=(horizon, dim))
+                source_target0 = rng.normal(scale=0.3, size=dim)
+                target_target0 = rng.normal(scale=0.3, size=dim)
+                source_latch = rng.normal(scale=0.3, size=dim)
+                target_latch = rng.normal(scale=0.3, size=dim)
+
+                source_actions = native_for(
+                    source_mode,
+                    goals,
+                    source_current,
+                    source_target0,
+                    source_latch,
+                )
+                result = compile_joint_sequence_transport(
+                    source_chart=chart(source_mode),
+                    target_chart=chart(target_mode),
+                    source_actions=source_actions,
+                    source_initial_context=initial_context(
+                        source_mode, source_target0, source_latch
+                    ),
+                    target_initial_context=initial_context(
+                        target_mode, target_target0, target_latch
+                    ),
+                    source_q_current_trace=(
+                        source_current if source_mode == "delta_current" else None
+                    ),
+                    target_q_current_trace=(
+                        target_current if target_mode == "delta_current" else None
+                    ),
+                )
+                assert result.status == "exact", (
+                    source_mode,
+                    target_mode,
+                    result.reason,
+                )
+                np.testing.assert_allclose(
+                    result.semantic_goals,
+                    goals,
+                    atol=1e-10,
+                    rtol=0.0,
+                )
+                expected_target = native_for(
+                    target_mode,
+                    goals,
+                    target_current,
+                    target_target0,
+                    target_latch,
+                )
+                np.testing.assert_allclose(
+                    result.target_actions,
+                    expected_target,
+                    atol=1e-10,
+                    rtol=0.0,
+                )
