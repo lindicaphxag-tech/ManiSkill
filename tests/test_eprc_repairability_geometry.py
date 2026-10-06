@@ -109,3 +109,27 @@ def test_scaled_action_chart_preserves_physical_repairability_when_bounds_transf
     assert np.isclose(out_a.certified_radius, out_b.certified_radius)
     assert np.allclose(out_a.physical_repair, out_b.physical_repair, atol=1e-8)
     assert np.isclose(out_a.residual_norm, out_b.residual_norm, atol=1e-8)
+
+
+def test_signed_margin_has_geometry_defined_zero_boundary():
+    from research.eprc.repairability_geometry import diagnose_repairability
+
+    g = np.eye(2)
+
+    inside = diagnose_repairability(g, np.array([0.3, 0.4]), certified_radius=0.6)
+    boundary = diagnose_repairability(g, np.array([0.3, 0.4]), certified_radius=0.5)
+    outside_radius = diagnose_repairability(g, np.array([0.3, 0.4]), certified_radius=0.4)
+
+    assert inside.signed_margin > 0
+    assert abs(boundary.signed_margin) < 1e-10
+    assert outside_radius.signed_margin < 0
+
+
+def test_signed_margin_is_negative_for_out_of_image_direction():
+    from research.eprc.repairability_geometry import diagnose_repairability
+
+    g = np.array([[1.0], [0.0]])
+    out = diagnose_repairability(g, np.array([0.2, 0.3]), certified_radius=1.0)
+
+    assert out.image_residual_norm > 0.29
+    assert out.signed_margin < 0
