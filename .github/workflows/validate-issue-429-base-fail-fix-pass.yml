@@ -40,15 +40,18 @@ jobs:
             echo "Frozen reproducer unexpectedly passes upstream base"
             exit 1
           fi
-          grep -E "TypeError|clip|torch" /tmp/base_failure.txt
-          echo "BASE_FAIL_CONFIRMED=true" >> "$GITHUB_ENV"
+          if ! grep -E "TypeError:.*clip\\(\\)|got \\(numpy\\.ndarray" /tmp/base_failure.txt; then
+            echo "Upstream base failed, but not at the frozen NumPy/torch clip boundary"
+            exit 1
+          fi
+          echo "BASE_FAIL_AT_NUMPY_TORCH_BOUNDARY=true" >> "$GITHUB_ENV"
       - name: Assert differential evidence
         run: |
           test "$PATCH_PASS_CONFIRMED" = "true"
-          test "$BASE_FAIL_CONFIRMED" = "true"
+          test "$BASE_FAIL_AT_NUMPY_TORCH_BOUNDARY" = "true"
           {
             echo "### ManiSkill #429 differential evidence"
-            echo "- upstream base: expected failure reproduced"
+            echo "- upstream base: NumPy/torch clip-boundary failure reproduced"
             echo "- clean patch: frozen reproducer passes"
             echo "- upstream base SHA: 62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3"
           } >> "$GITHUB_STEP_SUMMARY"
