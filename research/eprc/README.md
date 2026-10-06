@@ -37,13 +37,14 @@ and is bound to runtime provenance through a SHA-256 digest.
 
 ```bash
 python -m pytest -q tests/test_eprc_runtime.py
+python research/eprc/reproduce.py research/eprc/evidence/replication_example.json --expect REPAIR
 ```
 
-No simulator or GPU is required for this contract-level capsule.
+The second command compiles an evidence bundle, emits a provenance-bound certificate, and independently re-verifies it. No simulator or GPU is required for this contract-level capsule.
 
 ## What would count as meaningful external evidence
 
-A third-party result should provide:
+Third-party results can be submitted with the repository's **EPRC independent replication** issue form. A result should provide:
 
 1. policy family and checkpoint;
 2. controller representation;
