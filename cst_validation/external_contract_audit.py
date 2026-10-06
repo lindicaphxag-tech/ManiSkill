@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from pathlib import Path
 import json
+import re
 
 
 @dataclass(frozen=True)
@@ -68,7 +69,11 @@ def audit_isaaclab_task_space_clip(
         "resolve_matching_names_values(self.cfg.clip, self._joint_names)" in task
     )
     action_axis = (
-        "repeat(self.num_envs, self.action_dim, 1)" in task
+        re.search(
+            r"repeat\(\s*self\.num_envs\s*,\s*self\.action_dim\s*,\s*1\s*\)",
+            task,
+        )
+        is not None
         and "self._processed_actions = torch.clamp(" in task
         and "min=self._clip[:, :, 0]" in task
         and "max=self._clip[:, :, 1]" in task
