@@ -5,7 +5,6 @@ import numpy as np
 import sapien
 import torch
 from tqdm.auto import tqdm
-from transforms3d.quaternions import quat2axangle
 
 from mani_skill.agents.controllers import (
     PDEEPosController,
@@ -49,12 +48,72 @@ def qpos_to_pd_joint_vel(controller: PDJointVelController, qpos):
     return gym_utils.inv_scale_action(qvel, low, high)
 
 
-def compact_axis_angle_from_quaternion(quat: np.ndarray) -> np.ndarray:
-    theta, omega = quat2axangle(quat)
-    # - 2 * np.pi to make the angle symmetrical around 0
-    if omega > np.pi:
-        omega = omega - 2 * np.pi
-    return omega * theta
+def euler_xyz_from_quaternion(quat: np.ndarray) -> np.ndarray:
+    """Convert a quaternion to the XYZ Euler convention consumed by PDEEPoseController."""
+    quat = torch.as_tensor(quat)
+    matrix = rotation_conversions.quaternion_to_matrix(quat)
+    return rotation_conversions.matrix_to_euler_angles(matrix, "XYZ").cpu().numpy()
+
+
+def inverse_delta_to_pd_ee_euler(quat: np.ndarray) -> np.ndarray:
+    """Recover the desired relative rotation from the converter's inverse delta."""
+    quat = torch.as_tensor(quat)
+    desired_delta = rotation_conversions.quaternion_invert(quat)
+    return euler_xyz_from_quaternion(desired_delta.numpy())
+
+
+def _pd_ee_rotation_gains(controller: PDEEPoseController) -> torch.Tensor:
+    """Measure the controller's local normalized rotation contract.
+
+    PDEEPoseController clips the normalized rotation vector by norm and then
+    scales it. Probe the production mapping on the three basis vectors rather
+    than assuming a particular sign convention.
+    """
+    dtype = controller.action_space_low.dtype
+    device = controller.action_space_low.device
+    probe = torch.zeros((3, 6), dtype=dtype, device=device)
+    probe[:, 3:] = torch.eye(3, dtype=dtype, device=device)
+    scaled = controller._clip_and_scale_action(probe)[:, 3:]
+
+    gains = torch.diagonal(scaled)
+    off_diagonal = scaled - torch.diag(gains)
+    if not torch.allclose(
+        off_diagonal,
+        torch.zeros_like(off_diagonal),
+        atol=1e-7,
+        rtol=0.0,
+    ):
+        raise RuntimeError(
+            "PDEEPoseController rotation mapping is not axis-separable; "
+            "trajectory conversion cannot safely invert it"
+        )
+    if torch.any(torch.abs(gains) <= torch.finfo(dtype).eps):
+        raise RuntimeError(
+            "PDEEPoseController rotation mapping has a zero-gain axis"
+        )
+    return gains
+
+
+def _normalized_pd_ee_rotation_action(
+    controller: PDEEPoseController, desired_euler: np.ndarray
+) -> tuple[np.ndarray, bool]:
+    """Invert the controller rotation contract without stealing clipping authority.
+
+    The trajectory-conversion caller intentionally detects rotation actions with
+    norm greater than one, clips them, and performs additional residual-control
+    steps. Returning an already-clipped action here would hide that signal and
+    prematurely terminate the caller's correction loop.
+
+    Returns the *unclipped* normalized action together with whether one-step
+    execution is outside the controller's normalized unit ball.
+    """
+    gains = _pd_ee_rotation_gains(controller)
+    desired = torch.as_tensor(
+        desired_euler, dtype=gains.dtype, device=gains.device
+    )
+    normalized = desired / gains
+    saturated = bool((torch.linalg.norm(normalized) > 1).item())
+    return normalized.cpu().numpy(), saturated
 
 
 def delta_pose_to_pd_ee_delta(
@@ -74,11 +133,16 @@ def delta_pose_to_pd_ee_delta(
         return gym_utils.inv_scale_action(
             delta_pose.p, low.cpu().numpy(), high.cpu().numpy()
         )
-    delta_pose = np.r_[
+    position_action = gym_utils.inv_scale_action(
         delta_pose.p,
-        compact_axis_angle_from_quaternion(delta_pose.q),
-    ]
-    return gym_utils.inv_scale_action(delta_pose, low.cpu().numpy(), high.cpu().numpy())
+        low[:3].cpu().numpy(),
+        high[:3].cpu().numpy(),
+    )
+    desired_euler = inverse_delta_to_pd_ee_euler(delta_pose.q)
+    rotation_action, _ = _normalized_pd_ee_rotation_action(
+        controller, desired_euler
+    )
+    return np.r_[position_action, rotation_action]
 
 
 def from_pd_joint_pos_to_ee(
