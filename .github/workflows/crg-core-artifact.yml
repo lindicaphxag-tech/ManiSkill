@@ -27,6 +27,15 @@ jobs:
       - name: Install minimal dependencies
         run: python -m pip install -q numpy pytest
       - name: Run frozen CRG core tests
-        run: |
-          python -m pytest -q             tests/test_eprc_contract_signature.py             tests/test_eprc_repairability_geometry.py             tests/test_eprc_robust_repairability.py             tests/test_eprc_repairability_witness.py             tests/test_eprc_robust_repairability_witness.py             tests/test_eprc_certificate_directed_probing.py             tests/test_eprc_active_minimal_certificate.py             tests/test_eprc_certificate_identifiability.py             tests/test_eprc_external_replication_gate.py \
-            tests/test_eprc_evidence_action_router.py
+        run: >-
+          python -m pytest -q
+          tests/test_eprc_contract_signature.py
+          tests/test_eprc_repairability_geometry.py
+          tests/test_eprc_robust_repairability.py
+          tests/test_eprc_repairability_witness.py
+          tests/test_eprc_robust_repairability_witness.py
+          tests/test_eprc_certificate_directed_probing.py
+          tests/test_eprc_active_minimal_certificate.py
+          tests/test_eprc_certificate_identifiability.py
+          tests/test_eprc_external_replication_gate.py
+          tests/test_eprc_evidence_action_router.py
