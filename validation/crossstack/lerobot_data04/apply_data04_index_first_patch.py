@@ -191,10 +191,10 @@ def patch_video_utils(root: Path) -> None:
             raise FrameTimestampError(
                 "Index-addressed frame identity disagrees with the dataset "
                 f"timestamp beyond tolerance ({error[~is_within_tol]} >= {tolerance_s=})."
-                f"\nqueried timestamps: {query_ts}"
-                f"\nloaded timestamps: {loaded_ts}"
-                f"\nvideo: {video_path}"
-                f"\nframe_indices: {requested_indices}"
+                f"\\nqueried timestamps: {query_ts}"
+                f"\\nloaded timestamps: {loaded_ts}"
+                f"\\nvideo: {video_path}"
+                f"\\nframe_indices: {requested_indices}"
             )
         closest_frames = torch.stack(loaded_frames)
         closest_ts = loaded_ts
@@ -210,9 +210,9 @@ def patch_video_utils(root: Path) -> None:
                 " It means that the closest frame that can be loaded from the video is too far away in time."
                 " This might be due to synchronization issues with timestamps during data collection."
                 " To be safe, we advise to ignore this item during training."
-                f"\nqueried timestamps: {query_ts}"
-                f"\nloaded timestamps: {loaded_ts}"
-                f"\nvideo: {video_path}"
+                f"\\nqueried timestamps: {query_ts}"
+                f"\\nloaded timestamps: {loaded_ts}"
+                f"\\nvideo: {video_path}"
             )
 
         closest_frames = torch.stack([loaded_frames[idx] for idx in argmin_])
