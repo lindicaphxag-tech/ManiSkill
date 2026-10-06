@@ -193,3 +193,20 @@ python -m pytest -q test_*.py
 ```
 
 For exact run IDs and evidence status, see `EVIDENCE_LEDGER.md`.
+
+
+## Fork-native upstream path
+
+The two independent external candidates are now in their native project forks,
+not only staged inside the CST research branch:
+
+- **robomimic #270:** `lindicaphxag-tech/robomimic`,
+  clean branch `feature/absolute-to-delta-actions-270-pr`;
+  latest focused semantic suite: **7 passed**.
+- **LeRobot #3312:** `lindicaphxag-tech/lerobot`,
+  clean branch `fix/act-relative-actions-3312-pr`;
+  current-main focused ACT suite: **9 passed, 5 skipped**; final project
+  pre-commit gate is being completed.
+
+Neither branch counts as external adoption until an upstream maintainer reviews,
+merges, or otherwise retains the contribution.
