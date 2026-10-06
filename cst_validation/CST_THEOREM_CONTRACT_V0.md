@@ -18,7 +18,7 @@ The inverse encoding problem is
 
 with an explicit representability predicate. Encoding is not allowed to clip silently and still call the transport exact.
 
-The current chart family is absolute, delta_current, and delta_target. Normalization is part of the chart, not preprocessing metadata.
+The current chart family is absolute, delta_current, delta_target, and relative_latched. Normalization and reference semantics are part of the chart, not preprocessing metadata.
 
 ## T1 — single-boundary exact transport
 
@@ -37,7 +37,7 @@ The compiler returns one of three constructive outcomes: exact, ambiguous, or no
 
 ## T2 — minimal sequence state provenance
 
-Absolute actions need no hidden reference state. Delta-current actions require measured q_current at every step because later references depend on realized dynamics and cannot be inferred from actions alone. Delta-target actions need only the initial q_target; thereafter the controller reference is recursively reconstructible from the command sequence itself, assuming no hidden reset, target mutation, or undeclared saturation.
+Absolute actions need no hidden reference state. Delta-current actions require measured q_current at every step because later references depend on realized dynamics and cannot be inferred from actions alone. Delta-target actions need only the initial q_target; thereafter the controller reference is recursively reconstructible from the command sequence itself, assuming no hidden reset, target mutation, or undeclared saturation. Relative-latched actions require one q_latched per chunk; every action position shares that fixed reference until the chunk boundary, so the reference neither follows measured state nor accumulates the previous target.
 
 ## T3 — bounded incremental minimum semantic horizon
 
@@ -58,3 +58,36 @@ E1 is command/goal semantic equivalence. E2 is controller-reference trace equiva
 ## Falsifiers
 
 The current method claim must contract if a chart marked exact fails independent semantic reconstruction; if a supposedly identifiable sequence admits multiple goal traces under declared state; if target clipping is mislabeled exact; if the proof verifier accepts identity drift; if public data contradict frozen provenance predictions; or if prior work already provides the same state-identifiability plus target-image compiler with constructive refusal witnesses.
+
+
+## T5 — reference-machine sequence transport
+
+Treat each action convention as a small reference-state machine:
+
+- absolute: no reference state;
+- delta_current: exogenous measured q_current[t];
+- delta_target: endogenous q_target updated to the decoded goal after every step;
+- relative_latched: q_latched fixed for the entire predicted chunk.
+
+An exact sequence transport is obtained by decoding each source native action
+through the source machine into a physical semantic goal and encoding that goal
+through the target machine while updating only the target machine state allowed
+by its declared semantics.
+
+For a LeRobot-style latched relative chunk and a target-delta controller,
+
+    u_L[t] = q_goal[t] - q_latched
+
+and
+
+    u_T[0] = q_goal[0] - q_target[0]
+    u_T[t] = q_goal[t] - q_goal[t-1], t > 0.
+
+Therefore copying the same relative action tensor into a target-delta
+controller is generally not semantics-preserving. The compiler must instead
+transduce the reference state. At the first target-image violation it returns a
+nonrepresentability witness rather than clipping.
+
+The current deterministic cross-product test covers all 4 x 4 source/target
+reference-machine pairs in a representable regime. This establishes E1
+software semantics only.
