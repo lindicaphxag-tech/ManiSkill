@@ -25,5 +25,19 @@ jobs:
           python -m pip install -e ".[dev]"
       - name: Compile conversion module
         run: python -m py_compile mani_skill/trajectory/utils/actions/conversion.py
-      - name: Run issue 429 regression
+      - name: Assert upstream base fails issue 429 regression
+        shell: bash
+        run: |
+          set +e
+          git show 62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3:mani_skill/trajectory/utils/actions/conversion.py > mani_skill/trajectory/utils/actions/conversion.py
+          python -m pytest -q tests/test_pd_joint_delta_to_pos_regression.py
+          rc=$?
+          git checkout -- mani_skill/trajectory/utils/actions/conversion.py
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo "Regression unexpectedly passes on upstream base"
+            exit 1
+          fi
+          echo "Confirmed: upstream base fails the focused regression"
+      - name: Assert patch passes issue 429 regression
         run: python -m pytest -q tests/test_pd_joint_delta_to_pos_regression.py
