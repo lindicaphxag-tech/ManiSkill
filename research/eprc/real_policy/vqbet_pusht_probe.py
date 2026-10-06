@@ -53,6 +53,8 @@ PROTOCOL_ID = "pusht-block-xyt-fine-4px-4px-0.02rad-coarse-8px-8px-0.04rad-v1"
 HELDOUT_PHYSICAL_DELTA = np.array([10.0, -6.0, 0.35], dtype=np.float64)
 IMAGE_KEY = "observation.image"
 STATE_KEY = "observation.state"
+FINE_EPSILON = 0.25
+COARSE_EPSILON = 0.50
 ROBUST_SUPPORT_TRUST_RADIUS = 0.50
 ROBUST_ACTION_RESIDUAL_TOLERANCE = 4.0
 
@@ -183,10 +185,10 @@ def main(output: Path) -> int:
     heldout_first_action_response = heldout_chunk[0] - repeat_a[0]
 
     t0 = time.perf_counter()
-    small_j, small_sym = central(0.25, 123)
-    large_j, _ = central(0.50, 123)
+    small_j, small_sym = central(FINE_EPSILON, 123)
+    large_j, _ = central(COARSE_EPSILON, 123)
     replicate_seeds = [123, 456, 789, 101112, 131415]
-    replicate_jacobians = [small_j] + [central(0.25, seed)[0] for seed in replicate_seeds[1:]]
+    replicate_jacobians = [small_j] + [central(FINE_EPSILON, seed)[0] for seed in replicate_seeds[1:]]
     flat_replicates = np.stack([j.reshape(-1, j.shape[-1]) for j in replicate_jacobians])
     first_action_normalized_support_maps = np.stack(
         [
@@ -326,8 +328,8 @@ def main(output: Path) -> int:
             "the normalized probe chart is the metric-whitened unit chart"
         ),
         "jacobian_support_units": ["pixel", "pixel", "radian"],
-        "small_epsilon": 0.25,
-        "large_epsilon": 0.50,
+        "small_epsilon": FINE_EPSILON,
+        "large_epsilon": COARSE_EPSILON,
         "fine_physical_probe": [4.0, 4.0, 0.02],
         "coarse_physical_probe": [8.0, 8.0, 0.04],
         "heldout_physical_delta": HELDOUT_PHYSICAL_DELTA.tolist(),
@@ -394,7 +396,7 @@ def main(output: Path) -> int:
                 step.probe.tolist() for step in active_plan.steps
             ],
             "physical_symmetric_probe_deltas": [
-                (EPSILON * step.probe * SUPPORT_SCALE).tolist()
+                (FINE_EPSILON * step.probe * SUPPORT_SCALE).tolist()
                 for step in active_plan.steps
             ],
             "decision_after_each_probe": [
