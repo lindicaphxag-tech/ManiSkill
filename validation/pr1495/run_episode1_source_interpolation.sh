@@ -19,7 +19,11 @@ python -m pip install -e .
 )
 
 for alpha in "${ALPHAS[@]}"; do
-  key="${alpha//./p}"
+  key="$(python - <<PY
+value=float("$alpha")
+print(str(value).replace(".", "p"))
+PY
+)"
   src="$ROOT/src_alpha_$key"
   demo="$ROOT/demo_alpha_$key"
   git clone --filter=blob:none https://github.com/lindicaphxag-tech/ManiSkill.git "$src" >/dev/null
