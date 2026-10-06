@@ -133,3 +133,76 @@ def test_signed_margin_is_negative_for_out_of_image_direction():
 
     assert out.image_residual_norm > 0.29
     assert out.signed_margin < 0
+
+
+def test_metric_aware_crg_is_invariant_to_support_chart_reparameterization():
+    # Canonical physical support coordinates mix two different local axes.
+    j_a = np.array([[1.0, 0.2], [0.1, 0.5]])
+    c_lift = np.eye(2)
+    metric_a = np.array([[1.0 / 4.0**2, 0.0], [0.0, 1.0 / 0.02**2]])
+
+    # xi_b = R xi_a is only a coordinate change. The physical trust set must
+    # transform covariantly instead of becoming a different Euclidean ball.
+    r = np.array([[2.0, 0.3], [0.1, 0.7]])
+    r_inv = np.linalg.inv(r)
+    j_b = j_a @ r_inv
+    metric_b = r_inv.T @ metric_a @ r_inv
+
+    kwargs = dict(
+        target_physical_correction=np.array([0.05, 0.02]),
+        nominal_action=np.array([0.1, -0.2]),
+        action_low=-np.ones(2),
+        action_high=np.ones(2),
+        trust_radius=1.0,
+    )
+    out_a = synthesize_repair(
+        j_a,
+        c_lift,
+        support_metric=metric_a,
+        **kwargs,
+    )
+    out_b = synthesize_repair(
+        j_b,
+        c_lift,
+        support_metric=metric_b,
+        **kwargs,
+    )
+
+    assert np.isclose(out_a.certified_radius, out_b.certified_radius, atol=1e-10)
+    assert np.allclose(out_a.physical_repair, out_b.physical_repair, atol=1e-10)
+    assert np.isclose(out_a.residual_norm, out_b.residual_norm, atol=1e-10)
+    # Convert chart-B repair back to canonical chart-A coordinates.
+    assert np.allclose(out_a.latent_repair, r_inv @ out_b.latent_repair, atol=1e-9)
+
+
+def test_metric_aware_signed_margin_is_support_chart_invariant():
+    from research.eprc.repairability_geometry import diagnose_repairability
+
+    g_a = np.array([[1.0, 0.3], [0.2, 0.7]])
+    metric_a = np.array([[1.0 / 5.0**2, 0.0], [0.0, 1.0 / 0.03**2]])
+    r = np.array([[1.5, 0.2], [0.0, 0.4]])
+    r_inv = np.linalg.inv(r)
+    g_b = g_a @ r_inv
+    metric_b = r_inv.T @ metric_a @ r_inv
+    target = np.array([0.08, -0.02])
+
+    a = diagnose_repairability(
+        g_a, target, certified_radius=0.8, support_metric=metric_a
+    )
+    b = diagnose_repairability(
+        g_b, target, certified_radius=0.8, support_metric=metric_b
+    )
+    assert np.isclose(a.minimum_required_radius, b.minimum_required_radius, atol=1e-10)
+    assert np.isclose(a.signed_margin, b.signed_margin, atol=1e-10)
+
+
+def test_support_metric_must_be_positive_definite():
+    with np.testing.assert_raises(ValueError):
+        certified_support_radius(
+            nominal_action=np.zeros(2),
+            action_support_jacobian=np.eye(2),
+            action_low=-np.ones(2),
+            action_high=np.ones(2),
+            trust_radius=1.0,
+            support_metric=np.array([[1.0, 0.0], [0.0, 0.0]]),
+        )
