@@ -14,6 +14,14 @@ It targets the third-party processor discovery convention proposed in LeRobot PR
 
 Until #4592 (or an equivalent processor-plugin mechanism) is merged, users can still import the package explicitly before loading or constructing a pipeline.
 
+## Install from the public research branch
+
+```bash
+pip install "git+https://github.com/lindicaphxag-tech/ManiSkill.git@research/eprc-public-capsule#subdirectory=research/eprc/lerobot_plugin"
+```
+
+The public CI also builds the package as a wheel with `--no-deps`, so packaging failures are caught independently of LeRobot availability.
+
 ## Contract
 
 The step deliberately does only five things:
@@ -41,3 +49,8 @@ step = step_cls(fail_closed=True)
 ```
 
 The runtime must provide the evidence bundle. Missing evidence fails explicitly rather than silently treating an action as certified.
+
+
+## Conformance guarantee
+
+The standalone plugin intentionally carries a small dependency-free copy of the decision compiler. Public CI runs a branch-complete conformance matrix against the canonical `research/eprc/runtime.py` implementation and requires identical decision, reason, provenance digest, contract class and support IDs. A plugin/runtime semantic split is therefore a test failure.
