@@ -45,6 +45,23 @@ convert_variant() {
   cp "$RAW" "$demo_root/trajectory.h5"
   cp "$RAW_JSON" "$demo_root/trajectory.json"
 
+  # Validation-only transport override: this differential uses state observations
+  # and never renders.  The replay CLI does not expose render_backend directly,
+  # but forwards trajectory metadata env_kwargs into gym.make.  Disable rendering
+  # in the copied metadata so hosted CPU runners never initialize a Vulkan device.
+  python - "$demo_root/trajectory.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+data = json.loads(path.read_text())
+env_kwargs = data["env_info"]["env_kwargs"]
+env_kwargs["render_backend"] = "none"
+path.write_text(json.dumps(data, indent=2) + "\n")
+print("validation render_backend=", env_kwargs["render_backend"])
+PY
+
   # Causal identity gate: execute inside the exact checkout and verify import.
   (
     cd "$src"
@@ -66,7 +83,7 @@ PY
       -o state \
       --save-traj \
       --count "$COUNT" \
-      --num-envs 2 \
+      --num-envs 1 \
       -b physx_cpu
   )
 }
