@@ -200,7 +200,10 @@ class SemanticActionContinuation:
         controller_target: np.ndarray | None,
     ) -> np.ndarray:
         kind = semantics.kind
-        if kind is ReferenceKind.ABSOLUTE:
+        # A reference kind is semantically dead when no output dimension uses
+        # relative encoding. Runtime execution must mirror the dependency
+        # planner and avoid reading an unavailable signal in that case.
+        if kind is ReferenceKind.ABSOLUTE or not np.any(semantics.relative_mask):
             return np.zeros(self.dim)
         if kind is ReferenceKind.CHUNK_ANCHOR:
             ref = self.source_chunk_anchor if source else self.target_chunk_anchor
