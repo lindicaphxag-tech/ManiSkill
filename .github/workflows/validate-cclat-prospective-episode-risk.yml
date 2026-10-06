@@ -1,0 +1,27 @@
+name: Validate CCLAT prospective episode risk
+
+on:
+  push:
+    branches:
+      - "fix/joint-delta-to-joint-pos-semantics"
+    paths:
+      - "tests/test_cclat_prospective_episode_risk.py"
+      - "cst_validation/trajectory_risk.py"
+      - "cst_validation/native_physx_two_joint.py"
+      - "cst_validation/closed_loop_transport.py"
+      - ".github/workflows/validate-cclat-prospective-episode-risk.yml"
+
+jobs:
+  prospective:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install ManiSkill test environment
+        run: python -m pip install -e ".[dev]"
+      - name: Run frozen prospective episode-risk gate
+        run: python -m pytest -q -s tests/test_cclat_prospective_episode_risk.py
