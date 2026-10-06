@@ -9,16 +9,24 @@ import numpy as np
 class DifferentialContractSignature:
     """Representation-invariant local physical response signature.
 
-    jacobian_phys maps physical support perturbations -> canonical physical command
-    perturbations after controller/action semantic lifting.
+    jacobian_phys maps canonical physical support perturbations to canonical
+    physical command perturbations after controller/action semantic lifting.
+
+    Coordinate reparameterization should disappear before this object is built.
+    Physical response gain must not disappear: a controller/policy that reacts
+    7x more strongly to the same physical perturbation has a different local
+    execution contract.
     """
 
     response_projector: np.ndarray
     singular_values_normalized: np.ndarray
+    frobenius_gain: float
     rank: int
 
 
-def _orthogonal_projector_from_columns(matrix: np.ndarray, *, rtol: float) -> tuple[np.ndarray, int]:
+def _orthogonal_projector_from_columns(
+    matrix: np.ndarray, *, rtol: float
+) -> tuple[np.ndarray, int]:
     if matrix.ndim != 2:
         raise ValueError("matrix must be 2D")
     if matrix.size == 0:
@@ -33,13 +41,20 @@ def _orthogonal_projector_from_columns(matrix: np.ndarray, *, rtol: float) -> tu
     return basis @ basis.T, rank
 
 
-def contract_signature(jacobian_phys: np.ndarray, *, rtol: float = 1e-8) -> DifferentialContractSignature:
-    """Build a local physical-contract signature.
+def contract_signature(
+    jacobian_phys: np.ndarray, *, rtol: float = 1e-8
+) -> DifferentialContractSignature:
+    """Build a scale-preserving local physical-contract signature.
 
-    jacobian_phys shape: [physical_command_dim, support_perturbation_dim].
-    The response projector captures which *physical command directions* are locally
-    controlled by support perturbations. The normalized singular spectrum captures
-    anisotropy while discarding global gain.
+    Shape: [physical_command_dim, physical_support_dim].
+
+    The signature separates three pieces:
+    - response subspace;
+    - anisotropy shape (normalized singular spectrum);
+    - absolute physical response gain (Frobenius norm).
+
+    The first two describe geometry. The last prevents a dangerous false
+    equivalence in which two physically different gains are normalized away.
     """
 
     j = np.asarray(jacobian_phys, dtype=float)
@@ -56,15 +71,26 @@ def contract_signature(jacobian_phys: np.ndarray, *, rtol: float = 1e-8) -> Diff
     return DifferentialContractSignature(
         response_projector=projector,
         singular_values_normalized=spectrum,
+        frobenius_gain=float(np.linalg.norm(j, ord="fro")),
         rank=rank,
     )
+
+
+def _gain_distance(a: float, b: float) -> float:
+    """Dimensionless multiplicative gain mismatch in the same physical units."""
+
+    if a == 0.0 and b == 0.0:
+        return 0.0
+    if a <= 0.0 or b <= 0.0:
+        return float("inf")
+    return float(abs(np.log(a / b)))
 
 
 def signature_distance(
     a: DifferentialContractSignature,
     b: DifferentialContractSignature,
 ) -> float:
-    """Distance in [0, +inf) combining subspace and normalized-spectrum mismatch."""
+    """Distance combining physical subspace, anisotropy and response gain."""
 
     if a.response_projector.shape != b.response_projector.shape:
         raise ValueError("physical command dimensions differ")
@@ -76,7 +102,8 @@ def signature_distance(
     spec = np.linalg.norm(
         a.singular_values_normalized[:k] - b.singular_values_normalized[:k]
     )
-    return float(proj + spec)
+    gain = _gain_distance(a.frobenius_gain, b.frobenius_gain)
+    return float(proj + spec + gain)
 
 
 def semantically_lift_jacobian(
@@ -104,6 +131,10 @@ def contracts_equivalent(
 ) -> bool:
     """Test local physical-contract equivalence after semantic lifting."""
 
-    sig_a = contract_signature(semantically_lift_jacobian(jacobian_action_a, lift_a))
-    sig_b = contract_signature(semantically_lift_jacobian(jacobian_action_b, lift_b))
+    sig_a = contract_signature(
+        semantically_lift_jacobian(jacobian_action_a, lift_a)
+    )
+    sig_b = contract_signature(
+        semantically_lift_jacobian(jacobian_action_b, lift_b)
+    )
     return signature_distance(sig_a, sig_b) <= tolerance
