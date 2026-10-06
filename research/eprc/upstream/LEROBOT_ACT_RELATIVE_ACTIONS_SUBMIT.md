@@ -1,5 +1,22 @@
 # Manual submission commands
 
+## Frozen green validation
+
+The upstream handoff is now frozen against a successful public validation run:
+
+- workflow: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37465718016
+- exact research head: `b4f48f9817c026562debf12ab5ddf65b5b90aad5`
+- generated patch artifact id: `11414875527`
+- artifact SHA-256: `24bd17aa1f8e6d66f87ad4143c91938cba619a8b3c958659d6e9aac7ff3a9e4b`
+- exact LeRobot base: `d40e8709cffb93644db66e30604ef50fdec003cb`
+
+The run passed fresh checkout, exact-source transformation, three-file diff
+validation, `git diff --check`, LeRobot installation, the official ACT processor
+test file, and Git-generated patch artifact upload.
+
+External adoption remains **0** until this is submitted and retained upstream.
+
+
 The connected GitHub integration cannot create forks in external repositories.
 Once the public handoff CI is green, the remaining steps are mechanical.
 
