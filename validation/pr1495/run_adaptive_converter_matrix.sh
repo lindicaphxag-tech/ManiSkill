@@ -56,6 +56,7 @@ git clone --filter=blob:none https://github.com/lindicaphxag-tech/ManiSkill.git 
 git -C "$ADAPTIVE_SRC" fetch origin "$ADAPTIVE_SHA"
 git -C "$ADAPTIVE_SRC" checkout --detach "$ADAPTIVE_SHA"
 python -m pip install -e "$ADAPTIVE_SRC"
+python -m pip install pytest
 (
   cd "$ADAPTIVE_SRC"
   python -m pytest -q tests/test_action_conversion.py
