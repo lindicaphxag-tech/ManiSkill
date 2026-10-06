@@ -1,0 +1,76 @@
+name: Issue 429 v6 exact-head semantic regression
+
+on:
+  push:
+    branches:
+      - validation/issue429-v6-exact-head
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  red-green:
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Bind validation to one-commit production head
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3
+          PROD=b0e1b85d5002ead77fc42a793183e5e0c72e01cb
+          git merge-base --is-ancestor "$PROD" HEAD
+          test "$(git rev-list --count "$BASE".."$PROD")" = "1"
+          test "$(git show "$PROD":mani_skill/trajectory/utils/actions/conversion.py | git hash-object --stdin)" = "$(git hash-object mani_skill/trajectory/utils/actions/conversion.py)"
+          test "$(git show "$PROD":tests/test_pd_joint_delta_to_pos_semantics.py | git hash-object --stdin)" = "$(git hash-object tests/test_pd_joint_delta_to_pos_semantics.py)"
+          test "$(git diff --name-only "$BASE" "$PROD" | sort)" = "$(printf '%s\n' mani_skill/trajectory/utils/actions/conversion.py tests/test_pd_joint_delta_to_pos_semantics.py | sort)"
+          changed="$(git diff --name-only "$PROD"..HEAD | sort)"
+          test "$changed" = ".github/workflows/issue429-v6-exact-head.yml"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install focused dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest ruff
+          python -m pip install -e .
+
+      - name: Patch must pass the semantic regression
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          python -m pytest -q tests/test_pd_joint_delta_to_pos_semantics.py
+
+      - name: Baseline must fail semantically under the same test
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE_DIR="/tmp/maniskill-issue429-base-${{ matrix.python }}"
+          git -C "$GITHUB_WORKSPACE" worktree add --detach "$BASE_DIR" 62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3
+          cp "$GITHUB_WORKSPACE/tests/test_pd_joint_delta_to_pos_semantics.py" "$BASE_DIR/tests/test_pd_joint_delta_to_pos_semantics.py"
+          set +e
+          (
+            cd "$BASE_DIR"
+            PYTHONPATH="$BASE_DIR" python -m pytest -q tests/test_pd_joint_delta_to_pos_semantics.py
+          ) > "/tmp/baseline-${{ matrix.python }}.log" 2>&1
+          status=$?
+          set -e
+          cat "/tmp/baseline-${{ matrix.python }}.log"
+          test "$status" -ne 0
+          ! grep -Eq "ImportError|ModuleNotFoundError|AttributeError" "/tmp/baseline-${{ matrix.python }}.log"
+          grep -Eq "FAILED|AssertionError|Mismatched elements|Not equal to tolerance" "/tmp/baseline-${{ matrix.python }}.log"
+
+      - name: Lint touched files
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          ruff check mani_skill/trajectory/utils/actions/conversion.py tests/test_pd_joint_delta_to_pos_semantics.py
+          ruff format --check mani_skill/trajectory/utils/actions/conversion.py tests/test_pd_joint_delta_to_pos_semantics.py
