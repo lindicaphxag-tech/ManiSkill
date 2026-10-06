@@ -44,7 +44,7 @@ jobs:
             --output /tmp/eprc-cross-policy/vqbet.json
       - name: Fail-closed cross-policy adjudication
         run: |
-          python research/eprc/cross_policy_report_adjudicator.py \
+          python -m research.eprc.cross_policy_report_adjudicator \
             /tmp/eprc-cross-policy/diffusion.json \
             /tmp/eprc-cross-policy/vqbet.json \
             --output /tmp/eprc-cross-policy/adjudication.json
