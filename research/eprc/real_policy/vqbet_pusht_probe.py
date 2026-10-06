@@ -186,6 +186,7 @@ def main(output: Path) -> int:
             "training_runtime_commit": LEROBOT_TRAINING_COMMIT,
             "runtime_mode": "native-training-runtime",
             "schema_compatibility_shim": False,
+            "packaging_compatibility": "pyproject dependency name pyav->av only; no policy code changed",
         },
         "device": "cpu",
         "base_state": base_state.tolist(),
