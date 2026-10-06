@@ -8,7 +8,8 @@ from typing import Iterable
 
 import numpy as np
 
-from .contract_signature import contract_signature, semantically_lift_jacobian, signature_distance
+from .bilateral_chart_invariance import canonicalize_dec_jacobian
+from .contract_signature import contract_signature, signature_distance
 
 
 @dataclass(frozen=True)
@@ -19,6 +20,7 @@ class PolicyCase:
     static_representation: str
     coarse_contract_class: str
     runtime_decision: str
+    physical_support_to_support_chart_jacobian: np.ndarray | None = None
 
 
 @dataclass(frozen=True)
@@ -77,11 +79,25 @@ def _jaccard_distance(a: Iterable[str], b: Iterable[str]) -> float:
 
 
 def score_pair(a: PolicyCase, b: PolicyCase) -> PairScores:
-    phys_a = semantically_lift_jacobian(
-        a.raw_action_jacobian, a.action_to_physical_jacobian
+    support_a = (
+        np.eye(a.raw_action_jacobian.shape[1])
+        if a.physical_support_to_support_chart_jacobian is None
+        else a.physical_support_to_support_chart_jacobian
     )
-    phys_b = semantically_lift_jacobian(
-        b.raw_action_jacobian, b.action_to_physical_jacobian
+    support_b = (
+        np.eye(b.raw_action_jacobian.shape[1])
+        if b.physical_support_to_support_chart_jacobian is None
+        else b.physical_support_to_support_chart_jacobian
+    )
+    phys_a = canonicalize_dec_jacobian(
+        a.raw_action_jacobian,
+        a.action_to_physical_jacobian,
+        support_a,
+    )
+    phys_b = canonicalize_dec_jacobian(
+        b.raw_action_jacobian,
+        b.action_to_physical_jacobian,
+        support_b,
     )
     dec = signature_distance(contract_signature(phys_a), contract_signature(phys_b))
 
