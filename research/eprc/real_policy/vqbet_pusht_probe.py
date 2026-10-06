@@ -18,6 +18,8 @@ import torch
 
 from lerobot.common.policies.vqbet.modeling_vqbet import VQBeTPolicy
 
+from research.eprc.active_minimal_certificate import plan_minimal_certificate_probes
+from research.eprc.certificate_directed_probing import ProbeInformation
 from research.eprc.contract_signature import contract_signature, signature_distance
 from research.eprc.dec_uncertainty import estimate_dec_uncertainty
 from research.eprc.linear_authority import LinearActionAuthority
@@ -200,6 +202,33 @@ def main(output: Path) -> int:
         certified_radius=robust_radius.certified_radius,
         residual_tolerance=ROBUST_ACTION_RESIDUAL_TOLERANCE,
     )
+
+    candidate_probe_bank = np.array(
+        [
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+            [1.0, 1.0, 0.0],
+            [1.0, -1.0, 0.0],
+            [1.0, 0.0, 1.0],
+            [1.0, 0.0, -1.0],
+            [0.0, 1.0, 1.0],
+            [0.0, 1.0, -1.0],
+        ],
+        dtype=np.float64,
+    )
+    active_plan = plan_minimal_certificate_probes(
+        robust_center,
+        heldout_first_action_response,
+        probe_information=ProbeInformation(
+            np.eye(robust_center.shape[1]),
+            beta=robust_envelope.epsilon_g,
+        ),
+        certified_radius=robust_radius.certified_radius,
+        residual_tolerance=ROBUST_ACTION_RESIDUAL_TOLERANCE,
+        candidate_probes=candidate_probe_bank,
+        max_additional_probes=6,
+    )
     uncertainty = estimate_dec_uncertainty(
         flat_replicates, min_replicates=5, max_q95_radius=0.15
     )
@@ -281,6 +310,32 @@ def main(output: Path) -> int:
             ),
             "reason": robust_cert.reason,
             "evidence_scope": "empirical observed-max RNG envelope; not a formal confidence interval",
+        },
+        "active_minimal_certificate": {
+            "status": "planning_only_no_additional_policy_queries_executed",
+            "initial_decision": active_plan.initial_certificate.decision.value,
+            "final_planned_decision": active_plan.final_certificate.decision.value,
+            "planned_probe_count": len(active_plan.steps),
+            "planned_symmetric_policy_evaluations": active_plan.symmetric_policy_evaluations,
+            "budget_exhausted": active_plan.exhausted_budget,
+            "normalized_support_probe_directions": [
+                step.probe.tolist() for step in active_plan.steps
+            ],
+            "physical_symmetric_probe_deltas": [
+                (EPSILON * step.probe * SUPPORT_SCALE).tolist()
+                for step in active_plan.steps
+            ],
+            "decision_after_each_probe": [
+                step.decision_after_probe.value for step in active_plan.steps
+            ],
+            "ambiguity_after_each_probe": [
+                float(step.ambiguity_to_decision) for step in active_plan.steps
+            ],
+            "assumption": (
+                "information-only projection at fixed observed-max operator envelope; "
+                "future observations must update the map and uncertainty before any "
+                "new certificate is accepted"
+            ),
         },
         "dec": {
             "first_action_step_jacobian": small_j[0].tolist(),
