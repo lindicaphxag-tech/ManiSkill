@@ -45,12 +45,12 @@ jobs:
           python -m pip install pytest ruff
           python -m pip install -e .
 
-      - name: Patch must pass the semantic regression
+      - name: Full patch must pass semantic oracle
         run: |
           cd "$GITHUB_WORKSPACE"
           python -m pytest -q tests/test_pd_joint_delta_to_pos_semantics.py
 
-      - name: Baseline must fail semantically under the same test
+      - name: Original upstream must expose transport fault
         shell: bash
         run: |
           set -euo pipefail
@@ -61,16 +61,61 @@ jobs:
           (
             cd "$BASE_DIR"
             PYTHONPATH="$BASE_DIR" python -m pytest -q tests/test_pd_joint_delta_to_pos_semantics.py
-          ) > "/tmp/baseline-${{ matrix.python }}.log" 2>&1
+          ) > "/tmp/original-baseline-${{ matrix.python }}.log" 2>&1
           status=$?
           set -e
-          cat "/tmp/baseline-${{ matrix.python }}.log"
+          cat "/tmp/original-baseline-${{ matrix.python }}.log"
           test "$status" -ne 0
-          ! grep -Eq "ImportError|ModuleNotFoundError|AttributeError" "/tmp/baseline-${{ matrix.python }}.log"
-          grep -Eq "FAILED|AssertionError|Mismatched elements|Not equal to tolerance" "/tmp/baseline-${{ matrix.python }}.log"
+          grep -q "TypeError: clip() received an invalid combination of arguments" "/tmp/original-baseline-${{ matrix.python }}.log"
 
-      - name: Lint touched files
+      - name: Transport-only repair must still fail semantic chart oracle
+        shell: bash
         run: |
-          cd "$GITHUB_WORKSPACE"
-          ruff check mani_skill/trajectory/utils/actions/conversion.py tests/test_pd_joint_delta_to_pos_semantics.py
-          ruff format --check mani_skill/trajectory/utils/actions/conversion.py tests/test_pd_joint_delta_to_pos_semantics.py
+          set -euo pipefail
+          BASE_DIR="/tmp/maniskill-issue429-base-${{ matrix.python }}"
+          python - "$BASE_DIR/mani_skill/trajectory/utils/actions/conversion.py" <<'PY'
+          from pathlib import Path
+          import sys
+          p=Path(sys.argv[1])
+          s=p.read_text()
+          old='''        delta_qpos = gym_utils.clip_and_scale_action(ori_action_dict["arm"], low, high)
+          arm_action = prev_arm_qpos + delta_qpos
+          '''
+          new='''        source_native = np.clip(
+              np.asarray(ori_action_dict["arm"], dtype=np.float64), -1.0, 1.0
+          )
+          delta_qpos = (
+              0.5 * (np.asarray(high) + np.asarray(low))
+              + 0.5 * (np.asarray(high) - np.asarray(low)) * source_native
+          )
+          arm_action = prev_arm_qpos + delta_qpos
+          '''
+          if old not in s:
+              raise SystemExit("expected upstream transport block not found")
+          p.write_text(s.replace(old,new,1))
+          PY
+          set +e
+          (
+            cd "$BASE_DIR"
+            PYTHONPATH="$BASE_DIR" python -m pytest -q tests/test_pd_joint_delta_to_pos_semantics.py
+          ) > "/tmp/transport-only-${{ matrix.python }}.log" 2>&1
+          status=$?
+          set -e
+          cat "/tmp/transport-only-${{ matrix.python }}.log"
+          test "$status" -ne 0
+          ! grep -Eq "ImportError|ModuleNotFoundError|AttributeError|TypeError" "/tmp/transport-only-${{ matrix.python }}.log"
+          grep -Eq "FAILED|AssertionError|Mismatched elements|Not equal to tolerance" "/tmp/transport-only-${{ matrix.python }}.log"
+
+      - name: Hygiene on changed surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3
+          PROD=b0e1b85d5002ead77fc42a793183e5e0c72e01cb
+          git diff --check "$BASE" "$PROD"
+          ruff check tests/test_pd_joint_delta_to_pos_semantics.py
+          ruff format --check tests/test_pd_joint_delta_to_pos_semantics.py
+          # The production file has three pre-existing repo-wide Ruff findings
+          # (UP007/SIM101/SIM102) outside this patch. Enforce all other rules.
+          ruff check mani_skill/trajectory/utils/actions/conversion.py --ignore UP007,SIM101,SIM102
+          ruff format --check mani_skill/trajectory/utils/actions/conversion.py
