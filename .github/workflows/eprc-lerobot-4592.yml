@@ -21,7 +21,8 @@ jobs:
         run: |
           git clone -q https://github.com/huggingface/lerobot.git /tmp/lerobot
           cd /tmp/lerobot
-          git checkout -q a37961cb098cf3d0cb9fc18603e7922b09b4e311
+          git fetch -q origin pull/4592/head:pr4592
+          git checkout -q pr4592
       - name: Install LeRobot proposal and EPRC plugin
         run: |
           python -m pip install --upgrade pip
