@@ -8,6 +8,7 @@ from types import ModuleType
 
 import numpy as np
 
+from research.eprc.anisotropic_repairability import directional_locality_profile
 from research.eprc.dec_uncertainty import estimate_dec_uncertainty
 from research.eprc.local_model_admissibility import classify_local_model_admissibility
 from research.eprc.locality_refinement import evaluate_locality_refinement
@@ -36,6 +37,64 @@ def central_map(query, support_dim: int, radius: float, seed: int) -> np.ndarray
             raise ValueError("adapter query must return equal non-empty 1D physical commands")
         columns.append((plus - minus) / (2.0 * radius))
     return np.stack(columns, axis=1)
+
+
+def directional_locality_payload(
+    *,
+    coarse: np.ndarray,
+    fine_replicates: np.ndarray,
+    finer_replicates: np.ndarray,
+    fine_radius: float,
+    finer_radius: float,
+    contraction_threshold: float,
+) -> dict:
+    """Return JSON-safe per-support locality evidence.
+
+    The global locality gate uses an operator norm and can reject an otherwise
+    useful support chart because one coordinate is nonlocal. This companion
+    record preserves that fail-closed global decision while exposing which
+    physical support directions are individually supported.
+    """
+
+    fine = np.asarray(fine_replicates, dtype=float)
+    finer = np.asarray(finer_replicates, dtype=float)
+    if fine.ndim != 3 or finer.shape != fine.shape:
+        raise ValueError("fine/finer replicates must share [n,physical,support] shape")
+
+    fine_center = np.mean(fine, axis=0)
+    finer_center = np.mean(finer, axis=0)
+    profile = directional_locality_profile(
+        coarse_map=np.asarray(coarse, dtype=float),
+        fine_map=fine_center,
+        finer_map=finer_center,
+        fine_radius=fine_radius,
+        finer_radius=finer_radius,
+        contraction_threshold=contraction_threshold,
+    )
+
+    per_direction_stochastic = np.max(
+        np.linalg.norm(finer - finer_center[None, :, :], axis=1),
+        axis=0,
+    )
+
+    def finite_or_none(values: np.ndarray) -> list[float | None]:
+        return [float(x) if np.isfinite(x) else None for x in values]
+
+    return {
+        "coarse_fine_drift": [float(x) for x in profile.coarse_fine_drift],
+        "fine_finer_drift": [float(x) for x in profile.fine_finer_drift],
+        "contraction_ratio": finite_or_none(profile.contraction_ratio),
+        "stable_direction": [bool(x) for x in profile.stable_direction],
+        "directional_radii": [float(x) for x in profile.directional_radii],
+        "finer_stochastic_radius_per_direction": [
+            float(x) for x in per_direction_stochastic
+        ],
+        "semantics": (
+            "directional_radii are empirical first-order validity radii in the "
+            "adapter's normalized physical-support chart; unstable directions "
+            "are assigned radius 0 and remain fail-closed"
+        ),
+    }
 
 
 def main() -> int:
@@ -86,6 +145,14 @@ def main() -> int:
         dec_stable=uncertainty.stable,
         locality_contracting=locality.contracting,
     )
+    directional = directional_locality_payload(
+        coarse=coarse,
+        fine_replicates=fine,
+        finer_replicates=finer,
+        fine_radius=args.fine_radius,
+        finer_radius=args.finer_radius,
+        contraction_threshold=args.contraction_threshold,
+    )
 
     payload = {
         "status": "completed",
@@ -116,6 +183,7 @@ def main() -> int:
             "contracting": locality.contracting,
             "finer_stochastic_radius": locality.finer_stochastic_radius,
         },
+        "directional_locality": directional,
         "admissibility": {
             "state": admissibility.state.value,
             "same_scale_queries_authorized": admissibility.same_scale_queries_authorized,
