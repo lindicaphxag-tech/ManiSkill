@@ -1,0 +1,46 @@
+name: EPRC LeRobot ACT Relative Actions Handoff
+
+on:
+  pull_request:
+    paths:
+      - "research/eprc/upstream/lerobot_act_relative_actions.patch"
+      - "research/eprc/upstream/LEROBOT_ACT_RELATIVE_ACTIONS_HANDOFF.md"
+      - ".github/workflows/eprc-lerobot-act-relative-actions.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eprc-lerobot-act-relative-actions-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Checkout exact LeRobot base
+        run: |
+          git clone -q https://github.com/huggingface/lerobot.git /tmp/lerobot
+          git -C /tmp/lerobot checkout -q d40e8709cffb93644db66e30604ef50fdec003cb
+          test "$(git -C /tmp/lerobot rev-parse HEAD)" = "d40e8709cffb93644db66e30604ef50fdec003cb"
+      - name: Apply staged upstream patch
+        run: |
+          git -C /tmp/lerobot apply --check "$GITHUB_WORKSPACE/research/eprc/upstream/lerobot_act_relative_actions.patch"
+          git -C /tmp/lerobot apply "$GITHUB_WORKSPACE/research/eprc/upstream/lerobot_act_relative_actions.patch"
+          git -C /tmp/lerobot diff --check
+          git -C /tmp/lerobot diff --name-only
+      - name: Install LeRobot test runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -q -e /tmp/lerobot
+          python -m pip install -q pytest
+      - name: Run ACT processor regression
+        run: |
+          cd /tmp/lerobot
+          python -m pytest -q tests/processor/test_act_processor.py --tb=short
