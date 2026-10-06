@@ -2,6 +2,14 @@
 
 **Research prototype — not an upstream ManiSkill patch.**
 
+**Reviewer shortcuts**
+- Start here: [REVIEWER_ONE_PAGER.md](REVIEWER_ONE_PAGER.md)
+- Claim / adoption ledger: [EVIDENCE_LEDGER.md](EVIDENCE_LEDGER.md)
+- Reproduction: [REPRODUCE.md](REPRODUCE.md)
+- Novelty boundary: [NOVELTY_BOUNDARY_2026_10_06.md](NOVELTY_BOUNDARY_2026_10_06.md)
+
+Latest full public suite: **59 passed**. External maintained adoption: **0**.
+
 Question:
 
 > If a frozen robot policy was trained/deployed with controller A, when can its
