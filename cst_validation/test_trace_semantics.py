@@ -69,7 +69,12 @@ def test_equal_endpoint_can_still_be_trace_inequivalent():
     assert goal_only.kind is TraceEquivalenceKind.GOAL_ONLY
     np.testing.assert_allclose(goal_only.source_goal, [0.5], atol=1e-12)
     np.testing.assert_allclose(goal_only.target_goal, [0.5], atol=1e-12)
-    assert goal_only.max_substep_trace_error > 0.25
+    # Source interpolation emits [0.425, 0.45, 0.475, 0.5] while the
+    # hold-style target emits [0.5, 0.5, 0.5, 0.5]. Endpoint equality is exact,
+    # but the first substep differs by 0.075.
+    np.testing.assert_allclose(
+        goal_only.max_substep_trace_error, 0.075, atol=1e-12
+    )
 
     # Asking for the full semantics cannot eliminate that structural mismatch
     # with one held target command.
