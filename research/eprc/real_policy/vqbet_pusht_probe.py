@@ -6,7 +6,6 @@ import math
 import sys
 import time
 from pathlib import Path
-import sys
 
 ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
@@ -19,18 +18,22 @@ import torch
 
 from lerobot.common.policies.vqbet.modeling_vqbet import VQBeTPolicy
 
-ROOT = Path(__file__).resolve().parents[3]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
-
 from research.eprc.contract_signature import contract_signature, signature_distance
 from research.eprc.dec_uncertainty import estimate_dec_uncertainty
+from research.eprc.real_policy.pusht_exact_state import (
+    STATE_RESTORE_PROTOCOL,
+    PushTSnapshot,
+    capture_snapshot,
+    restore_snapshot,
+)
 
 
 MODEL_ID = "lerobot/vqbet_pusht"
 MODEL_REVISION = "390e5e4c079c880b22e873dad53ecfac706bc78a"
 LEROBOT_TRAINING_COMMIT = "3c0a209f9fac4d2a57617e686a7f2a2309144ba2"
-SUPPORT_SCALE = np.array([20.0, 20.0, 0.15], dtype=np.float64)
+SUPPORT_SCALE = np.array([16.0, 16.0, 0.08], dtype=np.float64)
+PROTOCOL_ID = "pusht-block-xyt-fine-4px-4px-0.02rad-coarse-8px-8px-0.04rad-v1"
+HELDOUT_PHYSICAL_DELTA = np.array([10.0, -6.0, 0.35], dtype=np.float64)
 IMAGE_KEY = "observation.image"
 STATE_KEY = "observation.state"
 
@@ -63,14 +66,16 @@ def main(output: Path) -> int:
         observation_width=96,
         observation_height=96,
     )
-    _, info0 = env.reset(seed=7)
-    base_state = np.concatenate([info0["pos_agent"], info0["block_pose"]]).astype(np.float64)
+    env.reset(seed=17)
+    base_snapshot = capture_snapshot(env)
 
-    def render_state(state: np.ndarray):
-        env.reset(seed=7)
-        env.unwrapped._set_state(np.asarray(state, dtype=np.float64))
+    def render_snapshot(snapshot: PushTSnapshot):
+        restore_snapshot(env, snapshot)
         obs = env.unwrapped.get_obs()
-        if not np.allclose(np.asarray(obs["agent_pos"]), state[:2], atol=1e-6):
+        if not np.array_equal(
+            np.asarray(obs["agent_pos"], dtype=np.float64),
+            snapshot.agent_position,
+        ):
             raise RuntimeError("support intervention changed held-fixed agent state")
         return obs
 
@@ -82,7 +87,7 @@ def main(output: Path) -> int:
         state = torch.as_tensor(np.asarray(raw["agent_pos"]), dtype=torch.float32, device=device)
         return {IMAGE_KEY: image.unsqueeze(0), STATE_KEY: state.unsqueeze(0)}
 
-    baseline_raw = render_state(base_state)
+    baseline_raw = render_snapshot(base_snapshot)
     baseline_single = raw_to_policy(baseline_raw)
 
     def normalize_single(single):
@@ -124,10 +129,11 @@ def main(output: Path) -> int:
 
     def query_support(delta: np.ndarray, seed: int) -> np.ndarray:
         nonlocal query_calls
-        changed = base_state.copy()
-        changed[2:5] += np.asarray(delta, dtype=np.float64) * SUPPORT_SCALE
+        delta = np.asarray(delta, dtype=np.float64)
+        physical = delta * SUPPORT_SCALE
+        changed = base_snapshot.shifted_block(physical[:2], float(physical[2]))
         query_calls += 1
-        return paired_chunk(render_state(changed), seed)
+        return paired_chunk(render_snapshot(changed), seed)
 
     def central(epsilon: float, seed: int):
         baseline = query_support(np.zeros(3), seed)
@@ -152,6 +158,10 @@ def main(output: Path) -> int:
                 np.linalg.norm(center, axis=-1), 1e-12
             )
         return jac, symmetry
+
+    heldout_normalized = HELDOUT_PHYSICAL_DELTA / SUPPORT_SCALE
+    heldout_chunk = query_support(heldout_normalized, 123)
+    heldout_first_action_response = heldout_chunk[0] - repeat_a[0]
 
     t0 = time.perf_counter()
     small_j, small_sym = central(0.25, 123)
@@ -189,10 +199,25 @@ def main(output: Path) -> int:
             "packaging_compatibility": "pyproject dependency name pyav->av only; no policy code changed",
         },
         "device": "cpu",
-        "base_state": base_state.tolist(),
+        "protocol_id": PROTOCOL_ID,
+        "state_restore_protocol": STATE_RESTORE_PROTOCOL,
+        "environment_reset_seed": 17,
+        "base_snapshot": {
+            "agent_position": base_snapshot.agent_position.tolist(),
+            "agent_velocity": base_snapshot.agent_velocity.tolist(),
+            "block_position": base_snapshot.block_position.tolist(),
+            "block_angle": float(base_snapshot.block_angle),
+            "block_velocity": base_snapshot.block_velocity.tolist(),
+            "block_angular_velocity": float(base_snapshot.block_angular_velocity),
+        },
         "support_scale": SUPPORT_SCALE.tolist(),
+        "jacobian_support_units": ["pixel", "pixel", "radian"],
         "small_epsilon": 0.25,
         "large_epsilon": 0.50,
+        "fine_physical_probe": [4.0, 4.0, 0.02],
+        "coarse_physical_probe": [8.0, 8.0, 0.04],
+        "heldout_physical_delta": HELDOUT_PHYSICAL_DELTA.tolist(),
+        "heldout_first_action_response": heldout_first_action_response.tolist(),
         "preprocess_repeat_max_error": _finite("preprocess_error", preprocess_error),
         "paired_policy_repeat_max_error": _finite("repeat_error", repeat_error),
         "logical_policy_queries": int(query_calls + 2),
