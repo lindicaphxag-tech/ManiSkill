@@ -30,6 +30,11 @@ def _case(raw: dict) -> PolicyCase:
         static_representation=str(raw["static_representation"]),
         coarse_contract_class=str(raw["coarse_contract_class"]),
         runtime_decision=str(raw["runtime_decision"]),
+        physical_support_to_support_chart_jacobian=(
+            None
+            if raw.get("physical_support_to_support_chart_jacobian") is None
+            else np.asarray(raw["physical_support_to_support_chart_jacobian"], dtype=float)
+        ),
     )
 
 
