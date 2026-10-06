@@ -99,10 +99,36 @@ Interpretation: this is independent public-stack semantic parity, not LeRobot ad
 ## Causal deployability evidence
 
 - Full-suite run after causality layer: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37463347917
-- Result: `40 passed in 1.07s`.
+- Result at that stage: `40 passed in 1.07s`.
 - CST now distinguishes offline trace convertibility from online chunk deployability.
 - Query-time whole-chunk transport is classified `PRECOMPUTABLE` only when all source-goal and target-reference dependencies are available when the policy chunk is emitted.
 - Future CURRENT_STATE or CONTROLLER_TARGET dependencies produce `REQUIRES_STEP_HOOK` for horizon > 1.
 - A step-time adapter with the required state access yields `EXECUTABLE_WITH_STEP_HOOK`; missing controller-owned state yields `REFUSE_MISSING_RUNTIME_STATE`.
 
 Novelty boundary: asynchronous action-chunk misalignment and stale-state execution are already studied by prior work. The candidate CST contribution is compiling reference-ownership information availability into an adapter-placement/refusal obligation during controller migration, not discovering action-chunk latency itself.
+
+## Bounded cross-stack JIT migration evidence
+
+- Validation run: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37464317553
+- Status: SUCCESS.
+- Pinned LeRobot commit: `d40e8709cffb93644db66e30604ef50fdec003cb`.
+- Source semantics: LeRobot-style CHUNK_ANCHOR relative actions.
+- Target semantics: CURRENT_STATE-relative step-time actions.
+- Relative offsets are bounded to uniform `[-0.2, 0.2]` on masked relative dimensions; non-relative dimensions remain absolute in `[-1,1]`.
+- Frozen seed: `20261006`.
+- 500 random chunks x batch 4 x horizon 9 = 2,000 trajectories / 18,000 action vectors.
+- JIT max physical-goal error: `7.450580624679404e-09`.
+- JIT mean per-trajectory max error: `1.5580290009071726e-09`.
+- JIT p95 per-trajectory max error: `7.450580596923828e-09`.
+- Naive tensor-copy mean per-trajectory max goal error: `0.5711112199053751`.
+- Naive tensor-copy median per-trajectory max goal error: `0.554694190621376`.
+- Naive tensor-copy p95 per-trajectory max goal error: `0.8517269160598515`.
+- Naive tensor-copy global max goal error: `1.1520211696624756`.
+- Temporally stacked-state current-frame parity error: `0.0`.
+
+Interpretation: for bounded source-relative commands, the JIT adapter preserves the pinned second stack's physical goal trace to floating-point tolerance while direct numeric copying into a current-state-delta target systematically drifts. This is cross-stack executable-semantic validation, not maintained downstream adoption.
+
+## Latest full research suite
+
+- Public run after JIT runtime was added: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37463757498
+- Result: `46 passed in 0.47s`.
