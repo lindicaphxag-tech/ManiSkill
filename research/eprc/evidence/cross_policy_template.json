@@ -4,7 +4,7 @@
     "min_dec_auc": 0.7,
     "required_auc_margin": 0.05
   },
-  "note": "Intentionally underpowered two-pair template. The frozen gate must reject it until at least 20 held-out pairs with both agreement and disagreement are supplied.",
+  "note": "Intentionally underpowered two-pair template. The primary gate uses fresh held-out physical responses not used to identify DEC; the secondary decision-agreement gate is retained only for systems analysis.",
   "pairs": [
     {
       "a": {
@@ -34,7 +34,11 @@
         ],
         "static_representation": "absolute",
         "coarse_contract_class": "RELATIONAL_INVARIANT",
-        "runtime_decision": "REPAIR"
+        "runtime_decision": "REPAIR",
+        "heldout_physical_response": [
+          0.2,
+          -0.1
+        ]
       },
       "b": {
         "raw_action_jacobian": [
@@ -63,7 +67,11 @@
         ],
         "static_representation": "relative",
         "coarse_contract_class": "RELATIONAL_INVARIANT",
-        "runtime_decision": "REPAIR"
+        "runtime_decision": "REPAIR",
+        "heldout_physical_response": [
+          0.21,
+          -0.11
+        ]
       }
     },
     {
@@ -91,7 +99,11 @@
         ],
         "static_representation": "absolute",
         "coarse_contract_class": "COMMON_EQUIVARIANT",
-        "runtime_decision": "TRANSPORT"
+        "runtime_decision": "TRANSPORT",
+        "heldout_physical_response": [
+          0.3,
+          0
+        ]
       },
       "b": {
         "raw_action_jacobian": [
@@ -117,8 +129,17 @@
         ],
         "static_representation": "absolute",
         "coarse_contract_class": "COMMON_EQUIVARIANT",
-        "runtime_decision": "REJECT"
+        "runtime_decision": "REJECT",
+        "heldout_physical_response": [
+          0,
+          0.4
+        ]
       }
     }
-  ]
+  ],
+  "response_gate": {
+    "min_pairs": 20,
+    "min_dec_spearman": 0.5,
+    "required_spearman_margin": 0.1
+  }
 }
