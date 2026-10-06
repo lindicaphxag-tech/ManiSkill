@@ -167,7 +167,7 @@ def main(output: Path) -> int:
     small_j, small_sym = central(0.25, 123)
     large_j, _ = central(0.50, 123)
     replicate_seeds = [123, 456, 789, 101112, 131415]
-    replicate_jacobians = [small_j, central(0.25, 456)[0], central(0.25, 789)[0]]
+    replicate_jacobians = [small_j] + [central(0.25, seed)[0] for seed in replicate_seeds[1:]]
     flat_replicates = np.stack([j.reshape(-1, j.shape[-1]) for j in replicate_jacobians])
     uncertainty = estimate_dec_uncertainty(
         flat_replicates, min_replicates=5, max_q95_radius=0.15
@@ -234,6 +234,7 @@ def main(output: Path) -> int:
             "per_action_step_gain": [float(x) for x in step_gain],
             "per_action_step_curvature": [float(x) for x in curvature],
             "rng_seed_replicates": replicate_seeds,
+            "replicate_count": len(replicate_jacobians),
             "pairwise_seed_dec_distances": [float(x) for x in pairwise],
             "q95_seed_dec_radius": _finite("q95_seed_dec_radius", uncertainty.q95_signature_radius),
             "replicate_stability_certified": bool(uncertainty.stable),
