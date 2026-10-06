@@ -58,7 +58,7 @@ as Pi0. The generic `make_policy` path already populates
 
 Targeted validation is frozen against LeRobot commit:
 
-`d40e8709cffb93644db66e30604ef50fdec003cb`
+`156ca6e741e2167d46b9051c2e58193842d0fbb9`
 
 The handoff CI performs:
 
@@ -73,3 +73,12 @@ No model weights, rollout engine, queue implementation, or shared relative
 processor are changed.
 
 Fixes / advances #3312.
+
+
+## AI assistance disclosure
+
+Significant AI assistance was used to audit the processor semantics, prepare the
+initial patch, and stress-test the failure modes. The contributor reviewed the
+final three-file diff against LeRobot's shared relative-action implementation,
+verified the chunk-anchor semantics, and ran the targeted official processor
+tests before requesting review.
