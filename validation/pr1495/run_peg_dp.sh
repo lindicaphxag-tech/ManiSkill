@@ -117,6 +117,31 @@ if [[ ! -f "$DEMO" || ! -f "$DEMO_JSON" ]]; then
   exit 1
 fi
 
+# Infrastructure-only headless patch applied symmetrically to baseline and
+# fixed.  It changes neither the policy architecture nor the converted data; it
+# only forwards render_backend="none" into evaluation env construction so state
+# evaluation does not require a Vulkan device.
+TRAIN_PY="$SRC/examples/baselines/diffusion_policy/train.py"
+python - "$TRAIN_PY" <<'PY'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text()
+old = 'env_kwargs = dict(control_mode=args.control_mode, reward_mode="sparse", obs_mode="state", render_mode="rgb_array", human_render_camera_configs=dict(shader_pack="default"))'
+new = 'env_kwargs = dict(control_mode=args.control_mode, reward_mode="sparse", obs_mode="state", render_mode="rgb_array", render_backend="none", human_render_camera_configs=dict(shader_pack="default"))'
+if text.count(old) != 1:
+    raise SystemExit(f"headless patch anchor count={text.count(old)}")
+path.write_text(text.replace(old, new))
+print("applied symmetric headless evaluation patch")
+PY
+HEADLESS_PATCH_SHA="$(python - <<PY
+from hashlib import sha256
+from pathlib import Path
+print(sha256(Path("$TRAIN_PY").read_bytes()).hexdigest())
+PY
+)"
+
 RUN_NAME="pr1495-${VARIANT}-PegInsertionSide-v1-state-${NUM_DEMOS}d-seed${SEED}"
 OUT="$WORK_ROOT/evidence/$RUN_NAME"
 mkdir -p "$OUT"
@@ -175,30 +200,7 @@ print(json.dumps({
 }, indent=2))
 PY
 
-# Infrastructure-only headless patch applied symmetrically to baseline and
-# fixed.  It changes neither the policy architecture nor the converted data; it
-# only forwards render_backend="none" into evaluation env construction so state
-# evaluation does not require a Vulkan device.
-TRAIN_PY="$SRC/examples/baselines/diffusion_policy/train.py"
-python - "$TRAIN_PY" <<'PY'
-import sys
-from pathlib import Path
 
-path = Path(sys.argv[1])
-text = path.read_text()
-old = 'env_kwargs = dict(control_mode=args.control_mode, reward_mode="sparse", obs_mode="state", render_mode="rgb_array", human_render_camera_configs=dict(shader_pack="default"))'
-new = 'env_kwargs = dict(control_mode=args.control_mode, reward_mode="sparse", obs_mode="state", render_mode="rgb_array", render_backend="none", human_render_camera_configs=dict(shader_pack="default"))'
-if text.count(old) != 1:
-    raise SystemExit(f"headless patch anchor count={text.count(old)}")
-path.write_text(text.replace(old, new))
-print("applied symmetric headless evaluation patch")
-PY
-HEADLESS_PATCH_SHA="$(python - <<PY
-from hashlib import sha256
-from pathlib import Path
-print(sha256(Path("$TRAIN_PY").read_bytes()).hexdigest())
-PY
-)"
 
 cd "$SRC/examples/baselines/diffusion_policy"
 
