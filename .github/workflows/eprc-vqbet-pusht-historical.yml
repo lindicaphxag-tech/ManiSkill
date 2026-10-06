@@ -32,6 +32,11 @@ jobs:
           git clone https://github.com/huggingface/lerobot.git /tmp/lerobot
           cd /tmp/lerobot
           git checkout 2cb0bf5d4154c8fefe03d1dca394fc5e1d778a97
+          # Packaging-only compatibility: old metadata names the PyAV distribution `pyav`,
+          # while the imported module and modern PyPI distribution are `av`.
+          # No LeRobot source/model semantics are changed.
+          sed -i 's/^pyav = ">=12.0.5"/av = ">=12.0.5"/' pyproject.toml
+          grep -q '^av = ">=12.0.5"' pyproject.toml
 
       - name: Install checkpoint-era PushT stack
         run: |
