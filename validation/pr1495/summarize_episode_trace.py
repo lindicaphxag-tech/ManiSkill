@@ -58,6 +58,7 @@ def _compare(a: dict, b: dict) -> dict:
             break
 
     first_physical = None
+    first_material_physical = None
     max_position_delta = {"value": -1.0, "source_step": None}
     max_rotation_delta = {"value": -1.0, "source_step": None}
     max_post_rot_residual_delta = {"value": -1.0, "source_step": None}
@@ -109,6 +110,52 @@ def _compare(a: dict, b: dict) -> dict:
             )
         ):
             first_physical = entry
+        if (
+            first_material_physical is None
+            and (
+                position_delta > 1e-3
+                or rotation_delta > 1.0
+                or ra["task_success"] != rb["task_success"]
+            )
+        ):
+            first_material_physical = entry
+
+    material_step = (
+        None
+        if first_material_physical is None
+        else int(first_material_physical["source_step"])
+    )
+
+    def diagnostic_window(report: dict, center: int | None):
+        if center is None:
+            return []
+        rows = []
+        for row in report["records"]:
+            step = int(row["source_step"])
+            if center - 3 <= step <= center + 3:
+                rows.append(
+                    {
+                        "source_step": step,
+                        "inner_iteration": int(row["inner_iteration"]),
+                        "pre_position_error": float(row["pre_position_error"]),
+                        "pre_rotation_error_deg": float(
+                            row["pre_rotation_error_deg"]
+                        ),
+                        "raw_action": row["raw_action"],
+                        "raw_rotation_norm": float(row["raw_rotation_norm"]),
+                        "position_clipped": bool(row["position_clipped"]),
+                        "rotation_clipped": bool(row["rotation_clipped"]),
+                        "applied_arm_action": row["applied_arm_action"],
+                        "retry_required": bool(row["retry_required"]),
+                        "post_position_error": float(row["post_position_error"]),
+                        "post_rotation_error_deg": float(
+                            row["post_rotation_error_deg"]
+                        ),
+                        "task_success": bool(row["task_success"]),
+                        "info": row["info"],
+                    }
+                )
+        return rows
 
     return {
         "a_variant": a["variant"],
@@ -125,6 +172,13 @@ def _compare(a: dict, b: dict) -> dict:
         "b_retried_source_steps": int(b["retried_source_steps"]),
         "first_retry_count_mismatch": first_retry_mismatch,
         "first_post_step_physical_divergence": first_physical,
+        "first_material_physical_divergence": first_material_physical,
+        "material_divergence_threshold": {
+            "ee_position_delta_m": 1e-3,
+            "ee_rotation_delta_deg": 1.0,
+        },
+        "material_divergence_window_a": diagnostic_window(a, material_step),
+        "material_divergence_window_b": diagnostic_window(b, material_step),
         "max_ee_position_delta": max_position_delta,
         "max_ee_rotation_delta_deg": max_rotation_delta,
         "max_post_rotation_residual_delta_deg": max_post_rot_residual_delta,
