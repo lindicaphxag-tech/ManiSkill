@@ -56,6 +56,17 @@ n^T d - r (||G_hat^T n|| + epsilon_G ||n||) > tau.
 
 The verifier recomputes this inequality without invoking the repair optimizer.
 
+### Evidence-source routing
+
+An inconclusive certificate is not treated as one generic uncertainty state. The compact core distinguishes:
+
+- `INFORMATION_LIMITED` -> targeted certificate probes;
+- `STOCHASTIC_LIMITED` -> control / replicate policy randomness;
+- `LOCALITY_LIMITED` -> stop same-scale probing and validate a smaller trust region;
+- `MIXED_UNCERTAINTY` -> separate the sources experimentally.
+
+The paired Diffusion/VQ-BeT result is the first real-policy witness that these routes can differ under the same physical protocol.
+
 ### Certificate identifiability
 
 The acquisition objective is not full Jacobian recovery. For a concrete repair
@@ -99,6 +110,21 @@ A separate preregistered five-state model-order gate produced 0/5 response-jet
 rescues, so the richer jet was dropped from the flagship rather than tuned.
 
 These are self-authored results. They count as **zero external adoption**.
+
+## Cross-policy witness
+
+A same-runner paired experiment now covers both official frozen policy families under the identical PushT protocol:
+
+- Diffusion Policy: DEC q95 radius **3.826**, stability gate **failed**, dominant bottleneck **STOCHASTIC_LIMITED**, robust CRG **INCONCLUSIVE**;
+- VQ-BeT: DEC q95 radius **0.0**, stability gate **passed**, dominant bottleneck **LOCALITY_LIMITED**, robust CRG **INCONCLUSIVE**;
+- paired DEC signature distance: **0.259**;
+- held-out response relative distance: **1.530**;
+- robust decisions agree: **yes**;
+- both DEC stability gates pass: **no**.
+
+This explicitly rejects the over-strong claim that different policy families should share the same numerical DEC. The surviving cross-policy claim is that the same physical-repairability framework can expose **different evidence bottlenecks** and fail closed without forcing a repair.
+
+Frozen record: `research/eprc/CROSS_POLICY_RESULT_2026_10_06.md`.
 
 ## What is intentionally not in this core artifact
 
