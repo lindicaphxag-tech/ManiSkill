@@ -1,0 +1,27 @@
+name: Validate issue 429 clean patch
+
+on:
+  push:
+    branches:
+      - "fix/issue-429-joint-delta-pos-clean"
+    paths:
+      - "mani_skill/trajectory/utils/actions/conversion.py"
+      - "tests/test_action_conversion_joint_semantics.py"
+      - ".github/workflows/validate-issue-429-clean.yml"
+  workflow_dispatch:
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - run: python -m py_compile mani_skill/trajectory/utils/actions/conversion.py
+      - run: python -m pytest -q tests/test_action_conversion_joint_semantics.py
