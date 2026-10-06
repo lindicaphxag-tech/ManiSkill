@@ -1,0 +1,57 @@
+name: PR1495 Diffusion Policy headless CPU smoke
+
+on:
+  push:
+    branches:
+      - "validation/maniskill1495-maintainer-request"
+    paths:
+      - "validation/pr1495/run_peg_dp.sh"
+      - ".github/workflows/maniskill1495-dp-headless-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  headless-dp-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [baseline, fixed]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install state-simulation runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libegl1
+
+      - name: Run two-iteration headless Diffusion Policy smoke
+        env:
+          VARIANT: ${{ matrix.variant }}
+          SEED: "1"
+          NUM_DEMOS: "2"
+          REPLAY_COUNT: "2"
+          TOTAL_ITERS: "2"
+          NUM_EVAL_ENVS: "1"
+          NUM_EVAL_EPISODES: "1"
+          EVAL_FREQ: "1000000"
+          BATCH_SIZE: "8"
+          TRACK_MODE: "tensorboard"
+          WORK_ROOT: ${{ github.workspace }}/.validation-pr1495-dp-smoke
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+        run: bash validation/pr1495/run_peg_dp.sh
+
+      - name: Upload smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr1495-dp-headless-smoke-${{ matrix.variant }}
+          path: .validation-pr1495-dp-smoke/evidence
+          if-no-files-found: warn
