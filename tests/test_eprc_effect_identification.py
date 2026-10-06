@@ -59,7 +59,7 @@ def test_large_probe_region_can_fail_held_out_locality_gate():
 
     base = np.array([0.6, 0.0])
     probes = np.array([[1.0, 0.0], [0.0, 1.0]])
-    held = np.array([[1.0, 1.0], [-1.0, 0.4]])
+    held = np.array([[0.5, 1.0], [-0.3, 0.4]])
 
     # A very large epsilon asks one linearization to explain a visibly curved region.
     _, cert = estimate_effect_jacobian(
