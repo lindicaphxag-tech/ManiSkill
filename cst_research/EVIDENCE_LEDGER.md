@@ -194,3 +194,27 @@ Novelty boundary: high-frequency action chunks, interpolation and asynchronous e
 - External maintainer adoption remains 0.
 - L8 achieved: NO.
 - L9 achieved: NO.
+
+## Latest 75-test public suite and staged robomimic converter
+
+- Full-suite run: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37471248763
+- Result: `75 passed in 3.20s`.
+- Workflow compiles the complete `cst_research` tree and runs every
+  `test_*.py` file with NumPy, SciPy and pytest.
+- The robomimic second-stack semantic core is therefore included in the same
+  public regression suite as the ManiSkill / LeRobot CST components.
+- Upstream-style candidate:
+  `cst_research/upstream_candidates/robomimic/robosuite_add_delta_actions.py`.
+- Candidate integration plan:
+  `cst_research/upstream_candidates/robomimic/INTEGRATION_PLAN.md`.
+- The candidate mirrors robomimic's existing delta->absolute converter and
+  supports OSC scaling inversion, SO(3) left-composition inversion,
+  robosuite <=1.4.1 and >=1.5 controller layouts, remainder preservation, and
+  explicit saturation diagnostics.
+- Direct attempt to post the implementation design to robomimic #270 through
+  the connected GitHub integration returned HTTP 403
+  `Resource not accessible by integration`.
+- Upstream robomimic PR remains **not opened**; this is public preparation and
+  reproducibility evidence, not adoption.
+
+Current external adoption remains 0. L8 achieved: NO. L9 achieved: NO.
