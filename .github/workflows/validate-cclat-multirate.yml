@@ -1,0 +1,26 @@
+name: Validate CCLAT multirate transport
+
+on:
+  push:
+    branches:
+      - "fix/joint-delta-to-joint-pos-semantics"
+    paths:
+      - "cst_validation/closed_loop_transport.py"
+      - "cst_validation/multirate_transport.py"
+      - "cst_validation/test_multirate_transport.py"
+      - ".github/workflows/validate-cclat-multirate.yml"
+  workflow_dispatch:
+
+jobs:
+  multirate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install numpy pytest
+      - name: Run multi-rate transport tests
+        working-directory: cst_validation
+        run: python -m pytest -q test_multirate_transport.py
