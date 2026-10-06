@@ -1,0 +1,33 @@
+name: SemRepair CPU reproduction capsule
+
+on:
+  push:
+    branches:
+      - "repro/semrepair-cpu-v1"
+    paths:
+      - "semrepair_repro/**"
+      - ".github/workflows/semrepair-cpu-repro.yml"
+  pull_request:
+    paths:
+      - "semrepair_repro/**"
+      - ".github/workflows/semrepair-cpu-repro.yml"
+  workflow_dispatch:
+
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run the exact public reproduction command
+        run: |
+          bash semrepair_repro/reproduce_lerobot_cpu.sh
+          python semrepair_repro/measurement_gate.py lerobot_mapping_compensation.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: semrepair-lerobot-cpu-reproduction
+          path: lerobot_mapping_compensation.json
+          if-no-files-found: error
