@@ -27,10 +27,15 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install state-simulation runtime libraries
+      - name: Install CPU/headless simulation runtime
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1 libegl1
+          sudo apt-get install -y libgl1 libegl1 mesa-vulkan-drivers vulkan-tools
+          LVP_ICD="$(find /usr/share/vulkan/icd.d -maxdepth 1 -type f -name 'lvp_icd*.json' | head -n1)"
+          test -n "$LVP_ICD"
+          echo "VK_ICD_FILENAMES=$LVP_ICD" >> "$GITHUB_ENV"
+          VK_ICD_FILENAMES="$LVP_ICD" vulkaninfo --summary
+
 
       - name: Run two-iteration headless Diffusion Policy smoke
         env:
