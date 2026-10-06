@@ -82,6 +82,16 @@ jobs:
           assert ub["combined_empirical_locality_radius"] >= ub["finite_difference_scale_drift_radius"]
           assert d["robust_crg"]["support_trust_radius"] == 0.5
           assert d["robust_crg"]["action_residual_tolerance"] == 4.0
+          router = d["evidence_action_router"]
+          assert router["bottleneck"] in {
+              "TERMINAL", "INFORMATION_LIMITED", "STOCHASTIC_LIMITED",
+              "LOCALITY_LIMITED", "MIXED_UNCERTAINTY"
+          }
+          ub = d["robust_crg"]["uncertainty_breakdown"]
+          if router["bottleneck"] == "STOCHASTIC_LIMITED":
+              assert ub["rng_stochastic_radius"] > ub["finite_difference_scale_drift_radius"]
+          if router["bottleneck"] == "LOCALITY_LIMITED":
+              assert ub["finite_difference_scale_drift_radius"] > ub["rng_stochastic_radius"]
           if d["robust_crg"]["decision"] == "CERTIFIED_IMPOSSIBLE":
               w = d["robust_crg"]["proof_carrying_impossibility_witness"]
               assert w is not None
