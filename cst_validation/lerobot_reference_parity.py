@@ -46,7 +46,7 @@ def load_lerobot_reference_functions(source_path: Path):
 
 
 def load_cst_reference_module(cst_path: Path):
-    spec = importlib.util.spec_from_file_location("cst_reference_semantics", cst_path)
+    spec = importlib.util.spec_from_file_location("reference_semantics", cst_path)
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     assert spec.loader is not None
@@ -61,6 +61,8 @@ def main():
 
     to_relative, to_absolute = load_lerobot_reference_functions(lerobot_source)
     cst = load_cst_reference_module(cst_source)
+    sys.path.insert(0, str(cst_source.parent))
+    from jit_reference_adapter import JustInTimeReferenceAdapter
 
     rng = np.random.default_rng(20261006)
     random_chunks = 500
@@ -72,6 +74,9 @@ def main():
     max_absolute_error = 0.0
     checked_trajectories = 0
     checked_action_vectors = 0
+    jit_max_goal_error = 0.0
+    naive_copy_max_goal_error = 0.0
+    jit_checked_action_vectors = 0
 
     for _ in range(random_chunks):
         state = rng.normal(size=(batch, dim)).astype(np.float32)
@@ -115,6 +120,46 @@ def main():
                 max_absolute_error,
                 float(np.max(np.abs(cst_transport.target_actions - abs_lr[b]))),
             )
+
+            # Cross-reference runtime bridge: execute the real LeRobot
+            # CHUNK_ANCHOR source chunk through CST into CURRENT_STATE deltas.
+            # The execution state intentionally moves and includes tracking
+            # perturbations, so query-time tensor copying is not equivalent.
+            target_semantics = cst.ReferenceSemantics(
+                kind=cst.ReferenceKind.CURRENT_STATE,
+                relative_mask=mask,
+            )
+            adapter = JustInTimeReferenceAdapter(
+                semantics,
+                target_semantics,
+                source_chunk_anchor=state[b],
+            )
+            execution_state = state[b].astype(float).copy()
+            naive_state = execution_state.copy()
+            for t in range(horizon):
+                out = adapter.step(
+                    rel_lr[b, t],
+                    current_state=execution_state,
+                )
+                expected = abs_lr[b, t].astype(float)
+                jit_max_goal_error = max(
+                    jit_max_goal_error,
+                    float(np.max(np.abs(out.reconstructed_target_goal - expected))),
+                )
+
+                naive_goal = rel_lr[b, t].astype(float).copy()
+                naive_goal[mask] = naive_state[mask] + rel_lr[b, t, mask]
+                naive_copy_max_goal_error = max(
+                    naive_copy_max_goal_error,
+                    float(np.max(np.abs(naive_goal - expected))),
+                )
+
+                # JIT remains goal-correct under changing measured state.
+                execution_state = expected + rng.normal(scale=0.03, size=dim)
+                # Naive copied deltas compound under ideal tracking.
+                naive_state = naive_goal
+                jit_checked_action_vectors += 1
+
             checked_trajectories += 1
             checked_action_vectors += horizon
 
@@ -175,12 +220,18 @@ def main():
         "max_cst_vs_lerobot_absolute_error": max_absolute_error,
         "temporal_stack_current_frame_error": temporal_stack_error,
         "chunk_vs_sequential_same_numbers_max_goal_divergence": divergence,
+        "jit_chunk_anchor_to_current_state_max_goal_error": jit_max_goal_error,
+        "naive_copy_chunk_to_current_state_max_goal_error": naive_copy_max_goal_error,
+        "jit_checked_action_vectors": jit_checked_action_vectors,
     }
 
     assert max_relative_error <= 2e-6, result
     assert max_absolute_error <= 2e-6, result
     assert temporal_stack_error == 0.0, result
     assert divergence == 3.0, result
+    assert jit_max_goal_error <= 2e-6, result
+    assert jit_checked_action_vectors == checked_action_vectors, result
+    assert naive_copy_max_goal_error > 1e-2, result
 
     print("LEROBOT_CST_PARITY_JSON=" + json.dumps(result, sort_keys=True))
 
