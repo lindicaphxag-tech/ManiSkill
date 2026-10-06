@@ -27,6 +27,7 @@ jobs:
           python -m py_compile cst_validation/cst/compiler.py
           python -m py_compile cst_validation/cst/action_contract.py
           python -m py_compile cst_validation/cst/provenance.py
+          python -m py_compile cst_validation/cst/proof.py
       - name: Run semantic transport and reachability tests
         env:
           PYTHONPATH: cst_validation
@@ -34,4 +35,5 @@ jobs:
           pytest -q             cst_validation/tests/test_core.py             cst_validation/tests/test_reachability.py \
             cst_validation/tests/test_compiler.py \
             cst_validation/tests/test_action_contract.py \
-            cst_validation/tests/test_provenance.py
+            cst_validation/tests/test_provenance.py \
+            cst_validation/tests/test_proof.py
