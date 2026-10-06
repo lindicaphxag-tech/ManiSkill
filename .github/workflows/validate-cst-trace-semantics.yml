@@ -26,6 +26,7 @@ jobs:
           python -m py_compile cst_validation/trace_semantics.py
           python -m py_compile cst_validation/global_trace_morphism.py
           python -m py_compile cst_validation/contextual_trace_morphism.py
+          python -m py_compile cst_validation/robosuite_joint_semantics.py
       - name: Run controller semantic IR tests
         working-directory: cst_validation
         run: python -m pytest -q test_controller_semantic_ir.py
@@ -44,6 +45,10 @@ jobs:
       - name: Run contextual region compiler tests
         working-directory: cst_validation
         run: python -m pytest -q test_contextual_trace_morphism.py
+
+      - name: Run robosuite affine-region semantic tests
+        working-directory: cst_validation
+        run: python -m pytest -q test_robosuite_joint_semantics.py
 
       - name: Upload trace-semantic test evidence
         if: always()
@@ -70,3 +75,28 @@ jobs:
       - name: Match CST Trace IR against host PDJointPosController
         working-directory: cst_validation
         run: python -m pytest -q test_maniskill_host_parity.py
+
+
+  robosuite-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout pinned robosuite
+        uses: actions/checkout@v4
+        with:
+          repository: ARISE-Initiative/robosuite
+          ref: 5ce6643f3092639d08f7b0f90ed1c6a84f50552c
+          path: robosuite-upstream
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install pinned robosuite and CST dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ./robosuite-upstream
+          python -m pip install numpy scipy pytest
+      - name: Match CST against robosuite JointPositionController
+        working-directory: cst_validation
+        run: python -m pytest -q test_robosuite_host_parity.py
