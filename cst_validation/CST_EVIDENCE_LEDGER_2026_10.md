@@ -24,24 +24,21 @@ does not treat that statement as adoption or endorsement of CST.
 | Trace-level state-machine compiler | ManiSkill Actions #37404181955 | 9/9 PASS | Whole traces can preserve a target-state relation, or fail closed at the first unrepresentable step; includes a 500-step zero-semantic-drift randomized case. |
 | Chart-local saturation effects | ManiSkill Actions #37404910125 | 5/5 PASS | Clipping is not transferable by dimension/index alone and need not commute with cross-coordinate transport. |
 | Native ManiSkill/PhysX delta-current -> absolute equivalence | ManiSkill Actions #37404638720 | 4/4 PASS | Real PDJointPosController instances on independent headless PhysX articulations receive equal physical targets and remain qpos/qvel equivalent after five physics substeps for four non-trivial normalized source actions. |
+| Native hidden-state necessity / target-delta transport | ManiSkill Actions #37404990097 | 5/5 PASS total suite | A real target-delta controller is transported to an absolute controller over a multi-step sequence. Finite-stiffness tracking makes measured qpos diverge from the controller-owned previous target, so current-qpos stateless interpretation is observably wrong; state-aware transport preserves target/qpos/qvel equivalence. |
 
 ## Pending evidence
 
 ### Native stateful target-delta assay
 
-Run: latest workflow on branch
-`validation/issue-429-native-sim-v1`.
+Completed: ManiSkill Actions #37404990097, PASS.
 
-Goal:
-- source = real `PDJointPosController(use_delta=True, use_target=True)`;
-- target = real absolute `PDJointPosController`;
-- show finite-stiffness tracking makes current qpos differ from the
-  controller-owned previous target;
-- show a stateless current-relative conversion is therefore wrong;
-- show state-aware transport preserves target, qpos and qvel through a
-  multi-step sequence.
-
-No result is claimed until the run completes.
+The native suite contains four delta-current cases plus one multi-step
+target-delta case (5/5 total). The target-delta case explicitly asserts that,
+after the first finite-stiffness control interval, the controller-owned hidden
+target differs from measured current qpos. A stateless current-relative
+interpretation therefore predicts a different next target, while state-aware
+transport continues to preserve source/target physical targets and qpos/qvel
+under independent PhysX simulations.
 
 ### Strict upstream-base-fail / patch-pass differential
 
