@@ -36,7 +36,7 @@ and is bound to runtime provenance through a SHA-256 digest.
 ## 5-minute reproduction
 
 ```bash
-python -m pytest -q tests/test_eprc_runtime.py
+python -m pytest -q tests/test_eprc_runtime.py tests/test_eprc_contract_signature.py tests/test_eprc_support_restricted_authority.py
 python research/eprc/reproduce.py research/eprc/evidence/replication_example.json --expect REPAIR
 ```
 
@@ -82,6 +82,23 @@ EPRC is not presented as the first runtime safety layer, counterfactual planner,
 latency compensator, controller converter, Jacobian method, or VLA recovery
 system.
 
-The narrower research question is whether a frozen policy's **executable
-physical contract** can be recovered strongly enough to choose between exact
-transport, bounded local repair, and rejection across policy/controller changes.
+The narrower research question is whether a frozen policy's **Differential
+Execution Contract (DEC)** can be recovered from controlled physical
+interventions, lifted into canonical physical-command space, and used to choose
+between exact transport, bounded repair, and rejection across
+policy/controller changes.
+
+Two boundaries are explicit:
+
+- smooth locally invertible action reparameterizations should preserve DEC;
+- controller authority changes should matter only when they remove a physical
+  direction required by the current support-induced response.
+
+The second point is tested with the support-restricted criterion
+
+```text
+Im(J_phys) ⊆ Im(L_target)
+```
+
+rather than the overly conservative requirement that the target controller be
+globally full-rank.
