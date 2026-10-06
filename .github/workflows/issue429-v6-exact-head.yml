@@ -79,7 +79,6 @@ jobs:
           p=Path(sys.argv[1])
           s=p.read_text()
           old='''        delta_qpos = gym_utils.clip_and_scale_action(ori_action_dict["arm"], low, high)
-          arm_action = prev_arm_qpos + delta_qpos
           '''
           new='''        source_native = np.clip(
               np.asarray(ori_action_dict["arm"], dtype=np.float64), -1.0, 1.0
@@ -88,7 +87,6 @@ jobs:
               0.5 * (np.asarray(high) + np.asarray(low))
               + 0.5 * (np.asarray(high) - np.asarray(low)) * source_native
           )
-          arm_action = prev_arm_qpos + delta_qpos
           '''
           if old not in s:
               raise SystemExit("expected upstream transport block not found")
