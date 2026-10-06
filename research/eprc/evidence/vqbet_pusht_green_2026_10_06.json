@@ -1,0 +1,104 @@
+{
+  "schema_version": "eprc-real-policy-summary-v1",
+  "recorded_at_utc": "2026-10-06T11:34:00Z",
+  "repository_head": "49f7bae973f50f8f166076430017f7857d3f778e",
+  "policy": {
+    "model_id": "lerobot/vqbet_pusht",
+    "model_revision": "390e5e4c079c880b22e873dad53ecfac706bc78a",
+    "lerobot_training_runtime": "3c0a209f9fac4d2a57617e686a7f2a2309144ba2"
+  },
+  "protocol": {
+    "id": "pusht-block-xyt-fine-4px-4px-0.02rad-coarse-8px-8px-0.04rad-v1",
+    "environment_reset_seed": 17,
+    "support_scale": [
+      16,
+      16,
+      0.08
+    ],
+    "fine_physical_probe": [
+      4,
+      4,
+      0.02
+    ],
+    "coarse_physical_probe": [
+      8,
+      8,
+      0.04
+    ],
+    "heldout_physical_delta": [
+      10,
+      -6,
+      0.35
+    ],
+    "state_restore_protocol": "reset-fresh-space-exact-readback-v1"
+  },
+  "workflow_runs": {
+    "contract_capsule": 37456801120,
+    "lerobot_plugin_compatibility": 37456801328,
+    "historical_vqbet": 37456801100,
+    "current_vqbet": 37456801175
+  },
+  "observed": {
+    "preprocess_repeat_max_error": 0,
+    "paired_policy_repeat_max_error": 0,
+    "rng_replicates": 5,
+    "pairwise_seed_dec_distances": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "q95_seed_dec_radius": 0,
+    "replicate_stability_certified": true,
+    "first_action_step_jacobian": [
+      [
+        0.1599884033203125,
+        0.006664276123046875,
+        2.6519775390625
+      ],
+      [
+        0.4089317321777344,
+        -0.06299209594726562,
+        -14.7735595703125
+      ]
+    ],
+    "heldout_first_action_response": [
+      -0.44964599609375,
+      -7.718475341796875
+    ],
+    "robust_crg": {
+      "decision": "INCONCLUSIVE",
+      "nominal_residual_norm": 4.422654181300321,
+      "best_case_residual_lower": 2.9163478663407396,
+      "worst_case_residual_upper": 5.9289604962599025,
+      "action_residual_tolerance": 4,
+      "robust_certified_radius": 0.5,
+      "operator_norm_uncertainty_observed_max": 3.0126126299191625,
+      "uncertainty_breakdown": {
+        "rng_stochastic_radius": 0,
+        "finite_difference_scale_drift_radius": 3.0126126299191625,
+        "combined_empirical_locality_radius": 3.0126126299191625
+      }
+    },
+    "active_minimal_certificate": {
+      "initial_decision": "INCONCLUSIVE",
+      "planned_probe_count": 6,
+      "planned_symmetric_policy_evaluations": 12,
+      "final_planned_decision": "INCONCLUSIVE",
+      "budget_exhausted": true,
+      "status": "planning_only_no_additional_policy_queries_executed"
+    },
+    "evidence_action_router": {
+      "bottleneck": "LOCALITY_LIMITED",
+      "additional_same_scale_queries_authorized": false,
+      "recommended_action": "reduce physical probe scale and trust radius, or fit/validate a higher-order local response model"
+    }
+  },
+  "claim_boundary": "Real frozen-policy black-box support-response evidence. The robust held-out repair request is inconclusive and locality-limited under the frozen uncertainty decomposition; same-scale directional probing is not authorized as evidence for reducing scale drift. This is not an L8 event."
+}
