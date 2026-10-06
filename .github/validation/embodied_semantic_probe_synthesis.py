@@ -28,8 +28,8 @@ import json
 from math import isfinite
 from typing import Sequence
 
-from .embodied_semantic_observability import SemanticDiagnosisHypothesis
-from .embodied_semantic_transport import MonomialSemanticTransport
+from embodied_semantic_observability import SemanticDiagnosisHypothesis
+from embodied_semantic_transport import MonomialSemanticTransport
 
 
 @dataclass(frozen=True)
