@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "snapshot_name": "SemRepair public evidence snapshot 2026-10-06 v1",
+  "frozen_from_head": "1b4c5a78138e4ffa2ca1295eba31df20ec3bc2a9",
+  "purpose": "Immutable-by-convention public evidence snapshot for external inspection/reproduction. This snapshot is self-authored and does not count as external adoption.",
+  "cases": {
+    "maniskill_semantic_interaction": {
+      "workflow_run": 37401619096,
+      "source_identities": {
+        "main": "62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3",
+        "converter_only": "cdd6db713ffe7edc3e0df3abfab51ea5320c1c0b",
+        "controller_only": "eed9be164797d41540421bda8adb3840377d7087"
+      },
+      "corpora": 2,
+      "inference_unit": "episode",
+      "result": {
+        "strict_compensating_bundle": true,
+        "singleton_repairs_harmful": true,
+        "composed_semantically_better_than_main": true
+      },
+      "canonical_document": "validation/pr1495/PAIRED_SEMANTIC_FIDELITY_RESULT_V2.md"
+    },
+    "maniskill_execution_gate": {
+      "workflow_run": 37407944746,
+      "repeat_count_per_variant": 5,
+      "main_success": "9/10 x5",
+      "clean_adapter_v2_success": "8/10 x5",
+      "exact_success_sets_repeatable": true,
+      "decision": "reject",
+      "canonical_document": "validation/pr1495/MEASUREMENT_QUALIFIED_EXECUTION_RESULT_V1.md"
+    },
+    "lerobot_self_consistency_blind_spot": {
+      "workflow_run": 37407845159,
+      "upstream_sha": "8c920c4270460851cedd2737657584586d3dc66f",
+      "upstream_issue": "huggingface/lerobot#3863",
+      "community_fix_pr": "huggingface/lerobot#4111",
+      "result": {
+        "one_way_semantic_linf_error": 59.7,
+        "roundtrip_linf_error": 0,
+        "deterministic_cases": 32,
+        "all_roundtrips_pass": true,
+        "all_forward_semantics_fail": true
+      },
+      "canonical_document": "validation/crossstack/LEROBOT_MAPPING_COMPENSATION_V1.md"
+    },
+    "groot_episode_boundary": {
+      "upstream_pr": "NVIDIA/Isaac-GR00T#786",
+      "upstream_head": "8ca15ac4f3e76f1a4151bfd1f59572d306d99b49",
+      "validation_run": 37380686525,
+      "python_versions": [
+        "3.10",
+        "3.12",
+        "3.13"
+      ],
+      "dedicated_validator": "success",
+      "claim_boundary": "Exact-head self-authored validation; not maintainer review or adoption."
+    },
+    "casj_semrepair_proof_bridge": {
+      "repository": "lindicaphxag-tech/Isaac-GR00T",
+      "workflow_run": 37368957461,
+      "python_versions": [
+        "3.10",
+        "3.12",
+        "3.13"
+      ],
+      "result": "success",
+      "claim_boundary": "Cross-implementation self-authored public validation; not external adoption."
+    }
+  },
+  "external_counts": {
+    "independent_third_party_reproductions": 0,
+    "upstream_retained_semrepair_regressions": 0,
+    "upstream_retained_semrepair_production_fixes": 0,
+    "external_semrepair_citations": 0,
+    "resolved_prospective_i2": 0
+  },
+  "supported_claims": [
+    "Compensating semantic defects can make locally correct singleton repairs non-monotone in a real robot software boundary.",
+    "Semantic restoration and execution non-regression are separate authorization obligations.",
+    "Perfect round-trip self-consistency can be non-identifying when forward/inverse mappings share the same latent semantic error.",
+    "Exact-head GR00T episode-boundary semantics are covered by a public multi-Python self-authored validator."
+  ],
+  "unsupported_claims": [
+    "Maintained external adoption",
+    "Independent third-party reproduction",
+    "Policy-training improvement",
+    "Real-robot safety",
+    "Universal generality across robot software",
+    "Resolved prospective I2"
+  ]
+}
