@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from hashlib import sha256
+from math import isfinite
 from pathlib import Path
 
 
@@ -73,8 +74,8 @@ def validate_replication_record(path: str | Path) -> ReplicationAudit:
         raise ValueError("support_stability must lie in [0, 1]")
     if residual < 0.0:
         raise ValueError("held_out_residual must be non-negative")
-    if not margin == margin:
-        raise ValueError("representability_margin must be finite or signed numeric evidence")
+    if not isfinite(margin):
+        raise ValueError("representability_margin must be finite")
 
     decision = str(data["decision"])
     outcome = str(data["execution_outcome"])
