@@ -64,6 +64,12 @@ jobs:
           assert len(d["robust_crg"]["first_action_replicate_maps"]) == 5
           assert d["robust_crg"]["decision"] in {"CERTIFIED_REPAIR", "CERTIFIED_IMPOSSIBLE", "INCONCLUSIVE"}
           assert d["robust_crg"]["operator_norm_uncertainty_observed_max"] >= 0.0
+          ub = d["robust_crg"]["uncertainty_breakdown"]
+          assert ub["rng_stochastic_radius"] >= 0.0
+          assert ub["finite_difference_scale_drift_radius"] >= 0.0
+          assert ub["combined_empirical_locality_radius"] == d["robust_crg"]["operator_norm_uncertainty_observed_max"]
+          assert ub["combined_empirical_locality_radius"] >= ub["rng_stochastic_radius"]
+          assert ub["combined_empirical_locality_radius"] >= ub["finite_difference_scale_drift_radius"]
           assert d["robust_crg"]["support_trust_radius"] == 0.5
           assert d["robust_crg"]["action_residual_tolerance"] == 4.0
           if d["robust_crg"]["decision"] == "CERTIFIED_IMPOSSIBLE":
