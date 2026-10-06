@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+from hashlib import sha256
+from json import dumps
 from math import inf
 from typing import Iterable
 
@@ -38,6 +40,7 @@ class ProspectiveGate:
 
 @dataclass(frozen=True)
 class GateResult:
+    gate_digest: str
     n_pairs: int
     dec_auc: float
     raw_auc: float
@@ -46,6 +49,11 @@ class GateResult:
     coarse_class_auc: float
     passed: bool
     reason: str
+
+
+def gate_digest(gate: ProspectiveGate) -> str:
+    canonical = dumps(asdict(gate), sort_keys=True, separators=(",", ":"))
+    return sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def _normalized_raw_distance(a: np.ndarray, b: np.ndarray) -> float:
@@ -123,6 +131,7 @@ def evaluate_gate(
     pairs = tuple(pairs)
     if len(pairs) < gate.min_pairs:
         return GateResult(
+            gate_digest=gate_digest(gate),
             n_pairs=len(pairs),
             dec_auc=float("nan"),
             raw_auc=float("nan"),
@@ -155,6 +164,7 @@ def evaluate_gate(
     )
 
     return GateResult(
+        gate_digest=gate_digest(gate),
         n_pairs=len(pairs),
         dec_auc=metrics["dec"],
         raw_auc=metrics["raw"],
