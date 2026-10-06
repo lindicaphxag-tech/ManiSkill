@@ -1,0 +1,23 @@
+name: Validate CCLAT risk-limited gate
+
+on:
+  push:
+    branches:
+      - "fix/joint-delta-to-joint-pos-semantics"
+    paths:
+      - "cst_validation/risk_limited_gate.py"
+      - "cst_validation/test_risk_limited_gate.py"
+      - ".github/workflows/validate-cclat-risk-limited.yml"
+
+jobs:
+  risk-limited:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install numpy pytest
+      - name: Run finite-sample risk-limited tests
+        run: python -m pytest -q cst_validation/test_risk_limited_gate.py
