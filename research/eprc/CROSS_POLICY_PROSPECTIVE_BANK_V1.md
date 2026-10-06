@@ -50,6 +50,12 @@ and policy-randomness replicates use seeds:
 123, 456, 789
 ```
 
+DEC signatures are computed after whitening the support coordinates with the
+frozen physical metric `diag([1/16^2, 1/16^2, 1/0.08^2])`. For each policy and
+state, the three replicate signatures receive a q95 stability diagnostic with a
+frozen threshold of **0.15**. No state is removed for exceeding that threshold;
+instability is reported alongside the primary result.
+
 No case may be removed because the result is inconvenient. Invalid physical
 states must be reported as protocol failures, not silently resampled.
 
