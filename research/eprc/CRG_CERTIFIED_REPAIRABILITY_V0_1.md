@@ -8,27 +8,40 @@ CRG asks a stronger question than DEC:
 
 Let `J` be the CASJ action-support Jacobian and `C` the semantic lift from action coordinates to canonical physical commands. Define `G = C J`.
 
-For a local support-space trust radius `r`, the policy-consistent physical correction set is the image of a ball:
+A scalar Euclidean norm on raw support coordinates is not physically meaningful
+when coordinates mix units such as pixels and radians, and it is not invariant
+to a change of support chart. CRG therefore uses an explicit positive-definite
+support metric `M`:
 
-`K(r) = { G xi : ||xi||_2 <= r }`.
+`B_M(r) = { xi : xi^T M xi <= r^2 }`.
 
-The controller action box further limits `r`. If nominal action is `a0`, action row `J_i` has norm `||J_i||`, and the nearest lower/upper action margin is `m_i`, then every counterfactual repair in the support ball is guaranteed executable when:
+Writing `xi = M^{-1/2} u`, the policy-consistent physical correction set is:
 
-`r <= m_i / ||J_i||` for every active action row.
+`K_M(r) = { G M^{-1/2} u : ||u||_2 <= r }`.
+
+The identity metric is valid only when the support coordinates have already
+been declared dimensionless/canonical.
+
+The controller action box further limits `r`. If nominal action is `a0`, action row `J_i` has norm `||J_i||`, and the nearest lower/upper action margin is `m_i`, then every counterfactual repair in the metric trust region is guaranteed
+executable when:
+
+`r <= m_i / ||(J M^{-1/2})_i||_2`
+
+for every active action row.
 
 Therefore the conservative certified radius is:
 
-`r_cert = min(r_trust, min_i m_i / ||J_i||)`.
+`r_cert = min(r_trust, min_i m_i / ||(J M^{-1/2})_i||_2)`.
 
 This produces the Certified Repairability Ellipsoid:
 
-`K_cert = { C J xi : ||xi||_2 <= r_cert }`.
+`K_cert = { C J M^{-1/2} u : ||u||_2 <= r_cert }`.
 
 ## Constructive repair
 
 For target canonical physical correction `d`, solve:
 
-`min_xi ||G xi - d||_2  subject to ||xi||_2 <= r_cert`.
+`min_u ||G M^{-1/2} u - d||_2  subject to ||u||_2 <= r_cert`.
 
 The implementation solves the trust-region least-squares problem by SVD and the KKT multiplier. It returns the nearest executable correction, not merely a class label.
 
@@ -66,3 +79,24 @@ The key falsifier is simple: if CRG margin does not predict real repair success 
 ## Required next experiment
 
 Use at least two frozen policy families on the same task. Estimate `J` independently from interventions, lift through each controller's semantics, construct `K_cert`, and test whether repairability predictions transfer across action representations.
+
+## Support-chart invariance
+
+If another support chart is `xi' = R xi`, then
+
+`J' = J R^{-1}`
+
+and the physical metric transforms as
+
+`M' = R^{-T} M R^{-1}`.
+
+The induced ellipsoid in physical-command space is unchanged because
+
+`J' M'^{-1} J'^T = J M^{-1} J^T`.
+
+The implementation has an explicit non-orthogonal chart regression: certified
+radius, synthesized physical correction, residual, and signed repairability
+margin must remain unchanged after the joint `(J, M)` transformation.
+
+This is a claim boundary, not decoration: CRG must not claim representation
+invariance if the support metric is omitted for mixed-unit coordinates.
