@@ -47,6 +47,12 @@ jobs:
           assert d["environment_reset_seed"] == 17
           assert d["fine_physical_probe"] == [4.0, 4.0, 0.02]
           assert d["coarse_physical_probe"] == [8.0, 8.0, 0.04]
+          assert d["state_restore_protocol"] == "reset-fresh-space-exact-readback-v1"
+          assert d["jacobian_support_units"] == ["pixel", "pixel", "radian"]
+          assert d["heldout_physical_delta"] == [10.0, -6.0, 0.35]
+          assert len(d["heldout_first_action_response"]) == 2
+          assert len(d["dec"]["first_action_step_jacobian"]) == 2
+          assert len(d["dec"]["first_action_step_jacobian"][0]) == 3
           assert d["paired_policy_repeat_max_error"] < 1e-6
           assert d["preprocess_repeat_max_error"] < 1e-7
           assert d["dec"]["certification_eligible"] is False
