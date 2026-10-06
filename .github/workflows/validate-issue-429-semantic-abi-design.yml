@@ -23,15 +23,18 @@ jobs:
           python-version: "3.11"
           cache: pip
 
-      - name: Assert exact production and solver identities
+      - name: Assert exact production and source-kernel identities
         shell: bash
         run: |
           set -euo pipefail
           PATCH=b0e1b85d5002ead77fc42a793183e5e0c72e01cb
           git merge-base --is-ancestor "$PATCH" HEAD
           test "$(git hash-object mani_skill/trajectory/utils/actions/conversion.py)" = "d816b2da557a1bc2909e79fa2caddcf60e66c57c"
-          test "$(git hash-object .github/validation/embodied_semantic_experiment_design.py)" = "ae46b4da05e9ab07c4ee2fd178a750ecbbff26f5"
-          test "$(git hash-object tests/test_issue_429_semantic_abi_design.py)" = "4e1a6bc283bfe879c7868a2001b86dbc4b957bd7"
+          test "$(git hash-object .github/validation/semantic_kernel/embodied_semantic_transport.py)" = "76c31116e168db761514efd269db36372706ba9d"
+          test "$(git hash-object .github/validation/semantic_kernel/embodied_semantic_observability.py)" = "0236654ded63e951720060c3bc8bf98b9be300c0"
+          test "$(git hash-object .github/validation/semantic_kernel/embodied_semantic_experiment_design.py)" = "ae46b4da05e9ab07c4ee2fd178a750ecbbff26f5"
+          test "$(git hash-object .github/validation/semantic_kernel/embodied_semantic_probe_synthesis.py)" = "0a30f3abd189c2fad1fc84cfca6eef9487f80ae8"
+          test "$(git hash-object tests/test_issue_429_semantic_abi_design.py)" = "dbd09877f2324228136840defe04068cfd4c706a"
 
       - name: Install ManiSkill test dependencies
         run: |
@@ -47,9 +50,11 @@ jobs:
           {
             echo "### ManiSkill #429 semantic ABI experiment design"
             echo "- production patch head: b0e1b85d5002ead77fc42a793183e5e0c72e01cb"
+            echo "- exact source kernel mirrors: transport / observability / experiment design / probe synthesis"
             echo "- candidate semantics: source-native passthrough / physical-qpos passthrough / target-chart re-encoding"
             echo "- neutral zero action: intentionally uninformative"
-            echo "- asymmetric nonzero action: frozen discriminating probe"
-            echo "- solver optimum: scoped to the supplied finite candidate experiment table"
+            echo "- discriminating action: synthesized automatically from the frozen safe alphabet"
+            echo "- observation model: bounded L-infinity error, epsilon=1e-6"
+            echo "- exact optimum claims are scoped to frozen finite candidate sets"
             echo "- external adoption credit: 0"
           } >> "$GITHUB_STEP_SUMMARY"
