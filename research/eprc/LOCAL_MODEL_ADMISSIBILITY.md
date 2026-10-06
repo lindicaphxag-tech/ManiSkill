@@ -62,3 +62,24 @@ is policy-family dependent**.
 
 No architecture-level claim is made until the paired frozen-policy result is
 available.
+
+
+## Stronger scale-limit gate
+
+The three-scale admissibility check is a fast routing gate. A stronger claim
+requires multiple consecutive scale transitions plus repeated-probe uncertainty
+at every scale.
+
+`scale_limit_certificate.py` therefore brackets each inter-scale drift by the
+same-scale operator envelopes and only reports `CONVERGENCE_SUPPORTED` when
+multiple worst-case contraction ratios remain below a frozen `q_max < 1`.
+
+Only in that case is a conditional unobserved-scale tail radius exported to the
+repair layer. If the favorable contraction bound already exceeds `q_max`, the
+local model is rejected; if stochastic envelopes prevent the comparison, the
+result remains unresolved.
+
+This prevents `FIRST_ORDER_ADMISSIBLE` from being interpreted as a universal
+smoothness claim. It is evidence at the observed scale ladder, with the stronger
+limit certificate used whenever a downstream repair needs an extrapolation
+toward smaller perturbations.
