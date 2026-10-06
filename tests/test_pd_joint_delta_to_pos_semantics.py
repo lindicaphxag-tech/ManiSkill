@@ -36,7 +36,12 @@ class _Env:
 
 def _source_arm(monkeypatch):
     arm = object.__new__(PDJointPosController)
-    arm.config = SimpleNamespace(use_delta=True, normalize_action=True)
+    arm.config = SimpleNamespace(
+        use_delta=True,
+        normalize_action=True,
+        lower=-0.1,
+        upper=0.1,
+    )
     # Physical delta-q action box saved by BaseController before normalization.
     arm.action_space_low = torch.tensor([-0.1, -0.2], dtype=torch.float64)
     arm.action_space_high = torch.tensor([0.1, 0.2], dtype=torch.float64)
