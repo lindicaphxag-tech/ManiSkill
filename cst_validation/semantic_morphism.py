@@ -47,6 +47,7 @@ class LinearSemanticWitness:
 
     unrepresentable_source_direction: np.ndarray | None
     unrepresentable_observable_residual: np.ndarray | None
+    separating_observable: np.ndarray | None
     source_invisible_direction: np.ndarray | None
     target_ambiguity_direction: np.ndarray | None
     unrepresentable_residual_norm: float
@@ -233,6 +234,7 @@ def construct_linear_semantic_witness(
 
     source_direction = None
     observable_residual = None
+    separating_observable = None
     residual_norm = 0.0
     if np.linalg.norm(residual_operator, ord="fro") > rtol:
         _, singular, vh = np.linalg.svd(residual_operator, full_matrices=False)
@@ -243,10 +245,12 @@ def construct_linear_semantic_witness(
             source_direction = -source_direction
         observable_residual = residual_operator @ source_direction
         residual_norm = float(np.linalg.norm(observable_residual))
+        separating_observable = observable_residual / residual_norm
 
     return LinearSemanticWitness(
         unrepresentable_source_direction=source_direction,
         unrepresentable_observable_residual=observable_residual,
+        separating_observable=separating_observable,
         source_invisible_direction=_right_nullspace_witness(A, rank_a),
         target_ambiguity_direction=_right_nullspace_witness(B, rank_b),
         unrepresentable_residual_norm=residual_norm,
