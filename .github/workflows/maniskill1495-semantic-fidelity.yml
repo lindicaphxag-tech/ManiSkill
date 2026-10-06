@@ -1,12 +1,6 @@
 name: PR1495 direct semantic fidelity
 
 on:
-  pull_request:
-    paths:
-      - "validation/pr1495/measure_rotation_semantic_fidelity.py"
-      - "validation/pr1495/summarize_semantic_fidelity.py"
-      - "validation/pr1495/run_semantic_fidelity_matrix.sh"
-      - ".github/workflows/maniskill1495-semantic-fidelity.yml"
   push:
     branches:
       - "validation/maniskill1495-maintainer-request"
@@ -15,6 +9,8 @@ on:
       - "validation/pr1495/summarize_semantic_fidelity.py"
       - "validation/pr1495/run_semantic_fidelity_matrix.sh"
       - ".github/workflows/maniskill1495-semantic-fidelity.yml"
+
+  workflow_dispatch:
 
 jobs:
   semantic-fidelity:

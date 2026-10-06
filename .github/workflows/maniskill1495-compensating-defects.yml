@@ -1,11 +1,6 @@
 name: ManiSkill compensating semantic defects matrix
 
 on:
-  pull_request:
-    paths:
-      - "validation/pr1495/run_compensating_defects_matrix.sh"
-      - "validation/pr1495/summarize_replay_matrix.py"
-      - ".github/workflows/maniskill1495-compensating-defects.yml"
   push:
     branches:
       - "validation/maniskill1495-maintainer-request"
@@ -13,6 +8,8 @@ on:
       - "validation/pr1495/run_compensating_defects_matrix.sh"
       - "validation/pr1495/summarize_replay_matrix.py"
       - ".github/workflows/maniskill1495-compensating-defects.yml"
+
+  workflow_dispatch:
 
 jobs:
   matrix:

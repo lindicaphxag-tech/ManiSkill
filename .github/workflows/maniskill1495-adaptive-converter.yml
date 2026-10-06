@@ -1,11 +1,6 @@
 name: PR1495 controller-aware converter matrix
 
 on:
-  pull_request:
-    paths:
-      - "validation/pr1495/run_adaptive_converter_matrix.sh"
-      - "validation/pr1495/summarize_adaptive_converter.py"
-      - ".github/workflows/maniskill1495-adaptive-converter.yml"
   push:
     branches:
       - "validation/maniskill1495-maintainer-request"
@@ -13,6 +8,8 @@ on:
       - "validation/pr1495/run_adaptive_converter_matrix.sh"
       - "validation/pr1495/summarize_adaptive_converter.py"
       - ".github/workflows/maniskill1495-adaptive-converter.yml"
+
+  workflow_dispatch:
 
 jobs:
   adaptive-matrix:
