@@ -30,7 +30,7 @@ def _trial(z_required: bool, *, irrelevant_rank_loss: bool, success: bool):
         source_physical_jacobian=j,
         target_action_to_physical_jacobian=target,
         transport_succeeded=success,
-        global_rank_flag=(np.linalg.matrix_rank(target) == min(target.shape)),
+        global_rank_flag=(np.linalg.matrix_rank(target) == target.shape[0]),
         clipping_flag=bool(z_required and irrelevant_rank_loss),
     )
 
