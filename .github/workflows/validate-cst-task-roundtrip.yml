@@ -63,13 +63,28 @@ jobs:
         run: |
           set -euo pipefail
           SRC="$HOME/.maniskill/demos/PickCube-v1/teleop/trajectory.h5"
-          python -m mani_skill.trajectory.replay_trajectory             --traj-path "$SRC"             --save-traj             --target-control-mode pd_joint_delta_pos             --count 4             --max-retry 1             | tee cst_delta_generation.log
+          python -m mani_skill.trajectory.replay_trajectory             --traj-path "$SRC"             --save-traj             --target-control-mode pd_joint_delta_pos             --obs-mode state             --count 4             --max-retry 1             | tee cst_delta_generation.log
 
           DELTA="$(find "$HOME/.maniskill/demos/PickCube-v1/teleop" -maxdepth 1 -type f -name 'trajectory.*pd_joint_delta_pos*.h5' | head -n 1)"
           test -n "$DELTA"
           test -f "$DELTA"
           test -f "${DELTA%.h5}.json"
           printf '%s\n' "$DELTA" > cst_delta_path.txt
+          python - "$DELTA" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          h5 = Path(sys.argv[1])
+          meta = h5.with_suffix(".json")
+          data = json.loads(meta.read_text())
+          env_kwargs = data["env_info"].setdefault("env_kwargs", {})
+          env_kwargs["sim_backend"] = "physx_cpu"
+          env_kwargs["render_backend"] = "none"
+          env_kwargs["obs_mode"] = "state"
+          meta.write_text(json.dumps(data, indent=2))
+          print("patched generated delta metadata:", env_kwargs)
+          PY
           echo "delta trajectory: $DELTA"
 
       - name: Replay same delta trajectory with frozen upstream base
@@ -79,7 +94,7 @@ jobs:
           DELTA="$(cat cst_delta_path.txt)"
           git show 62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3:mani_skill/trajectory/utils/actions/conversion.py             > mani_skill/trajectory/utils/actions/conversion.py
           set +e
-          python -m mani_skill.trajectory.replay_trajectory             --traj-path "$DELTA"             --target-control-mode pd_joint_pos             --count 4             --max-retry 0             2>&1 | tee cst_base_roundtrip.log
+          python -m mani_skill.trajectory.replay_trajectory             --traj-path "$DELTA"             --target-control-mode pd_joint_pos             --obs-mode state             --count 4             --max-retry 0             2>&1 | tee cst_base_roundtrip.log
           status=${PIPESTATUS[0]}
           set -e
           printf '%s\n' "$status" > cst_base_exit_code.txt
@@ -95,7 +110,7 @@ jobs:
           DELTA="$(cat cst_delta_path.txt)"
           cp issue429-fix/mani_skill/trajectory/utils/actions/conversion.py             mani_skill/trajectory/utils/actions/conversion.py
           set +e
-          python -m mani_skill.trajectory.replay_trajectory             --traj-path "$DELTA"             --target-control-mode pd_joint_pos             --count 4             --max-retry 0             2>&1 | tee cst_fix_roundtrip.log
+          python -m mani_skill.trajectory.replay_trajectory             --traj-path "$DELTA"             --target-control-mode pd_joint_pos             --obs-mode state             --count 4             --max-retry 0             2>&1 | tee cst_fix_roundtrip.log
           status=${PIPESTATUS[0]}
           set -e
           printf '%s\n' "$status" > cst_fix_exit_code.txt
