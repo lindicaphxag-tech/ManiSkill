@@ -29,6 +29,9 @@ jobs:
         run: |
           git clone -q https://github.com/huggingface/lerobot.git /tmp/lerobot
           git -C /tmp/lerobot checkout -q 3c0a209f9fac4d2a57617e686a7f2a2309144ba2
+          # Replace obsolete PyPI distribution name only; runtime code still imports `av`.
+          sed -i 's/^pyav = ">=12.0.5"/av = ">=12.0.5"/' /tmp/lerobot/pyproject.toml
+          grep -q '^av = ">=12.0.5"' /tmp/lerobot/pyproject.toml
           python -m pip install -q -e '/tmp/lerobot[pusht]'
       - name: Probe official frozen VQ-BeT checkpoint
         run: |
