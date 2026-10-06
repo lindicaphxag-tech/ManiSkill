@@ -96,3 +96,22 @@ and a safe semantic migration may need to preserve **control authority**, not on
 ## Claim boundary
 
 This document is a preregistered mechanistic prediction, not evidence that the revised candidate succeeds.
+
+
+## Prospective outcome — falsified as the primary explanation
+
+Public same-base rerun: `37404012255`.
+
+The revised candidate preserved the caller's >1 saturation/retry signal, but the execution result remained:
+
+- current main: 9/10, successful episodes 0–8;
+- revised adapter: 8/10, successful episodes 0–7;
+- revised adapter + controller fix: 8/10, successful episodes 0–7.
+
+Therefore prediction 3 was not supported: episode 8 did **not** recover.
+
+This falsifies saturation-authority loss as the primary cause of the 9→8 regression.
+
+The protocol-effect observation remains valid as a software-contract property, but it must not be presented as the causal explanation for episode 8.
+
+A subsequent first-divergence assay (`37405141224`) shows identical clipping schedules between main and the revised adapter, further excluding clipping/retry schedule as the differentiating mechanism.
