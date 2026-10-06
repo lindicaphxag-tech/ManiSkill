@@ -1,5 +1,6 @@
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
+import sys
 
 from research.eprc.runtime import (
     ContractClass,
@@ -24,6 +25,7 @@ def _load_core():
     spec = spec_from_file_location("eprc_plugin_core_conformance", PLUGIN_CORE)
     assert spec is not None and spec.loader is not None
     module = module_from_spec(spec)
+    sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
 
