@@ -67,7 +67,14 @@ def _reference(
         # Absolute charts have no incremental reference. This sentinel is only
         # used to define displacement for reporting.
         return np.zeros(dim, dtype=float)
-    name = "q_current" if chart.mode == "delta_current" else "q_target"
+    if chart.mode == "delta_current":
+        name = "q_current"
+    elif chart.mode == "delta_target":
+        name = "q_target"
+    elif chart.mode == "relative_latched":
+        name = "q_latched"
+    else:
+        raise ValueError(f"unsupported chart mode: {chart.mode}")
     value = getattr(context, name)
     if value is None:
         raise MissingControllerStateError(f"{chart.mode} chart requires {name}")
@@ -189,6 +196,22 @@ def certify_joint_goal_horizon(
             per_step_lower=low,
             per_step_upper=high,
             reason="semantic displacement lies inside the one-step reachable box",
+        )
+
+    if chart.mode == "relative_latched":
+        return HorizonReachabilityCertificate(
+            status="unrepresentable",
+            one_step_exact=False,
+            min_semantic_steps=None,
+            requires_intermediate_state_feedback=False,
+            displacement=displacement,
+            per_step_lower=low,
+            per_step_upper=high,
+            reason=(
+                "goal lies outside the fixed-latch action image; repeating actions "
+                "under the same latched reference does not accumulate semantic reach. "
+                "A new latch/replan is required."
+            ),
         )
 
     steps = _box_min_steps(displacement, low, high, tolerance=tolerance)
