@@ -1,0 +1,28 @@
+name: Validate CCLAT native PhysX
+
+on:
+  push:
+    branches:
+      - "fix/joint-delta-to-joint-pos-semantics"
+    paths:
+      - "cst_validation/closed_loop_transport.py"
+      - "tests/test_cclat_native_physx.py"
+      - ".github/workflows/validate-cclat-native-physx.yml"
+  workflow_dispatch:
+
+jobs:
+  native-physx:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install ManiSkill test environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Run held-out controller-swap assay
+        run: python -m pytest -q tests/test_cclat_native_physx.py
