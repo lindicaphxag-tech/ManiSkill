@@ -1,0 +1,63 @@
+name: Episode 8 differential trace
+
+on:
+  push:
+    branches:
+      - "validation/maniskill1495-maintainer-request"
+    paths:
+      - "validation/pr1495/trace_episode8_conversion.py"
+      - "validation/pr1495/run_episode8_trace.sh"
+      - "validation/pr1495/summarize_episode8_trace.py"
+      - ".github/workflows/episode8-differential-trace.yml"
+  pull_request:
+    paths:
+      - "validation/pr1495/trace_episode8_conversion.py"
+      - "validation/pr1495/run_episode8_trace.sh"
+      - "validation/pr1495/summarize_episode8_trace.py"
+      - ".github/workflows/episode8-differential-trace.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  trace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install software Vulkan
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libegl1 mesa-vulkan-drivers vulkan-tools
+          LVP_ICD="$(find /usr/share/vulkan/icd.d -maxdepth 1 -type f -name 'lvp_icd*.json' | head -n1)"
+          test -n "$LVP_ICD"
+          echo "VK_ICD_FILENAMES=$LVP_ICD" >> "$GITHUB_ENV"
+
+      - name: Run episode-8 three-way trace
+        env:
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+        run: bash validation/pr1495/run_episode8_trace.sh
+
+      - name: Publish differential
+        if: always()
+        run: |
+          test ! -f .validation-episode8-trace/episode8_differential.json || cat .validation-episode8-trace/episode8_differential.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: episode8-differential-trace
+          path: |
+            .validation-episode8-trace/current_main.json
+            .validation-episode8-trace/contract_adapter_v2.json
+            .validation-episode8-trace/contract_adapter_v2_controller_fixed.json
+            .validation-episode8-trace/episode8_differential.json
+          include-hidden-files: true
+          if-no-files-found: warn
