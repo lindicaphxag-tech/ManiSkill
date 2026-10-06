@@ -1,0 +1,35 @@
+name: Validate CST trace semantics
+
+on:
+  push:
+    branches:
+      - "research/controller-semantic-transport-v1"
+    paths:
+      - "cst_validation/**"
+      - ".github/workflows/validate-cst-trace-semantics.yml"
+  workflow_dispatch:
+
+jobs:
+  semantics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install numpy scipy pytest
+      - name: Compile research modules
+        run: |
+          python -m py_compile cst_validation/controller_semantic_ir.py
+          python -m py_compile cst_validation/semantic_morphism.py
+          python -m py_compile cst_validation/trace_semantics.py
+      - name: Run controller semantic IR tests
+        working-directory: cst_validation
+        run: python -m pytest -q test_controller_semantic_ir.py
+      - name: Run semantic morphism tests
+        working-directory: cst_validation
+        run: python -m pytest -q test_semantic_morphism.py
+      - name: Run trace-semantic tests
+        working-directory: cst_validation
+        run: python -m pytest -q test_trace_semantics.py
