@@ -233,3 +233,77 @@ It does **not** establish:
 
 The upstream PRs remain independent project contributions and should be judged
 on their native correctness value.
+
+
+## Nearest concepts and novelty boundary
+
+This artifact does **not** claim that interacting faults, fault masking,
+coincidental correctness, or software epistasis are new.
+
+Relevant prior concept families include:
+
+- **coincidental correctness** in software testing/fault localization: faulty
+  statements execute while observed outputs still appear correct;
+- **multiple-fault masking / interference**: one defect can hide or distort the
+  observable effect of another;
+- **multi-fault automated program repair**: recent work explicitly models fault
+  synergy, cascading, and masking, including the risk that patching one fault
+  unmasks another;
+- **epistatic software edits** in search-based/evolutionary software
+  improvement: an edit's effect can depend on which other edits are present.
+
+Therefore the research claim is deliberately narrower.
+
+The candidate contribution is:
+
+> **interaction-aware authorization of executable semantic repairs in embodied
+> software when locally justified repairs have non-monotone interactions.**
+
+The distinctive conjunction is:
+
+1. the defects sit on **cross-component robot semantic boundaries**
+   (representation/controller/execution contracts), not only source statements;
+2. each local repair can be semantically justified in isolation;
+3. activation is evaluated factorially on **identical frozen physical-control
+   requests**, with an explicit repair-interaction term;
+4. the result is converted into an **authorization rule for repair sets** rather
+   than only a debugging/localization diagnosis;
+5. semantic interaction evidence and downstream execution-effect evidence are
+   independent gates;
+6. a repair bundle can be semantically certified yet still be denied execution
+   if task/replay non-regression is not established.
+
+This distinction matters in the present ManiSkill case:
+
+- paired semantic evidence says the composed repair restores the intended
+  converter/controller rotation relation;
+- replay evidence still shows 8/10 for the composed repair versus 9/10 for the
+  current compensated baseline.
+
+So a semantic certificate alone does **not** authorize deployment.
+
+### Prior work that must be discussed
+
+A paper based on this artifact should explicitly discuss, rather than obscure:
+
+- coincidental correctness / fault masking in software fault localization;
+- multiple-fault localization and repair;
+- multi-fault repair taxonomies covering synergy and masking;
+- epistatic edit analysis in software optimization;
+- runtime assurance / repair in robotics and VLA systems;
+- proof-carrying and contract-based execution systems.
+
+The paper should not use phrases such as “the first interacting-fault repair
+system” or “the first epistatic software repair method” without a substantially
+broader literature review.
+
+### Strongest falsifiable research question
+
+> When individually correct semantic repairs interact non-monotonically across
+> embodied software boundaries, what evidence is sufficient to authorize an
+> executable repair set without relying on the currently compensated end-to-end
+> behavior?
+
+That question survives the existence of classical fault masking because the
+target is **repair-set execution authority under embodied semantic contracts**,
+not the discovery that faults can mask each other.
