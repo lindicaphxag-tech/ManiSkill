@@ -13,6 +13,7 @@ CST does not claim novelty for:
 - interval propagation through affine maps;
 - controller equivalence / simulation / refinement as a general formal idea;
 - symbolic controller refinement or feedback refinement relations;
+- stateful transducer morphisms / simulation relations as abstract mathematics;
 - trajectory interpolation;
 - runtime clipping or saturation analysis.
 
@@ -68,6 +69,15 @@ A strong paper claim requires all of:
 Plant/contact/task equivalence remains outside the current theorem boundary
 unless dynamics are explicitly lifted into the semantic observable.
 
+The sequence-level CST compiler should therefore be presented as an
+**implementation-semantic specialization** of refinement/simulation ideas:
+its contribution is extracting robot-controller concerns (normalization,
+measured-state anchoring, hidden target references, interpolation, clipping)
+into executable IR and automatically generating transport/refusal
+certificates. The induction argument from one-step hidden-relation closure to
+arbitrary horizon is useful correctness machinery, not a standalone claim of
+new refinement theory.
+
 ## Current evidence boundary
 
 Supported:
@@ -76,7 +86,8 @@ Supported:
 - whole-action-box affine certificate;
 - contextual action x state-region compiler;
 - analytic bound refusal;
-- robosuite semantics adapter implemented; pinned host parity is under CI.
+- robosuite controller semantics match a pinned real host, including piecewise qpos clipping over 2000 random action/state samples with observed saturation;
+- a pinned LeRobot PI0.5 temporal-anchor witness exposes a distinct class of error that ordinary relative/absolute round-trip tests can mask; latest differential CI remains the promotion gate.
 
 Not yet supported:
 - task-success preservation;
