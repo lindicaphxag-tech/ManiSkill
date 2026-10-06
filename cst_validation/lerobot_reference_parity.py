@@ -77,11 +77,21 @@ def main():
     jit_max_goal_error = 0.0
     naive_copy_max_goal_error = 0.0
     jit_checked_action_vectors = 0
+    jit_trace_errors = []
+    naive_trace_errors = []
 
     for _ in range(random_chunks):
         state = rng.normal(size=(batch, dim)).astype(np.float32)
-        absolute = rng.normal(size=(batch, horizon, dim)).astype(np.float32)
         mask = rng.random(dim) > 0.25
+        offsets = rng.uniform(-0.2, 0.2, size=(batch, horizon, dim)).astype(
+            np.float32
+        )
+        absolute = state[:, None, :] + offsets
+        # Dimensions excluded from relative processing remain absolute-valued.
+        if np.any(~mask):
+            absolute[..., ~mask] = rng.uniform(
+                -1.0, 1.0, size=(batch, horizon, int(np.sum(~mask)))
+            )
 
         rel_lr = to_relative(
             torch.from_numpy(absolute),
@@ -136,23 +146,27 @@ def main():
             )
             execution_state = state[b].astype(float).copy()
             naive_state = execution_state.copy()
+            trace_jit_error = 0.0
+            trace_naive_error = 0.0
             for t in range(horizon):
                 out = adapter.step(
                     rel_lr[b, t],
                     current_state=execution_state,
                 )
                 expected = abs_lr[b, t].astype(float)
-                jit_max_goal_error = max(
-                    jit_max_goal_error,
-                    float(np.max(np.abs(out.reconstructed_target_goal - expected))),
+                step_jit_error = float(
+                    np.max(np.abs(out.reconstructed_target_goal - expected))
                 )
+                jit_max_goal_error = max(jit_max_goal_error, step_jit_error)
+                trace_jit_error = max(trace_jit_error, step_jit_error)
 
                 naive_goal = rel_lr[b, t].astype(float).copy()
                 naive_goal[mask] = naive_state[mask] + rel_lr[b, t, mask]
+                step_naive_error = float(np.max(np.abs(naive_goal - expected)))
                 naive_copy_max_goal_error = max(
-                    naive_copy_max_goal_error,
-                    float(np.max(np.abs(naive_goal - expected))),
+                    naive_copy_max_goal_error, step_naive_error
                 )
+                trace_naive_error = max(trace_naive_error, step_naive_error)
 
                 # JIT remains goal-correct under changing measured state.
                 execution_state = expected + rng.normal(scale=0.03, size=dim)
@@ -160,6 +174,8 @@ def main():
                 naive_state = naive_goal
                 jit_checked_action_vectors += 1
 
+            jit_trace_errors.append(trace_jit_error)
+            naive_trace_errors.append(trace_naive_error)
             checked_trajectories += 1
             checked_action_vectors += horizon
 
@@ -223,6 +239,13 @@ def main():
         "jit_chunk_anchor_to_current_state_max_goal_error": jit_max_goal_error,
         "naive_copy_chunk_to_current_state_max_goal_error": naive_copy_max_goal_error,
         "jit_checked_action_vectors": jit_checked_action_vectors,
+        "jit_trace_error_mean": float(np.mean(jit_trace_errors)),
+        "jit_trace_error_p95": float(np.quantile(jit_trace_errors, 0.95)),
+        "naive_copy_trace_error_mean": float(np.mean(naive_trace_errors)),
+        "naive_copy_trace_error_median": float(np.median(naive_trace_errors)),
+        "naive_copy_trace_error_p95": float(
+            np.quantile(naive_trace_errors, 0.95)
+        ),
     }
 
     assert max_relative_error <= 2e-6, result
@@ -232,6 +255,7 @@ def main():
     assert jit_max_goal_error <= 2e-6, result
     assert jit_checked_action_vectors == checked_action_vectors, result
     assert naive_copy_max_goal_error > 1e-2, result
+    assert result["naive_copy_trace_error_median"] > 1e-2, result
 
     print("LEROBOT_CST_PARITY_JSON=" + json.dumps(result, sort_keys=True))
 
