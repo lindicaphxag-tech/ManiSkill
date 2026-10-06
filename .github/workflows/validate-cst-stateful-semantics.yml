@@ -1,0 +1,24 @@
+name: Validate CST state-machine semantics
+
+on:
+  push:
+    branches:
+      - "fix/joint-delta-to-joint-pos-semantics"
+    paths:
+      - "cst_validation/stateful_semantics.py"
+      - "cst_validation/test_stateful_semantics.py"
+      - ".github/workflows/validate-cst-stateful-semantics.yml"
+  workflow_dispatch:
+
+jobs:
+  state-machine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install numpy pytest
+      - name: Run state-machine semantic transport tests
+        run: |
+          PYTHONPATH=. python -m pytest -q cst_validation/test_stateful_semantics.py
