@@ -1,0 +1,60 @@
+name: Replay repeatability certificate
+
+on:
+  push:
+    branches:
+      - "validation/maniskill1495-maintainer-request"
+    paths:
+      - "validation/pr1495/summarize_replay_repeatability.py"
+      - "validation/pr1495/run_replay_repeatability.sh"
+      - ".github/workflows/replay-repeatability.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  repeatability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install software Vulkan
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libegl1 mesa-vulkan-drivers vulkan-tools
+          LVP_ICD="$(find /usr/share/vulkan/icd.d -maxdepth 1 -type f -name 'lvp_icd*.json' | head -n1)"
+          test -n "$LVP_ICD"
+          echo "VK_ICD_FILENAMES=$LVP_ICD" >> "$GITHUB_ENV"
+          VK_ICD_FILENAMES="$LVP_ICD" vulkaninfo --summary
+
+      - name: Repeat exact replay protocol in fresh processes
+        env:
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+          REPEATS: "5"
+          COUNT: "10"
+        run: bash validation/pr1495/run_replay_repeatability.sh
+
+      - name: Publish repeatability certificate
+        if: always()
+        run: |
+          if [[ -f .validation-replay-repeatability/replay_repeatability.json ]]; then
+            cat .validation-replay-repeatability/replay_repeatability.json
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: replay-repeatability-certificate
+          path: |
+            .validation-replay-repeatability/replay_repeatability.json
+            .validation-replay-repeatability/current_main/repeat_*.log
+            .validation-replay-repeatability/contract_adapter_v2/repeat_*.log
+          if-no-files-found: warn
+          include-hidden-files: true
