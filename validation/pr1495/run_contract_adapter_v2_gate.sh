@@ -4,7 +4,7 @@ set -euo pipefail
 COUNT="${COUNT:-10}"
 ROOT="${ROOT:-$PWD/.validation-contract-adapter-v2}"
 BASE_SHA="107c9528b23b55bd276cf723c260a45ae7ce00ec"
-CANDIDATE_SHA="69dd520f81831478021ccd542e4b113b6a74e043"
+CANDIDATE_SHA="bd0e4feae2491a0d433107210ce8c16b8e8fb69a"
 CONTROLLER_SHA="eed9be164797d41540421bda8adb3840377d7087"
 RAW_ROOT="$HOME/.maniskill/demos/PegInsertionSide-v1/motionplanning"
 RAW="$RAW_ROOT/trajectory.h5"
