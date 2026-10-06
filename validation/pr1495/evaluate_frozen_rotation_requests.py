@@ -108,6 +108,8 @@ def main():
         rows.append(
             {
                 "index":index,
+                "episode_id":int(record["episode_id"]),
+                "step_in_episode":int(record["step_in_episode"]),
                 "rotation_error_deg":rotation_error,
                 "position_error":position_error,
                 "normalized_rotation_norm":rot_norm,
@@ -129,6 +131,7 @@ def main():
         "source_root":str(expected),
         "mani_skill_import":str(actual),
         "request_count":len(rows),
+        "episode_count":len(set(x["episode_id"] for x in rows)),
         "rotation_error_deg":_summary(rot),
         "rotation_error_deg_unclipped":_summary(unclipped),
         "rotation_error_deg_clipped":_summary(clipped),
@@ -138,7 +141,7 @@ def main():
         "claim_boundary":(
             "Paired converter-to-controller semantic fidelity on one immutable "
             "request corpus. Every compared implementation receives the exact same "
-            "delta poses and controller bounds."
+            "delta poses, episode identities, within-episode order, and controller bounds."
         ),
     }
     args.output.parent.mkdir(parents=True,exist_ok=True)
