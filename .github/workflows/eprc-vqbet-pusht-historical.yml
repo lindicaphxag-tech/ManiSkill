@@ -35,10 +35,16 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e "/tmp/lerobot[pusht]"
-          sed -i '/^import packaging$/a import packaging.version' /tmp/lerobot/lerobot/common/policies/pretrained.py
-          grep -q '^import packaging.version$' /tmp/lerobot/lerobot/common/policies/pretrained.py
-          python -m pip install --force-reinstall --no-deps "pymunk==6.11.1"
-          python -c 'import packaging.version, pymunk; assert hasattr(pymunk.Space, "add_collision_handler"); print("historical compat pymunk", pymunk.version)'
+                    python -m pip install --force-reinstall --no-deps "pymunk==6.11.1"
+          python - <<'PY'
+import packaging
+from packaging import version
+import pymunk
+assert version.parse("1.2.3") < version.parse("2.0.0")
+assert hasattr(pymunk.Space, "add_collision_handler")
+print("historical compat packaging", packaging.__version__)
+print("historical compat pymunk", pymunk.version)
+PY
       - name: Probe historical-native official VQ-BeT checkpoint
         run: |
           python research/eprc/real_policy/historical_vqbet_pusht_probe.py --output /tmp/historical_vqbet_pusht_dec.json
