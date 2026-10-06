@@ -133,6 +133,10 @@ Independent replication thread:
 
 https://github.com/lindicaphxag-tech/lindicaphxag-tech/issues/76
 
+## Novelty audit
+
+The frozen claim boundary against active local-validity estimation and frozen-policy recovery is documented in `research/eprc/NOVELTY_BOUNDARY.md`.
+
 ## Kill criteria
 
 The flagship claim is narrowed or dropped if fair prospective evidence shows:
