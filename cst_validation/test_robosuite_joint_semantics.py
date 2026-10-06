@@ -6,6 +6,7 @@ from contextual_trace_morphism import (
 )
 from robosuite_joint_semantics import (
     certify_robosuite_delta_affine_region,
+    compile_robosuite_delta_goal_partition,
     robosuite_joint_position_ir,
 )
 
@@ -113,3 +114,23 @@ def test_cross_stack_formula_matches_1000_random_unclipped_cases():
         _, sg, _ = source_region.ir.evaluate(u, x, np.zeros(2))
         _, tg, _ = target.evaluate(ut, x, np.zeros(2))
         np.testing.assert_allclose(tg, sg, atol=1e-12)
+
+
+
+def test_piecewise_partition_covers_saturated_robosuite_region():
+    limits = np.array([[-1.0], [1.0]])
+    partition = compile_robosuite_delta_goal_partition(
+        d=1,
+        state_low=np.array([0.9]),
+        state_high=np.array([1.0]),
+        qpos_limits=limits,
+    )
+    assert len(partition.cells) >= 2
+
+    rng = np.random.default_rng(271)
+    for _ in range(1000):
+        u = rng.uniform(-1.0, 1.0, size=1)
+        x = rng.uniform(0.9, 1.0, size=1)
+        compiled = partition.evaluate(np.concatenate([u, x]))
+        expected = np.clip(x + 0.05 * u, limits[0], limits[1])
+        np.testing.assert_allclose(compiled, expected, atol=1e-9)
