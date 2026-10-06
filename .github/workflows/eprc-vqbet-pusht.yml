@@ -93,6 +93,12 @@ jobs:
           assert d["active_minimal_certificate"]["planned_symmetric_policy_evaluations"] == 2 * d["active_minimal_certificate"]["planned_probe_count"]
           assert len(d["active_minimal_certificate"]["normalized_support_probe_directions"]) == d["active_minimal_certificate"]["planned_probe_count"]
           assert len(d["active_minimal_certificate"]["physical_symmetric_probe_deltas"]) == d["active_minimal_certificate"]["planned_probe_count"]
+          assert d["evidence_action_router"]["bottleneck"] in {
+              "TERMINAL", "INFORMATION_LIMITED", "STOCHASTIC_LIMITED",
+              "LOCALITY_LIMITED", "MIXED_UNCERTAINTY"
+          }
+          if d["evidence_action_router"]["bottleneck"] == "LOCALITY_LIMITED":
+              assert d["evidence_action_router"]["additional_same_scale_queries_authorized"] is False
           print("validated protocol", d["protocol_id"])
           PY
       - name: Upload raw frozen-policy evidence
