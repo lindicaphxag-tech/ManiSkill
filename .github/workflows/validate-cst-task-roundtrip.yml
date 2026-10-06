@@ -1,0 +1,124 @@
+name: Validate CST public task round-trip
+
+on:
+  push:
+    branches:
+      - "research/controller-semantic-transport-v1"
+    paths:
+      - "mani_skill/trajectory/utils/actions/conversion.py"
+      - "cst_validation/**"
+      - ".github/workflows/validate-cst-task-roundtrip.yml"
+  workflow_dispatch:
+
+jobs:
+  pickcube-roundtrip:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      SDL_VIDEODRIVER: dummy
+      PYGAME_HIDE_SUPPORT_PROMPT: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install ManiSkill
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Download official PickCube demonstration
+        run: python -m mani_skill.utils.download_demo PickCube-v1
+
+      - name: Build fixed public pd_joint_delta_pos trajectory
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="$HOME/.maniskill/demos/PickCube-v1/teleop/trajectory.h5"
+          python -m mani_skill.trajectory.replay_trajectory             --traj-path "$SRC"             --save-traj             --target-control-mode pd_joint_delta_pos             --count 4             --max-retry 1             | tee cst_delta_generation.log
+
+          DELTA="$(find "$HOME/.maniskill/demos/PickCube-v1/teleop" -maxdepth 1 -type f -name 'trajectory.*pd_joint_delta_pos*.h5' | head -n 1)"
+          test -n "$DELTA"
+          test -f "$DELTA"
+          test -f "${DELTA%.h5}.json"
+          printf '%s\n' "$DELTA" > cst_delta_path.txt
+          echo "delta trajectory: $DELTA"
+
+      - name: Replay same delta trajectory with upstream base
+        shell: bash
+        run: |
+          set -euo pipefail
+          DELTA="$(cat cst_delta_path.txt)"
+          git show 62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3:mani_skill/trajectory/utils/actions/conversion.py             > mani_skill/trajectory/utils/actions/conversion.py
+          python -m mani_skill.trajectory.replay_trajectory             --traj-path "$DELTA"             --target-control-mode pd_joint_pos             --count 4             --max-retry 0             | tee cst_base_roundtrip.log
+          git checkout -- mani_skill/trajectory/utils/actions/conversion.py
+
+      - name: Replay same delta trajectory with CST issue-429 fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          DELTA="$(cat cst_delta_path.txt)"
+          python -m mani_skill.trajectory.replay_trajectory             --traj-path "$DELTA"             --target-control-mode pd_joint_pos             --count 4             --max-retry 0             | tee cst_fix_roundtrip.log
+
+      - name: Compare public task success
+        run: |
+          python - <<'PY'
+          import json
+          import re
+          from pathlib import Path
+
+          pattern = re.compile(
+              r"Replayed\s+(\d+)\s+episodes,\s+(\d+)/(\d+)="
+          )
+
+          def parse(path):
+              text = Path(path).read_text()
+              matches = pattern.findall(text)
+              if not matches:
+                  raise RuntimeError(f"no replay summary in {path}")
+              requested, success, denominator = map(int, matches[-1])
+              if requested != denominator:
+                  raise RuntimeError((requested, denominator, path))
+              return {"episodes": denominator, "successes": success}
+
+          base = parse("cst_base_roundtrip.log")
+          fix = parse("cst_fix_roundtrip.log")
+          delta = parse("cst_delta_generation.log")
+          evidence = {
+              "upstream_base_sha": "62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3",
+              "task": "PickCube-v1",
+              "episodes": 4,
+              "source": "official teleop demonstration",
+              "intermediate_control_mode": "pd_joint_delta_pos",
+              "target_control_mode": "pd_joint_pos",
+              "delta_generation": delta,
+              "base_roundtrip": base,
+              "fix_roundtrip": fix,
+              "strict_improvement": fix["successes"] > base["successes"],
+              "full_fix_success": fix["successes"] == fix["episodes"],
+          }
+          Path("cst_task_roundtrip_evidence.json").write_text(
+              json.dumps(evidence, indent=2)
+          )
+          print(json.dumps(evidence, indent=2))
+
+          if fix["successes"] <= base["successes"]:
+              raise SystemExit(
+                  "CST promotion gate failed: patch did not improve public task replay"
+              )
+          PY
+
+      - name: Upload public round-trip evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cst-pickcube-controller-roundtrip
+          path: |
+            cst_delta_generation.log
+            cst_base_roundtrip.log
+            cst_fix_roundtrip.log
+            cst_task_roundtrip_evidence.json
+          if-no-files-found: warn
