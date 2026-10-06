@@ -26,6 +26,7 @@ does not treat that statement as adoption or endorsement of CST.
 | Native ManiSkill/PhysX delta-current -> absolute equivalence | ManiSkill Actions #37404638720 | 4/4 PASS | Real PDJointPosController instances on independent headless PhysX articulations receive equal physical targets and remain qpos/qvel equivalent after five physics substeps for four non-trivial normalized source actions. |
 | Native hidden-state necessity / target-delta transport | ManiSkill Actions #37404990097 | 5/5 PASS total suite | A real target-delta controller is transported to an absolute controller over a multi-step sequence. Finite-stiffness tracking makes measured qpos diverge from the controller-owned previous target, so current-qpos stateless interpretation is observably wrong; state-aware transport preserves target/qpos/qvel equivalence. |
 | Closed-loop transport synthesis + impossibility witness | ManiSkill Actions #37407305028 | 8/8 PASS | A local state-feedback adapter can be synthesized when target input effects span the required source dynamics/action directions; otherwise the method returns a structural witness and propagates residuals into an H-step deviation bound. |
+| Native held-out closed-loop controller swap | ManiSkill Actions #37408214302 | 3/3 PASS | Different PD gains (source 100/10, target 60/6): CCLAT improves all 6 held-out PhysX state/action points; mean next-state error ratio 0.09663 (about 10.35x lower than naive action copying), worst ratio 0.10766. The local certificate correctly remains approximate, with unavoidable operator residual 4.936e-4. An identical-controller control case is exact, while a zero-stiffness target is rejected fail-closed. |
 
 ## Pending evidence
 
@@ -91,6 +92,14 @@ dimensions happen to match.
 Status: no CST patch submitted; this is currently independent external
 motivation, not adoption.
 
+## Closed-loop promotion status
+
+- Local method / impossibility witness: satisfied.
+- Native nonlinear held-out controller swap: satisfied by #37408214302.
+- Native negative unactuated-target calibration: satisfied in the same run.
+- Multi-DOF/task-level held-out transport: pending.
+- Maintained external retention: pending.
+
 ## Promotion gates
 
 CST can move from L8-candidate toward an L8 claim only after:
@@ -121,7 +130,26 @@ unavoidable residual direction instead of reporting optimizer failure. The
 finite-horizon certificate propagates the frozen one-step residual under a
 declared local state/action radius.
 
-This is currently linearized/model-level evidence only. It is **not** evidence
-of nonlinear ManiSkill rollout equivalence yet, and it is not a robot-safety
-guarantee. Promotion requires a frozen native nonlinear assay on held-out
-states/actions.
+The model-level result is now paired with a frozen native PhysX assay,
+GitHub Actions **#37408214302**. Two real one-joint PD controllers use different
+gains (source stiffness/damping 100/10; target 60/6). Local finite differences
+at the origin are the only data used to synthesize the adapter. Six held-out
+state/action pairs are then evaluated without refitting.
+
+Observed mean next-state error:
+- naive source-action copying: 1.664304752e-4;
+- CCLAT transport: 1.608163168e-5;
+- ratio: **0.0966267** (~10.35x lower).
+
+Every held-out case improves; the worst transported/naive ratio is **0.107657**.
+Importantly, the linear certificate is **not exact**: the frozen unavoidable
+operator residual is **4.9362753e-4**. The evidence therefore supports useful
+approximate compensation rather than a false exact-equivalence claim.
+
+The same native suite also includes:
+- identical source/target controller gains -> exact transport control case;
+- zero target stiffness -> target action has no position authority and CCLAT
+  rejects the pair fail-closed.
+
+This remains a local/small-system nonlinear assay, not a global robot-safety
+guarantee or a claim of task-level policy preservation.
