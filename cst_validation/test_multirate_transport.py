@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from closed_loop_transport import LinearClosedLoopModel
-from multirate_transport import lift_zero_order_hold, synthesize_multirate_transport
+from cst_validation.closed_loop_transport import LinearClosedLoopModel
+from cst_validation.multirate_transport import lift_zero_order_hold, synthesize_multirate_transport
 
 
 def _exact_scalar_discretization(a: float, b: float, dt: float):
