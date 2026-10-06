@@ -8,7 +8,7 @@ for Pi0/Pi0.5 and explicitly welcomes an ACT integration PR.
 ## Audited upstream
 
 - repository: `huggingface/lerobot`
-- commit: `d40e8709cffb93644db66e30604ef50fdec003cb`
+- commit: `156ca6e741e2167d46b9051c2e58193842d0fbb9`
 - ACT config: `src/lerobot/policies/act/configuration_act.py`
 - ACT processor: `src/lerobot/policies/act/processor_act.py`
 - shared relative processor:
