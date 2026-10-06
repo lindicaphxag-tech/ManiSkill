@@ -51,7 +51,7 @@ def test_gate_is_frozen_and_requires_margin_over_all_baselines():
         agree = i < 12
         dec = 0.1 + 0.01 * i if agree else 0.8 + 0.01 * i
         raw = 0.45 + 0.01 * (i % 4)
-        support = 0.4 if agree else 0.6
+        support = 0.40 + 0.05 * (i % 4)
         static = 0.0 if i % 3 else 1.0
         coarse = 0.0 if i % 4 else 1.0
         pairs.append(
