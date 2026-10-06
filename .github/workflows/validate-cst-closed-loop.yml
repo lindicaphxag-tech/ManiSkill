@@ -9,6 +9,8 @@ on:
       - "cst_validation/closed_loop_probe.py"
       - "cst_validation/test_closed_loop_certificate.py"
       - "cst_validation/test_closed_loop_probe.py"
+      - "cst_validation/linear_stateful_transport.py"
+      - "cst_validation/test_linear_stateful_transport.py"
       - "cst_validation/CLOSED_LOOP_TRANSPORT_V0_1.md"
       - ".github/workflows/validate-cst-closed-loop.yml"
   workflow_dispatch:
@@ -27,9 +29,13 @@ jobs:
         run: |
           python -m py_compile cst_validation/closed_loop_certificate.py
           python -m py_compile cst_validation/closed_loop_probe.py
+          python -m py_compile cst_validation/linear_stateful_transport.py
       - name: Run closed-loop certificate tests
         working-directory: cst_validation
         run: python -m pytest -q test_closed_loop_certificate.py
       - name: Run black-box probe tests
         working-directory: cst_validation
         run: python -m pytest -q test_closed_loop_probe.py
+      - name: Run stateful handshake synthesis tests
+        working-directory: cst_validation
+        run: python -m pytest -q test_linear_stateful_transport.py
