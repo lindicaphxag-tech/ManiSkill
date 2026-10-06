@@ -115,3 +115,34 @@ This falsifies saturation-authority loss as the primary cause of the 9→8 regre
 The protocol-effect observation remains valid as a software-contract property, but it must not be presented as the causal explanation for episode 8.
 
 A subsequent first-divergence assay (`37405141224`) shows identical clipping schedules between main and the revised adapter, further excluding clipping/retry schedule as the differentiating mechanism.
+
+
+## Prospective result status
+
+Follow-up same-base run: `37406432296`
+
+Observed:
+
+- current main: **8/10**, episodes 0–7, 1238 steps;
+- revised adapter: **8/10**, episodes 0–7, 1238 steps;
+- revised adapter + controller fix: **8/10**, episodes 0–7, 1238 steps;
+- exact episode-set parity across all three cells: **true**.
+
+The workflow-level rule emitted `advance_candidate_v2` because both adapter cells were non-regressive relative to that run's baseline.
+
+However, the earlier same-base run `37403056943` had current main at **9/10** with episode 8 successful while the adapter cells were 8/10.
+
+Because the frozen baseline implementation and frozen official inputs changed from 9/10 to 8/10 across runs, the prospective episode-8 prediction is **not confirmed** by `37406432296`. The new run is compatible with the revised adapter being non-regressive, but it cannot distinguish true episode-8 recovery from replay-level simulation variability.
+
+Status of the preregistered hypothesis:
+
+```
+saturation-authority mechanism: code-level plausible
+CPU contract intervention: passed
+prospective episode-8 recovery: INCONCLUSIVE
+single-run execution authorization: BLOCKED
+```
+
+No post-hoc claim of mechanism confirmation is permitted from the 8/10 parity run.
+
+A dedicated baseline repeatability probe now compares default and enhanced-determinism replay regimes before any further single-run execution claim is accepted.
