@@ -56,7 +56,7 @@ PY
       --traj-path "$demo_root/trajectory.h5" \
       --use-first-env-state -c pd_ee_delta_pose -o state --save-traj \
       --count "$COUNT" --num-envs 1 -b physx_cpu
-  )
+  ) 2>&1 | tee "$ROOT/$name.replay.log"
 }
 
 BASE_SRC="$(clone_at current_main https://github.com/lindicaphxag-tech/ManiSkill.git "$BASE_SHA")"
