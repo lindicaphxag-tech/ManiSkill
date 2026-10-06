@@ -1,0 +1,55 @@
+name: Cross-stack LeRobot mapping compensation witness
+
+on:
+  push:
+    branches:
+      - "validation/maniskill1495-maintainer-request"
+    paths:
+      - "validation/crossstack/lerobot_mapping_compensation.py"
+      - ".github/workflows/crossstack-lerobot-mapping.yml"
+  pull_request:
+    paths:
+      - "validation/crossstack/lerobot_mapping_compensation.py"
+      - ".github/workflows/crossstack-lerobot-mapping.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  lerobot-mapping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch pinned LeRobot source
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/lerobot/src/lerobot/processor
+          curl -fsSL \
+            https://raw.githubusercontent.com/huggingface/lerobot/8c920c4270460851cedd2737657584586d3dc66f/src/lerobot/processor/relative_action_processor.py \
+            -o /tmp/lerobot/src/lerobot/processor/relative_action_processor.py
+          test -s /tmp/lerobot/src/lerobot/processor/relative_action_processor.py
+          grep -n "state_offset = state" /tmp/lerobot/src/lerobot/processor/relative_action_processor.py
+
+      - name: Execute source-bound compensation witness
+        run: |
+          set -euxo pipefail
+          mkdir -p validation/crossstack/results
+          python validation/crossstack/lerobot_mapping_compensation.py \
+            --source-root /tmp/lerobot \
+            --upstream-sha 8c920c4270460851cedd2737657584586d3dc66f \
+            --output validation/crossstack/results/lerobot_mapping_compensation.json
+          cat validation/crossstack/results/lerobot_mapping_compensation.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crossstack-lerobot-mapping-compensation
+          path: validation/crossstack/results/lerobot_mapping_compensation.json
+          if-no-files-found: error
