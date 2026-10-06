@@ -23,8 +23,9 @@ jobs:
       - name: Compile CST modules
         working-directory: cst_validation_v2
         run: |
-          python -m py_compile controller_semantic_ir.py semantic_morphism.py certified_transport.py temporal_anchor_contract.py
+          python -m py_compile controller_semantic_ir.py semantic_morphism.py certified_transport.py temporal_anchor_contract.py nonlinear_semantic_transport.py
       - name: Run CST v2 gates
         working-directory: cst_validation_v2
         run: |
-          python -m pytest -q             test_controller_semantic_ir.py             test_semantic_morphism.py             test_certified_transport.py             test_temporal_anchor_contract.py
+          python -m pytest -q             test_controller_semantic_ir.py             test_semantic_morphism.py             test_certified_transport.py             test_temporal_anchor_contract.py \
+            test_nonlinear_semantic_transport.py
