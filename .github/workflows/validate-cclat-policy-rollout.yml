@@ -1,0 +1,28 @@
+name: Validate CCLAT frozen-policy rollout
+
+on:
+  push:
+    branches:
+      - "fix/joint-delta-to-joint-pos-semantics"
+    paths:
+      - "cst_validation/closed_loop_transport.py"
+      - "tests/test_cclat_native_physx_policy_rollout.py"
+      - ".github/workflows/validate-cclat-policy-rollout.yml"
+  workflow_dispatch:
+
+jobs:
+  policy-rollout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install ManiSkill test environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Run frozen-policy controller-swap rollout
+        run: python -m pytest -q -s tests/test_cclat_native_physx_policy_rollout.py
