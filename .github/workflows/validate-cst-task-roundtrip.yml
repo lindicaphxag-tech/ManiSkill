@@ -20,6 +20,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Checkout clean issue-429 fix
+        uses: actions/checkout@v4
+        with:
+          repository: lindicaphxag-tech/ManiSkill
+          ref: fix/issue-429-joint-delta-to-pos
+          path: issue429-fix
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -47,21 +54,35 @@ jobs:
           printf '%s\n' "$DELTA" > cst_delta_path.txt
           echo "delta trajectory: $DELTA"
 
-      - name: Replay same delta trajectory with upstream base
+      - name: Replay same delta trajectory with frozen upstream base
         shell: bash
         run: |
-          set -euo pipefail
+          set -uo pipefail
           DELTA="$(cat cst_delta_path.txt)"
           git show 62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3:mani_skill/trajectory/utils/actions/conversion.py             > mani_skill/trajectory/utils/actions/conversion.py
-          python -m mani_skill.trajectory.replay_trajectory             --traj-path "$DELTA"             --target-control-mode pd_joint_pos             --count 4             --max-retry 0             | tee cst_base_roundtrip.log
-          git checkout -- mani_skill/trajectory/utils/actions/conversion.py
+          set +e
+          python -m mani_skill.trajectory.replay_trajectory             --traj-path "$DELTA"             --target-control-mode pd_joint_pos             --count 4             --max-retry 0             2>&1 | tee cst_base_roundtrip.log
+          status=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$status" > cst_base_exit_code.txt
+          echo "upstream-base exit code: $status"
+          # A non-zero base exit is itself a valid negative outcome; do not
+          # prevent the identical fixed replay from running.
+          exit 0
 
-      - name: Replay same delta trajectory with CST issue-429 fix
+      - name: Replay same delta trajectory with clean issue-429 fix
         shell: bash
         run: |
           set -euo pipefail
           DELTA="$(cat cst_delta_path.txt)"
-          python -m mani_skill.trajectory.replay_trajectory             --traj-path "$DELTA"             --target-control-mode pd_joint_pos             --count 4             --max-retry 0             | tee cst_fix_roundtrip.log
+          cp issue429-fix/mani_skill/trajectory/utils/actions/conversion.py             mani_skill/trajectory/utils/actions/conversion.py
+          set +e
+          python -m mani_skill.trajectory.replay_trajectory             --traj-path "$DELTA"             --target-control-mode pd_joint_pos             --count 4             --max-retry 0             2>&1 | tee cst_fix_roundtrip.log
+          status=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$status" > cst_fix_exit_code.txt
+          echo "issue-429-fix exit code: $status"
+          test "$status" -eq 0
 
       - name: Compare public task success
         run: |
@@ -74,21 +95,40 @@ jobs:
               r"Replayed\s+(\d+)\s+episodes,\s+(\d+)/(\d+)="
           )
 
-          def parse(path):
+          def parse(path, exit_path=None, expected_episodes=4):
               text = Path(path).read_text()
+              exit_code = (
+                  int(Path(exit_path).read_text().strip())
+                  if exit_path is not None else 0
+              )
               matches = pattern.findall(text)
-              if not matches:
-                  raise RuntimeError(f"no replay summary in {path}")
-              requested, success, denominator = map(int, matches[-1])
-              if requested != denominator:
-                  raise RuntimeError((requested, denominator, path))
-              return {"episodes": denominator, "successes": success}
+              if matches:
+                  requested, success, denominator = map(int, matches[-1])
+                  if requested != denominator:
+                      raise RuntimeError((requested, denominator, path))
+                  return {
+                      "episodes": denominator,
+                      "successes": success,
+                      "process_exit": exit_code,
+                      "summary_found": True,
+                  }
+              if exit_code != 0:
+                  return {
+                      "episodes": expected_episodes,
+                      "successes": 0,
+                      "process_exit": exit_code,
+                      "summary_found": False,
+                  }
+              raise RuntimeError(
+                  f"process exited successfully but no replay summary in {path}"
+              )
 
-          base = parse("cst_base_roundtrip.log")
-          fix = parse("cst_fix_roundtrip.log")
+          base = parse("cst_base_roundtrip.log", "cst_base_exit_code.txt")
+          fix = parse("cst_fix_roundtrip.log", "cst_fix_exit_code.txt")
           delta = parse("cst_delta_generation.log")
           evidence = {
               "upstream_base_sha": "62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3",
+              "fix_branch": "fix/issue-429-joint-delta-to-pos",
               "task": "PickCube-v1",
               "episodes": 4,
               "source": "official teleop demonstration",
@@ -105,6 +145,8 @@ jobs:
           )
           print(json.dumps(evidence, indent=2))
 
+          if fix["process_exit"] != 0:
+              raise SystemExit("CST promotion gate failed: fixed replay crashed")
           if fix["successes"] <= base["successes"]:
               raise SystemExit(
                   "CST promotion gate failed: patch did not improve public task replay"
@@ -120,5 +162,7 @@ jobs:
             cst_delta_generation.log
             cst_base_roundtrip.log
             cst_fix_roundtrip.log
+            cst_base_exit_code.txt
+            cst_fix_exit_code.txt
             cst_task_roundtrip_evidence.json
           if-no-files-found: warn
