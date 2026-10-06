@@ -88,3 +88,33 @@ def test_gate_refuses_underpowered_evidence():
     result = evaluate_gate([one] * 5)
     assert not result.passed
     assert "insufficient" in result.reason
+
+
+def test_cross_policy_gate_cancels_action_and_support_chart_changes():
+    j_phys = np.array([[1.0, 0.2], [0.4, 1.2]])
+    dh = np.array([[2.0, 0.3], [0.0, 0.5]])
+    dg = np.array([[0.4, 0.1], [0.0, 1.8]])
+
+    a = PolicyCase(
+        raw_action_jacobian=j_phys,
+        action_to_physical_jacobian=np.eye(2),
+        support_ids=("cube_a", "cube_b"),
+        static_representation="absolute/world-support",
+        coarse_contract_class="RELATIONAL_INVARIANT",
+        runtime_decision="REPAIR",
+        physical_support_to_support_chart_jacobian=np.eye(2),
+    )
+    b = PolicyCase(
+        raw_action_jacobian=dh @ j_phys @ np.linalg.inv(dg),
+        action_to_physical_jacobian=np.linalg.inv(dh),
+        support_ids=("cube_a", "cube_b"),
+        static_representation="relative/object-support",
+        coarse_contract_class="RELATIONAL_INVARIANT",
+        runtime_decision="REPAIR",
+        physical_support_to_support_chart_jacobian=dg,
+    )
+
+    scores = score_pair(a, b)
+    assert scores.dec_distance < 1e-10
+    assert scores.raw_distance > 0.1
+    assert scores.decisions_agree
