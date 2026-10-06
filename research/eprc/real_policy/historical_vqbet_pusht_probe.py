@@ -3,7 +3,12 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import sys
 import time
+
+ROOT = Path(__file__).resolve().parents[3]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 import gymnasium as gym
 import gym_pusht  # noqa: F401
@@ -20,11 +25,12 @@ from research.eprc.dec_uncertainty import estimate_dec_uncertainty
 MODEL_ID = "lerobot/vqbet_pusht"
 MODEL_REVISION = "bff7190"
 LEROBOT_COMMIT = "2cb0bf5d4154c8fefe03d1dca394fc5e1d778a97"
-SUPPORT_SCALE = np.asarray([20.0, 20.0, 0.15], dtype=np.float64)
+SUPPORT_SCALE = np.asarray([16.0, 16.0, 0.08], dtype=np.float64)
+PROTOCOL_ID = "pusht-block-xyt-fine-4px-4px-0.02rad-coarse-8px-8px-0.04rad-v1"
 
 
 class HistoricalVQBeTProbe:
-    def __init__(self, *, seed: int = 7) -> None:
+    def __init__(self, *, seed: int = 17) -> None:
         self.device = torch.device("cpu")
         self.seed = int(seed)
         self.policy = VQBeTPolicy.from_pretrained(
@@ -178,6 +184,10 @@ def main() -> int:
                 "execution_mode": "historical-native",
             },
             "device": "cpu",
+            "protocol_id": PROTOCOL_ID,
+            "environment_reset_seed": 17,
+            "fine_physical_probe": [4.0, 4.0, 0.02],
+            "coarse_physical_probe": [8.0, 8.0, 0.04],
             "epsilon": float(args.epsilon),
             "support_scale": SUPPORT_SCALE.tolist(),
             "rng_seeds": seeds,
