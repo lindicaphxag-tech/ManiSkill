@@ -183,6 +183,7 @@ def main() -> int:
                 "model_id": MODEL_ID,
                 "model_revision": MODEL_REVISION,
                 "execution_mode": "historical-native",
+                "packaging_compatibility": "pyproject dependency name pyav->av only; no policy code changed",
             },
             "device": "cpu",
             "protocol_id": PROTOCOL_ID,
