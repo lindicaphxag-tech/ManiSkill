@@ -24,11 +24,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.11"
       - name: Install pinned LeRobot PushT stack
         run: |
           git clone -q https://github.com/huggingface/lerobot.git /tmp/lerobot
-          git -C /tmp/lerobot checkout -q 8c920c4270460851cedd2737657584586d3dc66f
+          git -C /tmp/lerobot checkout -q 3c0a209f9fac4d2a57617e686a7f2a2309144ba2
           python -m pip install -q -e '/tmp/lerobot[pusht]'
       - name: Probe official frozen VQ-BeT checkpoint
         run: |
