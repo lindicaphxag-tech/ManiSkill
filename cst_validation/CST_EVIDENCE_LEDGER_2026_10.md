@@ -28,6 +28,7 @@ does not treat that statement as adoption or endorsement of CST.
 | Closed-loop transport synthesis + impossibility witness | ManiSkill Actions #37407305028 | 8/8 PASS | A local state-feedback adapter can be synthesized when target input effects span the required source dynamics/action directions; otherwise the method returns a structural witness and propagates residuals into an H-step deviation bound. |
 | Native held-out closed-loop controller swap | ManiSkill Actions #37408214302 | 3/3 PASS | Different PD gains (source 100/10, target 60/6): CCLAT improves all 6 held-out PhysX state/action points; mean next-state error ratio 0.09663 (about 10.35x lower than naive action copying), worst ratio 0.10766. The local certificate correctly remains approximate, with unavoidable operator residual 4.936e-4. An identical-controller control case is exact, while a zero-stiffness target is rejected fail-closed. |
 | Native 2-DoF held-out controller swap | ManiSkill Actions #37408526666 | 1/1 PASS | 4D state / 2D action serial PhysX articulation with unequal per-joint PD gains: all 6/6 held-out coupled state/action points improve; mean next-state error ratio 0.10363 (~9.65x lower than naive copying). The linear certificate remains approximate (unavoidable residual 3.108e-3), target effect rank=2. |
+| Frozen-policy 30-step always-on CCLAT | ManiSkill Actions #37408718364 | FAIL (retained) | Always-on reuse of one local approximate adapter does not preserve the full frozen-policy rollout: mean error ratio 1.14492, terminal ratio 8.64355, despite slightly lower max transient error. This falsifies the claim that one-step improvement automatically composes over long horizons and motivates certified event-triggered/refusal semantics. |
 
 ## Pending evidence
 
@@ -178,3 +179,32 @@ Observed:
 This materially strengthens the native evidence beyond the 1-DoF assay, but it
 still does not establish task-level frozen-policy preservation; a separate
 multi-step policy rollout gate is frozen and evaluated independently.
+
+
+### Retained negative: always-on local transport
+
+GitHub Actions **#37408718364** is a frozen failed gate and must remain in the
+evidence record.
+
+A single origin-linearized 2-DoF adapter was reused for 30 steps while the same
+frozen state-feedback policy ran independently on source and target states.
+
+Observed:
+- mean naive trajectory error: **1.892317693e-4**;
+- mean always-on CCLAT error: **2.166555507e-4**;
+- mean ratio: **1.144921656** (worse);
+- terminal naive error: **1.433861066e-9**;
+- terminal CCLAT error: **1.239365334e-8**;
+- terminal ratio: **8.643552457** (worse);
+- max naive transient error: **2.100175524e-3**;
+- max CCLAT transient error: **1.984665669e-3** (slightly better).
+
+Interpretation: a useful approximate one-step transport does **not** compose
+automatically over a policy rollout. Near the shared equilibrium, naive
+controller mismatch becomes negligible while the approximate adapter can retain
+a small structural bias. The failed run rules out an always-on local adapter as
+the final method.
+
+No threshold is changed after this result. The next method gate must decide
+*before execution* when adaptation has a certified advantage over passthrough,
+and must refuse/passthrough when that advantage cannot be established.
