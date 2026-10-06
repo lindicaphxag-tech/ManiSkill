@@ -30,6 +30,28 @@ def replace_once(text: str, old: str, new: str, *, label: str) -> str:
     return text.replace(old, new, 1)
 
 
+def replace_region(
+    text: str,
+    start_marker: str,
+    end_marker: str,
+    replacement: str,
+    *,
+    label: str,
+) -> str:
+    """Replace one source region while still failing closed on source drift."""
+    if text.count(start_marker) != 1:
+        raise RuntimeError(
+            f"{label}: expected one start marker, found {text.count(start_marker)}"
+        )
+    if text.count(end_marker) != 1:
+        raise RuntimeError(
+            f"{label}: expected one end marker, found {text.count(end_marker)}"
+        )
+    start = text.index(start_marker)
+    end = text.index(end_marker, start) + len(end_marker)
+    return text[:start] + replacement + text[end:]
+
+
 def git_head(root: Path) -> str:
     return subprocess.check_output(
         ["git", "-C", str(root), "rev-parse", "HEAD"],
@@ -151,28 +173,10 @@ def patch_video_utils(root: Path) -> None:
         label="index selection",
     )
 
-    text = replace_once(
+    text = replace_region(
         text,
-        """    # compute distances between each query timestamp and loaded timestamps
-    dist = torch.cdist(query_ts[:, None], loaded_ts[:, None], p=1)
-    min_, argmin_ = dist.min(1)
-
-    is_within_tol = min_ <= tolerance_s
-    if not is_within_tol.all():
-        raise FrameTimestampError(
-            f"One or several query timestamps unexpectedly violate the tolerance ({min_[~is_within_tol]} >= {tolerance_s=})."
-            " It means that the closest frame that can be loaded from the video is too far away in time."
-            " This might be due to synchronization issues with timestamps during data collection."
-            " To be safe, we advise to ignore this item during training."
-            f"\nqueried timestamps: {query_ts}"
-            f"\nloaded timestamps: {loaded_ts}"
-            f"\nvideo: {video_path}"
-        )
-
-    # get closest frames to the query timestamps
-    closest_frames = torch.stack([loaded_frames[idx] for idx in argmin_])
-    closest_ts = loaded_ts[argmin_]
-""",
+        "    # compute distances between each query timestamp and loaded timestamps\n",
+        "    closest_ts = loaded_ts[argmin_]\n",
         """    if index_addressed:
         # get_frames_at preserves requested index order. Timestamp is now a
         # validation signal rather than the source of frame identity.
@@ -216,7 +220,6 @@ def patch_video_utils(root: Path) -> None:
 """,
         label="timestamp validation",
     )
-
     path.write_text(text, encoding="utf-8")
 
 
