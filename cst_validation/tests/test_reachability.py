@@ -115,3 +115,37 @@ def test_one_step_exact_is_not_overstated_as_multi_step():
     assert cert.status == "one_step_exact"
     assert cert.min_semantic_steps == 1
     assert not cert.requires_intermediate_state_feedback
+
+
+def test_latched_relative_out_of_image_cannot_accumulate_without_relatch():
+    chart = JointGoalChart(
+        "relative_latched",
+        normalized=True,
+        lower=-0.1,
+        upper=0.1,
+    )
+    cert = certify_joint_goal_horizon(
+        chart,
+        np.array([0.35]),
+        JointControllerContext(q_latched=np.array([0.0])),
+    )
+    assert cert.status == "unrepresentable"
+    assert cert.min_semantic_steps is None
+    assert not cert.requires_intermediate_state_feedback
+    assert "fixed-latch" in cert.reason
+
+
+def test_latched_relative_one_step_goal_is_exact():
+    chart = JointGoalChart(
+        "relative_latched",
+        normalized=True,
+        lower=-0.1,
+        upper=0.1,
+    )
+    cert = certify_joint_goal_horizon(
+        chart,
+        np.array([0.08]),
+        JointControllerContext(q_latched=np.array([0.0])),
+    )
+    assert cert.status == "one_step_exact"
+    assert cert.min_semantic_steps == 1
