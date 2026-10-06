@@ -16,6 +16,8 @@ Frozen purpose: separate controller-semantic claims from task / plant claims.
 | C10 | CST handles arbitrary nonlinear IK/task-space controllers exactly. | **unproven** | Needs branch-aware / region-aware nonlinear certificates; current affine and piecewise-affine results do not imply this. |
 | C11 | A maintainer has retained CST or the #429 semantic fix upstream. | **false currently** | External PR creation is blocked by the current GitHub App permission. Promotion requires upstream review/merge or independent maintained use. |
 | C12 | CST is a cheaper or universally better action representation. | **not claimed** | CST decides semantic transportability; it does not claim one action representation is globally superior. |
+| C13 | Ordinary relative->absolute round-trip is sufficient to verify the temporal anchor semantics of a memory policy. | **refuted by pinned external witness, pending latest CI refresh** | On pinned LeRobot main and open ARCH-05 PR #4779, PI0.5 proprioceptive-memory delta metadata place current state at the final history slot while the shared relative-action helper anchors a rank-3 state tensor at the first slot. Subtracting and adding the same wrong slot still round-trips exactly. Promote to supported only when the current pinned workflow is green. |
+| C14 | The CST problem pattern appears in at least three independent embodied-AI software contexts. | **supported as problem evidence, not adoption** | ManiSkill #429 supplies an externally reported conversion failure; pinned robosuite supplies independent host-semantic parity / clipping structure; pinned LeRobot supplies a temporal-anchor differential witness. None of this counts as maintainer adoption. |
 
 ## Non-negotiable promotion rules
 
@@ -30,3 +32,10 @@ Frozen purpose: separate controller-semantic claims from task / plant claims.
 - A negative result remains evidence. No tolerance, controller semantics, or
   evaluation subset may be changed after outcome inspection without a version
   change.
+
+
+- C13 must remain a differential witness, not an upstream bug claim, until a
+  LeRobot maintainer confirms the intended memory/relative-action composition
+  or accepts a corresponding fix.
+- C14 is evidence that the abstraction captures recurring software semantics;
+  it is not evidence that three projects endorse CST.
