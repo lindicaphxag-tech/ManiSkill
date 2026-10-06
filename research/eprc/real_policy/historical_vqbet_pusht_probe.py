@@ -20,6 +20,12 @@ from lerobot.common.policies.vqbet.modeling_vqbet import VQBeTPolicy
 
 from research.eprc.contract_signature import contract_signature, signature_distance
 from research.eprc.dec_uncertainty import estimate_dec_uncertainty
+from research.eprc.real_policy.pusht_exact_state import (
+    STATE_RESTORE_PROTOCOL,
+    PushTSnapshot,
+    capture_snapshot,
+    restore_snapshot,
+)
 
 
 MODEL_ID = "lerobot/vqbet_pusht"
@@ -27,6 +33,7 @@ MODEL_REVISION = "bff7190"
 LEROBOT_COMMIT = "2cb0bf5d4154c8fefe03d1dca394fc5e1d778a97"
 SUPPORT_SCALE = np.asarray([16.0, 16.0, 0.08], dtype=np.float64)
 PROTOCOL_ID = "pusht-block-xyt-fine-4px-4px-0.02rad-coarse-8px-8px-0.04rad-v1"
+HELDOUT_PHYSICAL_DELTA = np.asarray([10.0, -6.0, 0.35], dtype=np.float64)
 
 
 class HistoricalVQBeTProbe:
@@ -43,35 +50,35 @@ class HistoricalVQBeTProbe:
             obs_type="pixels_agent_pos",
             render_mode="rgb_array",
         )
-        self.history_prefix, self.current_state, self.baseline_raw = self._capture_history()
+        self.history_prefix, self.current_snapshot, self.baseline_raw = self._capture_history()
 
-    def _capture_history(self):
-        obs, info = self.env.reset(seed=self.seed)
-        history = [obs]
-        n = int(self.policy.config.n_obs_steps)
-        for _ in range(max(n - 1, 0)):
-            hold = np.asarray(info["pos_agent"], dtype=np.float32)
-            obs, _, terminated, truncated, info = self.env.step(hold)
-            if terminated or truncated:
-                raise RuntimeError("baseline PushT history terminated unexpectedly")
-            history.append(obs)
-        state = np.concatenate(
-            [
-                np.asarray(info["pos_agent"], dtype=np.float64),
-                np.asarray(info["block_pose"], dtype=np.float64),
-            ]
-        )
-        return history[:-1], state, history[-1]
-
-    def _counterfactual(self, support_delta: np.ndarray):
-        state = self.current_state.copy()
-        state[2:5] += np.asarray(support_delta, dtype=np.float64) * SUPPORT_SCALE
-        self.env.reset(seed=self.seed)
-        self.env.unwrapped._set_state(state)
+    def _render_snapshot(self, snapshot: PushTSnapshot):
+        restore_snapshot(self.env, snapshot)
         obs = self.env.unwrapped.get_obs()
-        if not np.allclose(obs["agent_pos"], state[:2], atol=1e-6):
+        if not np.array_equal(
+            np.asarray(obs["agent_pos"], dtype=np.float64),
+            snapshot.agent_position,
+        ):
             raise RuntimeError("support intervention changed held-fixed agent state")
         return obs
+
+    def _capture_history(self):
+        self.env.reset(seed=self.seed)
+        snapshot = capture_snapshot(self.env)
+        obs = self._render_snapshot(snapshot)
+        n = int(self.policy.config.n_obs_steps)
+        # Match the published Diffusion warmup=0 protocol exactly: the initial
+        # observation is repeated to fill the required history; no hold action
+        # is executed merely to construct context.
+        history_prefix = [obs] * max(n - 1, 0)
+        return history_prefix, snapshot, obs
+
+    def _counterfactual(self, support_delta: np.ndarray):
+        physical = np.asarray(support_delta, dtype=np.float64) * SUPPORT_SCALE
+        changed = self.current_snapshot.shifted_block(
+            physical[:2], float(physical[2])
+        )
+        return self._render_snapshot(changed)
 
     def _prepare(self, obs):
         mapped = {
@@ -151,6 +158,8 @@ def main() -> int:
         a = probe.query(zero, 123)
         b = probe.query(zero, 123)
         repeat_error = float(np.max(np.abs(a - b)))
+        heldout = probe.query(HELDOUT_PHYSICAL_DELTA / SUPPORT_SCALE, 123)
+        heldout_first_action_response = heldout[0] - a[0]
 
         seeds = [123, 456, 789]
         results = [
@@ -188,14 +197,18 @@ def main() -> int:
             "device": "cpu",
             "protocol_id": PROTOCOL_ID,
             "environment_reset_seed": 17,
+            "state_restore_protocol": STATE_RESTORE_PROTOCOL,
             "fine_physical_probe": [4.0, 4.0, 0.02],
             "coarse_physical_probe": [8.0, 8.0, 0.04],
             "jacobian_support_units": ["pixel", "pixel", "radian"],
             "epsilon": float(args.epsilon),
             "support_scale": SUPPORT_SCALE.tolist(),
+            "heldout_physical_delta": HELDOUT_PHYSICAL_DELTA.tolist(),
+            "heldout_first_action_response": heldout_first_action_response.tolist(),
             "rng_seeds": seeds,
             "paired_repeat_max_abs_error": repeat_error,
             "jacobian_shape": list(jacobians.shape),
+            "first_action_step_jacobian": jacobians[0, :2, :].tolist(),
             "support_response_norms": response_norms,
             "pairwise_dec_distances": [float(x) for x in pairwise],
             "q95_dec_radius": float(uncertainty.q95_signature_radius),
