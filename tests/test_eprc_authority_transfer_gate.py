@@ -7,7 +7,7 @@ from research.eprc.authority_transfer_gate import (
 )
 
 
-def _trial(z_required: bool, *, irrelevant_rank_loss: bool, success: bool):
+def _trial(z_required: bool, *, irrelevant_rank_loss: bool, success: bool, clipping_flag: bool):
     if irrelevant_rank_loss:
         target = np.array(
             [
@@ -31,7 +31,7 @@ def _trial(z_required: bool, *, irrelevant_rank_loss: bool, success: bool):
         target_action_to_physical_jacobian=target,
         transport_succeeded=success,
         global_rank_flag=(np.linalg.matrix_rank(target) == target.shape[0]),
-        clipping_flag=bool(z_required and irrelevant_rank_loss),
+        clipping_flag=clipping_flag,
     )
 
 
@@ -39,13 +39,13 @@ def test_projection_gate_beats_global_rank_on_task_restricted_cases():
     trials = []
     # 8 globally rank-deficient but task-compatible successes: global-rank gate gets these wrong.
     for _ in range(8):
-        trials.append(_trial(False, irrelevant_rank_loss=True, success=True))
+        trials.append(_trial(False, irrelevant_rank_loss=True, success=True, clipping_flag=True))
     # 8 task-incompatible failures: projection residual catches them.
     for _ in range(8):
-        trials.append(_trial(True, irrelevant_rank_loss=True, success=False))
+        trials.append(_trial(True, irrelevant_rank_loss=True, success=False, clipping_flag=False))
     # 8 ordinary full-rank successes.
     for _ in range(8):
-        trials.append(_trial(True, irrelevant_rank_loss=False, success=True))
+        trials.append(_trial(True, irrelevant_rank_loss=False, success=True, clipping_flag=False))
 
     result = evaluate_authority_gate(
         trials,
@@ -62,7 +62,7 @@ def test_projection_gate_beats_global_rank_on_task_restricted_cases():
 
 
 def test_gate_refuses_small_posthoc_sample():
-    trials = [_trial(False, irrelevant_rank_loss=True, success=True) for _ in range(5)]
+    trials = [_trial(False, irrelevant_rank_loss=True, success=True, clipping_flag=True) for _ in range(5)]
     result = evaluate_authority_gate(trials)
     assert not result.passed
     assert "insufficient" in result.reason
