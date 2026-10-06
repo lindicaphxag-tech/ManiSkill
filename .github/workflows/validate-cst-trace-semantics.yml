@@ -25,6 +25,7 @@ jobs:
           python -m py_compile cst_validation/semantic_morphism.py
           python -m py_compile cst_validation/trace_semantics.py
           python -m py_compile cst_validation/global_trace_morphism.py
+          python -m py_compile cst_validation/contextual_trace_morphism.py
       - name: Run controller semantic IR tests
         working-directory: cst_validation
         run: python -m pytest -q test_controller_semantic_ir.py
@@ -39,6 +40,10 @@ jobs:
       - name: Run global trace morphism tests
         working-directory: cst_validation
         run: python -m pytest -q test_global_trace_morphism.py
+
+      - name: Run contextual region compiler tests
+        working-directory: cst_validation
+        run: python -m pytest -q test_contextual_trace_morphism.py
 
       - name: Upload trace-semantic test evidence
         if: always()
