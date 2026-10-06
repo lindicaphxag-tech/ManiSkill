@@ -99,7 +99,7 @@ def test_converter_inverts_actual_controller_contract(
 
 
 @pytest.mark.parametrize("sign_preserving_controller", [False, True])
-def test_infeasible_rotation_is_explicitly_radially_saturated(
+def test_infeasible_rotation_preserves_caller_retry_signal(
     sign_preserving_controller,
 ):
     controller = _controller()
@@ -114,10 +114,13 @@ def test_infeasible_rotation_is_explicitly_radially_saturated(
     )
 
     assert saturated
-    assert np.linalg.norm(normalized) == pytest.approx(1.0, abs=1e-12)
+    assert np.linalg.norm(normalized) > 1.0
 
+    # The trajectory-conversion caller owns clipping + residual retries.
+    # Preserve the >1 norm signal until that boundary.
+    clipped = normalized / np.linalg.norm(normalized)
     action = torch.zeros((1, 6), dtype=controller.action_space_low.dtype)
-    action[0, 3:] = torch.as_tensor(normalized)
+    action[0, 3:] = torch.as_tensor(clipped)
     realized = controller._clip_and_scale_action(action)[0, 3:].numpy()
 
     assert realized[0] > 0
