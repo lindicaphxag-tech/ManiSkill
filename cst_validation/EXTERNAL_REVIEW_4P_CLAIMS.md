@@ -187,7 +187,7 @@ rather than silently retuned.
 | Full source action box | Can one certificate replace action-by-action sampling? | supported analytically |
 | Native-bound failure | Can CST refuse algebraically valid but operationally impossible mappings? | supported |
 | Host controller parity | Do compiled semantics match ManiSkill PDJointPosController? | supported; official set_action / before_simulation_step trace parity |
-| Second stack | Is the abstraction not ManiSkill-specific? | pending |
+| Second stack | Is the abstraction not ManiSkill-specific? | **supported**: pinned robosuite host parity for delta/absolute JointPositionController, including piecewise qpos saturation |
 | Task-level replay | Does certified conversion preserve success empirically? | pending |
 
 ## Reproducibility
