@@ -12,16 +12,30 @@ The frozen predictors are:
 4. coarse contract-class mismatch;
 5. lifted Differential Execution Contract distance.
 
-The target label is exact agreement of PASS / TRANSPORT / REPAIR / REJECT.
+The original draft used exact agreement of PASS / TRANSPORT / REPAIR / REJECT as
+the primary label. That is now **secondary only** because the runtime decision can
+itself depend on DEC-derived evidence, creating a circular validation target.
 
-## Primary prospective gate
+## Primary prospective gate — external held-out physical response
+
+For each policy, estimate DEC only from the frozen probe set. Then apply a
+support disturbance excluded from identification and make a fresh frozen-policy
+query. The physical response to that held-out disturbance is the external target.
+
+For a policy pair, define held-out response distance from those fresh physical
+responses. DEC distance and every frozen baseline are evaluated only on their
+ability to rank this external distance.
+
+Frozen gate:
 
 - at least 20 held-out policy-pair disturbances;
-- both agreement and disagreement cases must be present;
-- DEC distance AUC >= 0.70;
-- DEC AUC must exceed every frozen baseline by at least 0.05.
+- DEC-distance Spearman correlation with held-out physical-response distance >= 0.50;
+- DEC correlation must exceed every frozen baseline by at least 0.10;
+- no held-out response may be used to choose probe scales, signature terms or
+  thresholds.
 
-Smaller distance predicts decision agreement. AUC is computed pairwise without an external ML package.
+Decision-agreement AUC remains a secondary systems analysis, not evidence for
+the core scientific claim.
 
 ## Why this matters
 
@@ -48,3 +62,14 @@ The first prospective PushT comparison is frozen as follows:
 This rule is frozen before observing the aligned VQ-BeT result. It prevents a
 post-hoc choice of temporal aggregation from manufacturing cross-policy
 similarity.
+
+
+## Anti-circularity correction
+
+This correction is frozen before the first aligned VQ-BeT cross-policy result.
+
+Why it matters: if DEC participates in deciding PASS / TRANSPORT / REPAIR /
+REJECT, then showing that DEC similarity predicts decision agreement can become
+partly tautological. A fresh held-out policy response is external to the
+contract-identification procedure and therefore tests whether DEC captured
+real local behavior rather than only agreeing with its own runtime rules.
