@@ -217,3 +217,66 @@ def synthesize_repair(
         separation_margin=separation_margin,
         reason=reason,
     )
+
+
+@dataclass(frozen=True)
+class RepairabilityDiagnostics:
+    image_residual_norm: float
+    minimum_required_radius: float
+    certified_radius: float
+    radius_margin: float
+    signed_margin: float
+
+
+def diagnose_repairability(
+    physical_repair_map: np.ndarray,
+    target_physical_correction: np.ndarray,
+    *,
+    certified_radius: float,
+    atol: float = 1e-10,
+) -> RepairabilityDiagnostics:
+    """Return a zero-threshold, geometry-defined repairability margin.
+
+    Positive signed_margin iff the target lies in the physical response image
+    and its minimum-norm latent repair fits inside the certified radius.
+
+    For out-of-image targets, signed_margin is the negative *relative* physical
+    image residual. For in-image targets, it is normalized latent radius slack.
+    """
+
+    g = np.asarray(physical_repair_map, dtype=float)
+    d = np.asarray(target_physical_correction, dtype=float)
+    if g.ndim != 2 or d.ndim != 1 or g.shape[0] != d.size:
+        raise ValueError("repair map / target shape mismatch")
+    if certified_radius < 0:
+        return RepairabilityDiagnostics(
+            image_residual_norm=float("inf"),
+            minimum_required_radius=float("inf"),
+            certified_radius=float(certified_radius),
+            radius_margin=float("-inf"),
+            signed_margin=float("-inf"),
+        )
+
+    xi_min = np.linalg.pinv(g, rcond=atol) @ d
+    projection = g @ xi_min
+    image_residual = float(np.linalg.norm(d - projection))
+    required = float(np.linalg.norm(xi_min))
+    radius_margin = float(certified_radius - required)
+
+    target_norm = float(np.linalg.norm(d))
+    relative_image_residual = image_residual / max(target_norm, atol)
+
+    if image_residual > atol * max(1.0, target_norm):
+        signed = -relative_image_residual
+    elif certified_radius <= atol:
+        signed = 1.0 if required <= atol else float("-inf")
+    else:
+        signed = radius_margin / certified_radius
+
+    return RepairabilityDiagnostics(
+        image_residual_norm=image_residual,
+        minimum_required_radius=required,
+        certified_radius=float(certified_radius),
+        radius_margin=radius_margin,
+        signed_margin=float(signed),
+    )
