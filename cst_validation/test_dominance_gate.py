@@ -1,7 +1,7 @@
 import numpy as np
 
-from closed_loop_transport import LinearClosedLoopModel, synthesize_closed_loop_transport
-from dominance_gate import calibrate_quadratic_remainder, certify_calibrated_dominance
+from cst_validation.closed_loop_transport import LinearClosedLoopModel, synthesize_closed_loop_transport
+from cst_validation.dominance_gate import calibrate_quadratic_remainder, certify_calibrated_dominance
 
 
 def _exact_calibration(model, states, actions):
