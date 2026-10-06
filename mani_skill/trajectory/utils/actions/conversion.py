@@ -1,4 +1,5 @@
 """Utilities to convert actions between different control modes. Note that this code is specifically designed for the Franka Panda robot arm, it is not guaranteed to work for other robots."""
+from dataclasses import dataclass
 from typing import Union
 
 import numpy as np
@@ -98,93 +99,184 @@ def _normalized_pd_ee_rotation_action(
     return (desired / gains).cpu().numpy()
 
 
+@dataclass(frozen=True)
+class BoundedRotationCompilation:
+    """Evidence returned by the deterministic bounded SO(3) compiler."""
+
+    action: np.ndarray
+    geodesic_progress: float
+    action_norm: float
+    feasibility_margin: float
+    desired_angle_rad: float
+    residual_geodesic_error_rad: float
+    exact_reachable: bool
+
+
+def _geodesic_action_at_progress(
+    gains: torch.Tensor,
+    axis_angle: torch.Tensor,
+    progress: float | torch.Tensor,
+) -> torch.Tensor:
+    """Map a point on the identity->target SO(3) geodesic into action space."""
+    progress_t = torch.as_tensor(
+        progress, dtype=axis_angle.dtype, device=axis_angle.device
+    )
+    matrix = rotation_conversions.axis_angle_to_matrix(axis_angle * progress_t)
+    euler = rotation_conversions.matrix_to_euler_angles(matrix, "XYZ")
+    return euler / gains
+
+
+def _compile_bounded_pd_ee_rotation_action(
+    controller: PDEEPoseController,
+    desired_quaternion: np.ndarray,
+    *,
+    grid_steps: int = 64,
+    bisection_steps: int = 32,
+) -> BoundedRotationCompilation:
+    """Compile the furthest verified geodesic target inside the action ball.
+
+    The controller first clips the *normalized* rotational action to the unit
+    L2 ball, then maps that vector to XYZ Euler angles.  A representation-aware
+    inverse must therefore reason about both the SO(3) target and this bounded
+    execution geometry.
+
+    We follow the shortest geodesic from identity to the desired rotation,
+
+        R(t) = Exp(t Log(R_desired)),  t in [0, 1],
+
+    convert each candidate R(t) into the controller's XYZ-Euler convention,
+    invert the controller's measured per-axis gain, and require ||u(t)||_2 <= 1.
+
+    A deterministic grid locates the highest feasible interval and bisection
+    refines its boundary.  The returned action is directly feasible, so the
+    controller will not apply a second hidden rotational clip.  No numerical
+    optimizer or additional SciPy dependency is required.
+
+    The receipt records the achieved geodesic progress and residual SO(3)
+    distance, making the approximation explicit instead of silently changing
+    semantics at the action boundary.
+    """
+    if grid_steps < 2:
+        raise ValueError("grid_steps must be at least 2")
+    if bisection_steps < 1:
+        raise ValueError("bisection_steps must be positive")
+
+    gains = _pd_ee_rotation_gains(controller).to(dtype=torch.float64)
+    device = gains.device
+    desired_q = torch.as_tensor(
+        desired_quaternion, dtype=torch.float64, device=device
+    )
+    desired_q = desired_q / torch.linalg.norm(desired_q)
+
+    # q and -q encode the same SO(3) rotation.  Pick the hemisphere whose
+    # logarithm follows the shortest identity->target geodesic.
+    if desired_q[0] < 0:
+        desired_q = -desired_q
+
+    axis_angle = rotation_conversions.quaternion_to_axis_angle(desired_q)
+    desired_angle = float(torch.linalg.norm(axis_angle).item())
+
+    if desired_angle <= 1.0e-12:
+        action = torch.zeros(3, dtype=torch.float64, device=device)
+        return BoundedRotationCompilation(
+            action=action.cpu().numpy(),
+            geodesic_progress=1.0,
+            action_norm=0.0,
+            feasibility_margin=1.0,
+            desired_angle_rad=0.0,
+            residual_geodesic_error_rad=0.0,
+            exact_reachable=True,
+        )
+
+    exact = _geodesic_action_at_progress(gains, axis_angle, 1.0)
+    exact_norm = float(torch.linalg.norm(exact).item())
+    if exact_norm <= 1.0 + 1.0e-10:
+        return BoundedRotationCompilation(
+            action=exact.cpu().numpy(),
+            geodesic_progress=1.0,
+            action_norm=exact_norm,
+            feasibility_margin=max(0.0, 1.0 - exact_norm),
+            desired_angle_rad=desired_angle,
+            residual_geodesic_error_rad=0.0,
+            exact_reachable=True,
+        )
+
+    # Search all deterministic grid points rather than assuming the Euler chart
+    # is globally monotone.  We then refine the final feasible->infeasible
+    # bracket.  For Panda's +/-0.1 rad controller this boundary is close to the
+    # identity and well away from Euler singularities, but the direct
+    # feasibility check remains the authority condition.
+    grid = torch.linspace(
+        0.0,
+        1.0,
+        grid_steps + 1,
+        dtype=torch.float64,
+        device=device,
+    )
+    scaled = axis_angle.unsqueeze(0) * grid.unsqueeze(1)
+    matrices = rotation_conversions.axis_angle_to_matrix(scaled)
+    eulers = rotation_conversions.matrix_to_euler_angles(matrices, "XYZ")
+    actions = eulers / gains.unsqueeze(0)
+    norms = torch.linalg.norm(actions, dim=1)
+    feasible = norms <= 1.0
+
+    feasible_indices = torch.nonzero(feasible, as_tuple=False).flatten()
+    if feasible_indices.numel() == 0:
+        raise RuntimeError("identity rotation unexpectedly falls outside action ball")
+
+    low_index = int(feasible_indices[-1].item())
+    low = float(grid[low_index].item())
+    if low_index >= grid_steps:
+        # Defensive path for numerical disagreement with the exact check.
+        candidate = actions[low_index]
+        candidate_norm = float(norms[low_index].item())
+        return BoundedRotationCompilation(
+            action=candidate.cpu().numpy(),
+            geodesic_progress=low,
+            action_norm=candidate_norm,
+            feasibility_margin=max(0.0, 1.0 - candidate_norm),
+            desired_angle_rad=desired_angle,
+            residual_geodesic_error_rad=(1.0 - low) * desired_angle,
+            exact_reachable=False,
+        )
+
+    high = float(grid[low_index + 1].item())
+    if bool(feasible[low_index + 1].item()):
+        raise RuntimeError("geodesic feasibility bracket is not fail-closed")
+
+    for _ in range(bisection_steps):
+        mid = 0.5 * (low + high)
+        candidate = _geodesic_action_at_progress(gains, axis_angle, mid)
+        if float(torch.linalg.norm(candidate).item()) <= 1.0:
+            low = mid
+        else:
+            high = mid
+
+    action = _geodesic_action_at_progress(gains, axis_angle, low)
+    action_norm = float(torch.linalg.norm(action).item())
+    if action_norm > 1.0 + 1.0e-9:
+        raise RuntimeError("bounded SO(3) compiler produced an infeasible action")
+
+    return BoundedRotationCompilation(
+        action=action.cpu().numpy(),
+        geodesic_progress=low,
+        action_norm=action_norm,
+        feasibility_margin=max(0.0, 1.0 - action_norm),
+        desired_angle_rad=desired_angle,
+        residual_geodesic_error_rad=(1.0 - low) * desired_angle,
+        exact_reachable=False,
+    )
+
+
 def _bounded_pd_ee_rotation_action(
     controller: PDEEPoseController,
     desired_quaternion: np.ndarray,
 ) -> np.ndarray:
-    """Compile a desired rotation into the controller's bounded action ball.
-
-    Reachable targets use the exact analytic inverse. Out-of-bound targets solve
-    the three-dimensional constrained problem
-
-        min 3 - trace(R(a)^T R_desired),  subject to ||a||_2 <= 1.
-
-    The objective is monotone in SO(3) geodesic angle. SLSQP starts from the
-    existing Euler-radial clip and the compiler *only* accepts the optimized
-    candidate when it is feasible and strictly no worse than that baseline.
-    Optimization failure therefore degrades to existing behavior, not to an
-    unverified action.
-    """
-    from scipy.optimize import minimize
-
-    gains = _pd_ee_rotation_gains(controller)
-    dtype = gains.dtype
-    device = gains.device
-
-    desired_q = torch.as_tensor(
-        desired_quaternion, dtype=dtype, device=device
-    )
-    desired_q = desired_q / torch.linalg.norm(desired_q)
-    desired_matrix = rotation_conversions.quaternion_to_matrix(desired_q)
-    desired_euler = rotation_conversions.matrix_to_euler_angles(
-        desired_matrix, "XYZ"
-    )
-    exact = desired_euler / gains
-
-    exact_norm = torch.linalg.norm(exact)
-    if exact_norm <= 1.0 + 1e-7:
-        return exact.cpu().numpy()
-
-    radial = (exact / exact_norm).detach()
-    gains64 = gains.detach().to(dtype=torch.float64)
-    desired64 = desired_matrix.detach().to(dtype=torch.float64)
-
-    def objective_and_grad(action_np):
-        action = torch.tensor(
-            action_np,
-            dtype=torch.float64,
-            device=device,
-            requires_grad=True,
-        )
-        realized = rotation_conversions.euler_angles_to_matrix(
-            action * gains64, "XYZ"
-        )
-        loss = 3.0 - torch.trace(
-            realized.transpose(-1, -2) @ desired64
-        )
-        (grad,) = torch.autograd.grad(loss, action)
-        return float(loss.detach().cpu()), grad.detach().cpu().numpy()
-
-    radial_np = radial.cpu().numpy().astype(np.float64, copy=True)
-    baseline_loss, _ = objective_and_grad(radial_np)
-
-    result = minimize(
-        objective_and_grad,
-        radial_np,
-        method="SLSQP",
-        jac=True,
-        bounds=[(-1.0, 1.0)] * 3,
-        constraints={
-            "type": "ineq",
-            "fun": lambda action: 1.0 - float(np.dot(action, action)),
-            "jac": lambda action: -2.0 * np.asarray(action, dtype=np.float64),
-        },
-        options={
-            "ftol": 1.0e-12,
-            "maxiter": 80,
-            "disp": False,
-        },
-    )
-
-    if result.success:
-        candidate = np.asarray(result.x, dtype=np.float64)
-        candidate_norm = float(np.linalg.norm(candidate))
-        if candidate_norm <= 1.0 + 1.0e-8:
-            candidate_loss, _ = objective_and_grad(candidate)
-            if candidate_loss <= baseline_loss + 1.0e-12:
-                return candidate.astype(radial_np.dtype, copy=False)
-
-    return radial_np
+    """Compatibility wrapper returning only the compiled normalized action."""
+    return _compile_bounded_pd_ee_rotation_action(
+        controller,
+        desired_quaternion,
+    ).action
 
 def delta_pose_to_pd_ee_delta(
     controller: Union[PDEEPoseController, PDEEPosController],
