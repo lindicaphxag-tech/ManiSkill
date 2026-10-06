@@ -150,7 +150,7 @@ def main():
     args = p.parse_args()
 
     result = {
-        "schema_version": 2,
+        "schema_version": 3,
         "metric": "paired SO(3) converter-to-controller target error",
         "inference_unit": "episode",
         "corpora": {},
@@ -250,6 +250,58 @@ def main():
             main, conv, ctrl, both, episode_ids, tol=tol
         )
 
+        # Negative control: the two candidate repairs change rotation semantics.
+        # Translation is evaluated on the exact same requests/cells and should
+        # therefore remain invariant. This tests whether the interaction
+        # detector is specific to the affected semantic subspace rather than
+        # declaring every four-cell comparison "interactive".
+        position = {
+            v: np.asarray(
+                [x["position_error"] for x in docs[v]["paired_rows"]],
+                dtype=np.float64,
+            )
+            for v in VARIANTS
+        }
+        pos_main = position["main"]
+        pos_conv = position["converter_only"]
+        pos_ctrl = position["controller_only"]
+        pos_both = position["composed"]
+        pos_interaction = pos_both - pos_conv - pos_ctrl + pos_main
+        translation_tol = 1e-9
+        translation_negative_control = {
+            "metric": "paired translation-target error",
+            "tolerance": translation_tol,
+            "converter_minus_main": _episode_cluster_bootstrap_ci(
+                pos_conv - pos_main, episode_ids, seed=20261021
+            ),
+            "controller_minus_main": _episode_cluster_bootstrap_ci(
+                pos_ctrl - pos_main, episode_ids, seed=20261022
+            ),
+            "composed_minus_main": _episode_cluster_bootstrap_ci(
+                pos_both - pos_main, episode_ids, seed=20261023
+            ),
+            "interaction": _episode_cluster_bootstrap_ci(
+                pos_interaction, episode_ids, seed=20261024
+            ),
+            "max_abs_call_difference_from_main": {
+                "converter_only": float(np.max(np.abs(pos_conv - pos_main))),
+                "controller_only": float(np.max(np.abs(pos_ctrl - pos_main))),
+                "composed": float(np.max(np.abs(pos_both - pos_main))),
+            },
+            "max_abs_call_interaction": float(np.max(np.abs(pos_interaction))),
+            "subspace_invariant": bool(
+                np.max(np.abs(pos_conv - pos_main)) <= translation_tol
+                and np.max(np.abs(pos_ctrl - pos_main)) <= translation_tol
+                and np.max(np.abs(pos_both - pos_main)) <= translation_tol
+                and np.max(np.abs(pos_interaction)) <= translation_tol
+            ),
+            "claim_boundary": (
+                "Frozen within-corpus negative control. The compared repairs "
+                "target rotation semantics; translation uses the same paired "
+                "requests and must not acquire a repair-specific interaction."
+            ),
+        }
+
         result["corpora"][corpus] = {
             "corpus_sha256": corpus_hash,
             "request_count": count,
@@ -262,6 +314,7 @@ def main():
             "paired_effects_episode_cluster_bootstrap": paired,
             "strict_compensating_bundle_episode_weighted": strict,
             "repair_interaction_certificate": interaction_certificate,
+            "translation_negative_control": translation_negative_control,
             "variant_summaries": {
                 v: {
                     "rotation_error_deg": docs[v]["rotation_error_deg"],
@@ -295,6 +348,12 @@ def main():
         "confidence_supported_atomicity_in_both": all(
             result["corpora"][c]["repair_interaction_certificate"][
                 "confidence_supported_atomicity"
+            ]
+            for c in CORPORA
+        ),
+        "translation_negative_control_in_both": all(
+            result["corpora"][c]["translation_negative_control"][
+                "subspace_invariant"
             ]
             for c in CORPORA
         ),
