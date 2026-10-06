@@ -32,21 +32,39 @@ def main():
     baseline=variants["main"]
     current=variants["adaptive_current"]
     future=variants["adaptive_controller_fixed"]
-    invariant=(
+
+    controller_mapping_invariant = bool(
         current["exists"] and future["exists"]
+        and current["episodes"] == future["episodes"]
+        and current["steps"] == future["steps"]
+    )
+    baseline_non_regression = bool(
+        baseline["exists"] and current["exists"] and future["exists"]
         and current["episodes"] >= baseline["episodes"]
         and future["episodes"] >= baseline["episodes"]
-        and current["steps"] == baseline["steps"]
-        and future["steps"] == baseline["steps"]
+    )
+    exact_baseline_parity = bool(
+        baseline["exists"] and current["exists"] and future["exists"]
+        and current["episodes"] == baseline["episodes"] == future["episodes"]
+        and current["steps"] == baseline["steps"] == future["steps"]
     )
 
+    if controller_mapping_invariant and baseline_non_regression:
+        decision="candidate_for_upstream_v2"
+    elif controller_mapping_invariant:
+        decision="controller_invariant_but_baseline_regresses"
+    else:
+        decision="reject_or_revise"
+
     report={
-      "schema_version":1,
-      "claim_boundary":"Official-demo replay evidence for controller-aware converter encoding; not policy-training success.",
+      "schema_version":2,
+      "claim_boundary":"Official-demo serial replay evidence for controller-aware converter encoding; not policy-training success.",
       "expected_episodes":a.expected,
       "variants":variants,
-      "controller_semantics_invariant":bool(invariant),
-      "decision":"candidate_for_upstream_v2" if invariant else "reject_or_revise",
+      "controller_mapping_invariant":controller_mapping_invariant,
+      "baseline_non_regression":baseline_non_regression,
+      "exact_baseline_parity":exact_baseline_parity,
+      "decision":decision,
     }
     a.output.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
     print(json.dumps(report,indent=2,sort_keys=True))
