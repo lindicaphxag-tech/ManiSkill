@@ -22,76 +22,26 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-
       - name: Checkout checkpoint-era LeRobot
         run: |
-          git clone https://github.com/huggingface/lerobot.git /tmp/lerobot
-          cd /tmp/lerobot
-          git checkout 2cb0bf5d4154c8fefe03d1dca394fc5e1d778a97
-          # Packaging-only compatibility: old metadata names the PyAV distribution `pyav`,
-          # while the imported module and modern PyPI distribution are `av`.
-          # No LeRobot source/model semantics are changed.
-          sed -i 's/^pyav = ">=12.0.5"/av = ">=12.0.5"/' pyproject.toml
-          grep -q '^av = ">=12.0.5"' pyproject.toml
-
+          git clone -q https://github.com/huggingface/lerobot.git /tmp/lerobot
+          git -C /tmp/lerobot checkout -q 2cb0bf5d4154c8fefe03d1dca394fc5e1d778a97
+          sed -i 's/^pyav = ">=12.0.5"/av = ">=12.0.5"/' /tmp/lerobot/pyproject.toml
+          grep -q '^av = ">=12.0.5"' /tmp/lerobot/pyproject.toml
       - name: Install checkpoint-era PushT stack
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e "/tmp/lerobot[pusht]"
-          sed -i 's/^import packaging$/import packaging\nimport packaging.version/' /tmp/lerobot/lerobot/common/policies/pretrained.py
-          grep -q '^import packaging.version
-      - name: Probe historical-native official VQ-BeT checkpoint
-        run: |
-          python research/eprc/real_policy/historical_vqbet_pusht_probe.py             --output /tmp/historical_vqbet_pusht_dec.json
-
-      - name: Validate frozen protocol and provenance
-        run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          p=Path("/tmp/historical_vqbet_pusht_dec.json")
-          d=json.loads(p.read_text())
-          assert d["runtime_provenance"]["lerobot_commit"] == "2cb0bf5d4154c8fefe03d1dca394fc5e1d778a97"
-          assert d["runtime_provenance"]["model_revision"] == "bff7190"
-          assert d["protocol_id"] == "pusht-block-xyt-fine-4px-4px-0.02rad-coarse-8px-8px-0.04rad-v1"
-          assert d["environment_reset_seed"] == 17
-          assert d["fine_physical_probe"] == [4.0, 4.0, 0.02]
-          assert d["coarse_physical_probe"] == [8.0, 8.0, 0.04]
-          assert d["state_restore_protocol"] == "reset-fresh-space-exact-readback-v1"
-          assert d["jacobian_support_units"] == ["pixel", "pixel", "radian"]
-          assert d["heldout_physical_delta"] == [10.0, -6.0, 0.35]
-          assert len(d["heldout_first_action_response"]) == 2
-          assert len(d["first_action_step_jacobian"]) == 2
-          assert len(d["first_action_step_jacobian"][0]) == 3
-          assert d["paired_repeat_max_abs_error"] <= 1e-6
-          assert len(d["rng_seeds"]) == 5
-          assert d["certification_eligible"] == d["replicate_stability_certified"]
-          print("historical-native VQ-BeT provenance/protocol validated")
-          PY
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: historical-vqbet-pusht-dec
-          path: /tmp/historical_vqbet_pusht_dec.json
-          if-no-files-found: warn
- /tmp/lerobot/lerobot/common/policies/pretrained.py
+          sed -i '/^import packaging$/a import packaging.version' /tmp/lerobot/lerobot/common/policies/pretrained.py
+          grep -q '^import packaging.version$' /tmp/lerobot/lerobot/common/policies/pretrained.py
           python -m pip install --force-reinstall --no-deps "pymunk==6.11.1"
-          python - <<'PY'
-          import packaging.version
-          import pymunk
-          assert hasattr(pymunk.Space, "add_collision_handler")
-          print("historical compatibility surface: packaging.version import + pymunk", pymunk.version)
-          PY
-
+          python -c 'import packaging.version, pymunk; assert hasattr(pymunk.Space, "add_collision_handler"); print("historical compat pymunk", pymunk.version)'
       - name: Probe historical-native official VQ-BeT checkpoint
         run: |
-          python research/eprc/real_policy/historical_vqbet_pusht_probe.py             --output /tmp/historical_vqbet_pusht_dec.json
-
+          python research/eprc/real_policy/historical_vqbet_pusht_probe.py --output /tmp/historical_vqbet_pusht_dec.json
       - name: Validate frozen protocol and provenance
         run: |
           python - <<'PY'
@@ -116,7 +66,6 @@ jobs:
           assert d["certification_eligible"] == d["replicate_stability_certified"]
           print("historical-native VQ-BeT provenance/protocol validated")
           PY
-
       - uses: actions/upload-artifact@v4
         if: always()
         with:
