@@ -21,7 +21,7 @@ def test_four_scale_geometric_convergence_yields_conditional_tail_bound():
     assert out.status is ScaleLimitStatus.CONVERGENCE_SUPPORTED
     assert np.allclose(out.center_drifts, [0.3, 0.075, 0.01875])
     assert max(out.robust_contraction_upper) <= 0.5
-    assert out.conditional_tail_bound == np.testing.assert_allclose(
+    np.testing.assert_allclose(
         [out.conditional_tail_bound], [0.01875], rtol=1e-12, atol=1e-12
     )
 
