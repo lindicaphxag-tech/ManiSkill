@@ -47,8 +47,9 @@ def test_different_physical_response_subspaces_are_not_equivalent():
     assert not contracts_equivalent(j_a, np.eye(3), j_b, np.eye(3), tolerance=1e-8)
 
 
-def test_global_gain_does_not_change_contract_signature():
+def test_physical_gain_change_is_not_erased_by_signature():
     j = np.array([[1.0, 0.2], [0.0, 2.0], [0.0, 0.0]])
     a = contract_signature(j)
     b = contract_signature(7.5 * j)
-    assert signature_distance(a, b) < 1e-10
+    assert signature_distance(a, b) > 1.0
+    assert not contracts_equivalent(j, np.eye(3), 7.5 * j, np.eye(3))
