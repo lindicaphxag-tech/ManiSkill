@@ -47,3 +47,21 @@ jobs:
           name: cst-trace-junit
           path: cst_validation/trace-junit.xml
           if-no-files-found: warn
+
+
+  host-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install ManiSkill and focused test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+      - name: Match CST Trace IR against host PDJointPosController
+        working-directory: cst_validation
+        run: python -m pytest -q test_maniskill_host_parity.py
