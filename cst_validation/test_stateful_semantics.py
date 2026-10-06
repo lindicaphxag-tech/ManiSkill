@@ -5,6 +5,7 @@ from cst_validation.stateful_semantics import (
     JointCommandMode,
     JointControllerState,
     advance_target_state,
+    compile_joint_trace,
     compile_joint_transport,
 )
 
@@ -169,3 +170,111 @@ def test_randomized_exact_delta_current_to_absolute_transport():
         assert cert.exact
         expected = q + 0.1 * action
         np.testing.assert_allclose(cert.target_native_action, expected, atol=1e-12)
+
+
+
+def test_trace_compiler_preserves_exact_delta_target_state_relation():
+    source = JointCommandContract(
+        JointCommandMode.DELTA_TARGET, True, -0.1, 0.1
+    )
+    target = JointCommandContract(JointCommandMode.ABSOLUTE, False)
+    actions = np.array(
+        [
+            [0.5, -0.2],
+            [-0.1, 0.3],
+            [0.25, 0.25],
+            [-0.4, -0.1],
+        ],
+        dtype=float,
+    )
+    current = np.array(
+        [
+            [0.0, 0.0],
+            [0.01, -0.01],
+            [0.03, -0.02],
+            [0.04, 0.00],
+        ],
+        dtype=float,
+    )
+    cert = compile_joint_trace(
+        source,
+        target,
+        initial_source_target_qpos=np.array([0.2, -0.3]),
+        initial_target_target_qpos=current[0],
+        current_qpos_trace=current,
+        source_native_actions=actions,
+    )
+    assert cert.exact
+    assert cert.exact_prefix_steps == len(actions)
+    assert cert.first_failure_step is None
+    np.testing.assert_allclose(
+        cert.source_target_trace,
+        cert.target_target_trace,
+        atol=1e-12,
+    )
+    # Delta-target accumulation is a hidden-state effect, so the final target
+    # is the initial target plus the sum of physical deltas.
+    expected_final = np.array([0.2, -0.3]) + 0.1 * actions.sum(axis=0)
+    np.testing.assert_allclose(
+        cert.target_target_trace[-1],
+        expected_final,
+        atol=1e-12,
+    )
+
+
+def test_trace_compiler_reports_first_unrepresentable_step():
+    source = JointCommandContract(JointCommandMode.ABSOLUTE, False)
+    target = JointCommandContract(
+        JointCommandMode.DELTA_CURRENT, True, -0.1, 0.1
+    )
+    current = np.zeros((4, 1), dtype=float)
+    actions = np.array([[0.02], [0.08], [0.25], [0.01]], dtype=float)
+
+    cert = compile_joint_trace(
+        source,
+        target,
+        initial_source_target_qpos=np.zeros(1),
+        initial_target_target_qpos=np.zeros(1),
+        current_qpos_trace=current,
+        source_native_actions=actions,
+    )
+    assert not cert.exact
+    assert cert.exact_prefix_steps == 2
+    assert cert.first_failure_step == 2
+    assert cert.target_native_actions.shape == (2, 1)
+    assert "fails at step 2" in cert.reason
+
+
+def test_random_long_trace_has_zero_semantic_drift_when_exact():
+    rng = np.random.default_rng(918273)
+    horizon = 500
+    dim = 7
+    source = JointCommandContract(
+        JointCommandMode.DELTA_TARGET, True, -0.05, 0.05
+    )
+    target = JointCommandContract(JointCommandMode.ABSOLUTE, False)
+    actions = rng.uniform(-0.8, 0.8, size=(horizon, dim))
+    # Current qpos is irrelevant to delta-target -> absolute semantics, but a
+    # real replay compiler receives it from recorded simulator states.
+    current = rng.uniform(-1.0, 1.0, size=(horizon, dim))
+    initial = rng.uniform(-0.5, 0.5, size=dim)
+
+    cert = compile_joint_trace(
+        source,
+        target,
+        initial_source_target_qpos=initial,
+        initial_target_target_qpos=current[0],
+        current_qpos_trace=current,
+        source_native_actions=actions,
+    )
+    assert cert.exact
+    assert cert.exact_prefix_steps == horizon
+    assert cert.max_abs_residual <= 1e-12
+    assert cert.max_state_relation_error <= np.max(
+        np.abs(initial - current[0])
+    )
+    np.testing.assert_allclose(
+        cert.source_target_trace,
+        cert.target_target_trace,
+        atol=1e-12,
+    )
