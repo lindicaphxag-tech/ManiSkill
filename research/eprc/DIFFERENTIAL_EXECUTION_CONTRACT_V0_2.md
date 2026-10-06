@@ -125,3 +125,32 @@ An earlier draft normalized away global gain. That was too weak: once action sem
 ## Nonlinear chart boundary
 
 Representation invariance is stated for smooth local action diffeomorphisms, not only linear maps. If `a'=h(a)` with nonsingular local Jacobian `Dh`, then the action-space CASJ transforms by `Dh` and the semantic lift by `(Dh)^-1`, so the physical DEC is unchanged. If `Dh` loses rank or becomes numerically singular, the change is treated as authority loss rather than harmless reparameterization.
+
+
+## Correction: canonical support-direction correspondence is part of the DEC
+
+A previous signature draft retained only the output response projector,
+singular-value shape and physical gain. That is insufficient after physical
+canonicalization.
+
+Counterexample:
+
+```text
+J1 = [[1, 0],      J2 = [[0, 1],
+      [0, 1]]            [1, 0]]
+```
+
+Both maps have the same output subspace, singular spectrum and Frobenius gain,
+but they swap the physical x-support and y-support responses. In canonical
+physical support coordinates these are different execution contracts.
+
+The executable signature therefore also retains the **oriented normalized
+canonical Jacobian** `J_phys / ||J_phys||_F`.
+
+This does not weaken chart invariance. Action/support reparameterizations must
+cancel during bilateral semantic canonicalization *before* the signature is
+formed. After that point, physical support-direction correspondence is semantic
+content and must not be quotiented away.
+
+This correction was frozen before the first aligned VQ-BeT cross-policy result
+and is covered by an explicit axis-swap regression test.
