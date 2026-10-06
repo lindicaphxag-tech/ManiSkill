@@ -67,7 +67,8 @@ jobs:
           assert len(d["first_action_step_jacobian"]) == 2
           assert len(d["first_action_step_jacobian"][0]) == 3
           assert d["paired_repeat_max_abs_error"] <= 1e-6
-          assert d["certification_eligible"] is False
+          assert len(d["rng_seeds"]) == 5
+          assert d["certification_eligible"] == d["replicate_stability_certified"]
           print("historical-native VQ-BeT provenance/protocol validated")
           PY
 
