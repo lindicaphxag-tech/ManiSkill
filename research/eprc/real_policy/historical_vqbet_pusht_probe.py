@@ -161,7 +161,7 @@ def main() -> int:
         heldout = probe.query(HELDOUT_PHYSICAL_DELTA / SUPPORT_SCALE, 123)
         heldout_first_action_response = heldout[0] - a[0]
 
-        seeds = [123, 456, 789]
+        seeds = [123, 456, 789, 101112, 131415]
         results = [
             probe.central_jacobian(epsilon=args.epsilon, randomness_seed=seed)
             for seed in seeds
@@ -213,12 +213,12 @@ def main() -> int:
             "pairwise_dec_distances": [float(x) for x in pairwise],
             "q95_dec_radius": float(uncertainty.q95_signature_radius),
             "replicate_stability_certified": bool(uncertainty.stable),
-            "certification_eligible": False,
+            "certification_eligible": bool(uncertainty.stable),
             "max_symmetry_residual": float(max_symmetry),
             "elapsed_seconds": float(time.perf_counter() - t0),
             "note": (
-                "Three RNG-seed replicates are a smoke only; DEC_UNCERTAINTY "
-                "requires at least five for a stability claim."
+                "Five RNG-seed replicates satisfy the pre-registered replicate-count gate. "
+                "Certification eligibility is still determined by the frozen q95 DEC-radius threshold."
             ),
         }
         args.output.parent.mkdir(parents=True, exist_ok=True)
