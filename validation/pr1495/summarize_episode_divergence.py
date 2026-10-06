@@ -102,7 +102,8 @@ def _pair(main,cand):
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("--root",type=Path,required=True)
-    p.add_argument("--output",type=Path,required=True)\n    p.add_argument("--episode-id",type=int,required=True)
+    p.add_argument("--output",type=Path,required=True)
+    p.add_argument("--episode-id",type=int,required=True)
     a=p.parse_args()
     docs={}
     for name in ("current_main","contract_adapter_v2","contract_adapter_v2_controller_fixed"):
