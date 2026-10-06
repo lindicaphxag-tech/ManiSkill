@@ -35,17 +35,15 @@ CASJ estimates the second factor from black-box support interventions.
 CST/CSIR supplies or validates the first factor.
 
 The **Differential Execution Contract (DEC)** is not the raw Jacobian tensor.
-Its minimal representation is the physical response subspace plus normalized
-anisotropy:
+Its minimal representation separates physical response geometry from physical gain:
 
 \[
 \mathcal D
 =
-(P_{\mathrm{Im}(J_{phys})},\; \sigma(J_{phys})/\sigma_1).
+(P_{\mathrm{Im}(J_{phys})},\; \sigma(J_{phys})/\sigma_1,\;\|J_{phys}\|_F).
 \]
 
-This discards arbitrary global gain and action-coordinate charts while retaining
-which canonical physical-command directions the scene support locally controls.
+The projector and normalized spectrum describe response geometry. The Frobenius gain is retained because, after semantic lifting into common physical units, a 7x larger response is a real physical difference rather than a harmless coordinate change. Action-coordinate changes are removed by the chain-rule lift; physical sensitivity is not normalized away.
 
 ## Representation invariance
 
@@ -118,3 +116,12 @@ Reject the DEC claim if:
 - a static metadata certificate performs equally well;
 - results depend on privileged simulator state unavailable to deployment;
 - only one policy family exhibits stable support response.
+
+
+## Correction: physical gain is part of the contract
+
+An earlier draft normalized away global gain. That was too weak: once action semantics have been lifted into canonical physical units, global gain controls disturbance sensitivity, repair radius and saturation risk. The executable signature therefore preserves `||J_phys||_F`, and the regression suite explicitly rejects `J_phys` and `7.5 J_phys` as equivalent contracts.
+
+## Nonlinear chart boundary
+
+Representation invariance is stated for smooth local action diffeomorphisms, not only linear maps. If `a'=h(a)` with nonsingular local Jacobian `Dh`, then the action-space CASJ transforms by `Dh` and the semantic lift by `(Dh)^-1`, so the physical DEC is unchanged. If `Dh` loses rank or becomes numerically singular, the change is treated as authority loss rather than harmless reparameterization.
