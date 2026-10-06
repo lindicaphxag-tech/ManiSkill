@@ -5,10 +5,16 @@ from typing import Callable
 
 import numpy as np
 
-from .closed_loop_certificate import (
-    LocalClosedLoopTransportCertificate,
-    synthesize_local_closed_loop_transport,
-)
+try:
+    from .closed_loop_certificate import (
+        LocalClosedLoopTransportCertificate,
+        synthesize_local_closed_loop_transport,
+    )
+except ImportError:  # Allow direct execution from cst_validation/.
+    from closed_loop_certificate import (
+        LocalClosedLoopTransportCertificate,
+        synthesize_local_closed_loop_transport,
+    )
 
 
 ArrayQuery = Callable[[np.ndarray], np.ndarray]
