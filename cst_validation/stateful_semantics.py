@@ -213,3 +213,135 @@ def advance_target_state(
     if target.shape != current.shape:
         raise ValueError("next current qpos and target qpos dimensions differ")
     return JointControllerState(current_qpos=current, target_qpos=target)
+
+
+@dataclass(frozen=True)
+class JointTraceTransportCertificate:
+    """Proof summary for a whole controller-action trajectory."""
+
+    exact: bool
+    exact_prefix_steps: int
+    first_failure_step: int | None
+    target_native_actions: np.ndarray
+    source_target_trace: np.ndarray
+    target_target_trace: np.ndarray
+    max_abs_residual: float
+    max_state_relation_error: float
+    reason: str
+
+
+def compile_joint_trace(
+    source_contract: JointCommandContract,
+    target_contract: JointCommandContract,
+    *,
+    initial_source_target_qpos: np.ndarray,
+    initial_target_target_qpos: np.ndarray,
+    current_qpos_trace: np.ndarray,
+    source_native_actions: np.ndarray,
+    atol: float = 1e-10,
+) -> JointTraceTransportCertificate:
+    """Compile a trajectory while preserving the controller target-state relation.
+
+    current_qpos_trace[t] is the physical joint configuration at which the
+    t-th source action is interpreted. For an exact transport, the target
+    controller is required to share this physical state at the same step; this
+    is the inductive premise later checked by native simulator replay.
+
+    The compiler fails closed at the first unrepresentable target. It returns
+    only the target actions in the exact prefix and never silently clips a
+    non-equivalent remainder.
+    """
+    actions = np.asarray(source_native_actions, dtype=float)
+    current = np.asarray(current_qpos_trace, dtype=float)
+    if actions.ndim != 2 or current.ndim != 2:
+        raise ValueError("actions and current_qpos_trace must have shape [T, D]")
+    if actions.shape != current.shape:
+        raise ValueError("actions and current_qpos_trace must have identical shape")
+    if actions.shape[0] == 0:
+        raise ValueError("trace must contain at least one action")
+
+    source_target = _vector(
+        initial_source_target_qpos, name="initial_source_target_qpos"
+    )
+    target_target = _vector(
+        initial_target_target_qpos, name="initial_target_target_qpos"
+    )
+    if source_target.shape != (actions.shape[1],):
+        raise ValueError("initial source target dimension mismatch")
+    if target_target.shape != (actions.shape[1],):
+        raise ValueError("initial target target dimension mismatch")
+
+    compiled: list[np.ndarray] = []
+    source_targets: list[np.ndarray] = []
+    target_targets: list[np.ndarray] = []
+    max_residual = 0.0
+    max_state_error = float(np.max(np.abs(source_target - target_target)))
+    failure_step: int | None = None
+    failure_reason = ""
+
+    for step in range(actions.shape[0]):
+        source_state = JointControllerState(
+            current_qpos=current[step],
+            target_qpos=source_target,
+        )
+        target_state = JointControllerState(
+            current_qpos=current[step],
+            target_qpos=target_target,
+        )
+        cert = compile_joint_transport(
+            source_contract,
+            target_contract,
+            source_state=source_state,
+            target_state=target_state,
+            source_native_action=actions[step],
+            atol=atol,
+        )
+        max_residual = max(max_residual, cert.max_abs_residual)
+        if not cert.exact:
+            failure_step = step
+            failure_reason = cert.reason
+            break
+
+        compiled.append(cert.target_native_action)
+        source_targets.append(cert.source_target_qpos)
+        target_targets.append(cert.target_target_qpos)
+        source_target = cert.source_target_qpos
+        target_target = cert.target_target_qpos
+        max_state_error = max(
+            max_state_error,
+            float(np.max(np.abs(source_target - target_target))),
+        )
+
+    exact = failure_step is None
+    prefix = len(compiled)
+    dim = actions.shape[1]
+    target_actions_array = (
+        np.stack(compiled, axis=0)
+        if compiled
+        else np.empty((0, dim), dtype=float)
+    )
+    source_trace_array = (
+        np.stack(source_targets, axis=0)
+        if source_targets
+        else np.empty((0, dim), dtype=float)
+    )
+    target_trace_array = (
+        np.stack(target_targets, axis=0)
+        if target_targets
+        else np.empty((0, dim), dtype=float)
+    )
+    return JointTraceTransportCertificate(
+        exact=exact,
+        exact_prefix_steps=prefix,
+        first_failure_step=failure_step,
+        target_native_actions=target_actions_array,
+        source_target_trace=source_trace_array,
+        target_target_trace=target_trace_array,
+        max_abs_residual=max_residual,
+        max_state_relation_error=max_state_error,
+        reason=(
+            "entire trajectory preserves the physical target-state relation"
+            if exact
+            else f"semantic transport fails at step {failure_step}: {failure_reason}"
+        ),
+    )
