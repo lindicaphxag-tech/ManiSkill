@@ -46,6 +46,8 @@ __all__ = [
     "joint_chart_digest",
     "joint_context_digest",
     "verify_exact_joint_transport_proof",
+    "SequenceTransportWitness",
+    "compile_joint_sequence_transport",
 ]
 
 from .compiler import (
@@ -78,4 +80,9 @@ from .proof import (
     joint_chart_digest,
     joint_context_digest,
     verify_exact_joint_transport_proof,
+)
+
+from .sequence_transport import (
+    SequenceTransportWitness,
+    compile_joint_sequence_transport,
 )
