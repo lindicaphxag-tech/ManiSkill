@@ -13,8 +13,15 @@ if str(ROOT) not in sys.path:
 import gymnasium as gym
 import gym_pusht  # noqa: F401
 import numpy as np
-import packaging.version  # noqa: F401 - exposes packaging.version for pinned LeRobot loader
+import packaging
+from packaging import version as _packaging_version
 import torch
+
+# Old LeRobot checkpoints access packaging.version through the package object.
+# Newer packaging releases do not guarantee that submodule attribute is eagerly
+# exposed, so make the compatibility dependency explicit without changing
+# policy code or weights.
+packaging.version = _packaging_version
 
 from lerobot.common.envs.utils import preprocess_observation
 from lerobot.common.policies.vqbet.modeling_vqbet import VQBeTPolicy
