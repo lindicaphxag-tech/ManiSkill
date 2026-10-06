@@ -75,16 +75,23 @@ Therefore the preregistered routing decision is:
 This falsifies the weaker story that a deterministic local policy Jacobian is
 automatically a valid runtime repair model.
 
-## Current multi-state gate
+## Multi-state model-order gate — negative result
 
-Five disjoint PushT reset states are frozen before execution:
+Five disjoint PushT reset states were frozen before execution:
 
 `101, 211, 307, 401, 503`.
 
-A richer centered-response jet may be promoted only when first-order locality
-fails and the higher-order model passes an out-of-fit finer-scale prediction
-gate. The promotion rule itself is frozen before the five outcomes are
-adjudicated.
+The preregistered response-jet gate produced **0/5 upgrades and 0/5 rescues**.
+Three states supported a refined first-order certificate; two rejected the
+first-order local model. None justified the richer jet on held-out scale
+prediction.
+
+Per the frozen rule, the result is:
+
+`DROP_JET_FROM_FLAGSHIP`.
+
+The richer local model is retained only as negative evidence, not as a main
+method component.
 
 ## External evidence boundary
 
