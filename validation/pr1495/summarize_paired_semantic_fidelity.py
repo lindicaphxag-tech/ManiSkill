@@ -57,6 +57,92 @@ def _ordered_ids(rows):
     ]
 
 
+def _episode_interaction_certificate(main, conv, ctrl, both, episode_ids, tol=1e-3):
+    unique = np.unique(episode_ids)
+    per_episode = []
+    for episode_id in unique:
+        mask = episode_ids == episode_id
+        l0 = float(main[mask].mean())
+        l1 = float(conv[mask].mean())
+        l2 = float(ctrl[mask].mean())
+        l12 = float(both[mask].mean())
+        per_episode.append(
+            {
+                "episode_id": int(episode_id),
+                "baseline": l0,
+                "converter_only": l1,
+                "controller_only": l2,
+                "composed": l12,
+                "converter_harm": l1 - l0,
+                "controller_harm": l2 - l0,
+                "composed_residual": l12 - l0,
+                "semantic_epistasis": l12 - l1 - l2 + l0,
+            }
+        )
+
+    arr = {
+        key: np.asarray([row[key] for row in per_episode], dtype=np.float64)
+        for key in (
+            "converter_harm",
+            "controller_harm",
+            "composed_residual",
+            "semantic_epistasis",
+        )
+    }
+
+    cis = {
+        "converter_harm": _episode_cluster_bootstrap_ci(
+            arr["converter_harm"], unique, seed=20261011
+        ),
+        "controller_harm": _episode_cluster_bootstrap_ci(
+            arr["controller_harm"], unique, seed=20261012
+        ),
+        "composed_residual": _episode_cluster_bootstrap_ci(
+            arr["composed_residual"], unique, seed=20261013
+        ),
+        "semantic_epistasis": _episode_cluster_bootstrap_ci(
+            arr["semantic_epistasis"], unique, seed=20261014
+        ),
+    }
+
+    means = {k: float(v.mean()) for k, v in arr.items()}
+    strict = bool(
+        means["converter_harm"] > tol
+        and means["controller_harm"] > tol
+        and means["composed_residual"] <= tol
+    )
+    confidence_supported = bool(
+        cis["converter_harm"]["low"] > tol
+        and cis["controller_harm"]["low"] > tol
+        and cis["composed_residual"]["high"] <= tol
+    )
+
+    return {
+        "objective": "minimize",
+        "tolerance_deg": tol,
+        "definition": {
+            "converter_harm": "L(R_converter) - L(no_repair)",
+            "controller_harm": "L(R_controller) - L(no_repair)",
+            "composed_residual": "L(R_both) - L(no_repair)",
+            "semantic_epistasis": (
+                "L(R_both) - L(R_converter) - L(R_controller) + L(no_repair)"
+            ),
+        },
+        "episode_weighted_means_deg": means,
+        "episode_cluster_bootstrap_95ci": cis,
+        "strict_compensating_bundle": strict,
+        "confidence_supported_atomicity": confidence_supported,
+        "authorization": {
+            "converter_only": "reject" if strict else "undetermined",
+            "controller_only": "reject" if strict else "undetermined",
+            "composed": (
+                "advance_to_execution_domain_gate" if strict else "undetermined"
+            ),
+        },
+        "per_episode": per_episode,
+    }
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--root", type=Path, required=True)
@@ -160,6 +246,10 @@ def main():
             and episode_means["composed"] <= episode_means["main"] + tol
         )
 
+        interaction_certificate = _episode_interaction_certificate(
+            main, conv, ctrl, both, episode_ids, tol=tol
+        )
+
         result["corpora"][corpus] = {
             "corpus_sha256": corpus_hash,
             "request_count": count,
@@ -171,6 +261,7 @@ def main():
             },
             "paired_effects_episode_cluster_bootstrap": paired,
             "strict_compensating_bundle_episode_weighted": strict,
+            "repair_interaction_certificate": interaction_certificate,
             "variant_summaries": {
                 v: {
                     "rotation_error_deg": docs[v]["rotation_error_deg"],
@@ -195,6 +286,18 @@ def main():
         "paired_inputs_identical_within_each_corpus": True,
         "input_distributions_independent_of_compared_cell": True,
         "episode_clustered_inference": True,
+        "interaction_certificate_in_both": all(
+            result["corpora"][c]["repair_interaction_certificate"][
+                "strict_compensating_bundle"
+            ]
+            for c in CORPORA
+        ),
+        "confidence_supported_atomicity_in_both": all(
+            result["corpora"][c]["repair_interaction_certificate"][
+                "confidence_supported_atomicity"
+            ]
+            for c in CORPORA
+        ),
         "corpus_origins": list(CORPORA),
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
