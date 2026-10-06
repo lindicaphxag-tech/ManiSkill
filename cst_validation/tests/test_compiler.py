@@ -162,3 +162,63 @@ def test_compiler_is_sound_and_complete_for_random_box_joint_charts():
                 )
             )
             assert result.violating_coordinates == expected
+
+
+def test_latched_relative_source_without_latch_returns_ambiguity():
+    source = JointGoalChart(
+        "relative_latched",
+        normalized=True,
+        lower=-0.1,
+        upper=0.1,
+    )
+    target = JointGoalChart("absolute")
+    result = compile_exact_joint_transport(
+        source_chart=source,
+        target_chart=target,
+        source_action=np.array([0.5]),
+        source_context=JointControllerContext(),
+        target_context=JointControllerContext(),
+    )
+    assert result.status == "ambiguous"
+    assert result.missing_source_state == ("q_latched",)
+    assert not np.allclose(result.witness_goal_a, result.witness_goal_b)
+
+
+def test_absolute_to_latched_relative_exact_when_goal_in_fixed_chunk_image():
+    source = JointGoalChart("absolute")
+    target = JointGoalChart(
+        "relative_latched",
+        normalized=True,
+        lower=-0.1,
+        upper=0.1,
+    )
+    result = compile_exact_joint_transport(
+        source_chart=source,
+        target_chart=target,
+        source_action=np.array([0.24, -0.32]),
+        source_context=JointControllerContext(),
+        target_context=JointControllerContext(
+            q_latched=np.array([0.20, -0.30])
+        ),
+    )
+    assert result.status == "exact"
+    np.testing.assert_allclose(result.target_action, [0.4, -0.2], atol=1e-12)
+
+
+def test_latched_relative_target_refuses_goal_outside_fixed_image():
+    source = JointGoalChart("absolute")
+    target = JointGoalChart(
+        "relative_latched",
+        normalized=True,
+        lower=-0.1,
+        upper=0.1,
+    )
+    result = compile_exact_joint_transport(
+        source_chart=source,
+        target_chart=target,
+        source_action=np.array([0.35]),
+        source_context=JointControllerContext(),
+        target_context=JointControllerContext(q_latched=np.array([0.0])),
+    )
+    assert result.status == "nonrepresentable"
+    assert result.violating_coordinates == (0,)
