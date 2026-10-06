@@ -85,7 +85,12 @@ def test_target_delta_target_requires_target_memory_handshake():
     )
 
     assert cert.requires_target_target_state
-    assert cert.status is JointTransportStatus.SATURATED
+    assert cert.status is JointTransportStatus.EXACT
+    np.testing.assert_allclose(
+        cert.required_target_physical_command,
+        [0.1, -0.3],
+        atol=1e-12,
+    )
 
 
 def test_saturation_is_reported_instead_of_hidden_by_clipping():
