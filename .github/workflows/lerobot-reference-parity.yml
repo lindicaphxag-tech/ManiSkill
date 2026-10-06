@@ -1,0 +1,41 @@
+name: LeRobot reference-semantics parity
+
+on:
+  push:
+    branches:
+      - "validation/lerobot-reference-parity"
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout validation harness
+        uses: actions/checkout@v4
+        with:
+          path: harness
+      - name: Checkout CST research implementation
+        uses: actions/checkout@v4
+        with:
+          ref: research/closed-loop-semantic-transport-v1
+          path: harness/cst-src
+      - name: Checkout pinned LeRobot
+        uses: actions/checkout@v4
+        with:
+          repository: huggingface/lerobot
+          ref: d40e8709cffb93644db66e30604ef50fdec003cb
+          path: harness/lerobot-src
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install minimal parity dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Run pinned LeRobot vs CST parity
+        working-directory: harness
+        run: python cst_validation/lerobot_reference_parity.py | tee lerobot_cst_parity.log
+      - name: Surface machine-readable result
+        working-directory: harness
+        run: grep "LEROBOT_CST_PARITY_JSON=" lerobot_cst_parity.log
