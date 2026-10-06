@@ -33,6 +33,22 @@ jobs:
       - name: Probe official frozen VQ-BeT checkpoint
         run: |
           python research/eprc/real_policy/vqbet_pusht_probe.py --output /tmp/eprc-real-policy/vqbet_pusht_probe.json
+      - name: Validate frozen cross-policy protocol
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("/tmp/eprc-real-policy/vqbet_pusht_probe.json")
+          d=json.loads(p.read_text())
+          assert d["protocol_id"] == "pusht-block-xyt-fine-4px-4px-0.02rad-coarse-8px-8px-0.04rad-v1"
+          assert d["environment_reset_seed"] == 17
+          assert d["fine_physical_probe"] == [4.0, 4.0, 0.02]
+          assert d["coarse_physical_probe"] == [8.0, 8.0, 0.04]
+          assert d["paired_policy_repeat_max_error"] < 1e-6
+          assert d["preprocess_repeat_max_error"] < 1e-7
+          assert d["dec"]["certification_eligible"] is False
+          print("validated protocol", d["protocol_id"])
+          PY
       - name: Upload raw frozen-policy evidence
         if: always()
         uses: actions/upload-artifact@v4
