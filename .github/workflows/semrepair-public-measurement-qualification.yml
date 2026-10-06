@@ -1,0 +1,62 @@
+name: SemRepair public measurement qualification
+
+on:
+  push:
+    branches:
+      - "validation/maniskill1495-maintainer-request"
+    paths:
+      - "validation/pr1495/measurement_qualification_certificate.py"
+      - "validation/pr1495/measurement_case_*.json"
+      - ".github/workflows/semrepair-public-measurement-qualification.yml"
+  pull_request:
+    paths:
+      - "validation/pr1495/measurement_qualification_certificate.py"
+      - "validation/pr1495/measurement_case_*.json"
+      - ".github/workflows/semrepair-public-measurement-qualification.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Evaluate LeRobot evidence channel
+        run: |
+          mkdir -p .measurement-qualification
+          python validation/pr1495/measurement_qualification_certificate.py             validation/pr1495/measurement_case_lerobot.json             --output .measurement-qualification/lerobot.json
+          cat .measurement-qualification/lerobot.json
+
+      - name: Evaluate ManiSkill replay channel
+        run: |
+          python validation/pr1495/measurement_qualification_certificate.py             validation/pr1495/measurement_case_maniskill.json             --output .measurement-qualification/maniskill.json
+          cat .measurement-qualification/maniskill.json
+
+      - name: Assert qualification decisions
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          le=json.loads(Path(".measurement-qualification/lerobot.json").read_text())
+          ms=json.loads(Path(".measurement-qualification/maniskill.json").read_text())
+          assert le["decision"]=="non_identifying_measurement", le
+          assert le["authority"]=="reject_until_external_semantic_anchor", le
+          assert not le["measurement_qualified"], le
+          assert ms["decision"]=="measurement_qualified", ms
+          assert ms["authority"]=="advance_to_repair_evidence_gate", ms
+          assert ms["measurement_qualified"], ms
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: semrepair-public-measurement-qualification
+          path: .measurement-qualification/*.json
+          if-no-files-found: error
+          include-hidden-files: true
