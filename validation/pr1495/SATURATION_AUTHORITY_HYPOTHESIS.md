@@ -1,3 +1,16 @@
+# SUPERSEDED — source-episode target was based on invalid output identity
+
+This preregistration is retained for audit history, but its causal target is invalid.
+The original same-base output HDF5 keys were recorder-local renumbered identities,
+not source demonstration episode IDs. See
+`SOURCE_EPISODE_IDENTITY_CORRECTION.md`.
+
+The code-level saturation/retry ownership observation remains valid, but this
+document must not be cited as evidence that it caused the observed replay-count
+regression.
+
+---
+
 # Saturation-Authority Hypothesis — preregistered before rerun
 
 Status: **mechanistic hypothesis frozen before evaluating the revised candidate**
