@@ -109,7 +109,7 @@ def main():
     )
 
     if exact_controller_invariance and non_regressive_both:
-        decision = "advance_candidate_v2"
+        decision = "provisional_single_run_parity_requires_repeatability"
     elif non_regressive_both:
         decision = "non_regressive_but_controller_sensitive"
     elif exact_controller_invariance:
@@ -144,11 +144,14 @@ def main():
         },
         "decision": decision,
         "decision_policy": (
-            "Advance only if the adapter remains execution-non-regressive under "
-            "both historical and sign-preserving controller mappings. Exact "
-            "episode-set parity is reported separately and is not silently "
-            "substituted by count parity."
+            "A single replay run can establish provisional parity only. It must "
+            "not authorize or reject the candidate until an independent replay-"
+            "repeatability certificate passes for the measurement regime. After "
+            "C_repeat=PASS, require adapter non-regression under both historical "
+            "and sign-preserving controller mappings. Exact episode-set parity is "
+            "reported separately and is not silently substituted by count parity."
         ),
+        "repeatability_required_before_authorization": True,
     }
 
     a.output.parent.mkdir(parents=True, exist_ok=True)
