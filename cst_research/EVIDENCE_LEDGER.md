@@ -76,3 +76,21 @@ To move from L8-candidate to strong L8 evidence:
 
 To argue L9-level external recognition:
 - maintained external use or merge of the research method, independent reproduction, or strong peer-reviewed recognition in addition to the above.
+
+## Independent-stack reference-semantics parity
+
+- Validation run: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37461922475
+- Pinned LeRobot commit: `d40e8709cffb93644db66e30604ef50fdec003cb`.
+- The assay executes the actual pinned-source `to_relative_actions` and `to_absolute_actions` function definitions and compares them with CST's CHUNK_ANCHOR semantics.
+- Random chunks: 500.
+- Batch per chunk: 4.
+- Horizon: 9.
+- Dimension: 7.
+- Checked trajectories: 2,000.
+- Checked action vectors: 18,000.
+- Max CST-vs-LeRobot goal error: `1.4901161193847656e-07`.
+- Max CST-vs-LeRobot absolute-action error: `1.4901161193847656e-07`.
+- Temporally stacked-state current-frame parity error: `0.0`.
+- Same numeric [1,2,3] under CHUNK_ANCHOR vs PREVIOUS_COMMAND has maximum goal divergence `3.0` in the frozen witness.
+
+Interpretation: this is independent public-stack semantic parity, not LeRobot adoption of CST. It supports the claim that reference ownership is executable semantics and that CST can reproduce a real second stack's chunk-anchor contract.
