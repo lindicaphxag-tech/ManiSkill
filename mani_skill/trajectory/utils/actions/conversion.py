@@ -301,9 +301,12 @@ def from_pd_joint_delta_pos(
     ori_controller: CombinedController = ori_env.unwrapped.agent.controller
     controller: CombinedController = env.unwrapped.agent.controller
     ori_arm_controller: PDJointPosController = ori_controller.controllers["arm"]
+    target_arm_controller: PDJointPosController = controller.controllers["arm"]
 
     assert output_mode == "pd_joint_pos", output_mode
+    assert ori_arm_controller.config.use_delta
     assert ori_arm_controller.config.normalize_action
+    assert not target_arm_controller.config.use_delta
     low, high = ori_arm_controller.config.lower, ori_arm_controller.config.upper
 
     info = {}
@@ -316,9 +319,30 @@ def from_pd_joint_delta_pos(
         ori_action_dict = ori_controller.to_action_dict(ori_action)
         output_action_dict = ori_action_dict.copy()  # do not in-place modify
 
+        # Preserve the source controller's existing torch decoding path, then
+        # encode the resulting physical qpos into the *target* controller's
+        # native chart. Passing physical qpos directly to a normalized
+        # PDJointPosController causes a second unintended scaling.
         prev_arm_qpos = ori_arm_controller.qpos
-        delta_qpos = gym_utils.clip_and_scale_action(ori_action_dict["arm"], low, high)
-        arm_action = prev_arm_qpos + delta_qpos
+        delta_qpos = gym_utils.clip_and_scale_action(
+            ori_action_dict["arm"], low, high
+        )
+        target_qpos = (prev_arm_qpos + delta_qpos).detach().cpu().numpy()[0]
+
+        if target_arm_controller.config.normalize_action:
+            target_low = target_arm_controller.action_space_low.detach().cpu().numpy()
+            target_high = target_arm_controller.action_space_high.detach().cpu().numpy()
+            arm_action = gym_utils.inv_scale_action(
+                target_qpos, target_low, target_high
+            )
+            if np.max(np.abs(arm_action)) > 1 + 1e-3 and verbose:
+                tqdm.write(
+                    "Absolute joint target is outside the target controller "
+                    f"action space and will be clipped: {arm_action}"
+                )
+            arm_action = np.clip(arm_action, -1.0, 1.0)
+        else:
+            arm_action = target_qpos
 
         ori_env.step(ori_action)
 
