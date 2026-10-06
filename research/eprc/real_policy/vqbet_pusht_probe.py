@@ -300,7 +300,7 @@ def main(output: Path) -> int:
             "training_runtime_commit": LEROBOT_TRAINING_COMMIT,
             "runtime_mode": "native-training-runtime",
             "schema_compatibility_shim": False,
-            "packaging_compatibility": "pyproject dependency name pyav->av only; no policy code changed",
+            "packaging_compatibility": "pyav->av distribution-name fix; explicit packaging.version import; Pymunk 6.11.1 API pin; no policy weights or policy math changed",
         },
         "device": "cpu",
         "protocol_id": PROTOCOL_ID,
