@@ -22,7 +22,7 @@ import json
 from math import isfinite
 from typing import Mapping, Sequence
 
-from .embodied_semantic_transport import (
+from embodied_semantic_transport import (
     MonomialSemanticTransport,
     SemanticTransportFactor,
     compose_transport_chain,
