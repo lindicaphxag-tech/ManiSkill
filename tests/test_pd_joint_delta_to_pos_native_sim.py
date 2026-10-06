@@ -17,7 +17,7 @@ from mani_skill.trajectory.utils.actions.conversion import (
 from mani_skill.utils import gym_utils
 
 
-def _native_one_joint_controller(*, use_delta: bool):
+def _native_one_joint_controller(*, use_delta: bool, use_target: bool = False):
     """Build a real ManiSkill PD controller on a headless PhysX articulation."""
     backend = parse_sim_and_render_backend("cpu", "none")
     px = physx.PhysxCpuSystem()
@@ -58,6 +58,7 @@ def _native_one_joint_controller(*, use_delta: bool):
         damping=10.0,
         force_limit=100.0,
         use_delta=use_delta,
+        use_target=use_target,
         normalize_action=use_delta,
     )
     controller = PDJointPosController(
@@ -130,3 +131,80 @@ def test_real_physx_delta_to_absolute_semantics_are_target_equivalent(source_nat
         atol=1e-6,
         rtol=1e-6,
     )
+
+
+
+def test_real_physx_target_delta_requires_hidden_controller_state():
+    """State-aware transport preserves a target-delta controller trajectory.
+
+    A target-delta action is relative to the controller-owned previous target,
+    not the measured current qpos. Because finite-stiffness tracking lags the
+    target, a stateless current-qpos conversion becomes wrong after the first
+    step. CST uses the hidden target state and stays physically equivalent.
+    """
+    source_scene, source_art, source = _native_one_joint_controller(
+        use_delta=True,
+        use_target=True,
+    )
+    target_scene, target_art, target = _native_one_joint_controller(
+        use_delta=False,
+    )
+
+    sequence = [0.8, 0.6, -0.4, 0.7, -0.3]
+    max_naive_target_error = 0.0
+
+    for step, native in enumerate(sequence):
+        source_hidden_target = source._target_qpos.detach().cpu().numpy()[0].copy()
+        source_current = source.qpos.detach().cpu().numpy()[0].copy()
+        physical_delta = normalized_pd_joint_action_to_physical(
+            source,
+            np.array([native], dtype=np.float64),
+        )
+        correct_target = source_hidden_target + physical_delta
+        naive_current_relative_target = source_current + physical_delta
+        max_naive_target_error = max(
+            max_naive_target_error,
+            float(np.max(np.abs(correct_target - naive_current_relative_target))),
+        )
+
+        target_native = qpos_to_pd_joint_pos(target, correct_target)
+        source.set_action(torch.tensor([[native]], dtype=torch.float32))
+        target.set_action(
+            torch.as_tensor(
+                np.asarray(target_native, dtype=np.float32)[None, :],
+                dtype=torch.float32,
+            )
+        )
+
+        np.testing.assert_allclose(
+            source._target_qpos.detach().cpu().numpy(),
+            target._target_qpos.detach().cpu().numpy(),
+            atol=1e-7,
+            rtol=1e-7,
+        )
+
+        for _ in range(5):
+            source.before_simulation_step()
+            target.before_simulation_step()
+            source_scene.step()
+            target_scene.step()
+
+        np.testing.assert_allclose(
+            source_art.get_qpos().detach().cpu().numpy(),
+            target_art.get_qpos().detach().cpu().numpy(),
+            atol=1e-6,
+            rtol=1e-6,
+        )
+        np.testing.assert_allclose(
+            source_art.get_qvel().detach().cpu().numpy(),
+            target_art.get_qvel().detach().cpu().numpy(),
+            atol=1e-6,
+            rtol=1e-6,
+        )
+
+        if step > 0:
+            # The hidden target and measured qpos should differ under finite
+            # stiffness, making the stateless interpretation observably wrong.
+            assert np.max(np.abs(source_hidden_target - source_current)) > 1e-5
+
+    assert max_naive_target_error > 1e-4
