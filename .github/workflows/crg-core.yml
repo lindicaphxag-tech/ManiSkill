@@ -1,0 +1,21 @@
+name: Robust CRG Core
+
+on:
+  pull_request:
+    paths:
+      - "research/crg_core/**"
+      - "tests/test_crg_core.py"
+      - ".github/workflows/crg-core.yml"
+  workflow_dispatch:
+
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -q numpy pytest
+      - run: python -m pytest -q tests/test_crg_core.py tests/test_crg_active_probe.py
+      - run: python research/crg_core/demo.py
