@@ -42,7 +42,7 @@ PY
     python -m mani_skill.trajectory.replay_trajectory \
       --traj-path "$demo_root/trajectory.h5" \
       --use-first-env-state -c pd_ee_delta_pose -o state --save-traj \
-      --count "$COUNT" --num-envs 2 -b physx_cpu
+      --count "$COUNT" --num-envs 1 -b physx_cpu
   )
 }
 
