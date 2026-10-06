@@ -43,6 +43,7 @@ def test_native_panda_delta_to_absolute_replay_preserves_controller_target(seed)
         obs_mode="state",
         control_mode="pd_joint_delta_pos",
         sim_backend="cpu",
+        render_backend="none",
     )
     target = gym.make(
         "PickCube-v1",
