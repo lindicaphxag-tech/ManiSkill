@@ -83,6 +83,7 @@ class StatefulTransportCertificate:
     linear_system_rank: int
     solution_nullity: int
     allow_source_state_feedback: bool
+    source_state_access_mask: np.ndarray
     reason: str
 
 
@@ -125,6 +126,7 @@ def synthesize_linear_stateful_transport(
     atol: float = 1e-10,
     rtol: float = 1e-10,
     approximate_tolerance: float | None = None,
+    source_state_access_mask: np.ndarray | None = None,
 ) -> StatefulTransportCertificate:
     """Solve for a state relation and stateful action adapter.
 
@@ -154,20 +156,33 @@ def synthesize_linear_stateful_transport(
     ms = source.action_dim
     mt = target.action_dim
 
-    m_size = nt * ns
-    l_size = mt * ns if allow_source_state_feedback else 0
+    if source_state_access_mask is None:
+        access = np.ones(ns, dtype=bool)
+    else:
+        access = np.asarray(source_state_access_mask, dtype=bool)
+        if access.shape != (ns,):
+            raise ValueError("source_state_access_mask must match source state dimension")
+    active = np.flatnonzero(access)
+    na = int(active.size)
+
+    # Only exposed source-state coordinates may participate in either the
+    # target hidden-state handshake M or state-feedback adapter L.  This makes
+    # the mask an executable interface contract rather than an analysis hint.
+    m_size = nt * na
+    l_size = mt * na if allow_source_state_feedback else 0
     k_size = mt * ms
     n_unknown = m_size + l_size + k_size
 
     def unpack(theta: np.ndarray):
         cursor = 0
-        M = theta[cursor : cursor + m_size].reshape(nt, ns)
+        M = _zeros((nt, ns))
+        if m_size:
+            M[:, active] = theta[cursor : cursor + m_size].reshape(nt, na)
         cursor += m_size
-        if allow_source_state_feedback:
-            L = theta[cursor : cursor + l_size].reshape(mt, ns)
-            cursor += l_size
-        else:
-            L = _zeros((mt, ns))
+        L = _zeros((mt, ns))
+        if allow_source_state_feedback and l_size:
+            L[:, active] = theta[cursor : cursor + l_size].reshape(mt, na)
+        cursor += l_size
         K = theta[cursor : cursor + k_size].reshape(mt, ms)
         return M, L, K
 
@@ -230,5 +245,6 @@ def synthesize_linear_stateful_transport(
         linear_system_rank=int(rank),
         solution_nullity=int(n_unknown - rank),
         allow_source_state_feedback=allow_source_state_feedback,
+        source_state_access_mask=access,
         reason=reason,
     )
