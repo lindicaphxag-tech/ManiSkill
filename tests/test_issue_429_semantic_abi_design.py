@@ -16,6 +16,15 @@ from embodied_semantic_experiment_design import (  # noqa: E402
     solve_optimal_semantic_diagnosis,
     verify_optimal_semantic_diagnosis,
 )
+from embodied_semantic_observability import SemanticDiagnosisHypothesis  # noqa: E402
+from embodied_semantic_probe_synthesis import (  # noqa: E402
+    synthesize_bounded_semantic_probe,
+    verify_bounded_semantic_probe,
+)
+from embodied_semantic_transport import (  # noqa: E402
+    MonomialSemanticTransport,
+    SemanticTransportFactor,
+)
 from mani_skill.agents.controllers import PDJointPosController  # noqa: E402
 from mani_skill.trajectory.utils.actions.conversion import (  # noqa: E402
     from_pd_joint_delta_pos,
@@ -133,12 +142,53 @@ def _run_production_patch(source, target, source_native):
     return _round(_decode_target_native(target, target_env.last_action))
 
 
+def _chart_hypotheses():
+    # With q_current == 0, source physical delta bounds are [0.1, 0.2]
+    # per unit native action and the normalized target chart [-2,2] decodes
+    # native values with physical gain 2 on each joint.
+    def item(name, scale):
+        return SemanticDiagnosisHypothesis(
+            name=name,
+            factors=(
+                SemanticTransportFactor(
+                    "action-chart",
+                    MonomialSemanticTransport((0, 1), tuple(scale)),
+                    f"issue429/{name}",
+                ),
+            ),
+        )
+
+    return (
+        item("source-native-passthrough", (2.0, 2.0)),
+        item("physical-qpos-passthrough", (0.2, 0.4)),
+        item("reencoded-target-chart", (0.1, 0.2)),
+    )
+
+
+def _synthesized_probe():
+    hypotheses = _chart_hypotheses()
+    result = synthesize_bounded_semantic_probe(
+        hypotheses,
+        surface="external",
+        alphabet=(-1.0, -0.5, -0.25, 0.0, 0.25, 0.5, 1.0),
+        observation_atol=1.0e-6,
+        minimum_margin=0.01,
+    )
+    assert result.complete
+    assert result.probe is not None
+    assert result.objective is not None
+    assert result.objective[0] == 1
+    assert result.objective[1] == 0.25
+    assert verify_bounded_semantic_probe(result, hypotheses).valid
+    return np.asarray(result.probe, dtype=np.float64), result
+
+
 def test_exact_design_identifies_real_issue_429_target_chart(monkeypatch):
     source = _source_arm(monkeypatch)
     target = _target_arm()
 
     neutral = np.array([0.0, 0.0], dtype=np.float64)
-    informative = np.array([0.5, -0.5], dtype=np.float64)
+    informative, probe_result = _synthesized_probe()
 
     neutral_outcomes = _hypothesis_outcomes(source, target, neutral)
     informative_outcomes = _hypothesis_outcomes(source, target, informative)
@@ -156,11 +206,11 @@ def test_exact_design_identifies_real_issue_429_target_chart(monkeypatch):
             observation_atol=1.0e-6,
         ),
         SemanticExperiment(
-            name="asymmetric-nonzero-action",
+            name="synthesized-minimum-action",
             outcomes=tuple(informative_outcomes.items()),
             cost=1.0,
             risk=0.0,
-            probe="source-native=[0.5,-0.5]",
+            probe=f"source-native={informative.tolist()}",
             observation_atol=1.0e-6,
         ),
     )
@@ -178,7 +228,8 @@ def test_exact_design_identifies_real_issue_429_target_chart(monkeypatch):
     assert result.complete
     assert result.optimal_cost == 1.0
     assert isinstance(result.policy, DiagnosisDecision)
-    assert result.policy.experiment == "asymmetric-nonzero-action"
+    assert result.policy.experiment == "synthesized-minimum-action"
+    assert probe_result.minimum_pairwise_separation > 0.01
     assert verify_optimal_semantic_diagnosis(result, experiments).valid
 
     observed = _run_production_patch(source, target, informative)
@@ -204,7 +255,7 @@ def test_exact_design_identifies_real_issue_429_target_chart(monkeypatch):
 def test_real_issue_429_probe_rejects_naive_chart_interpretations(monkeypatch):
     source = _source_arm(monkeypatch)
     target = _target_arm()
-    informative = np.array([0.5, -0.5], dtype=np.float64)
+    informative, _ = _synthesized_probe()
 
     outcomes = _hypothesis_outcomes(source, target, informative)
     observed = _run_production_patch(source, target, informative)
