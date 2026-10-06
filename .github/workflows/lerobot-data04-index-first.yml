@@ -45,6 +45,10 @@ jobs:
           python -m pip install -e "./lerobot-src[dataset]"
           python -m pip install pytest
 
+      - name: Compile patched production modules before pytest
+        run: |
+          python -m py_compile             lerobot-src/src/lerobot/datasets/video_utils.py             lerobot-src/src/lerobot/datasets/dataset_reader.py
+
       - name: Run DATA-04 contract tests against patched LeRobot
         env:
           PYTHONPATH: ${{ github.workspace }}/lerobot-src
