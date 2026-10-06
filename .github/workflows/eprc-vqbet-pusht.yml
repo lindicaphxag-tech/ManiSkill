@@ -35,6 +35,7 @@ jobs:
           sed -i 's/^pyav = ">=12.0.5"/av = ">=12.0.5"/' /tmp/lerobot/pyproject.toml
           grep -q '^av = ">=12.0.5"' /tmp/lerobot/pyproject.toml
           python -m pip install -q -e '/tmp/lerobot[pusht]'
+          python -m pip install -q 'pymunk<7'
       - name: Probe official frozen VQ-BeT checkpoint
         run: |
           python research/eprc/real_policy/vqbet_pusht_probe.py --output /tmp/eprc-real-policy/vqbet_pusht_probe.json
