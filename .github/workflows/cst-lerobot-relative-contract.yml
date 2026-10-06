@@ -1,0 +1,27 @@
+name: Validate CST against pinned LeRobot relative contract
+
+on:
+  push:
+    branches:
+      - "validation/cst-semantic-reachability"
+    paths:
+      - "cst_validation/audit_lerobot_relative_contract.py"
+      - "cst_validation/cst/core.py"
+      - ".github/workflows/cst-lerobot-relative-contract.yml"
+  workflow_dispatch:
+
+jobs:
+  differential:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: python -m pip install "numpy>=1.24"
+      - name: Run pinned-source compatibility witness
+        env:
+          PYTHONPATH: cst_validation
+        run: python cst_validation/audit_lerobot_relative_contract.py
