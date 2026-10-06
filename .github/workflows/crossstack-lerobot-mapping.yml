@@ -6,10 +6,12 @@ on:
       - "validation/maniskill1495-maintainer-request"
     paths:
       - "validation/crossstack/lerobot_mapping_compensation.py"
+      - "validation/crossstack/reproduce_lerobot_cpu.sh"
       - ".github/workflows/crossstack-lerobot-mapping.yml"
   pull_request:
     paths:
       - "validation/crossstack/lerobot_mapping_compensation.py"
+      - "validation/crossstack/reproduce_lerobot_cpu.sh"
       - ".github/workflows/crossstack-lerobot-mapping.yml"
   workflow_dispatch:
 
@@ -28,25 +30,12 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Fetch pinned LeRobot source
-        run: |
-          set -euxo pipefail
-          mkdir -p /tmp/lerobot/src/lerobot/processor
-          curl -fsSL \
-            https://raw.githubusercontent.com/huggingface/lerobot/8c920c4270460851cedd2737657584586d3dc66f/src/lerobot/processor/relative_action_processor.py \
-            -o /tmp/lerobot/src/lerobot/processor/relative_action_processor.py
-          test -s /tmp/lerobot/src/lerobot/processor/relative_action_processor.py
-          grep -n "state_offset = state" /tmp/lerobot/src/lerobot/processor/relative_action_processor.py
-
-      - name: Execute source-bound compensation witness
+      - name: Execute the exact public reproduction command
         run: |
           set -euxo pipefail
           mkdir -p validation/crossstack/results
-          python validation/crossstack/lerobot_mapping_compensation.py \
-            --source-root /tmp/lerobot \
-            --upstream-sha 8c920c4270460851cedd2737657584586d3dc66f \
-            --output validation/crossstack/results/lerobot_mapping_compensation.json
-          cat validation/crossstack/results/lerobot_mapping_compensation.json
+          OUT="$PWD/validation/crossstack/results/lerobot_mapping_compensation.json" \
+            bash validation/crossstack/reproduce_lerobot_cpu.sh
 
       - uses: actions/upload-artifact@v4
         with:
