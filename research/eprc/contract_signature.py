@@ -18,6 +18,7 @@ class DifferentialContractSignature:
     execution contract.
     """
 
+    normalized_jacobian: np.ndarray
     response_projector: np.ndarray
     singular_values_normalized: np.ndarray
     frobenius_gain: float
@@ -68,10 +69,14 @@ def contract_signature(
     else:
         spectrum = s / s[0]
 
+    gain = float(np.linalg.norm(j, ord="fro"))
+    normalized_jacobian = np.zeros_like(j) if gain == 0.0 else j / gain
+
     return DifferentialContractSignature(
+        normalized_jacobian=normalized_jacobian,
         response_projector=projector,
         singular_values_normalized=spectrum,
-        frobenius_gain=float(np.linalg.norm(j, ord="fro")),
+        frobenius_gain=gain,
         rank=rank,
     )
 
@@ -92,18 +97,27 @@ def signature_distance(
 ) -> float:
     """Distance combining physical subspace, anisotropy and response gain."""
 
+    if a.normalized_jacobian.shape != b.normalized_jacobian.shape:
+        raise ValueError("canonical physical command/support dimensions differ")
     if a.response_projector.shape != b.response_projector.shape:
         raise ValueError("physical command dimensions differ")
     if a.rank != b.rank:
         return float("inf")
 
+    # Once action and support charts have been canonicalized, the correspondence
+    # between physical support directions and physical command directions is
+    # itself part of the contract. Projector/spectrum alone would falsely equate
+    # maps such as I and an x/y support-axis swap.
+    oriented_map = np.linalg.norm(
+        a.normalized_jacobian - b.normalized_jacobian, ord="fro"
+    )
     proj = np.linalg.norm(a.response_projector - b.response_projector, ord="fro")
     k = min(len(a.singular_values_normalized), len(b.singular_values_normalized))
     spec = np.linalg.norm(
         a.singular_values_normalized[:k] - b.singular_values_normalized[:k]
     )
     gain = _gain_distance(a.frobenius_gain, b.frobenius_gain)
-    return float(proj + spec + gain)
+    return float(oriented_map + proj + spec + gain)
 
 
 def semantically_lift_jacobian(
