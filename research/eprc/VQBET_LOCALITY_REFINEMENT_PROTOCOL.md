@@ -27,6 +27,26 @@ The original dimensionless support chart is retained:
 The support metric, environment reset seed, exact-state restoration, checkpoint,
 controller/action space, and paired-randomness seeds remain unchanged.
 
+
+## Frozen additional-query bank
+
+The refinement and matched same-scale baseline use the same five new paired
+policy-randomness seeds:
+
+```text
+20261001, 20261002, 20261003, 20261004, 20261005
+```
+
+For each seed, both the 0.25 and 0.125 central-difference maps are measured.
+With three support coordinates, one central map costs 7 logical policy queries
+(one baseline plus six signed coordinate interventions). Therefore:
+
+- additional 0.25 same-scale baseline: **35** logical policy queries;
+- additional 0.125 locality refinement: **35** logical policy queries.
+
+The two arms are thus query-budget matched and seed-paired. These seeds and the
+35-vs-35 accounting are frozen before either arm is read.
+
 ## Frozen comparison
 
 Let
