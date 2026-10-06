@@ -17,6 +17,9 @@ from lerobot.policies import make_pre_post_processors
 from lerobot.policies.vqbet import VQBeTPolicy
 from lerobot.utils.constants import OBS_IMAGES, OBS_STATE
 
+from research.eprc.contract_signature import contract_signature, signature_distance
+from research.eprc.dec_uncertainty import estimate_dec_uncertainty
+
 
 MODEL_ID = "lerobot/vqbet_pusht"
 LEROBOT_COMMIT = "8c920c4270460851cedd2737657584586d3dc66f"
@@ -148,6 +151,32 @@ def main(output: Path) -> int:
     t0 = time.perf_counter()
     small_j, small_sym = central(0.25, 123)
     large_j, _ = central(0.50, 123)
+
+    # Two additional paired-RNG replicates expose stochastic DEC instability
+    # without pretending that three seeds satisfy the >=5 replicate certificate.
+    replicate_seeds = [123, 456, 789]
+    replicate_jacobians = [
+        small_j,
+        central(0.25, 456)[0],
+        central(0.25, 789)[0],
+    ]
+    flat_replicates = np.stack(
+        [j.reshape(-1, j.shape[-1]) for j in replicate_jacobians],
+        axis=0,
+    )
+    dec_uncertainty = estimate_dec_uncertainty(
+        flat_replicates,
+        min_replicates=5,
+        max_q95_radius=0.15,
+    )
+    replicate_signatures = [
+        contract_signature(j) for j in flat_replicates
+    ]
+    pairwise_dec_distances = [
+        signature_distance(replicate_signatures[i], replicate_signatures[j])
+        for i in range(len(replicate_signatures))
+        for j in range(i + 1, len(replicate_signatures))
+    ]
     elapsed = time.perf_counter() - t0
 
     diff = large_j - small_j
@@ -188,6 +217,17 @@ def main(output: Path) -> int:
             ),
             "per_action_step_gain": [float(x) for x in step_gain],
             "per_action_step_curvature": [float(x) for x in curvature],
+            "rng_seed_replicates": replicate_seeds,
+            "pairwise_seed_dec_distances": [float(x) for x in pairwise_dec_distances],
+            "q95_seed_dec_radius": _finite_or_raise(
+                "q95_seed_dec_radius", dec_uncertainty.q95_signature_radius
+            ),
+            "replicate_stability_certified": bool(dec_uncertainty.stable),
+            "certification_eligible": False,
+            "certification_note": (
+                "This public-policy smoke uses 3 RNG-seed replicates; "
+                "DEC_UNCERTAINTY requires at least 5 for a stability claim."
+            ),
         },
     }
     output.parent.mkdir(parents=True, exist_ok=True)
