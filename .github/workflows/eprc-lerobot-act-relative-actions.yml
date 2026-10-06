@@ -27,8 +27,8 @@ jobs:
       - name: Checkout exact LeRobot base
         run: |
           git clone -q https://github.com/huggingface/lerobot.git /tmp/lerobot
-          git -C /tmp/lerobot checkout -q d40e8709cffb93644db66e30604ef50fdec003cb
-          test "$(git -C /tmp/lerobot rev-parse HEAD)" = "d40e8709cffb93644db66e30604ef50fdec003cb"
+          git -C /tmp/lerobot checkout -q 156ca6e741e2167d46b9051c2e58193842d0fbb9
+          test "$(git -C /tmp/lerobot rev-parse HEAD)" = "156ca6e741e2167d46b9051c2e58193842d0fbb9"
       - name: Apply exact-source transformation
         run: |
           python research/eprc/upstream/apply_lerobot_act_relative_actions.py /tmp/lerobot
