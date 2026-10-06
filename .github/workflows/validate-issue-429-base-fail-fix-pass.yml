@@ -1,0 +1,54 @@
+name: Validate issue 429 base-fail fix-pass
+
+on:
+  push:
+    branches:
+      - "validation/issue-429-base-fail-fix-pass-v1"
+  workflow_dispatch:
+
+jobs:
+  differential:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install ManiSkill test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Preserve one frozen reproducer
+        run: cp tests/test_pd_joint_delta_to_pos_semantics.py /tmp/test_issue_429_semantics.py
+      - name: PATCH must pass the frozen reproducer
+        run: |
+          python -m pytest -q /tmp/test_issue_429_semantics.py
+          echo "PATCH_PASS_CONFIRMED=true" >> "$GITHUB_ENV"
+      - name: UPSTREAM BASE must fail the same reproducer
+        run: |
+          git checkout 62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3
+          set +e
+          python -m pytest -q /tmp/test_issue_429_semantics.py > /tmp/base_failure.txt 2>&1
+          code=$?
+          set -e
+          cat /tmp/base_failure.txt
+          if [ "$code" -eq 0 ]; then
+            echo "Frozen reproducer unexpectedly passes upstream base"
+            exit 1
+          fi
+          grep -E "TypeError|clip|torch" /tmp/base_failure.txt
+          echo "BASE_FAIL_CONFIRMED=true" >> "$GITHUB_ENV"
+      - name: Assert differential evidence
+        run: |
+          test "$PATCH_PASS_CONFIRMED" = "true"
+          test "$BASE_FAIL_CONFIRMED" = "true"
+          {
+            echo "### ManiSkill #429 differential evidence"
+            echo "- upstream base: expected failure reproduced"
+            echo "- clean patch: frozen reproducer passes"
+            echo "- upstream base SHA: 62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3"
+          } >> "$GITHUB_STEP_SUMMARY"
