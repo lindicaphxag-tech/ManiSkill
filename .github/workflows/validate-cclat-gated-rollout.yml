@@ -1,0 +1,30 @@
+name: Validate CCLAT gated policy rollout
+
+on:
+  push:
+    branches:
+      - "fix/joint-delta-to-joint-pos-semantics"
+    paths:
+      - "cst_validation/closed_loop_transport.py"
+      - "cst_validation/dominance_gate.py"
+      - "cst_validation/native_physx_two_joint.py"
+      - "tests/test_cclat_native_physx_gated_rollout.py"
+      - ".github/workflows/validate-cclat-gated-rollout.yml"
+  workflow_dispatch:
+
+jobs:
+  gated-rollout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install ManiSkill test environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Run calibrated-gate frozen-policy rollout
+        run: python -m pytest -q -s tests/test_cclat_native_physx_gated_rollout.py
