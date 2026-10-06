@@ -12,8 +12,8 @@ def _chart(mode):
     return JointGoalChart(
         mode=mode,
         normalized=True,
-        physical_lower=np.array([-0.1, -0.2]),
-        physical_upper=np.array([0.1, 0.2]),
+        lower=np.array([-0.1, -0.2]),
+        upper=np.array([0.1, 0.2]),
     )
 
 
@@ -21,8 +21,8 @@ def test_absolute_sequence_needs_no_hidden_reference_state():
     chart = JointGoalChart(
         mode="absolute",
         normalized=False,
-        physical_lower=None,
-        physical_upper=None,
+        lower=None,
+        upper=None,
     )
     actions = np.array([[0.2, -0.3], [0.4, 0.1]])
     result = reconstruct_joint_goal_trace(chart, actions)
