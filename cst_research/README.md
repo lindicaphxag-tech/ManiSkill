@@ -153,4 +153,18 @@ This is cross-stack validation, not external adoption.
 
 ### 5. Causal deployability of action chunks
 
-CST distinguishes a trace that can be converted after rollout from a controller migration that can be executed online. If a whole action chunk is emitted at query time but a target native action for future step t needs the future measured state or controller-owned target at t, exact conversion cannot be precomputed. CST therefore returns PRECOMPUTABLE, REQUIRES_STEP_HOOK, EXECUTABLE_WITH_STEP_HOOK, or REFUSE_MISSING_RUNTIME_STATE. The latest full public suite contains 40 passing tests.
+CST distinguishes a trace that can be converted after rollout from a controller migration that can be executed online. If a whole action chunk is emitted at query time but a target native action for future step t needs the future measured state or controller-owned target at t, exact conversion cannot be precomputed. CST therefore returns PRECOMPUTABLE, REQUIRES_STEP_HOOK, EXECUTABLE_WITH_STEP_HOOK, or REFUSE_MISSING_RUNTIME_STATE. The latest full public suite contains 46 passing tests.
+
+## Bounded LeRobot -> current-state JIT migration
+
+A pinned LeRobot source implementation is used as the source semantics. With relative offsets bounded to +/-0.2, CST migrates 2,000 random 9-step trajectories (18,000 action vectors) from CHUNK_ANCHOR semantics into CURRENT_STATE-relative actions at execution time.
+
+- JIT max physical-goal error: `7.45e-9`
+- JIT p95 per-trajectory max error: `7.45e-9`
+- naive numeric-copy median per-trajectory max error: `0.555`
+- naive numeric-copy p95: `0.852`
+- naive numeric-copy max: `1.152`
+
+The key point is causal: the target current-state reference for future steps does not exist when the source chunk is emitted, so exact migration must be performed at execution time rather than by copying or precomputing the whole target chunk.
+
+Latest complete public research suite: **46 tests passed**.
