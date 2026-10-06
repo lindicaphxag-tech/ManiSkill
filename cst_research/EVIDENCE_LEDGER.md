@@ -128,7 +128,47 @@ Novelty boundary: asynchronous action-chunk misalignment and stale-state executi
 
 Interpretation: for bounded source-relative commands, the JIT adapter preserves the pinned second stack's physical goal trace to floating-point tolerance while direct numeric copying into a current-state-delta target systematically drifts. This is cross-stack executable-semantic validation, not maintained downstream adoption.
 
+## Robomimic / Robosuite second-stack inverse semantics
+
+- Full-suite run after the second-stack bridge: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37464762561
+- Result at that stage: `53 passed in 2.18s`.
+- External anchor: robomimic issue #270 explicitly requests absolute-action -> delta-action conversion; maintainer `amandlek` publicly stated they are happy to accept a PR for the functionality.
+- Current robomimic delta->absolute converter drives the executable robosuite controller and reads `goal_pos/goal_ori`; the inverse prototype mirrors those semantics rather than using raw consecutive-action subtraction.
+- Tested inverse obligations:
+  - inverse affine controller action scaling;
+  - SO(3) orientation inversion via group composition;
+  - achieved-state vs previous-desired-goal reference modes;
+  - explicit saturation / non-representability;
+  - gripper / remainder preservation;
+  - 2,000 randomized executable-goal round trips across achieved/desired modes.
+- Upstream robomimic fork/PR: not yet created because the current GitHub integration cannot create a fork of that repository and cannot comment on the upstream issue (403).
+
+Interpretation: this is a second independent public stack with executable-semantics validation, not robomimic adoption.
+
+## Controller-rate contract
+
+- Latest public full-suite run: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37465617871
+- Result: `59 passed in 1.30s`.
+- CST now models integer controller-rate upsampling jointly with reference ownership under a declared zero-order-hold physical-goal contract.
+- ABSOLUTE goals can be held directly.
+- PREVIOUS_COMMAND deltas must be emitted once then zero-held; naively repeating a nonzero delta changes the physical goal.
+- CURRENT_STATE / CONTROLLER_TARGET targets require target-rate runtime reference access and therefore a step hook.
+- v0.1 intentionally refuses noninteger rate ratios rather than silently interpolating.
+
+Novelty boundary: high-frequency action chunks, interpolation and asynchronous execution are established (e.g. RTR / RTC / A2C2). The candidate contribution is compiling controller-rate changes together with reference ownership into a precompute / step-hook / refusal obligation during frozen-policy controller migration.
+
+## Real simulator evidence — current boundary
+
+- Validation branch: `validation/joint-delta-closed-loop-assay`.
+- Latest run with `render_backend="none"`: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37465118543
+- The run now skips RenderSystem creation but still fails before controller execution because PickCube scene construction calls `sapien.render.RenderMaterial` and the hosted runner has no rendering device.
+- This remains an infrastructure failure, not method evidence.
+- Next assay should avoid task visual assets and test the actual controller/articulation path directly.
+
 ## Latest full research suite
 
-- Public run after JIT runtime was added: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37463757498
-- Result: `46 passed in 0.47s`.
+- Public run: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37465617871
+- Result: `59 passed in 1.30s`.
+- External maintainer adoption remains 0.
+- L8 achieved: NO.
+- L9 achieved: NO.
