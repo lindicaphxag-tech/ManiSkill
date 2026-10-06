@@ -36,6 +36,10 @@ __all__ = [
     "ExecutableActionContract",
     "compare_action_blocks",
     "compare_executable_contracts",
+    "ReconstructedGoalTrace",
+    "SequenceStateRequirement",
+    "reconstruct_joint_goal_trace",
+    "sequence_state_requirement",
 ]
 
 from .compiler import (
@@ -52,4 +56,11 @@ from .action_contract import (
     ExecutableActionContract,
     compare_action_blocks,
     compare_executable_contracts,
+)
+
+from .provenance import (
+    ReconstructedGoalTrace,
+    SequenceStateRequirement,
+    reconstruct_joint_goal_trace,
+    sequence_state_requirement,
 )
