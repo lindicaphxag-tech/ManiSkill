@@ -1,0 +1,33 @@
+name: Audit official CST sequence provenance
+
+on:
+  push:
+    branches:
+      - "validation/cst-semantic-reachability"
+    paths:
+      - "cst_validation/audit_official_sequence_provenance.py"
+      - "cst_validation/cst/core.py"
+      - "cst_validation/cst/provenance.py"
+      - ".github/workflows/cst-official-sequence-provenance.yml"
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install audit dependencies
+        run: python -m pip install "numpy>=1.24" h5py
+      - name: Run frozen sequence-provenance audit
+        env:
+          PYTHONPATH: cst_validation
+        run: python cst_validation/audit_official_sequence_provenance.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cst-official-sequence-provenance-v0
+          path: /tmp/cst_official_sequence_provenance_v0.json
+          if-no-files-found: error
