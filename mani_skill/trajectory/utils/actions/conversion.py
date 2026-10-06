@@ -5,7 +5,6 @@ import numpy as np
 import sapien
 import torch
 from tqdm.auto import tqdm
-from transforms3d.quaternions import quat2axangle
 
 from mani_skill.agents.controllers import (
     PDEEPosController,
@@ -49,12 +48,53 @@ def qpos_to_pd_joint_vel(controller: PDJointVelController, qpos):
     return gym_utils.inv_scale_action(qvel, low, high)
 
 
-def compact_axis_angle_from_quaternion(quat: np.ndarray) -> np.ndarray:
-    theta, omega = quat2axangle(quat)
-    # - 2 * np.pi to make the angle symmetrical around 0
-    if omega > np.pi:
-        omega = omega - 2 * np.pi
-    return omega * theta
+def euler_xyz_from_quaternion(quat: np.ndarray) -> np.ndarray:
+    """Convert a quaternion to the XYZ Euler convention used by PDEEPoseController."""
+    quat = torch.as_tensor(quat)
+    matrix = rotation_conversions.quaternion_to_matrix(quat)
+    return rotation_conversions.matrix_to_euler_angles(matrix, "XYZ").cpu().numpy()
+
+
+def inverse_delta_to_pd_ee_euler(quat: np.ndarray) -> np.ndarray:
+    """Convert the converter's inverse relative quaternion to desired XYZ Euler."""
+    quat = torch.as_tensor(quat)
+    desired_delta = rotation_conversions.quaternion_invert(quat)
+    return euler_xyz_from_quaternion(desired_delta.numpy())
+
+
+def _normalized_pd_ee_rotation_action(
+    controller: PDEEPoseController, desired_euler: np.ndarray
+) -> np.ndarray:
+    """Invert the controller's actual normalized rotation mapping.
+
+    PDEEPoseController does not use the generic affine low/high action scaling
+    for rotation. Probe its production scaling path so trajectory conversion
+    remains correct across controller implementations (including the historical
+    negative-rot_lower behavior and the sign-preserving rot_upper behavior).
+    """
+    if not isinstance(controller, PDEEPoseController):
+        raise TypeError("rotation conversion requires PDEEPoseController")
+
+    dtype = controller.action_space_low.dtype
+    device = controller.action_space_low.device
+    probe = torch.zeros((3, 6), dtype=dtype, device=device)
+    probe[:, 3:] = torch.eye(3, dtype=dtype, device=device)
+    scaled_rotation = controller._clip_and_scale_action(probe)[:, 3:]
+
+    gains = torch.diagonal(scaled_rotation)
+    off_diagonal = scaled_rotation - torch.diag(gains)
+    if not torch.allclose(
+        off_diagonal,
+        torch.zeros_like(off_diagonal),
+        atol=1e-7,
+        rtol=0.0,
+    ):
+        raise RuntimeError("PDEEPoseController rotation mapping is not axis-separable")
+    if torch.any(torch.abs(gains) <= torch.finfo(dtype).eps):
+        raise RuntimeError("PDEEPoseController rotation mapping has zero gain")
+
+    desired = torch.as_tensor(desired_euler, dtype=dtype, device=device)
+    return (desired / gains).cpu().numpy()
 
 
 def delta_pose_to_pd_ee_delta(
@@ -74,11 +114,14 @@ def delta_pose_to_pd_ee_delta(
         return gym_utils.inv_scale_action(
             delta_pose.p, low.cpu().numpy(), high.cpu().numpy()
         )
-    delta_pose = np.r_[
+    position_action = gym_utils.inv_scale_action(
         delta_pose.p,
-        compact_axis_angle_from_quaternion(delta_pose.q),
-    ]
-    return gym_utils.inv_scale_action(delta_pose, low.cpu().numpy(), high.cpu().numpy())
+        low[:3].cpu().numpy(),
+        high[:3].cpu().numpy(),
+    )
+    desired_euler = inverse_delta_to_pd_ee_euler(delta_pose.q)
+    rotation_action = _normalized_pd_ee_rotation_action(controller, desired_euler)
+    return np.r_[position_action, rotation_action]
 
 
 def from_pd_joint_pos_to_ee(
@@ -142,8 +185,17 @@ def from_pd_joint_pos_to_ee(
             * pin_model.get_link_pose(arm_controller.ee_link.index)
         )
 
-        flag = True
-        for _ in range(4):
+        # Recompute admissibility for every corrective micro-step.  A clipping
+        # decision belongs to one residual action; carrying a stale False value
+        # across later residuals forces unnecessary extra controller steps.
+        #
+        # The large cap is a fail-closed guard, not a target horizon.  Normal
+        # termination occurs at the first freshly recomputed residual action
+        # that lies entirely inside the consumer execution domain.
+        semantic_substep_cap = 32
+        semantic_domain_converged = False
+        for semantic_substep in range(semantic_substep_cap):
+            step_within_domain = True
             if target_controller_is_delta:
                 delta_q = [1, 0, 0, 0]
                 if "root_translation" in arm_controller.config.frame:
@@ -172,13 +224,13 @@ def from_pd_joint_pos_to_ee(
                     if verbose:
                         tqdm.write(f"Position action is clipped: {arm_action[:3]}")
                     arm_action[:3] = np.clip(arm_action[:3], -1, 1)
-                    flag = False
+                    step_within_domain = False
                 if not pos_only:
                     if np.linalg.norm(arm_action[3:]) > 1:  # rotation clipping
                         if verbose:
                             tqdm.write(f"Rotation action is clipped: {arm_action[3:]}")
                         arm_action[3:] = arm_action[3:] / np.linalg.norm(arm_action[3:])
-                        flag = False
+                        step_within_domain = False
                 output_action_dict["arm"] = common.to_tensor(
                     arm_action, device=env.unwrapped.device
                 )
@@ -209,8 +261,16 @@ def from_pd_joint_pos_to_ee(
             if render:
                 env.render_human()
 
-            if flag:
+            if step_within_domain:
+                semantic_domain_converged = True
                 break
+
+        if not semantic_domain_converged:
+            raise RuntimeError(
+                "semantic action conversion did not enter the controller "
+                f"execution domain after {semantic_substep_cap} fresh residual steps "
+                f"(source step {t})"
+            )
     return info
 
 
