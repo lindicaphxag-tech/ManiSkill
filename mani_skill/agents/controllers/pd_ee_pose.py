@@ -7,6 +7,7 @@ from gymnasium import spaces
 
 from mani_skill.agents.controllers.utils.kinematics import Kinematics
 from mani_skill.utils import gym_utils, sapien_utils
+from mani_skill.utils.logging_utils import logger
 from mani_skill.utils.geometry.rotation_conversions import (
     euler_angles_to_matrix,
     matrix_to_quaternion,
@@ -46,6 +47,7 @@ class PDEEPosController(PDJointPosController):
         )
 
         self.ee_link = self.kinematics.end_link
+        self.ik_failure_count = 0
 
         if self.config.root_link_name is not None:
             root_link = sapien_utils.get_obj_by_name(
@@ -78,6 +80,7 @@ class PDEEPosController(PDJointPosController):
 
     def reset(self):
         super().reset()
+        self.ik_failure_count = 0
         if self.config.use_target:
             if self._target_pose is None:
                 self._target_pose = self.ee_pose_at_base
@@ -134,6 +137,7 @@ class PDEEPosController(PDJointPosController):
             solver_config=self.config.delta_solver_config,
         )
         if _target_qpos is None:
+            self._record_ik_failure()
             self._target_qpos = self._start_qpos
         else:
             self._target_qpos = _target_qpos
@@ -141,6 +145,17 @@ class PDEEPosController(PDJointPosController):
             self._step_size = (self._target_qpos - self._start_qpos) / self._sim_steps
         else:
             self.set_drive_targets(self._target_qpos)
+
+    def _record_ik_failure(self):
+        """Record an IK failure without changing the controller fallback behavior."""
+        self.ik_failure_count = getattr(self, "ik_failure_count", 0) + 1
+        if self.config.warn_on_ik_failure and (
+            self.ik_failure_count == 1 or self.ik_failure_count % 100 == 0
+        ):
+            logger.warning(
+                "End-effector IK failed; holding the previous joint targets "
+                f"(failure count: {self.ik_failure_count})."
+            )
 
     def get_state(self) -> dict:
         if self.config.use_target:
@@ -196,6 +211,8 @@ class PDEEPosControllerConfig(ControllerConfig):
     """Whether to use the most recent target end-effector pose for control. If false, actions taken in a chosen frame will be taken
     relative to the instantaneous/current end-effector pose. """
     interpolate: bool = False
+    warn_on_ik_failure: bool = False
+    """Whether to emit a rate-limited warning when IK fails and previous joint targets are held."""
     normalize_action: bool = True
     """Whether to normalize each action dimension into a range of [-1, 1]. Normally for most machine learning workflows this is recommended to be kept true."""
     delta_solver_config: dict = field(
