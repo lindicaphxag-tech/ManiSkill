@@ -1,138 +1,118 @@
-# Episode 8 Replay-Context Witness V1
+# Episode 8 Replay-Context Witness V1 — Corrected Interpretation
 
 Public workflow: `37407061050`  
 Artifact: `episode8-replay-context-witness`  
 Artifact ID: `11387013598`  
 Artifact zip SHA-256: `f8b63e12a08359907857a63261ad9f83f80c7a098d82c9c4b33164e6b0b8c3de`
 
-## Trigger
+## Correction notice
 
-The clean controller-contract adapter previously appeared to fail episode 8 when replayed after episodes 0–7, while an isolated repair-path endpoint replay unexpectedly succeeded.
+An earlier draft of this note incorrectly combined the **episode-8 failure from an earlier same-base workflow** with the prefix trace from this workflow and described them as two contexts inside one run.
 
-This assay compares the same candidate and the same recorded episode under:
+The raw log for `37407061050` shows that this workflow's prefix replay reported:
 
-1. serial-prefix context: episodes 0–8 replayed in one process;
-2. fresh isolated context: only episode 8 replayed from an extracted one-episode trajectory.
+- **7/9** total successes;
+- episodes **1 and 2** explicitly unsuccessful;
+- therefore episode **8 succeeded** in this prefix replay.
+
+The fresh isolated episode-8 replay also reported:
+
+- **1/1 = 100% success**.
+
+So this workflow does **not** establish a prefix-vs-isolated outcome difference for episode 8.
+
+The corrected finding is stronger in a different direction: episode-level success sets are not stable across repeated public serial replays of the same exact candidate/protocol.
+
+## Within-run prefix vs isolated trace result
 
 Candidate:
 
 `lindicaphxag-tech/ManiSkill@bd0e4feae2491a0d433107210ce8c16b8e8fb69a`
 
-## Outcome label differs
-
-Serial-prefix run:
-
-- first 9 episodes replayed;
-- aggregate: **7/9**;
-- episodes 1 and 2 were reported as unsuccessful;
-- episode 8 was not among the saved-success set in the earlier same-base gate.
-
-Fresh isolated episode 8:
-
-- **1/1 = 100% success**.
-
-Thus the same recorded episode and same executable candidate can receive different terminal success outcomes depending on replay context.
-
-## Observable converter/controller traces do not differ
-
 Both episode-8 traces contain **155 conversion calls**.
 
-The comparison reports:
+Comparison:
 
 - first request divergence: **none**
 - first observed controller-state divergence: **none**
 - first physical-action divergence: **none**
 - maximum physical-action L2 difference: **0.0**
 - maximum requested-position difference: **0.0 m**
-- maximum requested-rotation difference: **1.2074e-6°** (numerical quaternion-distance floor)
+- maximum requested-rotation difference: **1.2074e-6°**
 - clipping schedule identical: **true**
 
-Both clipping schedules:
+Clipping schedule in both contexts:
 
 `[12, 18, 23, 29, 83, 89, 95]`
 
-At call 0:
+Thus episode 8 was observationally equivalent under the instrumented converter/controller trace and successful in both contexts in this workflow.
 
-- requested position delta difference: 0
-- requested rotation delta difference: 0
-- physical action difference: 0
-- EE position difference: 0
-- EE rotation difference: ~1.2074e-6°
-- clipping decision: identical
+## Cross-run instability that triggered the audit
 
-## Interpretation
+Earlier same-base workflow `37403056943` reported for the adapter:
 
-Within the currently instrumented action/converter/controller state, the two episode executions are observationally equivalent.
+- successful episodes: **0–7**
+- episode 8 absent from the success set
+- 8/10 total
 
-Yet the terminal success label changes.
+But workflow `37407061050`, using the same exact candidate SHA for its prefix trace, reported:
 
-Therefore the previous serial replay count cannot be treated as a clean independent-episode causal estimate of repair quality.
+- **7/9**
+- episodes 1 and 2 unsuccessful
+- episode 8 successful
 
-At least one of the following must hold:
-
-1. task-relevant simulator/environment state is not represented in the current trace;
-2. reset/state restoration leaves hidden execution context;
-3. task evaluation depends on state not captured by the converter/controller trace;
-4. low-level simulator numerical state or solver history affects the terminal predicate;
-5. another replay-wrapper/context variable differs between fresh and prefix execution.
-
-This assay does **not** yet identify which explanation is causal.
+Therefore the currently important unresolved variable is **run-to-run replay stability**, not demonstrated prefix-vs-isolated context dependence.
 
 ## Authorization consequence
 
-A task-success effect certificate should not be issued merely from a serial replay count when:
+A serial replay count cannot be treated as a stable execution-effect certificate until repeated identical runs establish the measurement's own reproducibility.
+
+Introduce a repeatability obligation:
 
 [
-SameObservedTrace
-land
-DifferentOutcome
+C_{repeat}=PASS
 ]
 
-has been demonstrated for the same episode.
+before task-success replay is allowed to authorize or reject a repair.
 
-Introduce a context-stability obligation before using execution evidence for repair authority:
+At minimum the certificate should bind:
 
-[
-C_{context}=PASS
-]
+- executable SHA;
+- demo identities;
+- replay arguments;
+- simulator/backend version;
+- process/environment setup;
+- repeated success sets, not only aggregate counts.
 
-only if the outcome/effect is stable across the replay contexts the certificate claims to abstract over, or if the relevant context is explicitly bound into the certificate identity.
+## Next prospective test
 
-## Reclassification of earlier evidence
+Run the exact same candidate, same first official demonstrations, same backend, and same replay arguments multiple times in fresh processes.
 
-The earlier public serial matrices remain valid observations of those workflow executions.
+Report:
 
-They should now be interpreted as:
+- per-repeat successful episode IDs;
+- per-episode empirical success frequency;
+- pairwise Jaccard agreement of success sets;
+- aggregate count variance;
+- whether disagreement concentrates on a small boundary subset.
 
-> **serial-context replay evidence**
-
-rather than:
-
-> independent per-episode execution non-regression evidence.
-
-In particular, `9/10 main vs 8/10 composed/adapter` must not be used alone to claim an intrinsic episode-level repair regression until context dependence is controlled.
-
-## Next causal target
-
-Instrument the task's terminal `success` predicate and the state variables it reads, then compare those variables between prefix and isolated episode 8.
-
-If the predicate inputs differ while converter/controller traces are equal, the missing state channel is localized.
-
-If predicate inputs are equal but labels differ, the evaluator itself or numerical timing/state update path requires audit.
+Only after repeatability is characterized should a candidate-vs-baseline execution comparison be promoted to canonical evidence.
 
 ## Claim boundary
 
-Established:
+Established by this workflow:
 
-- same candidate;
-- same recorded episode;
-- same 155 observed converter/controller calls;
-- identical physical-action sequence at recorded precision;
-- different replay-context success outcome.
+- episode 8 succeeds in both prefix and isolated contexts **in this run**;
+- the observed converter/controller traces for episode 8 are identical at the recorded precision.
+
+Established across workflows:
+
+- the same candidate has produced different serial success sets in separate public runs.
 
 Not established:
 
-- the hidden state variable responsible;
-- a ManiSkill reset bug;
-- a simulator bug;
-- general context dependence across tasks.
+- reset leakage;
+- hidden controller-state leakage;
+- a ManiSkill bug;
+- the source of run-to-run variability;
+- a stable execution regression caused by the repair.
