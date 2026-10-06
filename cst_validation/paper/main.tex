@@ -1,0 +1,227 @@
+\documentclass[conference]{IEEEtran}
+\usepackage{amsmath,amssymb,booktabs,microtype}
+\usepackage{url}
+
+\title{Controller-Semantic Transport: Certifying When Robot Action-Space Conversion Preserves What a Controller Actually Executes}
+
+\author{\IEEEauthorblockN{Anonymous Authors}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Robot-learning datasets and policies are routinely converted between absolute
+and delta actions, joint and task spaces, and controller-specific
+representations. Existing conversion utilities often treat this problem as
+vector re-encoding, even though a stateful controller maps an action together
+with measured state and controller memory to a sequence of low-level commands.
+We introduce \emph{Controller-Semantic Transport} (CST), which treats
+action-space conversion as a semantic compilation problem. CST represents one
+control period by a stateful intermediate representation containing the full
+drive-target trace, endpoint goal, and next controller reference. It classifies
+a conversion as exact-trace, goal-only, bounded approximation, or
+unrepresentable, and for affine controller regions compiles an analytic
+morphism $u_t=P u_s+q$ together with a whole-source-action-box boundedness
+certificate. On a public manipulation stack, a real delta-to-absolute
+conversion defect motivates the formulation. In controlled validation, CST
+constructs exact delta-current to absolute transports, detects an endpoint-
+equivalent but trace-inequivalent controller pair with an analytically predicted
+maximum substep error of $0.075$, verifies exact-family trace identities over
+200 randomized contexts, and validates one compiled whole-box morphism over 500
+random actions without a runtime optimizer. We intentionally do not claim plant,
+contact, or task-success equivalence: CST certifies controller-command
+semantics and refuses stronger claims when the target interface cannot represent
+them.
+\end{abstract}
+
+\section{Introduction}
+Action representation is not a cosmetic implementation choice. Large-scale
+robot studies show substantial differences between absolute and delta
+representations and between joint- and task-space policies
+\cite{feng2026action}. Public robot-learning stacks consequently provide
+multiple control modes and dataset conversion utilities
+\cite{tao2025maniskill3,mimic2021}. Yet conversion correctness is typically
+judged by endpoint values, replay success, or representation-level
+round trips.
+
+That criterion is incomplete for stateful controllers. Consider two
+joint-position controllers that share the same endpoint target $q^*$.
+One linearly interpolates from current joint position to $q^*$ over the
+simulation substeps; the other holds $q^*$ immediately. Their endpoint goals
+match, but the low-level command sequences do not. A target-relative delta
+controller introduces another difference: the accepted command updates an
+internal reference that changes the semantics of the next action.
+
+We study the following question:
+\begin{quote}
+When does a source controller action admit a target-controller action that
+preserves what the controller actually commands, rather than merely matching an
+endpoint representation?
+\end{quote}
+
+Our approach, Controller-Semantic Transport (CST), has three design goals.
+First, the relevant semantics must include controller memory and substep
+commands. Second, conversion must be \emph{certified}: exact conversion,
+endpoint-only agreement, approximation, and non-representability must remain
+distinct outcomes. Third, when an exact affine relation exists, it should be
+compiled once rather than re-solved for every action.
+
+Our current contributions are:
+\begin{itemize}
+\item a stateful controller IR that exposes drive-target trace, endpoint goal,
+and next controller reference;
+\item a bounded transport compiler that distinguishes exact-trace,
+goal-only, bounded-approximate, and unrepresentable conversions;
+\item an analytic whole-action-box morphism certificate for affine controller
+regions;
+\item a public-stack case study motivated by a real delta-to-absolute
+conversion failure, while keeping the production bug fix separate from the
+research implementation.
+\end{itemize}
+
+\section{Controller-Semantic Transport}
+\subsection{Stateful semantics}
+For native action $u$, measured state $x$, and controller-owned memory $z$,
+CST models one control period as
+\begin{align}
+\tau &= T_u u + T_x x + T_z z + t,\\
+g &= G_u u + G_x x + G_z z + g_0,\\
+z^+ &= H_u u + H_x x + H_z z + h,
+\end{align}
+where $\tau$ stacks the low-level drive targets issued at all simulation
+substeps, $g$ is a canonical physical goal, and $z^+$ is the next controller
+reference. The present implementation gives exact affine IRs for absolute
+joint-position, current-relative delta, and target-relative delta controllers,
+with normalized or physical native actions, finite native bounds, and
+interpolation on/off.
+
+This is deliberately a controller-command semantics. We do not infer equality
+of physical trajectories under dynamics or contact from equality of $\tau$.
+
+\subsection{Action-level transport}
+For a concrete source action, CST solves a bounded target problem that jointly
+matches $\tau$, $g$, and $z^+$. The certificate returns one of:
+\emph{EXACT\_TRACE}, \emph{GOAL\_ONLY},
+\emph{BOUNDED\_APPROXIMATION}, or \emph{UNREPRESENTABLE}.
+It additionally reports the full trace residual, maximum per-substep mismatch,
+endpoint and memory residuals, target rank/nullity, and native-bound margin.
+
+The distinction between exact-trace and goal-only is essential. If the source
+interpolates from $0.4$ to $0.5$ over four substeps while the target holds
+$0.5$, both have identical endpoint goal, but the command traces are
+$[0.425,0.45,0.475,0.5]$ and $[0.5,0.5,0.5,0.5]$. CST therefore returns
+GOAL\_ONLY with maximum substep mismatch $0.075$.
+
+\subsection{Whole-action-box compilation}
+Action-by-action optimization is unnecessary when both controller regions are
+affine. Stack the three semantic observables:
+\begin{equation}
+M_su_s+c_s=M_tu_t+c_t.
+\end{equation}
+CST compiles
+\begin{equation}
+u_t=P u_s+q,\quad
+P=M_t^+M_s,\quad
+q=M_t^+(c_s-c_t).
+\end{equation}
+An exact affine morphism requires
+\begin{equation}
+M_tP=M_s,\qquad M_tq+c_t=c_s.
+\end{equation}
+
+CST then certifies the complete source native action box
+$u_s\in[\ell_s,h_s]$. For each target coordinate, exact interval propagation
+through $Pu_s+q$ yields $[\ell_t',h_t']$. The morphism is globally authorized
+only if this interval is contained in the target native bounds. Thus an
+algebraically exact conversion can still be rejected because it requires
+unrepresentable target commands.
+
+\section{Evidence}
+\subsection{Public-stack motivating defect}
+A public manipulation simulator exposes a trajectory conversion from normalized
+delta joint-position control to absolute joint-position control. A focused
+regression on the existing path shows that an unbatched NumPy trajectory action
+is passed into a tensor-only runtime scaling helper before simulator replay.
+Our minimal production patch makes the path explicit:
+\[
+u_{\Delta,\mathrm{native}}
+\rightarrow \Delta q_{\mathrm{physical}}
+\rightarrow q^*_{\mathrm{physical}}
+\rightarrow u_{\mathrm{abs,native}}.
+\]
+The upstream-oriented patch is intentionally separated from CST research code.
+Simulator-level task-success recovery remains pending and is not claimed here.
+
+\subsection{Controlled semantic validation}
+Table~\ref{tab:evidence} summarizes the current frozen evidence. All completed
+entries are CI-backed. Randomized checks are verification of analytic
+identities, not estimates of task success.
+
+\begin{table}[t]
+\caption{Current CST evidence.}
+\label{tab:evidence}
+\centering
+\small
+\begin{tabular}{p{0.43\linewidth}p{0.42\linewidth}}
+\toprule
+Test & Result \\
+\midrule
+Delta-current $\rightarrow$ absolute, matched interpolation &
+EXACT\_TRACE \\
+Interpolate $\rightarrow$ hold, matched endpoint &
+GOAL\_ONLY; max substep error $0.075$ \\
+Random exact-family contexts &
+200/200 trace identities \\
+Compiled whole-box morphism &
+500/500 random actions, residual $<10^{-9}$ \\
+Algebraically exact but bound-infeasible &
+Refused by whole-box certificate \\
+Host controller implementation parity &
+Pending \\
+Exact simulator-state command trace &
+Pending \\
+Second software stack &
+Pending \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The whole-box test is stronger than sampling as a decision procedure: sampling
+is used only as a regression check after the affine map and interval certificate
+have already been derived analytically.
+
+\section{Related Work and Scope}
+Feng et al. provide a large-scale empirical study of action-space design and
+show that absolute/delta and joint/task-space choices materially change policy
+learning and control behavior \cite{feng2026action}. CST addresses a different
+question: given already chosen source and target controller interfaces, can a
+converter prove their command semantics equivalent for a specific context or
+region?
+
+Robot-learning frameworks such as ManiSkill3 and robomimic expose rich
+controller and dataset interfaces \cite{tao2025maniskill3,mimic2021}. CST is
+intended as a semantic layer around such interfaces, not a replacement for
+their controllers or datasets.
+
+Our current affine IR does not establish equivalence under nonlinear IK branch
+changes, saturation outside declared action boxes, plant dynamics, contact,
+force/torque control, or task success. These are explicit promotion gates rather
+than hidden assumptions.
+
+\section{Discussion}
+CST suggests a different contract for robot action converters. Instead of
+returning a transformed vector unconditionally, a converter can return a
+proof obligation and one of four semantic outcomes. Exact conversions can be
+compiled into cheap runtime morphisms; endpoint-only conversions remain useful
+but must not be described as exact controller equivalence; approximate
+conversions expose their residual; and unsupported conversions fail closed.
+
+The immediate next steps are deliberately external: validate the IR against the
+host controller implementation, retain a minimal upstream fix for the motivating
+defect, and instantiate the same semantic compiler in a second robot-learning
+stack. These tests determine whether CST is a general controller-semantic
+abstraction or merely a correct model of one controller family.
+
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+\end{document}
