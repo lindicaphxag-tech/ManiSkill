@@ -89,12 +89,10 @@ def main():
             return result
 
         radial=raw/raw_norm
-        bounded=np.asarray(
-            action_conversion._bounded_pd_ee_rotation_action(
-                controller,desired_q.cpu().numpy()
-            ),
-            dtype=np.float64,
+        receipt=action_conversion._compile_bounded_pd_ee_rotation_action(
+            controller,desired_q.cpu().numpy()
         )
+        bounded=np.asarray(receipt.action,dtype=np.float64)
 
         radial_error=rotation_error_deg(
             desired_matrix,realized_matrix(controller,radial)
@@ -102,12 +100,19 @@ def main():
         bounded_error=rotation_error_deg(
             desired_matrix,realized_matrix(controller,bounded)
         )
+        predicted_residual_deg=float(
+            np.degrees(receipt.residual_geodesic_error_rad)
+        )
         records.append({
             "raw_norm":raw_norm,
             "radial_error_deg":radial_error,
             "bounded_error_deg":bounded_error,
             "improvement_deg":radial_error-bounded_error,
             "bounded_norm":float(np.linalg.norm(bounded)),
+            "geodesic_progress":float(receipt.geodesic_progress),
+            "feasibility_margin":float(receipt.feasibility_margin),
+            "predicted_residual_deg":predicted_residual_deg,
+            "receipt_error_abs_deg":abs(bounded_error-predicted_residual_deg),
         })
         return result
 
@@ -133,6 +138,9 @@ def main():
     bounded=[x["bounded_error_deg"] for x in records]
     improvements=[x["improvement_deg"] for x in records]
     bounded_norm=[x["bounded_norm"] for x in records]
+    progress=[x["geodesic_progress"] for x in records]
+    margins=[x["feasibility_margin"] for x in records]
+    receipt_error=[x["receipt_error_abs_deg"] for x in records]
     report={
         "schema_version":1,
         "source_root":str(expected),
@@ -144,8 +152,14 @@ def main():
         "improvement_deg":summary(improvements),
         "fraction_strictly_improved":float(np.mean(np.asarray(improvements)>1e-7)) if improvements else 0.0,
         "max_bounded_action_norm":max(bounded_norm) if bounded_norm else 0.0,
+        "geodesic_progress":summary(progress),
+        "feasibility_margin":summary(margins),
+        "receipt_error_abs_deg":summary(receipt_error),
         "dominates_mean":bool(records and np.mean(bounded) <= np.mean(radial)+1e-8),
         "dominates_p95":bool(records and np.percentile(bounded,95) <= np.percentile(radial,95)+1e-8),
+        "receipt_consistent":bool(
+            records and np.percentile(receipt_error,95) <= 2.0e-3
+        ),
     }
     args.output.parent.mkdir(parents=True,exist_ok=True)
     args.output.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
@@ -157,6 +171,8 @@ def main():
         raise SystemExit("bounded compiler did not dominate radial clipping")
     if report["max_bounded_action_norm"] > 1.0 + 1e-5:
         raise SystemExit("bounded compiler violated normalized action ball")
+    if not report["receipt_consistent"]:
+        raise SystemExit("geodesic receipt does not match realized SO(3) residual")
 
 
 if __name__=="__main__":
