@@ -1,5 +1,9 @@
 name: Validate CST public task round-trip
 
+concurrency:
+  group: cst-task-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
