@@ -135,7 +135,7 @@ All of the following are CI-backed on the research branch:
 - structural rejection of interpolation-mismatched controller families;
 - rejection when an algebraically exact morphism leaves target native bounds.
 
-The most recent integrated CST workflow is green.
+The integrated CST workflow is green in two independent jobs: the lightweight semantic compiler suite and a host-parity job that installs ManiSkill and matches the analytic Trace IR against PDJointPosController.set_action() / before_simulation_step() across absolute, current-delta, target-delta, interpolating, hold-style, and normalized-clipping cases.
 
 ## 7. Claim boundary
 
@@ -186,7 +186,7 @@ rather than silently retuned.
 | Interpolate -> hold | Can endpoint equality hide command mismatch? | supported; GOAL_ONLY counterexample |
 | Full source action box | Can one certificate replace action-by-action sampling? | supported analytically |
 | Native-bound failure | Can CST refuse algebraically valid but operationally impossible mappings? | supported |
-| Exact simulator trace | Do compiled semantics match host controller implementation? | pending |
+| Host controller parity | Do compiled semantics match ManiSkill PDJointPosController? | supported; official set_action / before_simulation_step trace parity |
 | Second stack | Is the abstraction not ManiSkill-specific? | pending |
 | Task-level replay | Does certified conversion preserve success empirically? | pending |
 
