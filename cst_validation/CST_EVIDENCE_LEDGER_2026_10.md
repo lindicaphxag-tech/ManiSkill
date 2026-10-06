@@ -25,6 +25,7 @@ does not treat that statement as adoption or endorsement of CST.
 | Chart-local saturation effects | ManiSkill Actions #37404910125 | 5/5 PASS | Clipping is not transferable by dimension/index alone and need not commute with cross-coordinate transport. |
 | Native ManiSkill/PhysX delta-current -> absolute equivalence | ManiSkill Actions #37404638720 | 4/4 PASS | Real PDJointPosController instances on independent headless PhysX articulations receive equal physical targets and remain qpos/qvel equivalent after five physics substeps for four non-trivial normalized source actions. |
 | Native hidden-state necessity / target-delta transport | ManiSkill Actions #37404990097 | 5/5 PASS total suite | A real target-delta controller is transported to an absolute controller over a multi-step sequence. Finite-stiffness tracking makes measured qpos diverge from the controller-owned previous target, so current-qpos stateless interpretation is observably wrong; state-aware transport preserves target/qpos/qvel equivalence. |
+| Closed-loop transport synthesis + impossibility witness | ManiSkill Actions #37407305028 | 8/8 PASS | A local state-feedback adapter can be synthesized when target input effects span the required source dynamics/action directions; otherwise the method returns a structural witness and propagates residuals into an H-step deviation bound. |
 
 ## Pending evidence
 
@@ -102,3 +103,25 @@ CST can move from L8-candidate toward an L8 claim only after:
 
 L9 additionally requires independent reuse or strong paper-level external
 validation. More self-authored tests alone do not promote the level.
+
+
+### Closed-loop CCLAT gate
+
+Frozen method spec: `cst_validation/CCLAT_METHOD_V0_1.md`.
+
+Accepted method evidence: ManiSkill Actions **#37407305028**, 8/8 PASS.
+
+The closed-loop layer synthesizes a local state-feedback adapter
+
+    u_tgt = K_x x_tgt + K_u u_src
+
+and checks whether `[A_src - A_tgt, B_src]` is representable in the target
+controller input image. When it is not, the implementation returns the dominant
+unavoidable residual direction instead of reporting optimizer failure. The
+finite-horizon certificate propagates the frozen one-step residual under a
+declared local state/action radius.
+
+This is currently linearized/model-level evidence only. It is **not** evidence
+of nonlinear ManiSkill rollout equivalence yet, and it is not a robot-safety
+guarantee. Promotion requires a frozen native nonlinear assay on held-out
+states/actions.
