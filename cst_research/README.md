@@ -8,7 +8,7 @@
 - Reproduction: [REPRODUCE.md](REPRODUCE.md)
 - Novelty boundary: [NOVELTY_BOUNDARY_2026_10_06.md](NOVELTY_BOUNDARY_2026_10_06.md)
 
-Latest full public suite: **59 passed**. External maintained adoption: **0**.
+Latest full public suite: **75 passed in 3.20s**. External maintained adoption: **0**.
 
 Question:
 
@@ -135,7 +135,7 @@ Not yet supported:
 From this branch:
 
 ```bash
-python -m pip install numpy pytest
+python -m pip install numpy scipy pytest
 cd cst_research
 python -m pytest -q test_*.py
 ```
@@ -161,7 +161,7 @@ This is cross-stack validation, not external adoption.
 
 ### 5. Causal deployability of action chunks
 
-CST distinguishes a trace that can be converted after rollout from a controller migration that can be executed online. If a whole action chunk is emitted at query time but a target native action for future step t needs the future measured state or controller-owned target at t, exact conversion cannot be precomputed. CST therefore returns PRECOMPUTABLE, REQUIRES_STEP_HOOK, EXECUTABLE_WITH_STEP_HOOK, or REFUSE_MISSING_RUNTIME_STATE. The latest full public suite contains 46 passing tests.
+CST distinguishes a trace that can be converted after rollout from a controller migration that can be executed online. If a whole action chunk is emitted at query time but a target native action for future step t needs the future measured state or controller-owned target at t, exact conversion cannot be precomputed. CST therefore returns PRECOMPUTABLE, REQUIRES_STEP_HOOK, EXECUTABLE_WITH_STEP_HOOK, or REFUSE_MISSING_RUNTIME_STATE. The latest full public suite contains 75 passing tests.
 
 ## Bounded LeRobot -> current-state JIT migration
 
@@ -175,4 +175,34 @@ A pinned LeRobot source implementation is used as the source semantics. With rel
 
 The key point is causal: the target current-state reference for future steps does not exist when the source chunk is emitted, so exact migration must be performed at execution time rather than by copying or precomputing the whole target chunk.
 
-Latest complete public research suite: **46 tests passed**.
+Latest complete public research suite: **75 tests passed**.
+
+## robomimic / robosuite second stack
+
+External issue `ARISE-Initiative/robomimic#270` requests the inverse of the
+existing delta->absolute converter, and maintainer `amandlek` has publicly
+stated that they are happy to accept a PR.
+
+The public CST branch now contains both:
+
+- `robomimic_reverse_actions.py`: a tested semantic core for
+  absolute->delta OSC transport;
+- `upstream_candidates/robomimic/robosuite_add_delta_actions.py`: a staged
+  upstream-style converter that mirrors robomimic's existing
+  `robosuite_add_absolute_actions.py`.
+
+The inverse is controller-semantic rather than numeric differencing:
+
+```
+restore recorded state
+-> obtain achieved pose in the controller reference frame
+-> R_delta = R_goal @ R_current.T
+-> inverse Controller.scale_action
+-> preserve gripper / remainder
+-> report saturation if exact one-step transport is impossible
+```
+
+The staged converter covers the controller layouts used by the existing
+robomimic script for robosuite <=1.4.1 and >=1.5. It is not yet an upstream PR,
+because the connected GitHub integration cannot create a user fork of
+robomimic and upstream issue-comment writes return 403.
