@@ -91,3 +91,73 @@ conversion/stateful-adapter surface.
 - Repository-native tests or docs can support a finding; our own checker alone
   cannot make it I3.
 - All I0/I1/I2 outcomes remain in the ledger.
+
+
+## Prospective inspection log
+
+The entries below are recorded under the frozen P1-P4 predicates. An I0 here is
+valuable negative evidence; it is not converted into a defect by changing the
+predicate after inspection.
+
+### huggingface/lerobot — relative-action surface
+
+Pinned source observed at commit `8c920c4270460851cedd2737657584586d3dc66f`.
+
+Inspected:
+- `src/lerobot/processor/relative_action_processor.py`
+- `src/lerobot/processor/delta_action_processor.py`
+- `docs/source/action_representations.mdx`
+
+Result: **provisional I0 for the inspected relative-action state-lifetime path**.
+
+The current implementation explicitly:
+- caches the anchor state used for relative/absolute conversion;
+- retains that anchor while a generated action chunk remains in flight;
+- re-anchors when the queue drains;
+- clears cached state on processor reset;
+- documents that every relative action in one chunk uses the same prediction-time
+  current state.
+
+Therefore the inspected path does not satisfy frozen P1 or P4. This is retained
+as a repository-native counterexample to the idea that all action adapters are
+state-lifetime-unsafe.
+
+This does not yet classify unrelated LeRobot action paths.
+
+### Physical-Intelligence/openpi — DeltaActions/AbsoluteActions surface
+
+Pinned source observed at commit `215abfb217dbac7d5f1273282331b9b1866c0479`.
+
+Inspected:
+- `src/openpi/transforms.py`
+- direct uses of `DeltaActions` / `AbsoluteActions` in training configs and
+  the UR5 example.
+
+Result: **provisional I0 for the inspected absolute/relative transform pair**.
+
+The pair uses the same supplied state as the reference and the configs install
+the transforms as inverse input/output operations with an explicit dimension
+mask. No frozen P1-P4 defect is established on this surface from source
+inspection alone.
+
+This does not validate normalization metadata or other OpenPI deployment paths.
+
+### real-stanford/diffusion_policy — Robomimic absolute-action conversion surface
+
+Pinned source observed at commit `5ba07ac6661db573af695b419a7947ecb704690f`.
+
+Inspected:
+- `diffusion_policy/common/robomimic_util.py`
+- `diffusion_policy/env_runner/robomimic_lowdim_runner.py`
+
+Result: **provisional I0 / no frozen defect established on the inspected
+delta-to-absolute conversion path**.
+
+The converter restores each recorded simulator state, invokes the source
+controller's own goal generator, and reads the resulting goal position and
+orientation rather than reconstructing them by index arithmetic. The code also
+contains an explicit rollout-error comparison between delta and converted
+absolute actions. No P1-P4 defect is promoted from this surface.
+
+Remaining frozen repositories are still pending and must not be replaced by
+easier targets.
