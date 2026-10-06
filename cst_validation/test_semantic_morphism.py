@@ -3,6 +3,7 @@ import numpy as np
 from semantic_morphism import (
     SemanticMorphismKind,
     analyze_linear_semantic_morphism,
+    construct_linear_semantic_witness,
     transport_shared_observable,
 )
 
@@ -81,3 +82,54 @@ def test_random_full_row_rank_joint_to_eef_is_consistently_projection():
         cert = analyze_linear_semantic_morphism(J, np.eye(6))
         assert cert.kind is SemanticMorphismKind.SOURCE_PROJECTION
         assert cert.source_kernel_dim == 1
+
+
+
+def test_unrepresentable_witness_constructs_source_direction_target_cannot_match():
+    A = np.eye(3)
+    B = np.diag([1.0, 1.0, 0.0])
+    witness = construct_linear_semantic_witness(A, B)
+
+    assert witness.unrepresentable_source_direction is not None
+    assert witness.unrepresentable_observable_residual is not None
+    direction = witness.unrepresentable_source_direction
+    source_observable = A @ direction
+    target_projection = B @ np.linalg.pinv(B) @ source_observable
+
+    np.testing.assert_allclose(
+        source_observable - target_projection,
+        witness.unrepresentable_observable_residual,
+        atol=1e-10,
+    )
+    assert witness.unrepresentable_residual_norm > 0.99
+
+
+def test_target_ambiguity_witness_is_nonzero_native_direction_with_zero_observable():
+    B = np.array([[1.0, 0.0, 1.0], [0.0, 1.0, 1.0]])
+    witness = construct_linear_semantic_witness(np.eye(2), B)
+
+    ambiguity = witness.target_ambiguity_direction
+    assert ambiguity is not None
+    assert np.linalg.norm(ambiguity) == np.testing.assert_allclose(
+        np.linalg.norm(ambiguity), 1.0, atol=1e-10
+    ) or np.linalg.norm(ambiguity)
+    np.testing.assert_allclose(B @ ambiguity, np.zeros(2), atol=1e-10)
+
+
+def test_source_projection_witness_is_invisible_source_semantic_direction():
+    A = np.array([[1.0, 0.0, 1.0], [0.0, 1.0, 1.0]])
+    witness = construct_linear_semantic_witness(A, np.eye(2))
+
+    invisible = witness.source_invisible_direction
+    assert invisible is not None
+    np.testing.assert_allclose(np.linalg.norm(invisible), 1.0, atol=1e-10)
+    np.testing.assert_allclose(A @ invisible, np.zeros(2), atol=1e-10)
+
+
+def test_exact_equivalence_has_no_non_equivalence_witnesses():
+    witness = construct_linear_semantic_witness(np.eye(3), np.eye(3))
+    assert witness.unrepresentable_source_direction is None
+    assert witness.unrepresentable_observable_residual is None
+    assert witness.source_invisible_direction is None
+    assert witness.target_ambiguity_direction is None
+    assert witness.unrepresentable_residual_norm == 0.0
