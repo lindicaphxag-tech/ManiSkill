@@ -92,4 +92,8 @@ def global_full_rank_required(
     """Legacy conservative gate: useful only as a negative-control baseline."""
 
     l = np.asarray(target_action_to_physical_jacobian, dtype=float)
-    return _matrix_rank(l, rtol=rank_rtol) == min(l.shape)
+    # L maps action coordinates -> physical command coordinates. Global physical
+    # authority requires full *row* rank: every local physical command direction
+    # must lie in Im(L). Full column rank is insufficient for an underactuated
+    # tall map with fewer action DoF than physical-command DoF.
+    return _matrix_rank(l, rtol=rank_rtol) == l.shape[0]
