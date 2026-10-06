@@ -128,6 +128,28 @@ Novelty boundary: asynchronous action-chunk misalignment and stale-state executi
 
 Interpretation: for bounded source-relative commands, the JIT adapter preserves the pinned second stack's physical goal trace to floating-point tolerance while direct numeric copying into a current-state-delta target systematically drifts. This is cross-stack executable-semantic validation, not maintained downstream adoption.
 
+## LeRobot #3312 ACT external candidate
+
+- External issue: `huggingface/lerobot#3312`, "Inference with ACT with relative action not working well".
+- The issue is assigned to maintainer `pkooij`; the maintainer explicitly replied that relative actions were implemented for pi0/pi05 and invited an ACT PR.
+- Current-main audit found the generic anchor-hold infrastructure already exists:
+  - `RelativeActionsProcessorStep` holds a chunk anchor while the policy queue is non-empty;
+  - `bind_relative_anchor(policy, preprocessor)` binds it to `count_queued_actions()`;
+  - rollout/eval paths already call the binder.
+- The remaining ACT-specific gap is narrow: `ACTConfig` has no relative-action fields and `make_act_pre_post_processors` still builds only the default normalize/unnormalize pipeline.
+- Public upstream-candidate validation: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37467464140
+- Validation method: CI clones official LeRobot at pinned commit `d40e8709cffb93644db66e30604ef50fdec003cb`, applies the candidate, installs that source, and runs the new regression together with official ACT processor tests.
+- Result: `9 passed, 5 skipped in 0.88s`.
+- Candidate scope: two production files (`configuration_act.py`, `processor_act.py`) plus one focused regression.
+- Regression uses a real `ACTPolicy` queue and verifies:
+  - default ACT processor layout is unchanged when the option is disabled;
+  - relative conversion precedes normalization;
+  - excluded gripper stays absolute;
+  - the chunk-generation anchor is held while ACT's queue drains;
+  - a fresh anchor is taken only after the queue becomes empty.
+
+Interpretation: this is a maintainer-invited, current-main-valid upstream candidate. It is **not** an upstream PR or external adoption yet because no user LeRobot fork is currently available through the connected GitHub installation.
+
 ## Robomimic / Robosuite second-stack inverse semantics
 
 - Full-suite run after the second-stack bridge: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37464762561
