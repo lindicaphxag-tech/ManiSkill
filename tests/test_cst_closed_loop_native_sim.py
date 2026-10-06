@@ -4,7 +4,12 @@ import sapien.physx as physx
 import torch
 
 from cst_validation.closed_loop_probe import certify_black_box_closed_loop_transport
-from mani_skill.agents.controllers import PDJointPosController, PDJointPosControllerConfig
+from mani_skill.agents.controllers import (
+    PDJointPosController,
+    PDJointPosControllerConfig,
+    PDJointVelController,
+    PDJointVelControllerConfig,
+)
 from mani_skill.envs.scene import ManiSkillScene
 from mani_skill.envs.utils.system.backend import parse_sim_and_render_backend
 
@@ -121,3 +126,102 @@ def test_black_box_physx_probe_recovers_delta_to_absolute_transport():
         atol=2e-3,
         rtol=2e-2,
     )
+
+
+
+def _velocity_query(action: np.ndarray) -> np.ndarray:
+    """Execute a real velocity controller and expose a short physical trace."""
+    backend = parse_sim_and_render_backend("cpu", "none")
+    px = physx.PhysxCpuSystem()
+    px.timestep = 1.0 / 100.0
+    raw_scene = sapien.Scene(systems=[px])
+    scene = ManiSkillScene([raw_scene], device=torch.device("cpu"), backend=backend)
+
+    builder = scene.create_articulation_builder()
+    root = builder.create_link_builder(None)
+    root.set_name("root")
+    child = builder.create_link_builder(root)
+    child.set_name("joint_link")
+    child.add_box_collision(half_size=[0.02, 0.02, 0.08])
+    child.set_joint_name("joint0")
+    child.set_joint_properties(
+        type="revolute",
+        limits=[[-2.0, 2.0]],
+        pose_in_parent=sapien.Pose(),
+        pose_in_child=sapien.Pose(),
+        friction=0.0,
+        damping=0.0,
+    )
+    articulation = builder.build(name="test_arm", fix_root_link=True)
+    articulation.set_qpos(torch.tensor([[0.2]], dtype=torch.float32))
+    articulation.set_qvel(torch.zeros((1, 1), dtype=torch.float32))
+
+    config = PDJointVelControllerConfig(
+        ["joint0"],
+        lower=-1.0,
+        upper=1.0,
+        damping=10.0,
+        force_limit=100.0,
+        normalize_action=False,
+    )
+    controller = PDJointVelController(
+        config=config,
+        articulation=articulation,
+        scene=scene,
+        control_freq=20,
+        sim_freq=100,
+    )
+    controller.set_drive_property()
+    controller.reset()
+    controller.set_action(torch.tensor([[float(action[0])]], dtype=torch.float32))
+
+    controller.before_simulation_step()
+    scene.step()
+    q1 = float(articulation.get_qpos()[0, 0])
+    v1 = float(articulation.get_qvel()[0, 0])
+    for _ in range(4):
+        controller.before_simulation_step()
+        scene.step()
+    q5 = float(articulation.get_qpos()[0, 0])
+    v5 = float(articulation.get_qvel()[0, 0])
+    return np.array([q1, v1, q5, v5], dtype=float)
+
+
+def _delta_position_trace_query(action: np.ndarray) -> np.ndarray:
+    scene, articulation, controller = _controller(use_delta=True)
+    controller.set_action(torch.tensor([[float(action[0])]], dtype=torch.float32))
+
+    controller.before_simulation_step()
+    scene.step()
+    q1 = float(articulation.get_qpos()[0, 0])
+    v1 = float(articulation.get_qvel()[0, 0])
+    for _ in range(4):
+        controller.before_simulation_step()
+        scene.step()
+    q5 = float(articulation.get_qpos()[0, 0])
+    v5 = float(articulation.get_qvel()[0, 0])
+    return np.array([q1, v1, q5, v5], dtype=float)
+
+
+def test_black_box_physx_refuses_position_to_velocity_trace_equivalence():
+    # Both controllers expose a one-dimensional action, but they induce
+    # different short-horizon physical response directions.  Equal dimension
+    # therefore must not be mistaken for semantic convertibility.
+    cert = certify_black_box_closed_loop_transport(
+        _delta_position_trace_query,
+        _velocity_query,
+        source_action0=np.array([0.0]),
+        target_action0=np.array([0.0]),
+        source_epsilon=0.1,
+        target_epsilon=0.1,
+        heldout_source_deltas=np.array([[0.3], [-0.5], [0.8]]),
+        heldout_tolerance=1e-4,
+        max_scale_instability=0.05,
+        local_atol=1e-5,
+        local_rtol=1e-5,
+    )
+
+    assert cert.local_transport is not None
+    assert not cert.local_transport.exact
+    assert cert.local_transport.worst_case_unit_action_lower_bound > 1e-4
+    assert not cert.authorized
