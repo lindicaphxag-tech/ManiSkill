@@ -1,0 +1,32 @@
+name: EPRC LeRobot 4592 Compatibility
+
+on:
+  pull_request:
+    paths:
+      - "research/eprc/lerobot_plugin/**"
+      - "research/eprc/lerobot_4592_compat.py"
+      - ".github/workflows/eprc-lerobot-4592.yml"
+  workflow_dispatch:
+
+jobs:
+  plugin-compat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Checkout frozen LeRobot processor-plugin proposal
+        run: |
+          git clone -q https://github.com/huggingface/lerobot.git /tmp/lerobot
+          cd /tmp/lerobot
+          git fetch -q origin pull/4592/head:pr4592
+          git checkout -q pr4592
+      - name: Install LeRobot proposal and EPRC plugin
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e /tmp/lerobot
+          python -m pip install -e research/eprc/lerobot_plugin
+      - name: Verify real distribution discovery and certificate path
+        run: python research/eprc/lerobot_4592_compat.py
