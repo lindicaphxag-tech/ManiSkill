@@ -83,3 +83,34 @@ def test_delta_target_refuses_without_initial_reference():
     chart = _chart("delta_target")
     with pytest.raises(ValueError, match="initial q_target"):
         reconstruct_joint_goal_trace(chart, np.zeros((2, 2)))
+
+
+def test_relative_latched_chunk_reconstructs_from_one_fixed_reference():
+    chart = _chart("relative_latched")
+    actions = np.array([[0.5, -0.5], [0.0, 1.0], [-1.0, 0.0]])
+    result = reconstruct_joint_goal_trace(
+        chart,
+        actions,
+        initial_context=JointControllerContext(
+            q_latched=np.array([0.2, -0.3])
+        ),
+    )
+    np.testing.assert_allclose(
+        result.reference_trace,
+        [[0.2, -0.3], [0.2, -0.3], [0.2, -0.3]],
+        atol=1e-12,
+    )
+    np.testing.assert_allclose(
+        result.semantic_goals,
+        [[0.25, -0.4], [0.2, -0.1], [0.1, -0.3]],
+        atol=1e-12,
+    )
+    assert result.requirement.required_initial_state == ("q_latched",)
+    assert result.requirement.required_per_step_state == ()
+    assert result.requirement.recursively_reconstructible == ()
+
+
+def test_relative_latched_refuses_without_chunk_reference():
+    chart = _chart("relative_latched")
+    with pytest.raises(ValueError, match="q_latched"):
+        reconstruct_joint_goal_trace(chart, np.zeros((2, 2)))
