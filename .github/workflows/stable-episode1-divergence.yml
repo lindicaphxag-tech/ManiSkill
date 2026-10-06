@@ -1,0 +1,66 @@
+name: Stable episode 1 divergence witness
+
+on:
+  push:
+    branches:
+      - "validation/maniskill1495-maintainer-request"
+    paths:
+      - "validation/pr1495/capture_episode_trace.py"
+      - "validation/pr1495/summarize_episode_divergence.py"
+      - "validation/pr1495/run_stable_episode1_divergence.sh"
+      - ".github/workflows/stable-episode1-divergence.yml"
+  pull_request:
+    paths:
+      - "validation/pr1495/capture_episode_trace.py"
+      - "validation/pr1495/summarize_episode_divergence.py"
+      - "validation/pr1495/run_stable_episode1_divergence.sh"
+      - ".github/workflows/stable-episode1-divergence.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  stable-episode1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install software Vulkan
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libegl1 mesa-vulkan-drivers vulkan-tools
+          LVP_ICD="$(find /usr/share/vulkan/icd.d -maxdepth 1 -type f -name 'lvp_icd*.json' | head -n1)"
+          test -n "$LVP_ICD"
+          echo "VK_ICD_FILENAMES=$LVP_ICD" >> "$GITHUB_ENV"
+          VK_ICD_FILENAMES="$LVP_ICD" vulkaninfo --summary
+
+      - name: Capture serial-context episode-1 traces
+        env:
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+        run: bash validation/pr1495/run_stable_episode1_divergence.sh
+
+      - name: Publish stable discordance witness
+        if: always()
+        run: |
+          if [[ -f .validation-stable-discordance-episode1/episode1_divergence.json ]]; then
+            cat .validation-stable-discordance-episode1/episode1_divergence.json
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stable-episode1-divergence-witness
+          path: |
+            .validation-stable-discordance-episode1/current_main.json
+            .validation-stable-discordance-episode1/contract_adapter_v2.json
+            .validation-stable-discordance-episode1/contract_adapter_v2_controller_fixed.json
+            .validation-stable-discordance-episode1/episode1_divergence.json
+          if-no-files-found: error
+          include-hidden-files: true
