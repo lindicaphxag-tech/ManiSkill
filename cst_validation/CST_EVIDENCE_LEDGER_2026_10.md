@@ -48,10 +48,22 @@ the base initially failed because the test mock omitted
 `config.lower/config.upper`, not at the intended NumPy/torch conversion
 boundary.
 
-The reproducer has been corrected to match real source controller bounds and
-the gate now requires the upstream failure to specifically match the
-`torch.clip` / NumPy type boundary. The newer strict run is pending. Only the
-strict run may be cited.
+The corrected strict differential is ManiSkill Actions **#37405088768** and is
+accepted evidence:
+
+- clean patch: the frozen reproducer passes **2/2**;
+- current upstream main/base `62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3`:
+  the same reproducer fails **2/2**;
+- both upstream failures reach
+  `gym_utils.clip_and_scale_action -> torch.clip` and raise the expected
+  `TypeError` because the recorded trajectory arm action is a
+  `numpy.ndarray`;
+- the workflow itself refuses to pass unless that exact NumPy/torch boundary
+  appears in the upstream failure log.
+
+The upstream repository's current `main` head was independently checked and
+is the same frozen SHA `62ff3a58...`, so this is not evidence against a stale
+historical revision.
 
 ## External second-stack targets
 
@@ -82,8 +94,8 @@ motivation, not adoption.
 
 CST can move from L8-candidate toward an L8 claim only after:
 
-1. strict upstream-base-fail / clean-fix-pass evidence is green;
-2. native stateful necessity is green;
+1. ~~strict upstream-base-fail / clean-fix-pass evidence is green~~ — satisfied by #37405088768;
+2. ~~native stateful necessity is green~~ — satisfied by #37404990097;
 3. a minimal #429 patch receives maintainer technical confirmation or merge;
 4. a second independent maintained stack reproduces the semantic failure or
    retains a CST-derived fix/test.
