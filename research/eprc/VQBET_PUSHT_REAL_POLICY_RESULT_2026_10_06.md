@@ -88,6 +88,18 @@ projection remained `INCONCLUSIVE` at that frozen budget.
 Those probes were **planned, not executed**, and therefore are not counted as
 new evidence.
 
+The evidence-action router then applies a stricter provenance rule. Because
+finite-difference scale drift (**3.01261**) dominates RNG stochasticity (**0.0**)
+and the information-only AMRC plan remains inconclusive, the run is classified
+as:
+
+`LOCALITY_LIMITED`
+
+with **additional same-scale queries not authorized** as evidence for shrinking
+the locality envelope. The next admissible experiment is a smaller symmetric
+physical perturbation / smaller trust region (or an explicitly validated
+higher-order local model), not simply more directional samples.
+
 ## What this establishes
 
 This run supports three narrower claims:
