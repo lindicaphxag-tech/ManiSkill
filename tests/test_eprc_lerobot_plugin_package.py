@@ -27,11 +27,12 @@ def test_built_wheel_preserves_exact_distribution_import_identity(tmp_path):
         [
             sys.executable,
             "-m",
-            "build",
-            "--wheel",
-            "--outdir",
-            str(out),
+            "pip",
+            "wheel",
+            "--no-deps",
             str(PLUGIN),
+            "-w",
+            str(out),
         ],
         check=True,
     )
