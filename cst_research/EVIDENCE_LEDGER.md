@@ -218,3 +218,47 @@ Novelty boundary: high-frequency action chunks, interpolation and asynchronous e
   reproducibility evidence, not adoption.
 
 Current external adoption remains 0. L8 achieved: NO. L9 achieved: NO.
+
+
+## Fork-native upstream candidates — 2026-10-06
+
+### robomimic #270
+
+- User fork now exists and is writable: `lindicaphxag-tech/robomimic`.
+- Fork `master` was verified byte-for-byte at the same head SHA as upstream before branching:
+  `d309eaecc18acf4152a830a895a6984b8ac71b05`.
+- Validation branch: `feature/absolute-to-delta-actions-270`.
+- Latest focused validation run:
+  https://github.com/lindicaphxag-tech/robomimic/actions/runs/37477800148
+- Result: `7 passed in 4.82s`.
+- The focused tests cover inverse action scaling, SO(3) composition inversion,
+  saturation, current/legacy controller reference frames, refusal of
+  unmodeled desired-goal memory, and HDF5 action_dict semantic labeling.
+- Clean upstream branch:
+  `feature/absolute-to-delta-actions-270-pr`.
+- Clean branch excludes the temporary validation workflow and contains only
+  production changes plus focused tests.
+- Direct API attempt to open the upstream PR returned HTTP 403
+  `Resource not accessible by integration`.
+- Therefore the official PR is still **not opened** and external adoption is
+  still **0**.
+
+### LeRobot #3312
+
+- User fork now exists and is writable: `lindicaphxag-tech/lerobot`.
+- Fork `main` was verified at the same head SHA as upstream before branching:
+  `156ca6e741e2167d46b9051c2e58193842d0fbb9`.
+- Validation branch: `fix/act-relative-actions-3312`.
+- Current-main focused ACT processor regression:
+  `9 passed, 5 skipped`.
+- Clean upstream branch:
+  `fix/act-relative-actions-3312-pr`.
+- The candidate reuses LeRobot's existing generic relative-action processor,
+  queue-anchor hold, dataset action-name injection, and policy processor
+  factory rather than introducing a new queue state machine.
+- LeRobot's contribution policy requires disclosure of significant AI
+  assistance, contributor understanding of the submitted code, pre-commit /
+  tests, and one community review before maintainer attention.
+- Final pre-commit validation is being completed before the clean branch is
+  considered submission-ready.
+- This is **not** an upstream PR or adoption yet.
