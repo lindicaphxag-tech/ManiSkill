@@ -65,6 +65,8 @@ def _state_requirements(chart: JointGoalChart) -> tuple[str, ...]:
         return ("q_current",)
     if chart.mode == "delta_target":
         return ("q_target",)
+    if chart.mode == "relative_latched":
+        return ("q_latched",)
     raise ValueError(f"unsupported chart mode: {chart.mode}")
 
 
@@ -103,6 +105,9 @@ def _ambiguous_joint_witness(
     elif name == "q_target":
         ca = JointControllerContext(q_target=zeros)
         cb = JointControllerContext(q_target=shifted)
+    elif name == "q_latched":
+        ca = JointControllerContext(q_latched=zeros)
+        cb = JointControllerContext(q_latched=shifted)
     else:
         return AmbiguousTransportWitness(
             status="ambiguous",
@@ -199,6 +204,8 @@ def compile_exact_joint_transport(
             target_reference = np.asarray(target_context.q_current, dtype=float)
         elif target_chart.mode == "delta_target":
             target_reference = np.asarray(target_context.q_target, dtype=float)
+        elif target_chart.mode == "relative_latched":
+            target_reference = np.asarray(target_context.q_latched, dtype=float)
 
         return NonRepresentableTransportWitness(
             status="nonrepresentable",
