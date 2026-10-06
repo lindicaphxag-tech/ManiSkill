@@ -1,0 +1,37 @@
+name: EPRC VQ-BeT PushT Probe
+
+on:
+  pull_request:
+    paths:
+      - "research/eprc/real_policy/**"
+      - ".github/workflows/eprc-vqbet-pusht.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned LeRobot PushT stack
+        run: |
+          git clone -q https://github.com/huggingface/lerobot.git /tmp/lerobot
+          git -C /tmp/lerobot checkout -q 8c920c4270460851cedd2737657584586d3dc66f
+          python -m pip install -q -e '/tmp/lerobot[pusht]'
+      - name: Probe official frozen VQ-BeT checkpoint
+        run: |
+          python research/eprc/real_policy/vqbet_pusht_probe.py --output /tmp/eprc-real-policy/vqbet_pusht_probe.json
+      - name: Upload raw frozen-policy evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eprc-vqbet-pusht-probe
+          path: /tmp/eprc-real-policy
+          if-no-files-found: warn
+          retention-days: 30
