@@ -123,7 +123,8 @@ class HistoricalVQBeTProbe:
             delta[j] = epsilon
             plus = self.query(delta, randomness_seed)
             minus = self.query(-delta, randomness_seed)
-            cols.append(((plus - minus) / (2.0 * epsilon)).reshape(-1))
+            physical_step = float(epsilon * SUPPORT_SCALE[j])
+            cols.append(((plus - minus) / (2.0 * physical_step)).reshape(-1))
             residual = np.linalg.norm(plus + minus - 2.0 * baseline)
             denom = max(np.linalg.norm(plus - minus), 1e-12)
             max_symmetry_residual = max(max_symmetry_residual, float(residual / denom))
