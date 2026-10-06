@@ -62,16 +62,8 @@ def inverse_delta_to_pd_ee_euler(quat: np.ndarray) -> np.ndarray:
     return euler_xyz_from_quaternion(desired_delta.numpy())
 
 
-def _normalized_pd_ee_rotation_action(
-    controller: PDEEPoseController, desired_euler: np.ndarray
-) -> np.ndarray:
-    """Invert the controller's actual normalized rotation mapping.
-
-    PDEEPoseController does not use the generic affine low/high action scaling
-    for rotation. Probe its production scaling path so trajectory conversion
-    remains correct across controller implementations (including the historical
-    negative-rot_lower behavior and the sign-preserving rot_upper behavior).
-    """
+def _pd_ee_rotation_gains(controller: PDEEPoseController) -> torch.Tensor:
+    """Probe the controller's actual normalized rotation mapping."""
     if not isinstance(controller, PDEEPoseController):
         raise TypeError("rotation conversion requires PDEEPoseController")
 
@@ -92,9 +84,86 @@ def _normalized_pd_ee_rotation_action(
         raise RuntimeError("PDEEPoseController rotation mapping is not axis-separable")
     if torch.any(torch.abs(gains) <= torch.finfo(dtype).eps):
         raise RuntimeError("PDEEPoseController rotation mapping has zero gain")
+    return gains
 
-    desired = torch.as_tensor(desired_euler, dtype=dtype, device=device)
+
+def _normalized_pd_ee_rotation_action(
+    controller: PDEEPoseController, desired_euler: np.ndarray
+) -> np.ndarray:
+    """Invert the controller mapping when the target is directly reachable."""
+    gains = _pd_ee_rotation_gains(controller)
+    desired = torch.as_tensor(
+        desired_euler, dtype=gains.dtype, device=gains.device
+    )
     return (desired / gains).cpu().numpy()
+
+
+def _bounded_pd_ee_rotation_action(
+    controller: PDEEPoseController,
+    desired_quaternion: np.ndarray,
+    *,
+    iterations: int = 64,
+) -> np.ndarray:
+    """Compile a desired rotation into the controller's bounded action ball.
+
+    Reachable targets use the exact analytic inverse. Out-of-bound targets solve
+    a three-dimensional constrained problem against the controller forward
+    XYZ-Euler semantics: minimize SO(3) discrepancy subject to norm(a) <= 1.
+
+    The chordal objective 3 - trace(R_a^T R_desired) is monotone in geodesic
+    angle on SO(3), and projected Adam is deterministic for this fixed problem.
+    """
+    gains = _pd_ee_rotation_gains(controller)
+    dtype = gains.dtype
+    device = gains.device
+
+    desired_q = torch.as_tensor(
+        desired_quaternion, dtype=dtype, device=device
+    )
+    desired_q = desired_q / torch.linalg.norm(desired_q)
+    desired_matrix = rotation_conversions.quaternion_to_matrix(desired_q)
+    desired_euler = rotation_conversions.matrix_to_euler_angles(
+        desired_matrix, "XYZ"
+    )
+    exact = desired_euler / gains
+
+    exact_norm = torch.linalg.norm(exact)
+    if exact_norm <= 1.0 + 1e-7:
+        return exact.cpu().numpy()
+
+    action = (exact / exact_norm).detach().clone().requires_grad_(True)
+    optimizer = torch.optim.Adam([action], lr=0.08)
+
+    best_action = action.detach().clone()
+    best_loss = torch.tensor(float("inf"), dtype=dtype, device=device)
+
+    for _ in range(iterations):
+        optimizer.zero_grad()
+        realized_matrix = rotation_conversions.euler_angles_to_matrix(
+            action * gains, "XYZ"
+        )
+        loss = 3.0 - torch.trace(
+            realized_matrix.transpose(-1, -2) @ desired_matrix
+        )
+        loss.backward()
+        optimizer.step()
+
+        with torch.no_grad():
+            norm = torch.linalg.norm(action)
+            if norm > 1.0:
+                action.mul_(1.0 / norm)
+
+            realized_matrix = rotation_conversions.euler_angles_to_matrix(
+                action * gains, "XYZ"
+            )
+            candidate_loss = 3.0 - torch.trace(
+                realized_matrix.transpose(-1, -2) @ desired_matrix
+            )
+            if candidate_loss < best_loss:
+                best_loss = candidate_loss
+                best_action = action.detach().clone()
+
+    return best_action.cpu().numpy()
 
 
 def delta_pose_to_pd_ee_delta(
@@ -119,8 +188,17 @@ def delta_pose_to_pd_ee_delta(
         low[:3].cpu().numpy(),
         high[:3].cpu().numpy(),
     )
-    desired_euler = inverse_delta_to_pd_ee_euler(delta_pose.q)
-    rotation_action = _normalized_pd_ee_rotation_action(controller, desired_euler)
+    desired_quaternion = rotation_conversions.quaternion_invert(
+        torch.as_tensor(
+            delta_pose.q,
+            dtype=controller.action_space_low.dtype,
+            device=controller.action_space_low.device,
+        )
+    )
+    rotation_action = _bounded_pd_ee_rotation_action(
+        controller,
+        desired_quaternion.cpu().numpy(),
+    )
     return np.r_[position_action, rotation_action]
 
 
