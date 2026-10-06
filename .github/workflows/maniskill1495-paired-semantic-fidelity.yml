@@ -12,6 +12,10 @@ on:
       - ".github/workflows/maniskill1495-paired-semantic-fidelity.yml"
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   paired-semantic-fidelity:
     runs-on: ubuntu-latest
