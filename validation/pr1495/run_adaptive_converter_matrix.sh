@@ -4,7 +4,7 @@ set -euo pipefail
 COUNT="${COUNT:-10}"
 ROOT="${ROOT:-$PWD/.validation-pr1495-adaptive}"
 MAIN_SHA="62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3"
-ADAPTIVE_SHA="80bd0fb678fd9534830dac18418c777b7ed1a2a3"
+ADAPTIVE_SHA="791e4cd81f87367bc435c1d64ad70043d10b8890"
 CONTROLLER_SHA="eed9be164797d41540421bda8adb3840377d7087"
 RAW_ROOT="$HOME/.maniskill/demos/PegInsertionSide-v1/motionplanning"
 RAW="$RAW_ROOT/trajectory.h5"
@@ -59,7 +59,7 @@ python -m pip install -e "$ADAPTIVE_SRC"
 python -m pip install pytest
 (
   cd "$ADAPTIVE_SRC"
-  python -m pytest -q tests/test_action_conversion.py
+  python -m pytest -q tests/test_controller_contract_action_conversion.py
 )
 replay_variant adaptive_current "$ADAPTIVE_SRC"
 
