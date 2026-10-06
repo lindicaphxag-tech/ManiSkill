@@ -177,7 +177,7 @@ Compiled whole-box morphism &
 Algebraically exact but bound-infeasible &
 Refused by whole-box certificate \\
 Host controller implementation parity &
-Pending \\
+Supported in official PDJointPosController harness \\
 Exact simulator-state command trace &
 Pending \\
 Second software stack &
@@ -216,10 +216,7 @@ compiled into cheap runtime morphisms; endpoint-only conversions remain useful
 but must not be described as exact controller equivalence; approximate
 conversions expose their residual; and unsupported conversions fail closed.
 
-The immediate next steps are deliberately external: validate the IR against the
-host controller implementation, retain a minimal upstream fix for the motivating
-defect, and instantiate the same semantic compiler in a second robot-learning
-stack. These tests determine whether CST is a general controller-semantic
+The IR now matches the host ManiSkill PDJointPosController implementation in a separate CI job that exercises set_action() and before_simulation_step() across controller modes. The immediate next steps are deliberately external: retain a minimal upstream fix for the motivating defect, obtain simulator/task-level evidence, and instantiate the same semantic compiler in a second robot-learning stack. These tests determine whether CST is a general controller-semantic
 abstraction or merely a correct model of one controller family.
 
 \bibliographystyle{IEEEtran}
