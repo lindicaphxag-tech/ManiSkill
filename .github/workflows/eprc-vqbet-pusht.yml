@@ -1,0 +1,39 @@
+name: EPRC VQBeT PushT Smoke
+
+on:
+  pull_request:
+    paths:
+      - "research/eprc/public_policy/**"
+      - ".github/workflows/eprc-vqbet-pusht.yml"
+  workflow_dispatch:
+
+jobs:
+  vqbet-pusht:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Checkout pinned LeRobot
+        run: |
+          git clone -q https://github.com/huggingface/lerobot.git /tmp/lerobot
+          cd /tmp/lerobot
+          git checkout -q 8c920c4270460851cedd2737657584586d3dc66f
+      - name: Install pinned LeRobot PushT/VQ-BeT stack
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '/tmp/lerobot[pusht]'
+      - name: Run frozen public-policy smoke
+        env:
+          HF_HUB_DISABLE_TELEMETRY: "1"
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          python research/eprc/public_policy/vqbet_pusht_smoke.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eprc-vqbet-pusht-smoke
+          path: artifacts/eprc_vqbet_pusht_smoke.json
+          if-no-files-found: warn
