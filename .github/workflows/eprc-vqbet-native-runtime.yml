@@ -1,0 +1,35 @@
+name: EPRC VQBeT Native Runtime Load
+
+on:
+  pull_request:
+    paths:
+      - "research/eprc/real_policy/vqbet_native_runtime_load.py"
+      - ".github/workflows/eprc-vqbet-native-runtime.yml"
+  workflow_dispatch:
+
+jobs:
+  native-load:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Checkout checkpoint-era LeRobot
+        run: |
+          git clone -q https://github.com/huggingface/lerobot.git /tmp/lerobot
+          git -C /tmp/lerobot checkout -q a1809ad3de96c6989acd33c0650849bf4f631929
+      - name: Install checkpoint-era runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e /tmp/lerobot
+      - name: Load official VQ-BeT checkpoint without schema migration
+        run: |
+          python research/eprc/real_policy/vqbet_native_runtime_load.py             --output /tmp/eprc/vqbet_native_load.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eprc-vqbet-native-runtime-load
+          path: /tmp/eprc/vqbet_native_load.json
+          if-no-files-found: warn
