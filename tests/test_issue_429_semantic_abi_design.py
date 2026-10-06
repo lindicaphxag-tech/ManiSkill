@@ -8,7 +8,7 @@ import torch
 VALIDATION_DIR = Path(__file__).resolve().parents[1] / ".github" / "validation"
 sys.path.insert(0, str(VALIDATION_DIR))
 
-from embodied_semantic_experiment_design import (  # noqa: E402
+from semantic_kernel.embodied_semantic_experiment_design import (  # noqa: E402
     DiagnosisDecision,
     DiagnosisLeaf,
     SemanticExperiment,
@@ -16,12 +16,12 @@ from embodied_semantic_experiment_design import (  # noqa: E402
     solve_optimal_semantic_diagnosis,
     verify_optimal_semantic_diagnosis,
 )
-from embodied_semantic_observability import SemanticDiagnosisHypothesis  # noqa: E402
-from embodied_semantic_probe_synthesis import (  # noqa: E402
+from semantic_kernel.embodied_semantic_observability import SemanticDiagnosisHypothesis  # noqa: E402
+from semantic_kernel.embodied_semantic_probe_synthesis import (  # noqa: E402
     synthesize_bounded_semantic_probe,
     verify_bounded_semantic_probe,
 )
-from embodied_semantic_transport import (  # noqa: E402
+from semantic_kernel.embodied_semantic_transport import (  # noqa: E402
     MonomialSemanticTransport,
     SemanticTransportFactor,
 )
