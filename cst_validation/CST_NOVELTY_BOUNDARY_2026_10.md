@@ -167,3 +167,62 @@ The linear closed-loop method is frozen in
 a native nonlinear held-out controller-swap assay verifies that the synthesized
 adapter improves real simulator state evolution without tuning on the held-out
 points.
+
+
+## 2026-10-06 adversarial near-neighbor update
+
+### ActionShift / ActionABI
+
+ActionShift and ActionABI already make hidden action-interface contracts an
+explicit research object. Their contract grammar covers permutation, sign,
+scale, target convention, frame, lag, and gripper semantics; ActionShift
+performs online probing/adaptation while ActionABI performs offline forensic
+recovery with abstention.
+
+Therefore CCLAT must **not** claim novelty for:
+- action-interface contracts as a concept;
+- hidden-contract identification;
+- online probing for an unknown action mapping;
+- adapting a frozen policy to permutation/sign/scale/target/frame/lag changes;
+- abstaining when a hidden contract cannot be identified.
+
+The remaining CCLAT hypothesis is different: source and target controller
+semantics are declared (or separately established), but their **closed-loop
+controller/plant effects may still be behaviorally inequivalent**. CCLAT asks
+whether a stateful adapter can preserve a declared physical behavior, produces
+an explicit representability/impossibility witness when it cannot, and gates
+transport against passthrough using calibrated behavioral-error evidence.
+
+### EIDA
+
+EIDA (Execution-Interface Dynamics Adaptation, 2026) learns target-platform
+command-to-motion and policy-facing feedback models to improve real-to-sim-to-
+real navigation transfer. It demonstrates that execution-interface dynamics
+adaptation is itself prior art, including physical Unitree Go2 experiments.
+
+Therefore CCLAT must **not** claim novelty for:
+- learning an execution-interface dynamics model;
+- adapting a policy/simulator to target-platform command response;
+- including policy-facing feedback mismatch in deployment adaptation.
+
+The narrower CCLAT distinction is proof-carrying **controller migration**:
+given a source behavior contract and a target controller model, classify the
+migration as exact, approximate, or locally unrepresentable; synthesize a
+stateful transport when representable; return a concrete input-image witness
+when not; and selectively execute the adapter only when its certified/calibrated
+behavioral mismatch dominates passthrough.
+
+### Current strongest defensible claim
+
+The strongest defensible research claim is therefore not "action-interface
+adaptation" or "execution-interface adaptation" broadly. It is:
+
+> Frozen robot-policy controller migration can be compiled as a proof-carrying
+> closed-loop refinement problem: preserve controller-owned semantic state,
+> synthesize a stateful adapter only over target-executable behavior directions,
+> expose structural impossibility witnesses for missing directions, and
+> risk-limit adapter-vs-passthrough switching when nonlinear model error makes
+> always-on transport unsafe.
+
+This remains a research hypothesis until maintained external adoption and
+broader policy/task validation are obtained.
