@@ -1,0 +1,38 @@
+name: Validate LeRobot 3312 ACT candidate
+
+on:
+  push:
+    branches:
+      - "research/closed-loop-semantic-transport-v1"
+    paths:
+      - "cst_research/external_candidates/lerobot_3312/**"
+      - ".github/workflows/validate-lerobot-3312-act.yml"
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Checkout pinned LeRobot source
+        run: |
+          git clone https://github.com/huggingface/lerobot.git lerobot-upstream
+          git -C lerobot-upstream checkout d40e8709cffb93644db66e30604ef50fdec003cb
+      - name: Apply ACT candidate
+        run: |
+          python cst_research/external_candidates/lerobot_3312/apply_candidate.py lerobot-upstream
+          cp cst_research/external_candidates/lerobot_3312/test_act_relative_candidate.py \
+             lerobot-upstream/tests/processor/test_act_relative_candidate.py
+      - name: Install focused LeRobot environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ./lerobot-upstream pytest
+      - name: Run ACT processor regression and existing processor tests
+        working-directory: lerobot-upstream
+        run: |
+          python -m pytest -q \
+            tests/processor/test_act_relative_candidate.py \
+            tests/processor/test_act_processor.py
