@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VARIANT="${VARIANT:-}"
 SEED="${SEED:-1}"
 NUM_DEMOS="${NUM_DEMOS:-100}"
+REPLAY_COUNT="${REPLAY_COUNT:-$NUM_DEMOS}"
 TOTAL_ITERS="${TOTAL_ITERS:-100000}"
 NUM_EVAL_ENVS="${NUM_EVAL_ENVS:-10}"
 NUM_EVAL_EPISODES="${NUM_EVAL_EPISODES:-100}"
@@ -109,6 +110,7 @@ python -m mani_skill.trajectory.replay_trajectory \
   -c pd_ee_delta_pose \
   -o state \
   --save-traj \
+  --count "$REPLAY_COUNT" \
   --num-envs 1 \
   -b physx_cpu
 
@@ -175,6 +177,7 @@ print(json.dumps({
     "fix_sha": "$FIX_SHA",
     "seed": int("$SEED"),
     "num_demos": int("$NUM_DEMOS"),
+    "replay_count": int("$REPLAY_COUNT"),
     "total_iters": int("$TOTAL_ITERS"),
     "num_eval_envs": int("$NUM_EVAL_ENVS"),
     "num_eval_episodes": int("$NUM_EVAL_EPISODES"),
