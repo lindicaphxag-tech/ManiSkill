@@ -27,6 +27,7 @@ jobs:
           python -m py_compile cst_validation/global_trace_morphism.py
           python -m py_compile cst_validation/contextual_trace_morphism.py
           python -m py_compile cst_validation/robosuite_joint_semantics.py
+          python -m py_compile cst_validation/piecewise_affine_clip.py
       - name: Run controller semantic IR tests
         working-directory: cst_validation
         run: python -m pytest -q test_controller_semantic_ir.py
@@ -49,6 +50,10 @@ jobs:
       - name: Run robosuite affine-region semantic tests
         working-directory: cst_validation
         run: python -m pytest -q test_robosuite_joint_semantics.py
+
+      - name: Run piecewise affine lowering tests
+        working-directory: cst_validation
+        run: python -m pytest -q test_piecewise_affine_clip.py
 
       - name: Upload trace-semantic test evidence
         if: always()
