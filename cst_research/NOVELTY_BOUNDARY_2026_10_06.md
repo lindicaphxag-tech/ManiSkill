@@ -71,3 +71,8 @@ External anchor:
 - nonlinear validity-region evidence beyond a finite sample pool.
 
 Until these gates are crossed, label the work **L8-candidate**, not L8 achieved.
+
+
+## Action-chunk causality boundary
+
+Recent 2026 work already studies asynchronous action-chunk execution, stale observations, timing, and alignment. CST must not claim those deployment phenomena as new. The narrower hypothesis is that controller migration should compile each reference owner's information-availability time into an adapter-placement obligation: query-time precompute, step-time hook, or refusal when required controller-owned state is inaccessible. Offline trace convertibility alone is not sufficient evidence of online deployability.
