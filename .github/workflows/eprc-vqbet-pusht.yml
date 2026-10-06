@@ -34,18 +34,9 @@ jobs:
           # Packaging-only fixes: dependency distribution name and explicit submodule import.
           sed -i 's/^pyav = ">=12.0.5"/av = ">=12.0.5"/' /tmp/lerobot/pyproject.toml
           grep -q '^av = ">=12.0.5"' /tmp/lerobot/pyproject.toml
-          python -m pip install -q -e '/tmp/lerobot[pusht]'
-                    # gym-pusht at this checkpoint requires Pymunk 6 collision-handler API.
+          python -m pip install -q -e '/tmp/lerobot[pusht]'          # gym-pusht at this checkpoint requires Pymunk 6 collision-handler API.
           python -m pip install -q --force-reinstall --no-deps 'pymunk==6.11.1'
-          python - <<'PY'
-import packaging
-from packaging import version
-import pymunk
-assert version.parse("1.2.3") < version.parse("2.0.0")
-assert hasattr(pymunk.Space, "add_collision_handler")
-print("compat packaging", packaging.__version__)
-print("compat pymunk", pymunk.version)
-PY
+          python -c 'import packaging, pymunk; from packaging import version; assert version.parse("1.2.3") < version.parse("2.0.0"); assert hasattr(pymunk.Space, "add_collision_handler"); print("compat", packaging.__version__, pymunk.version)'
       - name: Probe official frozen VQ-BeT checkpoint
         run: |
           python research/eprc/real_policy/vqbet_pusht_probe.py --output /tmp/eprc-real-policy/vqbet_pusht_probe.json
