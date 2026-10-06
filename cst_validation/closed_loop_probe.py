@@ -222,6 +222,8 @@ def certify_black_box_closed_loop_transport(
     heldout_source_deltas: np.ndarray,
     heldout_tolerance: float,
     max_scale_instability: float = 0.15,
+    local_atol: float = 1e-10,
+    local_rtol: float = 1e-10,
 ) -> BlackBoxClosedLoopCertificate:
     """Estimate, synthesize, and falsify a controller transport without gradients."""
     source_est = estimate_effect_jacobian(
@@ -249,6 +251,8 @@ def certify_black_box_closed_loop_transport(
     local = synthesize_local_closed_loop_transport(
         source_est.jacobian,
         target_est.jacobian,
+        atol=local_atol,
+        rtol=local_rtol,
     )
     heldout = validate_adapter_on_heldout(
         source_query,
