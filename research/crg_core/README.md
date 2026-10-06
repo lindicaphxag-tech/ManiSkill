@@ -47,3 +47,23 @@ The narrow research claim under investigation is: black-box physical interventio
 ## Paper-kill gates
 
 Reject CRG as a main claim if: (1) perturbation magnitude or controller headroom predicts recovery equally well; (2) generic controller-space projection matches repair success; (3) robust certificates do not reduce false accepts at useful coverage; (4) intervention-derived maps are too unstable to certify nontrivial regions; or (5) results disappear under a second frozen policy family.
+## Certificate-directed probing
+
+When the result is INCONCLUSIVE, CRG does not have to spend probes uniformly.
+
+Maintain a positive-definite information matrix V over support directions and a bound
+
+||(G_true-G_hat) x||_2 <= beta * sqrt(x^T V^{-1} x).
+
+For the current candidate repair xi, one additional probe z changes V to V + z z^T. The exact Sherman-Morrison reduction in the candidate uncertainty is
+
+(xi^T V^{-1} z)^2 / (1 + z^T V^{-1} z).
+
+The capsule therefore supports two query modes:
+
+- candidate-directed probing: among supplied candidate interventions, choose the one that most reduces uncertainty on the repair currently blocking certification;
+- weakest-direction probing: query the minimum-information eigenvector when the global impossibility bound is the bottleneck.
+
+This turns intervention budget into a certificate-resolution problem rather than generic Jacobian reconstruction.
+
+Paper-level novelty is not claimed for optimal experimental design itself. The research question is whether certificate-directed physical probes reach a reliable repair/impossibility decision with materially fewer frozen-policy queries than random, coordinate, Rademacher/coded, or generic D/E-optimal probing.
