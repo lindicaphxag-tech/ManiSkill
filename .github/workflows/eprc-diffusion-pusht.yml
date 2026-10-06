@@ -35,12 +35,10 @@ jobs:
           sed -i 's/^pyav = ">=12.0.5"/av = ">=12.0.5"/' /tmp/lerobot/pyproject.toml
           grep -q '^av = ">=12.0.5"' /tmp/lerobot/pyproject.toml
           python -m pip install -q -e '/tmp/lerobot[pusht]'
-          sed -i '/^import packaging$/a import packaging.version' /tmp/lerobot/lerobot/common/policies/pretrained.py
-          grep -q '^import packaging.version$' /tmp/lerobot/lerobot/common/policies/pretrained.py
           # gym-pusht at this checkpoint requires Pymunk 6 collision-handler API.
           python -m pip install -q --force-reinstall --no-deps 'pymunk==6.11.1'
-          python -c 'import packaging.version, pymunk; assert hasattr(pymunk.Space, "add_collision_handler"); print("compat pymunk", pymunk.version)'
-      - name: Probe official frozen VQ-BeT checkpoint
+          python -c 'import packaging, pymunk; from packaging import version; assert version.parse("1.2.3") < version.parse("2.0.0"); assert hasattr(pymunk.Space, "add_collision_handler"); print("compat", packaging.__version__, pymunk.version)'
+      - name: Probe official frozen Diffusion checkpoint
         run: |
           python research/eprc/real_policy/diffusion_pusht_probe.py --output /tmp/eprc-real-policy/diffusion_pusht_probe.json
       - name: Validate frozen cross-policy protocol
