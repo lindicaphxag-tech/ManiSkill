@@ -15,7 +15,7 @@ def make_env(control_mode):
         control_mode=control_mode,
         sim_backend="physx_cpu",
         render_mode=None,
-        render_backend="cpu",
+        render_backend="none",
         robot_init_qpos_noise=0.0,
     )
     env.reset(seed=20261006)
