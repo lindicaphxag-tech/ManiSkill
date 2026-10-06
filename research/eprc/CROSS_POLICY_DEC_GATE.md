@@ -28,3 +28,23 @@ Smaller distance predicts decision agreement. AUC is computed pairwise without a
 A method can look convincing if it only shows that two chosen policies have similar Jacobians. The stronger claim is predictive: DEC similarity should tell us whether independently deployed policies make the same runtime adaptation decision on disturbances not used to identify the contract.
 
 If the gate fails, the cross-policy DEC claim is rejected rather than rescued by changing thresholds after seeing results.
+
+## Frozen temporal scope before the first VQ-BeT result
+
+Policy families may emit different action-chunk lengths. The primary cross-policy
+comparison therefore **must not flatten unequal chunks**.
+
+The first prospective PushT comparison is frozen as follows:
+
+1. **Primary DEC:** the Jacobian of the first executable physical action step
+   with respect to the same physical T-block x/y/theta intervention.
+2. **Secondary analysis:** per-step DEC over only the shared common prefix
+   `min(H_a, H_b)`, reported descriptively.
+3. Whole-chunk flattening is forbidden when horizons differ.
+4. Both policies must use the same reset seed and the same physical probe scales:
+   fine = `(4 px, 4 px, 0.02 rad)`, coarse = `(8 px, 8 px, 0.04 rad)`.
+5. A protocol mismatch makes the pair **ineligible**, not merely lower quality.
+
+This rule is frozen before observing the aligned VQ-BeT result. It prevents a
+post-hoc choice of temporal aggregation from manufacturing cross-policy
+similarity.
