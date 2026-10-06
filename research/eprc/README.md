@@ -44,7 +44,7 @@ The second command compiles an evidence bundle, emits a provenance-bound certifi
 
 ## What would count as meaningful external evidence
 
-Third-party results can be submitted with the repository's **EPRC independent replication** issue form. A result should provide:
+Issues are disabled on this fork, so third-party results are accepted through **ordinary pull requests** adding one digest-bound JSON record under `research/eprc/evidence/replications/`. A result should provide:
 
 1. policy family and checkpoint;
 2. controller representation;
@@ -56,8 +56,15 @@ Third-party results can be submitted with the repository's **EPRC independent re
 8. emitted decision;
 9. whether the decision matched actual execution outcome.
 
-A positive result is **not required**. A clean rejection or negative result is
-equally useful if the evidence is complete.
+A positive result is **not required**. A clean rejection or negative result is equally useful if the evidence is complete.
+
+Replication records can be sealed with:
+
+```bash
+python research/eprc/seal_replication.py path/to/record.json
+```
+
+and are validated in CI. Self-authored records are rejected as independent evidence.
 
 ## L8 / L9 gates
 
