@@ -43,6 +43,21 @@ jobs:
       - name: Download official PickCube demonstration
         run: python -m mani_skill.utils.download_demo PickCube-v1
 
+      - name: Force renderer-free CPU metadata
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path.home() / ".maniskill/demos/PickCube-v1/teleop/trajectory.json"
+          data = json.loads(path.read_text())
+          env_kwargs = data["env_info"].setdefault("env_kwargs", {})
+          env_kwargs["sim_backend"] = "physx_cpu"
+          env_kwargs["render_backend"] = "none"
+          path.write_text(json.dumps(data, indent=2))
+          print("renderer-free env kwargs:", env_kwargs)
+          PY
+
       - name: Build fixed public pd_joint_delta_pos trajectory
         shell: bash
         run: |
