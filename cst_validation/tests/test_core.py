@@ -104,3 +104,44 @@ def test_delta_target_conversion_is_exact_when_hidden_target_is_observed():
     )
     assert cert.exact
     np.testing.assert_allclose(result.action, [0.35], atol=1e-12)
+
+
+def test_relative_latched_uses_one_fixed_chunk_reference():
+    chart = JointGoalChart(
+        "relative_latched", normalized=True, lower=-0.1, upper=0.1
+    )
+    context = JointControllerContext(q_latched=np.array([0.2, -0.3]))
+    first = chart.decode(np.array([0.5, -0.5]), context)
+    second = chart.decode(np.array([-0.5, 0.5]), context)
+    np.testing.assert_allclose(first, [0.25, -0.35], atol=1e-12)
+    np.testing.assert_allclose(second, [0.15, -0.25], atol=1e-12)
+
+
+def test_relative_latched_is_not_identifiable_without_chunk_latch():
+    chart = JointGoalChart(
+        "relative_latched", normalized=False, lower=-0.1, upper=0.1
+    )
+    identifiable, missing = exact_transport_identifiable(
+        chart, JointControllerContext()
+    )
+    assert not identifiable
+    assert missing == ("q_latched",)
+    with pytest.raises(MissingControllerStateError):
+        chart.decode(np.array([0.02]), JointControllerContext())
+
+
+def test_same_relative_tensor_differs_between_latched_and_current_reference():
+    relative = JointGoalChart(
+        "relative_latched", normalized=False, lower=-0.1, upper=0.1
+    )
+    current = JointGoalChart(
+        "delta_current", normalized=False, lower=-0.1, upper=0.1
+    )
+    action = np.array([0.03])
+    latched_goal = relative.decode(
+        action, JointControllerContext(q_latched=np.array([0.2]))
+    )
+    current_goal = current.decode(
+        action, JointControllerContext(q_current=np.array([0.4]))
+    )
+    assert not np.allclose(latched_goal, current_goal)
