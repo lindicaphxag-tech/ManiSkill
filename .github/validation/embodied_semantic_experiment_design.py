@@ -778,7 +778,7 @@ def build_transport_experiments(
 ) -> tuple[SemanticExperiment, ...]:
     """Build joint probe/tap experiments for monomial semantic hypotheses."""
 
-    from .embodied_semantic_transport import MonomialSemanticTransport
+    from embodied_semantic_transport import MonomialSemanticTransport
 
     items = tuple(hypotheses)
     if len(items) < 2:
