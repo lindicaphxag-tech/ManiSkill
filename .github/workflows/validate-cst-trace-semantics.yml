@@ -73,6 +73,18 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout pinned LeRobot main
+        uses: actions/checkout@v4
+        with:
+          repository: huggingface/lerobot
+          ref: 8c920c4270460851cedd2737657584586d3dc66f
+          path: lerobot-main
+      - name: Checkout pinned ARCH-05 PR 4779 head
+        uses: actions/checkout@v4
+        with:
+          repository: ryo-robo/lerobot
+          ref: bcef363a3d5d2ce42a576766c449acfd073ddef2
+          path: lerobot-pr4779
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -84,6 +96,18 @@ jobs:
       - name: Match CST Trace IR against host PDJointPosController
         working-directory: cst_validation
         run: python -m pytest -q test_maniskill_host_parity.py
+      - name: Run pinned LeRobot temporal-anchor witness
+        working-directory: cst_validation
+        run: |
+          python -m pytest -q test_lerobot_temporal_anchor_upstream.py \
+            --junitxml=lerobot-temporal-junit.xml
+      - name: Upload LeRobot temporal witness
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lerobot-temporal-anchor-witness
+          path: cst_validation/lerobot-temporal-junit.xml
+          if-no-files-found: warn
 
 
   robosuite-parity:
