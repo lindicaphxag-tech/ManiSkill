@@ -1,0 +1,27 @@
+name: Validate CST closed-loop transport
+
+on:
+  push:
+    branches:
+      - "fix/joint-delta-to-joint-pos-semantics"
+    paths:
+      - "cst_validation/closed_loop_transport.py"
+      - "cst_validation/test_closed_loop_transport.py"
+      - ".github/workflows/validate-cst-closed-loop.yml"
+  workflow_dispatch:
+
+jobs:
+  closed-loop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install numpy pytest
+      - name: Compile closed-loop certificate
+        run: python -m py_compile cst_validation/closed_loop_transport.py
+      - name: Run closed-loop transport tests
+        working-directory: cst_validation
+        run: python -m pytest -q test_closed_loop_transport.py
