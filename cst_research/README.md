@@ -1,0 +1,144 @@
+# Certified Closed-Loop Semantic Transport (CST)
+
+**Research prototype — not an upstream ManiSkill patch.**
+
+Question:
+
+> If a frozen robot policy was trained/deployed with controller A, when can its
+> actions be executed through controller B without changing the executable
+> closed-loop behavior?
+
+This branch separates two things deliberately:
+
+1. **Upstream engineering fix:** ManiSkill issue #429 exposes a concrete
+   `pd_joint_delta_pos -> pd_joint_pos` semantic conversion failure.  The
+   proposed upstream fix lives on a separate minimal branch.
+2. **Research generalization:** this directory studies when controller migration
+   is exact, approximate, state-dependent, region-inconsistent, or impossible.
+
+## Current components
+
+### 1. Local closed-loop transport
+
+For local source/target models
+
+```
+x' = A_s x + B_s u_s
+x' = A_t x + B_t u_t
+```
+
+the compiler synthesizes
+
+```
+u_t = K_x x + K_u u_s
+```
+
+and checks whether
+
+```
+A_t + B_t K_x = A_s
+B_t K_u = B_s.
+```
+
+If exact matching is impossible, the projection residual produces an explicit
+unmatched physical direction witness.
+
+### 2. Regional consistency + counterexample-guided synthesis
+
+Point-wise exact adapters do not imply one deployable adapter works across a
+state region.  The regional compiler fits one shared adapter over frozen
+linearization samples and adds the worst violating sample as a counterexample.
+
+Current claim: finite-pool certificate only, not continuous-region proof.
+
+### 3. Controller-state handshake
+
+For controllers with different internal memory dimensions,
+
+```
+s' = A_s s + B_s u
+t' = A_t t + B_t v
+```
+
+the compiler jointly solves
+
+```
+t = H s
+v = K_s s + K_u u
+```
+
+subject to
+
+```
+C_t H = C_s
+A_t H + B_t K_s = H A_s
+B_t K_u = H B_s.
+```
+
+This makes previous targets / integrators / filters part of the migration
+contract instead of pretending action vectors are memoryless.
+
+### 4. ManiSkill joint-controller bridge
+
+The executable contract model covers:
+
+- absolute joint targets;
+- delta-from-current targets;
+- delta-from-previous-target targets;
+- normalized and physical action charts;
+- physical range saturation.
+
+The randomized migration matrix covers:
+
+```
+3 source modes
+x 3 target modes
+x 2 source normalization choices
+x 2 target normalization choices
+x 100 random states/actions
+= 3600 migrations
+```
+
+and requires every in-range migration to reproduce the source controller goal
+exactly.  Out-of-range cases are retained as SATURATED evidence rather than
+silently declared successful after clipping.
+
+## Evidence boundary
+
+Supported:
+- constructive exact/approximate/impossible local classification;
+- minimum-norm stateful adapter synthesis;
+- explicit exact-impossibility direction witness;
+- finite-horizon error bound for the declared local model;
+- finite-pool regional consistency and counterexample search;
+- different-dimensional controller-state handshake;
+- exact ManiSkill joint-position contract compiler;
+- CPU-only deterministic tests.
+
+Not yet supported:
+- nonlinear continuous-region proof without an external Jacobian variation
+  bound;
+- automatic extraction of plant Jacobians from arbitrary simulators;
+- real-robot safety claims;
+- external maintainer adoption of the research method.
+
+## Reproduce
+
+From this branch:
+
+```bash
+python -m pip install numpy pytest
+cd cst_research
+python -m pytest -q test_*.py
+```
+
+## External anchor
+
+ManiSkill issue #429 reports 0% success for one joint-delta-to-joint-position
+conversion path.  A maintainer explicitly noted that fully accurate
+action-space conversion is non-trivial and potentially conference-worthy.
+
+The research claim is intentionally narrower than "all action conversion":
+**controller migration should be compiled against executable closed-loop
+semantics, and rejected with evidence when those semantics cannot be
+preserved.**
