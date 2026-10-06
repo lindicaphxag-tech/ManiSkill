@@ -1,0 +1,25 @@
+name: Closed-loop semantic transport research
+
+on:
+  push:
+    branches:
+      - "research/closed-loop-semantic-transport-v1"
+    paths:
+      - "cst_research/**"
+      - ".github/workflows/cst-closed-loop-research.yml"
+
+jobs:
+  certificate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install numpy pytest
+      - name: Compile certificate core
+        run: python -m py_compile cst_research/closed_loop_transport.py
+      - name: Run synthesis and witness tests
+        working-directory: cst_research
+        run: python -m pytest -q test_closed_loop_transport.py
