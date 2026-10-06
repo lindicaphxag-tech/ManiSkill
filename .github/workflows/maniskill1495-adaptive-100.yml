@@ -1,0 +1,58 @@
+name: PR1495 paired 100-demo audit
+
+on:
+  push:
+    branches:
+      - "validation/maniskill1495-maintainer-request"
+    paths:
+      - "validation/pr1495/summarize_adaptive_converter_paired.py"
+      - ".github/workflows/maniskill1495-adaptive-100.yml"
+  pull_request:
+    paths:
+      - "validation/pr1495/summarize_adaptive_converter_paired.py"
+      - ".github/workflows/maniskill1495-adaptive-100.yml"
+
+jobs:
+  paired-100:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install software Vulkan
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libegl1 mesa-vulkan-drivers vulkan-tools
+          LVP_ICD="$(find /usr/share/vulkan/icd.d -maxdepth 1 -type f -name 'lvp_icd*.json' | head -n1)"
+          test -n "$LVP_ICD"
+          echo "VK_ICD_FILENAMES=$LVP_ICD" >> "$GITHUB_ENV"
+          VK_ICD_FILENAMES="$LVP_ICD" vulkaninfo --summary
+
+      - name: Run frozen 100-demo controller-aware matrix
+        env:
+          COUNT: "100"
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+          ROOT: \${{ github.workspace }}/.validation-pr1495-adaptive-100
+        run: bash validation/pr1495/run_adaptive_converter_matrix.sh
+
+      - name: Recompute paired episode-level audit
+        run: |
+          python validation/pr1495/summarize_adaptive_converter_paired.py \
+            --root .validation-pr1495-adaptive-100 \
+            --expected 100 \
+            --output .validation-pr1495-adaptive-100/paired_100_demo.json
+          cat .validation-pr1495-adaptive-100/paired_100_demo.json
+
+      - name: Upload paired evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr1495-paired-100-demo-audit
+          path: |
+            .validation-pr1495-adaptive-100/adaptive_converter_matrix.json
+            .validation-pr1495-adaptive-100/paired_100_demo.json
+          if-no-files-found: warn
