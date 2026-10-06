@@ -1,0 +1,31 @@
+name: Validate CST native closed-loop probe
+
+on:
+  push:
+    branches:
+      - "research/cst-closed-loop-v1"
+    paths:
+      - "tests/test_cst_closed_loop_native_sim.py"
+      - "cst_validation/closed_loop_certificate.py"
+      - "cst_validation/closed_loop_probe.py"
+      - ".github/workflows/validate-cst-native-closed-loop.yml"
+  workflow_dispatch:
+
+jobs:
+  native-closed-loop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install ManiSkill test environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Run black-box native PhysX certificate
+        env:
+          DISPLAY: ""
+        run: python -m pytest -q tests/test_cst_closed_loop_native_sim.py -vv
