@@ -94,3 +94,15 @@ To argue L9-level external recognition:
 - Same numeric [1,2,3] under CHUNK_ANCHOR vs PREVIOUS_COMMAND has maximum goal divergence `3.0` in the frozen witness.
 
 Interpretation: this is independent public-stack semantic parity, not LeRobot adoption of CST. It supports the claim that reference ownership is executable semantics and that CST can reproduce a real second stack's chunk-anchor contract.
+
+
+## Causal deployability evidence
+
+- Full-suite run after causality layer: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37463347917
+- Result: `40 passed in 1.07s`.
+- CST now distinguishes offline trace convertibility from online chunk deployability.
+- Query-time whole-chunk transport is classified `PRECOMPUTABLE` only when all source-goal and target-reference dependencies are available when the policy chunk is emitted.
+- Future CURRENT_STATE or CONTROLLER_TARGET dependencies produce `REQUIRES_STEP_HOOK` for horizon > 1.
+- A step-time adapter with the required state access yields `EXECUTABLE_WITH_STEP_HOOK`; missing controller-owned state yields `REFUSE_MISSING_RUNTIME_STATE`.
+
+Novelty boundary: asynchronous action-chunk misalignment and stale-state execution are already studied by prior work. The candidate CST contribution is compiling reference-ownership information availability into an adapter-placement/refusal obligation during controller migration, not discovering action-chunk latency itself.
