@@ -27,6 +27,7 @@ does not treat that statement as adoption or endorsement of CST.
 | Native hidden-state necessity / target-delta transport | ManiSkill Actions #37404990097 | 5/5 PASS total suite | A real target-delta controller is transported to an absolute controller over a multi-step sequence. Finite-stiffness tracking makes measured qpos diverge from the controller-owned previous target, so current-qpos stateless interpretation is observably wrong; state-aware transport preserves target/qpos/qvel equivalence. |
 | Closed-loop transport synthesis + impossibility witness | ManiSkill Actions #37407305028 | 8/8 PASS | A local state-feedback adapter can be synthesized when target input effects span the required source dynamics/action directions; otherwise the method returns a structural witness and propagates residuals into an H-step deviation bound. |
 | Native held-out closed-loop controller swap | ManiSkill Actions #37408214302 | 3/3 PASS | Different PD gains (source 100/10, target 60/6): CCLAT improves all 6 held-out PhysX state/action points; mean next-state error ratio 0.09663 (about 10.35x lower than naive action copying), worst ratio 0.10766. The local certificate correctly remains approximate, with unavoidable operator residual 4.936e-4. An identical-controller control case is exact, while a zero-stiffness target is rejected fail-closed. |
+| Native 2-DoF held-out controller swap | ManiSkill Actions #37408526666 | 1/1 PASS | 4D state / 2D action serial PhysX articulation with unequal per-joint PD gains: all 6/6 held-out coupled state/action points improve; mean next-state error ratio 0.10363 (~9.65x lower than naive copying). The linear certificate remains approximate (unavoidable residual 3.108e-3), target effect rank=2. |
 
 ## Pending evidence
 
@@ -153,3 +154,27 @@ The same native suite also includes:
 
 This remains a local/small-system nonlinear assay, not a global robot-safety
 guarantee or a claim of task-level policy preservation.
+
+
+### 2-DoF native extension
+
+GitHub Actions **#37408526666** freezes a higher-dimensional native assay:
+- common state: `[q1, q2, qdot1, qdot2]`;
+- target action: two absolute joint targets;
+- source gains: stiffness `[100, 80]`, damping `[10, 8]`;
+- target gains: stiffness `[60, 120]`, damping `[6, 12]`;
+- local A/B identified only at the origin;
+- six coupled held-out state/action pairs evaluated without refitting.
+
+Observed:
+- mean naive next-state error: **1.016964639e-3**;
+- mean CCLAT error: **1.053859192e-4**;
+- ratio: **0.1036279** (~9.65x lower);
+- improved held-out points: **6/6**;
+- exact linear certificate: **false**;
+- unavoidable operator residual: **3.10750082e-3**;
+- target effect rank: **2**.
+
+This materially strengthens the native evidence beyond the 1-DoF assay, but it
+still does not establish task-level frozen-policy preservation; a separate
+multi-step policy rollout gate is frozen and evaluated independently.
