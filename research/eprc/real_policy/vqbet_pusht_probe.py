@@ -225,6 +225,7 @@ def main(output: Path) -> int:
         "horizon": int(small_j.shape[0]),
         "action_dim": int(small_j.shape[1]),
         "dec": {
+            "first_action_step_jacobian": small_j[0].tolist(),
             "jacobian_small": small_j.tolist(),
             "max_symmetry_residual": _finite("max_symmetry_residual", np.max(small_sym)),
             "mean_symmetry_residual": _finite("mean_symmetry_residual", np.mean(small_sym)),
