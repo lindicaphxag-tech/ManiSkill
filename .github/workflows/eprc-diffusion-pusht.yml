@@ -1,0 +1,108 @@
+name: EPRC Diffusion PushT Probe
+
+on:
+  pull_request:
+    paths:
+      - "research/eprc/real_policy/**"
+      - "research/eprc/contract_signature.py"
+      - "research/eprc/dec_uncertainty.py"
+      - "research/eprc/robust_repairability.py"
+      - "research/eprc/linear_authority.py"
+      - ".github/workflows/eprc-diffusion-pusht.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eprc-diffusion-pusht-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pinned LeRobot PushT stack
+        run: |
+          git clone -q https://github.com/huggingface/lerobot.git /tmp/lerobot
+          git -C /tmp/lerobot checkout -q 3c0a209f9fac4d2a57617e686a7f2a2309144ba2
+          # Packaging-only fixes: dependency distribution name and explicit submodule import.
+          sed -i 's/^pyav = ">=12.0.5"/av = ">=12.0.5"/' /tmp/lerobot/pyproject.toml
+          grep -q '^av = ">=12.0.5"' /tmp/lerobot/pyproject.toml
+          python -m pip install -q -e '/tmp/lerobot[pusht]'
+          sed -i '/^import packaging$/a import packaging.version' /tmp/lerobot/lerobot/common/policies/pretrained.py
+          grep -q '^import packaging.version$' /tmp/lerobot/lerobot/common/policies/pretrained.py
+          # gym-pusht at this checkpoint requires Pymunk 6 collision-handler API.
+          python -m pip install -q --force-reinstall --no-deps 'pymunk==6.11.1'
+          python -c 'import packaging.version, pymunk; assert hasattr(pymunk.Space, "add_collision_handler"); print("compat pymunk", pymunk.version)'
+      - name: Probe official frozen VQ-BeT checkpoint
+        run: |
+          python research/eprc/real_policy/diffusion_pusht_probe.py --output /tmp/eprc-real-policy/diffusion_pusht_probe.json
+      - name: Validate frozen cross-policy protocol
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("/tmp/eprc-real-policy/diffusion_pusht_probe.json")
+          d=json.loads(p.read_text())
+          assert d["policy_identity"]["model_id"] == "lerobot/diffusion_pusht"
+          assert d["policy_identity"]["model_revision"] == "d3d143b0342488252497853815b27ce3c0384c6b"
+          assert d["policy_identity"]["training_runtime_commit"] == "3c0a209f9fac4d2a57617e686a7f2a2309144ba2"
+          assert d["protocol_id"] == "pusht-block-xyt-fine-4px-4px-0.02rad-coarse-8px-8px-0.04rad-v1"
+          assert d["environment_reset_seed"] == 17
+          assert d["fine_physical_probe"] == [4.0, 4.0, 0.02]
+          assert d["coarse_physical_probe"] == [8.0, 8.0, 0.04]
+          assert d["state_restore_protocol"] == "reset-fresh-space-exact-readback-v1"
+          assert d["jacobian_support_units"] == ["pixel", "pixel", "radian"]
+          assert d["support_metric_physical"] == [
+              [1.0 / (16.0 ** 2), 0.0, 0.0],
+              [0.0, 1.0 / (16.0 ** 2), 0.0],
+              [0.0, 0.0, 1.0 / (0.08 ** 2)],
+          ]
+          assert d["heldout_physical_delta"] == [10.0, -6.0, 0.35]
+          assert len(d["heldout_first_action_response"]) == 2
+          assert len(d["dec"]["first_action_step_jacobian"]) == 2
+          assert len(d["dec"]["first_action_step_jacobian"][0]) == 3
+          assert d["paired_policy_repeat_max_error"] < 1e-6
+          assert d["preprocess_repeat_max_error"] < 1e-7
+          assert len(d["dec"]["rng_seed_replicates"]) == 5
+          assert d["dec"]["replicate_count"] == 5
+          assert d["dec"]["certification_eligible"] == d["dec"]["replicate_stability_certified"]
+          assert len(d["robust_crg"]["first_action_replicate_maps"]) == 5
+          assert d["robust_crg"]["decision"] in {"CERTIFIED_REPAIR", "CERTIFIED_IMPOSSIBLE", "INCONCLUSIVE"}
+          assert d["robust_crg"]["operator_norm_uncertainty_observed_max"] >= 0.0
+          ub = d["robust_crg"]["uncertainty_breakdown"]
+          assert ub["rng_stochastic_radius"] >= 0.0
+          assert ub["finite_difference_scale_drift_radius"] >= 0.0
+          assert ub["combined_empirical_locality_radius"] == d["robust_crg"]["operator_norm_uncertainty_observed_max"]
+          assert ub["combined_empirical_locality_radius"] >= ub["rng_stochastic_radius"]
+          assert ub["combined_empirical_locality_radius"] >= ub["finite_difference_scale_drift_radius"]
+          assert d["robust_crg"]["support_trust_radius"] == 0.5
+          assert d["robust_crg"]["action_residual_tolerance"] == 4.0
+          if d["robust_crg"]["decision"] == "CERTIFIED_IMPOSSIBLE":
+              w = d["robust_crg"]["proof_carrying_impossibility_witness"]
+              assert w is not None
+              assert w["verified"] is True
+              assert w["margin_over_tolerance"] > 0.0
+          else:
+              assert d["robust_crg"]["proof_carrying_impossibility_witness"] is None
+          assert d["active_minimal_certificate"]["status"] == "planning_only_no_additional_policy_queries_executed"
+          assert d["active_minimal_certificate"]["planned_probe_count"] <= 6
+          assert d["active_minimal_certificate"]["planned_symmetric_policy_evaluations"] == 2 * d["active_minimal_certificate"]["planned_probe_count"]
+          assert len(d["active_minimal_certificate"]["normalized_support_probe_directions"]) == d["active_minimal_certificate"]["planned_probe_count"]
+          assert len(d["active_minimal_certificate"]["physical_symmetric_probe_deltas"]) == d["active_minimal_certificate"]["planned_probe_count"]
+          print("validated diffusion protocol", d["protocol_id"])
+          PY
+      - name: Upload raw frozen-policy evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eprc-diffusion-pusht-probe
+          path: /tmp/eprc-real-policy
+          if-no-files-found: warn
+          retention-days: 30
