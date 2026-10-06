@@ -128,7 +128,7 @@ def main():
         "expected_episodes": a.expected,
         "frozen_shas": {
             "current_main": "107c9528b23b55bd276cf723c260a45ae7ce00ec",
-            "contract_adapter_v2": "69dd520f81831478021ccd542e4b113b6a74e043",
+            "contract_adapter_v2": "bd0e4feae2491a0d433107210ce8c16b8e8fb69a",
             "controller_fix": "eed9be164797d41540421bda8adb3840377d7087",
         },
         "variants": variants,
