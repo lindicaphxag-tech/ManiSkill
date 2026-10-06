@@ -34,17 +34,8 @@ jobs:
       - name: Install checkpoint-era PushT stack
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e "/tmp/lerobot[pusht]"
-                    python -m pip install --force-reinstall --no-deps "pymunk==6.11.1"
-          python - <<'PY'
-import packaging
-from packaging import version
-import pymunk
-assert version.parse("1.2.3") < version.parse("2.0.0")
-assert hasattr(pymunk.Space, "add_collision_handler")
-print("historical compat packaging", packaging.__version__)
-print("historical compat pymunk", pymunk.version)
-PY
+          python -m pip install -e "/tmp/lerobot[pusht]"          python -m pip install --force-reinstall --no-deps "pymunk==6.11.1"
+          python -c 'import packaging, pymunk; from packaging import version; assert version.parse("1.2.3") < version.parse("2.0.0"); assert hasattr(pymunk.Space, "add_collision_handler"); print("historical compat", packaging.__version__, pymunk.version)'
       - name: Probe historical-native official VQ-BeT checkpoint
         run: |
           python research/eprc/real_policy/historical_vqbet_pusht_probe.py --output /tmp/historical_vqbet_pusht_dec.json
