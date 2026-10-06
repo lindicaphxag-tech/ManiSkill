@@ -185,8 +185,17 @@ def from_pd_joint_pos_to_ee(
             * pin_model.get_link_pose(arm_controller.ee_link.index)
         )
 
-        flag = True
-        for _ in range(4):
+        # Recompute admissibility for every corrective micro-step.  A clipping
+        # decision belongs to one residual action; carrying a stale False value
+        # across later residuals forces unnecessary extra controller steps.
+        #
+        # The large cap is a fail-closed guard, not a target horizon.  Normal
+        # termination occurs at the first freshly recomputed residual action
+        # that lies entirely inside the consumer execution domain.
+        semantic_substep_cap = 32
+        semantic_domain_converged = False
+        for semantic_substep in range(semantic_substep_cap):
+            step_within_domain = True
             if target_controller_is_delta:
                 delta_q = [1, 0, 0, 0]
                 if "root_translation" in arm_controller.config.frame:
@@ -215,13 +224,13 @@ def from_pd_joint_pos_to_ee(
                     if verbose:
                         tqdm.write(f"Position action is clipped: {arm_action[:3]}")
                     arm_action[:3] = np.clip(arm_action[:3], -1, 1)
-                    flag = False
+                    step_within_domain = False
                 if not pos_only:
                     if np.linalg.norm(arm_action[3:]) > 1:  # rotation clipping
                         if verbose:
                             tqdm.write(f"Rotation action is clipped: {arm_action[3:]}")
                         arm_action[3:] = arm_action[3:] / np.linalg.norm(arm_action[3:])
-                        flag = False
+                        step_within_domain = False
                 output_action_dict["arm"] = common.to_tensor(
                     arm_action, device=env.unwrapped.device
                 )
@@ -252,8 +261,16 @@ def from_pd_joint_pos_to_ee(
             if render:
                 env.render_human()
 
-            if flag:
+            if step_within_domain:
+                semantic_domain_converged = True
                 break
+
+        if not semantic_domain_converged:
+            raise RuntimeError(
+                "semantic action conversion did not enter the controller "
+                f"execution domain after {semantic_substep_cap} fresh residual steps "
+                f"(source step {t})"
+            )
     return info
 
 
