@@ -14,8 +14,11 @@ if str(ROOT) not in sys.path:
 import gymnasium as gym
 import gym_pusht  # noqa: F401
 import numpy as np
-import packaging.version  # noqa: F401 - exposes packaging.version for pinned LeRobot loader
+import packaging
+from packaging import version as _packaging_version
 import torch
+
+packaging.version = _packaging_version
 
 from lerobot.common.policies.diffusion.modeling_diffusion import DiffusionPolicy
 
