@@ -36,6 +36,23 @@ class LinearSemanticMorphismCertificate:
 
 
 @dataclass(frozen=True)
+class LinearSemanticWitness:
+    """Constructive witnesses for semantic non-equivalence.
+
+    Every non-null vector is unit norm.  The witness is deliberately
+    constructive: callers can feed the source direction back through the
+    source map or perturb the target along its nullspace and reproduce the
+    failed / ambiguous semantic relation.
+    """
+
+    unrepresentable_source_direction: np.ndarray | None
+    unrepresentable_observable_residual: np.ndarray | None
+    source_invisible_direction: np.ndarray | None
+    target_ambiguity_direction: np.ndarray | None
+    unrepresentable_residual_norm: float
+
+
+@dataclass(frozen=True)
 class SharedObservableTransport:
     target_semantic: np.ndarray
     source_observable: np.ndarray
@@ -167,6 +184,72 @@ def analyze_linear_semantic_morphism(
         target_injective=target_injective,
         target_nonzero_condition_number=_nonzero_condition_number(B, rtol),
         reason=reason,
+    )
+
+
+
+def _right_nullspace_witness(matrix: np.ndarray, rank: int) -> np.ndarray | None:
+    """Return one deterministic unit vector from the right nullspace."""
+    if rank >= matrix.shape[1]:
+        return None
+    _, _, vh = np.linalg.svd(matrix, full_matrices=True)
+    witness = np.asarray(vh[rank], dtype=float)
+    norm = float(np.linalg.norm(witness))
+    if norm == 0.0:
+        return None
+    witness = witness / norm
+    # Fix the SVD sign ambiguity so evidence is stable across runs.
+    first = int(np.argmax(np.abs(witness) > 1e-14))
+    if witness[first] < 0:
+        witness = -witness
+    return witness
+
+
+def construct_linear_semantic_witness(
+    source_to_common: np.ndarray,
+    target_to_common: np.ndarray,
+    *,
+    rtol: float = 1e-10,
+) -> LinearSemanticWitness:
+    """Construct counterexamples / ambiguity witnesses for a semantic morphism.
+
+    For non-representability, the returned source direction maximizes the
+    norm of the source observable component orthogonal to the target image.
+    For source projection and target ambiguity, returned nullspace directions
+    are concrete semantic perturbations that are invisible in the shared
+    observable.
+    """
+    A = _matrix(source_to_common, "source_to_common")
+    B = _matrix(target_to_common, "target_to_common")
+    if A.shape[0] != B.shape[0]:
+        raise ValueError("source and target must share one observable dimension")
+    if rtol <= 0 or not np.isfinite(rtol):
+        raise ValueError("rtol must be finite and positive")
+
+    rank_a = _rank(A, rtol)
+    rank_b = _rank(B, rtol)
+    projector_b = B @ np.linalg.pinv(B)
+    residual_operator = (np.eye(A.shape[0]) - projector_b) @ A
+
+    source_direction = None
+    observable_residual = None
+    residual_norm = 0.0
+    if np.linalg.norm(residual_operator, ord="fro") > rtol:
+        _, singular, vh = np.linalg.svd(residual_operator, full_matrices=False)
+        source_direction = np.asarray(vh[0], dtype=float)
+        source_direction /= max(float(np.linalg.norm(source_direction)), 1e-12)
+        first = int(np.argmax(np.abs(source_direction) > 1e-14))
+        if source_direction[first] < 0:
+            source_direction = -source_direction
+        observable_residual = residual_operator @ source_direction
+        residual_norm = float(np.linalg.norm(observable_residual))
+
+    return LinearSemanticWitness(
+        unrepresentable_source_direction=source_direction,
+        unrepresentable_observable_residual=observable_residual,
+        source_invisible_direction=_right_nullspace_witness(A, rank_a),
+        target_ambiguity_direction=_right_nullspace_witness(B, rank_b),
+        unrepresentable_residual_norm=residual_norm,
     )
 
 
