@@ -191,3 +191,19 @@ def test_native_physx_identical_controller_models_are_exactly_transportable():
     assert cert.exact
     np.testing.assert_allclose(cert.state_gain, 0.0, atol=2e-5)
     np.testing.assert_allclose(cert.action_gain, [[1.0]], atol=2e-4)
+
+
+
+def test_native_physx_rejects_unactuated_target_controller():
+    """A target whose position command has no physical authority must fail closed."""
+    source_plant = _NativeOneJointPlant(stiffness=100.0, damping=10.0)
+    target_plant = _NativeOneJointPlant(stiffness=0.0, damping=6.0)
+
+    source_model = _linearize(source_plant)
+    target_model = _linearize(target_plant)
+    cert = synthesize_closed_loop_transport(source_model, target_model)
+
+    assert np.linalg.norm(target_model.B) < 1e-8
+    assert not cert.exact
+    assert cert.unavoidable_operator_residual > 1e-3
+    assert np.linalg.norm(cert.witness_residual) > 1e-3
