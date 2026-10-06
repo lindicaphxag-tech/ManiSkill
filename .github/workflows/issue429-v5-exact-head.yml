@@ -1,0 +1,73 @@
+name: Issue 429 v5 exact-head semantic regression
+
+on:
+  push:
+    branches:
+      - validation/issue429-v5-exact-head
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  red-green:
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.12", "3.13"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Bind validation to production head
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3
+          PROD=94426cab6d6d7c26fe960b8ed6758d06c670c558
+          git merge-base --is-ancestor "$PROD" HEAD
+          test "$(git show "$PROD":mani_skill/trajectory/utils/actions/conversion.py | git hash-object --stdin)" = "$(git hash-object mani_skill/trajectory/utils/actions/conversion.py)"
+          test "$(git show "$PROD":tests/test_pd_joint_delta_to_pos_semantics.py | git hash-object --stdin)" = "$(git hash-object tests/test_pd_joint_delta_to_pos_semantics.py)"
+          test "$(git diff --name-only "$BASE" "$PROD" | sort)" = "$(printf '%s\n' mani_skill/trajectory/utils/actions/conversion.py tests/test_pd_joint_delta_to_pos_semantics.py | sort)"
+          changed="$(git diff --name-only "$PROD"..HEAD | sort)"
+          test "$changed" = ".github/workflows/issue429-v5-exact-head.yml"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install focused dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest ruff
+          python -m pip install -e .
+
+      - name: Patch must pass the semantic regression
+        run: |
+          cd /tmp
+          python -m pytest -q "$GITHUB_WORKSPACE/tests/test_pd_joint_delta_to_pos_semantics.py"
+
+      - name: Baseline must fail the same semantic regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C "$GITHUB_WORKSPACE" worktree add --detach "/tmp/maniskill-issue429-base-${{ matrix.python }}" 62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3
+          python -m pip install -e "/tmp/maniskill-issue429-base-${{ matrix.python }}" >/dev/null
+          set +e
+          (
+            cd /tmp
+            python -m pytest -q "$GITHUB_WORKSPACE/tests/test_pd_joint_delta_to_pos_semantics.py"
+          ) > "/tmp/baseline-${{ matrix.python }}.log" 2>&1
+          status=$?
+          set -e
+          cat "/tmp/baseline-${{ matrix.python }}.log"
+          test "$status" -ne 0
+          grep -Eq "FAILED|failed|TypeError" "/tmp/baseline-${{ matrix.python }}.log"
+
+      - name: Lint touched files
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          ruff check mani_skill/trajectory/utils/actions/conversion.py tests/test_pd_joint_delta_to_pos_semantics.py
+          ruff format --check mani_skill/trajectory/utils/actions/conversion.py tests/test_pd_joint_delta_to_pos_semantics.py
