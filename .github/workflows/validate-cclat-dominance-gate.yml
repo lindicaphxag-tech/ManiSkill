@@ -1,0 +1,26 @@
+name: Validate CCLAT dominance gate
+
+on:
+  push:
+    branches:
+      - "fix/joint-delta-to-joint-pos-semantics"
+    paths:
+      - "cst_validation/closed_loop_transport.py"
+      - "cst_validation/dominance_gate.py"
+      - "cst_validation/test_dominance_gate.py"
+      - ".github/workflows/validate-cclat-dominance-gate.yml"
+  workflow_dispatch:
+
+jobs:
+  dominance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install numpy pytest
+      - name: Run dominance-gate tests
+        working-directory: cst_validation
+        run: python -m pytest -q test_dominance_gate.py
