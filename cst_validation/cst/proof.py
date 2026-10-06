@@ -60,6 +60,7 @@ def _context_payload(context: JointControllerContext) -> dict:
     return {
         "q_current": _array_or_none(context.q_current),
         "q_target": _array_or_none(context.q_target),
+        "q_latched": _array_or_none(context.q_latched),
     }
 
 
@@ -202,6 +203,10 @@ def _independent_decode(
         if context.q_target is None:
             raise ValueError("delta_target verifier requires q_target")
         reference = _vec(context.q_target, "q_target")
+    elif chart.mode == "relative_latched":
+        if context.q_latched is None:
+            raise ValueError("relative_latched verifier requires q_latched")
+        reference = _vec(context.q_latched, "q_latched")
     else:
         raise ValueError(f"unsupported chart mode: {chart.mode}")
     if reference.shape != physical.shape:
