@@ -11,6 +11,8 @@ class EffectIdentificationCertificate:
     probe_count: int
     action_dim: int
     effect_dim: int
+    probe_rank: int
+    full_action_rank: bool
     probe_condition_number: float
     training_residual: float
     held_out_residual: float
@@ -67,7 +69,14 @@ def estimate_effect_jacobian(
     y_hold = symmetric_effect_measurements(effect_fn, base_action, z_hold, epsilon=epsilon)
 
     s = np.linalg.svd(z, compute_uv=False)
-    cond = float('inf') if s.size == 0 or s[-1] == 0 else float(s[0] / s[-1])
+    tol = 0.0 if s.size == 0 else np.finfo(float).eps * max(z.shape) * s[0]
+    rank = int(np.sum(s > tol))
+    full_action_rank = rank == z.shape[1]
+    cond = (
+        float('inf')
+        if not full_action_rank or s.size == 0 or s[-1] == 0
+        else float(s[0] / s[-1])
+    )
 
     jt = np.linalg.pinv(z) @ y
     jac = jt.T
@@ -88,9 +97,15 @@ def estimate_effect_jacobian(
         probe_count=int(z.shape[0]),
         action_dim=int(z.shape[1]),
         effect_dim=int(jac.shape[0]),
+        probe_rank=rank,
+        full_action_rank=bool(full_action_rank),
         probe_condition_number=cond,
         training_residual=train_res,
         held_out_residual=hold_res,
-        locally_valid=(cond <= max_condition_number and hold_res <= max_held_out_residual),
+        locally_valid=(
+            full_action_rank
+            and cond <= max_condition_number
+            and hold_res <= max_held_out_residual
+        ),
     )
     return jac, cert
