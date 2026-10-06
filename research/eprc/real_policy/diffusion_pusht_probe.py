@@ -26,6 +26,7 @@ from research.eprc.active_minimal_certificate import plan_minimal_certificate_pr
 from research.eprc.certificate_directed_probing import ProbeInformation
 from research.eprc.contract_signature import contract_signature, signature_distance
 from research.eprc.dec_uncertainty import estimate_dec_uncertainty
+from research.eprc.evidence_action_router import route_inconclusive_certificate
 from research.eprc.linear_authority import LinearActionAuthority
 from research.eprc.locality_uncertainty import empirical_locality_envelope
 from research.eprc.robust_repairability import (
@@ -251,6 +252,13 @@ def main(output: Path) -> int:
         candidate_probes=candidate_probe_bank,
         max_additional_probes=6,
     )
+    evidence_action = route_inconclusive_certificate(
+        robust_decision=robust_cert.decision,
+        planned_decision=active_plan.final_certificate.decision,
+        stochastic_radius=locality_breakdown.stochastic_radius,
+        scale_drift_radius=locality_breakdown.scale_drift_radius,
+    )
+
     robust_witness_payload = None
     if robust_cert.decision is RobustRepairDecision.CERTIFIED_IMPOSSIBLE:
         robust_normal = heldout_first_action_response - robust_cert.nominal_physical_repair
@@ -387,6 +395,14 @@ def main(output: Path) -> int:
                 "empirical max of RNG repeatability and fine-vs-coarse finite-difference "
                 "scale drift; not a formal confidence interval"
             ),
+        },
+        "evidence_action_router": {
+            "bottleneck": evidence_action.bottleneck.value,
+            "recommended_action": evidence_action.recommended_action,
+            "additional_same_scale_queries_authorized": (
+                evidence_action.additional_same_scale_queries_authorized
+            ),
+            "rationale": evidence_action.rationale,
         },
         "active_minimal_certificate": {
             "status": "planning_only_no_additional_policy_queries_executed",
