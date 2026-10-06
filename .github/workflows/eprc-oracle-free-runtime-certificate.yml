@@ -1,0 +1,24 @@
+name: EPRC Oracle-Free Runtime Certificate
+
+on:
+  pull_request:
+    paths:
+      - "research/eprc/runtime_prediction_certificate.py"
+      - "tests/test_eprc_runtime_prediction_certificate.py"
+      - "research/eprc/ORACLE_FREE_RUNTIME_CERTIFICATE.md"
+      - ".github/workflows/eprc-oracle-free-runtime-certificate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certificate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -q numpy pytest
+      - run: python -m pytest -q tests/test_eprc_runtime_prediction_certificate.py
