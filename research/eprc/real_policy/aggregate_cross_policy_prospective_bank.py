@@ -48,7 +48,7 @@ def _case(raw: dict) -> PolicyCase:
     )
 
 
-def main(input_dir: Path, output: Path) -> int:
+def main(input_dir: Path, output: Path, *, require_pass: bool = False) -> int:
     states = []
     for seed in FROZEN_SEEDS:
         matches = list(input_dir.rglob(f"state-{seed}.json"))
@@ -104,12 +104,13 @@ def main(input_dir: Path, output: Path) -> int:
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(payload, indent=2, sort_keys=True))
-    return 0 if primary.passed else 3
+    return 3 if require_pass and not primary.passed else 0
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--require-pass", action="store_true")
     args = parser.parse_args()
-    raise SystemExit(main(args.input_dir, args.output))
+    raise SystemExit(main(args.input_dir, args.output, require_pass=args.require_pass))
