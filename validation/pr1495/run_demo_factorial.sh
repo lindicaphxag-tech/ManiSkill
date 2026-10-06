@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# protocol-revision: headless-cpu-v2
 set -euo pipefail
 
 COUNT="${COUNT:-10}"
