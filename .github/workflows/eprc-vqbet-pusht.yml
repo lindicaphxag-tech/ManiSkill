@@ -4,11 +4,17 @@ on:
   pull_request:
     paths:
       - "research/eprc/real_policy/**"
+      - "research/eprc/contract_signature.py"
+      - "research/eprc/dec_uncertainty.py"
       - ".github/workflows/eprc-vqbet-pusht.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: eprc-vqbet-pusht-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   probe:
