@@ -13,6 +13,7 @@ class RepairabilityTrial:
     perturbation_norm: float
     controller_headroom: float
     raw_response_norm: float
+    group_id: str | int | None = None
 
 
 @dataclass(frozen=True)
@@ -53,10 +54,18 @@ def summarize_zero_threshold(
     true_accept = np.logical_and(accepted, labels)
 
     accepted_n = int(np.sum(accepted))
+    negative_n = int(np.sum(~labels))
+    positive_n = int(np.sum(labels))
     return BinaryMetrics(
         auc=float(_auc(scores, labels)),
-        false_accept_rate=float(np.mean(false_accept)),
-        true_accept_rate=float(np.mean(true_accept)),
+        false_accept_rate=(
+            float(np.sum(false_accept) / negative_n)
+            if negative_n else float("nan")
+        ),
+        true_accept_rate=(
+            float(np.sum(true_accept) / positive_n)
+            if positive_n else float("nan")
+        ),
         coverage=float(np.mean(accepted)),
         accepted_success_rate=(
             float(np.mean(labels[accepted])) if accepted_n else float("nan")
@@ -94,7 +103,13 @@ def paired_bootstrap_auc_delta(
     samples: int = 2000,
     seed: int = 0,
 ) -> tuple[float, float, float]:
-    """Paired bootstrap CI for CRG AUC minus one frozen scalar baseline."""
+    """Paired bootstrap CI for CRG AUC minus one frozen scalar baseline.
+
+    When group_id is present, resample whole state/episode groups so multiple
+    disturbances from the same physical state do not masquerade as independent
+    evidence. Trial-level resampling is retained only for legacy/group-free
+    synthetic evidence.
+    """
 
     rows = tuple(trials)
     if len(rows) < 4:
@@ -109,9 +124,22 @@ def paired_bootstrap_auc_delta(
     rng = np.random.default_rng(seed)
     deltas: list[float] = []
 
+    explicit_groups = [r.group_id for r in rows if r.group_id is not None]
+    use_group_bootstrap = len(explicit_groups) > 0
+    if use_group_bootstrap and len(explicit_groups) != len(rows):
+        raise ValueError("group_id must be supplied for all trials or none")
+    groups = tuple(dict.fromkeys(explicit_groups)) if use_group_bootstrap else ()
+
     for _ in range(samples):
-        idx = rng.integers(0, len(rows), len(rows))
-        sample_rows = tuple(rows[i] for i in idx)
+        if use_group_bootstrap:
+            sampled_groups = rng.choice(groups, size=len(groups), replace=True)
+            sample_rows_list = []
+            for group in sampled_groups:
+                sample_rows_list.extend(r for r in rows if r.group_id == group)
+            sample_rows = tuple(sample_rows_list)
+        else:
+            idx = rng.integers(0, len(rows), len(rows))
+            sample_rows = tuple(rows[i] for i in idx)
         labels = np.array([r.recovered for r in sample_rows], dtype=bool)
         if np.all(labels) or not np.any(labels):
             continue
