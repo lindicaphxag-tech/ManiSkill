@@ -1,0 +1,33 @@
+name: Controller contract adapter v2
+
+on:
+  push:
+    branches:
+      - "research/controller-contract-adapter-v2"
+  pull_request:
+    paths:
+      - "mani_skill/trajectory/utils/actions/conversion.py"
+      - "tests/test_controller_contract_action_conversion.py"
+      - ".github/workflows/controller-contract-adapter-v2.yml"
+  workflow_dispatch:
+
+jobs:
+  cpu-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install pytest
+
+      - name: Run controller-contract regression tests
+        run: |
+          python -m pytest -q tests/test_controller_contract_action_conversion.py
