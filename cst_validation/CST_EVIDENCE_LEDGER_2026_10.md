@@ -25,6 +25,8 @@ does not treat that statement as adoption or endorsement of CST.
 | Chart-local saturation effects | ManiSkill Actions #37404910125 | 5/5 PASS | Clipping is not transferable by dimension/index alone and need not commute with cross-coordinate transport. |
 | Native ManiSkill/PhysX delta-current -> absolute equivalence | ManiSkill Actions #37404638720 | 4/4 PASS | Real PDJointPosController instances on independent headless PhysX articulations receive equal physical targets and remain qpos/qvel equivalent after five physics substeps for four non-trivial normalized source actions. |
 | Native hidden-state necessity / target-delta transport | ManiSkill Actions #37404990097 | 5/5 PASS total suite | A real target-delta controller is transported to an absolute controller over a multi-step sequence. Finite-stiffness tracking makes measured qpos diverge from the controller-owned previous target, so current-qpos stateless interpretation is observably wrong; state-aware transport preserves target/qpos/qvel equivalence. |
+| Black-box closed-loop transport core | ManiSkill Actions #37407103809 | PASS | Minimum-residual executable-effect adapter synthesis, irreducible unit-action error lower bound, finite-horizon error propagation, two-scale black-box Jacobian estimation, and held-out counterexample refusal are executable and tested. |
+| Native PhysX black-box controller certificate | ManiSkill Actions #37407148766 | PASS | From fresh independent headless PhysX rollouts, finite-difference executable effects recover the delta-current -> absolute joint adapter and pass held-out action perturbations in an augmented [qpos, qvel, target] observable without using analytic controller Jacobians. |
 
 ## Pending evidence
 
@@ -102,3 +104,18 @@ CST can move from L8-candidate toward an L8 claim only after:
 
 L9 additionally requires independent reuse or strong paper-level external
 validation. More self-authored tests alone do not promote the level.
+
+
+## Closed-loop extension status
+
+A separate research branch `research/cst-closed-loop-v1` extends CST from
+target-level semantic compilation to executable closed-loop effect transport.
+
+Current accepted evidence on that branch:
+
+- **#37407103809 — PASS:** local executable-effect image inclusion, minimum-residual adapter synthesis, irreducible error witness, finite-horizon error envelope, two-scale black-box effect estimation, and held-out falsification.
+- **#37407148766 — PASS:** a native headless PhysX assay estimates the source and target executable effects from fresh simulator/controller rollouts and certifies the held-out delta-current -> absolute transport.
+
+The closed-loop branch still remains **L8-candidate**. These are self-authored
+validation results, not maintained external adoption. Promotion still requires
+upstream retention and a second maintained stack.
