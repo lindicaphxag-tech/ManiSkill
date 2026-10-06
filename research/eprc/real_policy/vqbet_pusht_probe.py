@@ -144,7 +144,10 @@ def main(output: Path) -> int:
             d_plus = (plus - baseline) / epsilon
             d_minus = (baseline - minus) / epsilon
             center = 0.5 * (d_plus + d_minus)
-            jac[:, :, q] = center
+            # Canonicalize the support chart: query_support multiplies this
+            # dimensionless probe by SUPPORT_SCALE[q], so divide by that
+            # physical displacement to report action / (pixel or radian).
+            jac[:, :, q] = center / SUPPORT_SCALE[q]
             symmetry[:, q] = np.linalg.norm(d_plus - d_minus, axis=-1) / np.maximum(
                 np.linalg.norm(center, axis=-1), 1e-12
             )
