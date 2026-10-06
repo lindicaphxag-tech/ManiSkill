@@ -36,7 +36,7 @@ jobs:
         env:
           COUNT: "100"
           MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
-          ROOT: \${{ github.workspace }}/.validation-pr1495-adaptive-100
+          ROOT: ${{ github.workspace }}/.validation-pr1495-adaptive-100
         run: bash validation/pr1495/run_adaptive_converter_matrix.sh
 
       - name: Recompute paired episode-level audit
