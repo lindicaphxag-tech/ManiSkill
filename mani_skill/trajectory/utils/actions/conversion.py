@@ -101,18 +101,22 @@ def _normalized_pd_ee_rotation_action(
 def _bounded_pd_ee_rotation_action(
     controller: PDEEPoseController,
     desired_quaternion: np.ndarray,
-    *,
-    iterations: int = 64,
 ) -> np.ndarray:
     """Compile a desired rotation into the controller's bounded action ball.
 
     Reachable targets use the exact analytic inverse. Out-of-bound targets solve
-    a three-dimensional constrained problem against the controller forward
-    XYZ-Euler semantics: minimize SO(3) discrepancy subject to norm(a) <= 1.
+    the three-dimensional constrained problem
 
-    The chordal objective 3 - trace(R_a^T R_desired) is monotone in geodesic
-    angle on SO(3), and projected Adam is deterministic for this fixed problem.
+        min 3 - trace(R(a)^T R_desired),  subject to ||a||_2 <= 1.
+
+    The objective is monotone in SO(3) geodesic angle. SLSQP starts from the
+    existing Euler-radial clip and the compiler *only* accepts the optimized
+    candidate when it is feasible and strictly no worse than that baseline.
+    Optimization failure therefore degrades to existing behavior, not to an
+    unverified action.
     """
+    from scipy.optimize import minimize
+
     gains = _pd_ee_rotation_gains(controller)
     dtype = gains.dtype
     device = gains.device
@@ -131,40 +135,56 @@ def _bounded_pd_ee_rotation_action(
     if exact_norm <= 1.0 + 1e-7:
         return exact.cpu().numpy()
 
-    action = (exact / exact_norm).detach().clone().requires_grad_(True)
-    optimizer = torch.optim.Adam([action], lr=0.08)
+    radial = (exact / exact_norm).detach()
+    gains64 = gains.detach().to(dtype=torch.float64)
+    desired64 = desired_matrix.detach().to(dtype=torch.float64)
 
-    best_action = action.detach().clone()
-    best_loss = torch.tensor(float("inf"), dtype=dtype, device=device)
-
-    for _ in range(iterations):
-        optimizer.zero_grad()
-        realized_matrix = rotation_conversions.euler_angles_to_matrix(
-            action * gains, "XYZ"
+    def objective_and_grad(action_np):
+        action = torch.tensor(
+            action_np,
+            dtype=torch.float64,
+            device=device,
+            requires_grad=True,
+        )
+        realized = rotation_conversions.euler_angles_to_matrix(
+            action * gains64, "XYZ"
         )
         loss = 3.0 - torch.trace(
-            realized_matrix.transpose(-1, -2) @ desired_matrix
+            realized.transpose(-1, -2) @ desired64
         )
-        loss.backward()
-        optimizer.step()
+        (grad,) = torch.autograd.grad(loss, action)
+        return float(loss.detach().cpu()), grad.detach().cpu().numpy()
 
-        with torch.no_grad():
-            norm = torch.linalg.norm(action)
-            if norm > 1.0:
-                action.mul_(1.0 / norm)
+    radial_np = radial.cpu().numpy().astype(np.float64, copy=True)
+    baseline_loss, _ = objective_and_grad(radial_np)
 
-            realized_matrix = rotation_conversions.euler_angles_to_matrix(
-                action * gains, "XYZ"
-            )
-            candidate_loss = 3.0 - torch.trace(
-                realized_matrix.transpose(-1, -2) @ desired_matrix
-            )
-            if candidate_loss < best_loss:
-                best_loss = candidate_loss
-                best_action = action.detach().clone()
+    result = minimize(
+        objective_and_grad,
+        radial_np,
+        method="SLSQP",
+        jac=True,
+        bounds=[(-1.0, 1.0)] * 3,
+        constraints={
+            "type": "ineq",
+            "fun": lambda action: 1.0 - float(np.dot(action, action)),
+            "jac": lambda action: -2.0 * np.asarray(action, dtype=np.float64),
+        },
+        options={
+            "ftol": 1.0e-12,
+            "maxiter": 80,
+            "disp": False,
+        },
+    )
 
-    return best_action.cpu().numpy()
+    if result.success:
+        candidate = np.asarray(result.x, dtype=np.float64)
+        candidate_norm = float(np.linalg.norm(candidate))
+        if candidate_norm <= 1.0 + 1.0e-8:
+            candidate_loss, _ = objective_and_grad(candidate)
+            if candidate_loss <= baseline_loss + 1.0e-12:
+                return candidate.astype(radial_np.dtype, copy=False)
 
+    return radial_np
 
 def delta_pose_to_pd_ee_delta(
     controller: Union[PDEEPoseController, PDEEPosController],
