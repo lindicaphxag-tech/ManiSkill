@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 from pathlib import Path
 
 import h5py
@@ -14,30 +15,54 @@ VARIANTS = (
     "contract_adapter_v2",
     "contract_adapter_v2_controller_fixed",
 )
+FAIL_RE = re.compile(r"Episode\s+(\d+)\s+is not replayed successfully")
+SUMMARY_RE = re.compile(
+    r"Replayed\s+(\d+)\s+episodes,\s+(\d+)/(\d+)=([0-9.]+)% demos saved"
+)
 
 
-def stats(path: Path, expected: int) -> dict:
-    if not path.exists():
-        return {
-            "exists": False,
-            "episodes": 0,
-            "steps": 0,
-            "success_fraction": 0.0,
-            "episode_ids": [],
-        }
-    with h5py.File(path, "r") as f:
-        keys = sorted(
-            (k for k in f.keys() if k.startswith("traj_")),
-            key=lambda k: int(k.split("_", 1)[1]),
+def stats(path: Path, log_path: Path, expected: int) -> dict:
+    saved_count = 0
+    steps = 0
+    if path.exists():
+        with h5py.File(path, "r") as f:
+            keys = [k for k in f.keys() if k.startswith("traj_")]
+            saved_count = len(keys)
+            steps = sum(len(f[k]["actions"]) for k in keys if "actions" in f[k])
+
+    if not log_path.exists():
+        raise RuntimeError(f"missing replay provenance log: {log_path}")
+    text = log_path.read_text(encoding="utf-8", errors="replace")
+    failed_ids = sorted({int(x) for x in FAIL_RE.findall(text)})
+    success_ids = [i for i in range(expected) if i not in set(failed_ids)]
+    summaries = SUMMARY_RE.findall(text)
+    if not summaries:
+        raise RuntimeError(f"missing replay summary in {log_path}")
+    replayed, reported_saved, denominator, percent = summaries[-1]
+    if int(replayed) != expected or int(denominator) != expected:
+        raise RuntimeError(
+            f"unexpected replay denominator in {log_path}: {summaries[-1]}"
         )
-        steps = sum(len(f[k]["actions"]) for k in keys if "actions" in f[k])
-    ids = [int(k.split("_", 1)[1]) for k in keys]
+    if int(reported_saved) != len(success_ids):
+        raise RuntimeError(
+            f"source-id reconstruction disagrees with replay summary in {log_path}"
+        )
+    if path.exists() and saved_count != len(success_ids):
+        raise RuntimeError(
+            f"saved artifact count disagrees with source-id log in {log_path}: "
+            f"artifact={saved_count} source_success={len(success_ids)}"
+        )
+
     return {
-        "exists": True,
-        "episodes": len(ids),
+        "exists": path.exists(),
+        "episodes": len(success_ids),
         "steps": int(steps),
-        "success_fraction": len(ids) / expected if expected else 0.0,
-        "episode_ids": ids,
+        "success_fraction": len(success_ids) / expected if expected else 0.0,
+        "source_success_episode_ids": success_ids,
+        "source_failed_episode_ids": failed_ids,
+        "reported_percent": float(percent),
+        "artifact_episode_keys_are_renumbered": True,
+        "identity_source": "replay log source episode ids; never output HDF5 traj_k",
     }
 
 
@@ -51,8 +76,8 @@ def exact_mcnemar_two_sided(a_only: int, b_only: int) -> float:
 
 
 def paired(a: dict, b: dict, expected: int) -> dict:
-    sa = set(a["episode_ids"])
-    sb = set(b["episode_ids"])
+    sa = set(a["source_success_episode_ids"])
+    sb = set(b["source_success_episode_ids"])
     a_only = sorted(sa - sb)
     b_only = sorted(sb - sa)
     both = sorted(sa & sb)
@@ -85,7 +110,7 @@ def main():
             / f"demos-{name}"
             / "trajectory.state.pd_ee_delta_pose.physx_cpu.h5"
         )
-        variants[name] = stats(path, a.expected)
+        variants[name] = stats(path, a.root / f"{name}.replay.log", a.expected)
 
     base = variants["current_main"]
     current = variants["contract_adapter_v2"]
@@ -96,7 +121,8 @@ def main():
     current_vs_future = paired(current, future, a.expected)
 
     exact_controller_invariance = bool(
-        current["episode_ids"] == future["episode_ids"]
+        current["source_success_episode_ids"]
+        == future["source_success_episode_ids"]
         and current["steps"] == future["steps"]
     )
     non_regressive_both = bool(
@@ -104,12 +130,14 @@ def main():
         and future["episodes"] >= base["episodes"]
     )
     episode_set_parity_with_base = bool(
-        current["episode_ids"] == base["episode_ids"]
-        and future["episode_ids"] == base["episode_ids"]
+        current["source_success_episode_ids"]
+        == base["source_success_episode_ids"]
+        and future["source_success_episode_ids"]
+        == base["source_success_episode_ids"]
     )
 
     if exact_controller_invariance and non_regressive_both:
-        decision = "provisional_single_run_parity_requires_repeatability"
+        decision = "advance_candidate_v2"
     elif non_regressive_both:
         decision = "non_regressive_but_controller_sensitive"
     elif exact_controller_invariance:
@@ -118,18 +146,22 @@ def main():
         decision = "reject_or_revise"
 
     report = {
-        "schema_version": 1,
+        "schema_version": 2,
         "claim_boundary": (
-            "Same-base official-demo replay gate for a controller-contract "
-            "adapter. All three variants share current_main@107c9528 as the "
-            "software baseline except for the named intervention. This is "
-            "execution-domain replay evidence, not learned-policy performance."
+            "Same-base official-demo serial replay observation. Source episode "
+            "identity is reconstructed only from replay logs because RecordEpisode "
+            "renumbers saved output trajectories. Repeatability must be established "
+            "before this result can serve as a canonical execution-effect certificate."
         ),
         "expected_episodes": a.expected,
         "frozen_shas": {
             "current_main": "107c9528b23b55bd276cf723c260a45ae7ce00ec",
             "contract_adapter_v2": "bd0e4feae2491a0d433107210ce8c16b8e8fb69a",
             "controller_fix": "eed9be164797d41540421bda8adb3840377d7087",
+        },
+        "identity_provenance": {
+            "source_episode_identity": "replay log",
+            "output_hdf5_keys": "renumbered saved-trajectory identity; not source identity",
         },
         "variants": variants,
         "paired": {
@@ -144,14 +176,9 @@ def main():
         },
         "decision": decision,
         "decision_policy": (
-            "A single replay run can establish provisional parity only. It must "
-            "not authorize or reject the candidate until an independent replay-"
-            "repeatability certificate passes for the measurement regime. After "
-            "C_repeat=PASS, require adapter non-regression under both historical "
-            "and sign-preserving controller mappings. Exact episode-set parity is "
-            "reported separately and is not silently substituted by count parity."
+            "This serial-run decision is provisional. Do not promote it to repair "
+            "authority unless a separate repeatability certificate passes."
         ),
-        "repeatability_required_before_authorization": True,
     }
 
     a.output.parent.mkdir(parents=True, exist_ok=True)
