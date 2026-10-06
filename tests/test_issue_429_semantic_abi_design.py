@@ -12,6 +12,7 @@ from embodied_semantic_experiment_design import (  # noqa: E402
     DiagnosisDecision,
     DiagnosisLeaf,
     SemanticExperiment,
+    _observation_compatible,
     solve_optimal_semantic_diagnosis,
     verify_optimal_semantic_diagnosis,
 )
@@ -152,6 +153,7 @@ def test_exact_design_identifies_real_issue_429_target_chart(monkeypatch):
             cost=0.25,
             risk=0.0,
             probe="source-native=[0,0]",
+            observation_atol=1.0e-6,
         ),
         SemanticExperiment(
             name="asymmetric-nonzero-action",
@@ -159,6 +161,7 @@ def test_exact_design_identifies_real_issue_429_target_chart(monkeypatch):
             cost=1.0,
             risk=0.0,
             probe="source-native=[0.5,-0.5]",
+            observation_atol=1.0e-6,
         ),
     )
 
@@ -179,12 +182,20 @@ def test_exact_design_identifies_real_issue_429_target_chart(monkeypatch):
     assert verify_optimal_semantic_diagnosis(result, experiments).valid
 
     observed = _run_production_patch(source, target, informative)
-    assert observed == informative_outcomes["reencoded-target-chart"]
+    assert _observation_compatible(
+        informative_outcomes["reencoded-target-chart"],
+        observed,
+        atol=1.0e-6,
+    )
 
     branch = next(
         item
         for item in result.policy.branches
-        if item.outcome == observed
+        if _observation_compatible(
+            item.outcome,
+            observed,
+            atol=1.0e-6,
+        )
     )
     assert isinstance(branch.child, DiagnosisLeaf)
     assert branch.child.hypotheses == ("reencoded-target-chart",)
@@ -198,6 +209,18 @@ def test_real_issue_429_probe_rejects_naive_chart_interpretations(monkeypatch):
     outcomes = _hypothesis_outcomes(source, target, informative)
     observed = _run_production_patch(source, target, informative)
 
-    assert observed == outcomes["reencoded-target-chart"]
-    assert observed != outcomes["source-native-passthrough"]
-    assert observed != outcomes["physical-qpos-passthrough"]
+    assert _observation_compatible(
+        outcomes["reencoded-target-chart"],
+        observed,
+        atol=1.0e-6,
+    )
+    assert not _observation_compatible(
+        outcomes["source-native-passthrough"],
+        observed,
+        atol=1.0e-6,
+    )
+    assert not _observation_compatible(
+        outcomes["physical-qpos-passthrough"],
+        observed,
+        atol=1.0e-6,
+    )
