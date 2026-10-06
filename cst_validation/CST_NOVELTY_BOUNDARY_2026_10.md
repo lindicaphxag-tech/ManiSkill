@@ -123,3 +123,47 @@ Do not currently write:
 - "CST has been adopted by ManiSkill";
 - "CST is L8/L9";
 - "CST is the first action adapter or canonical action representation."
+
+
+## Closed-loop extension boundary
+
+The current research branch additionally studies controller migration at the
+closed-loop local-dynamics level. This extension must be distinguished from
+several adjacent areas:
+
+- **SPACE (2026)** learns a universal Cartesian state-delta representation and
+  robot-specific Action Adapter, including robustness to controller-gain and
+  control-frequency shifts. CCLAT therefore does not claim that adapting
+  commands across robot dynamics or controller changes is new.
+- **XPolicyLab (2026)** standardizes observation/action/trajectory schemas and
+  adapter interfaces across many policies and environments. CCLAT does not
+  claim policy/runtime interface standardization.
+- **ActionShift (2026)** studies adaptation to hidden action-interface
+  contracts (permutation, sign, scale, target convention, frame, latency,
+  gripper semantics). CCLAT does not claim hidden-contract adaptation or
+  action-interface benchmarking.
+- Classical control already contains simulation/bisimulation, approximate
+  simulation, state-feedback matching, control allocation, and model-refinement
+  ideas. CCLAT does not claim those mathematical primitives as new.
+
+The narrowed closed-loop hypothesis is:
+
+> For a frozen robot policy being migrated between controller implementations,
+> the deployment interface should expose a proof-carrying refinement step that
+> (i) includes controller-owned semantic state, (ii) tests whether source
+> closed-loop directions are representable in the target controller's local
+> executable image, (iii) synthesizes a stateful adapter when possible, and
+> (iv) returns an explicit impossibility witness or finite-horizon deviation
+> bound otherwise.
+
+The novelty burden is therefore on the **robot-policy migration compiler and
+its executable evidence**, not on pseudoinverses, state feedback, or
+bisimulation theory themselves.
+
+### Additional promotion evidence required
+
+The linear closed-loop method is frozen in
+`cst_validation/CCLAT_METHOD_V0_1.md`. It remains method-level evidence until
+a native nonlinear held-out controller-swap assay verifies that the synthesized
+adapter improves real simulator state evolution without tuning on the held-out
+points.
