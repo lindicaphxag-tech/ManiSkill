@@ -1,0 +1,41 @@
+name: Validate LeRobot ACT relative-actions handoff
+
+on:
+  pull_request:
+    paths:
+      - "research/lerobot_act_relative_actions/**"
+      - ".github/workflows/validate-lerobot-act-relative.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Clone pinned LeRobot
+        run: |
+          git clone -q https://github.com/huggingface/lerobot.git /tmp/lerobot
+          git -C /tmp/lerobot checkout -q d40e8709cffb93644db66e30604ef50fdec003cb
+      - name: Apply proposed upstream patch
+        run: |
+          git -C /tmp/lerobot apply "$GITHUB_WORKSPACE/research/lerobot_act_relative_actions/act-relative-actions.patch"
+          git -C /tmp/lerobot diff --check
+      - name: Install focused LeRobot test environment
+        run: |
+          python -m pip install -q --upgrade pip
+          python -m pip install -q -e /tmp/lerobot pytest
+      - name: Run ACT processor regression
+        working-directory: /tmp/lerobot
+        run: |
+          python -m pytest -q tests/processor/test_act_processor.py
+      - name: Show exact diff
+        if: always()
+        working-directory: /tmp/lerobot
+        run: git diff --stat && git diff --check
