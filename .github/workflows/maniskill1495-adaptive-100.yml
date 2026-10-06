@@ -12,6 +12,10 @@ on:
       - "validation/pr1495/summarize_adaptive_converter_paired.py"
       - ".github/workflows/maniskill1495-adaptive-100.yml"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   paired-100:
     runs-on: ubuntu-latest
