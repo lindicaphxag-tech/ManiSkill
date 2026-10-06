@@ -1,5 +1,9 @@
 name: Validate CST trace semantics
 
+concurrency:
+  group: cst-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
