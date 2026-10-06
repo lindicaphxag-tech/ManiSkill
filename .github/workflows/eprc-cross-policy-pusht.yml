@@ -1,0 +1,67 @@
+name: EPRC Paired Cross-Policy PushT
+
+on:
+  pull_request:
+    paths:
+      - "research/eprc/real_policy/**"
+      - "research/eprc/cross_policy_report_adjudicator.py"
+      - ".github/workflows/eprc-cross-policy-pusht.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eprc-cross-policy-pusht-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  paired-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install one frozen LeRobot PushT runtime
+        run: |
+          git clone -q https://github.com/huggingface/lerobot.git /tmp/lerobot
+          git -C /tmp/lerobot checkout -q 3c0a209f9fac4d2a57617e686a7f2a2309144ba2
+          sed -i 's/^pyav = ">=12.0.5"/av = ">=12.0.5"/' /tmp/lerobot/pyproject.toml
+          grep -q '^av = ">=12.0.5"' /tmp/lerobot/pyproject.toml
+          python -m pip install -q -e '/tmp/lerobot[pusht]'
+          python -m pip install -q --force-reinstall --no-deps 'pymunk==6.11.1'
+          python -c 'import packaging, pymunk; from packaging import version; assert version.parse("1.2.3") < version.parse("2.0.0"); assert hasattr(pymunk.Space, "add_collision_handler"); print("paired runtime", packaging.__version__, pymunk.version)'
+      - name: Probe frozen Diffusion policy
+        run: |
+          mkdir -p /tmp/eprc-cross-policy
+          python research/eprc/real_policy/diffusion_pusht_probe.py \
+            --output /tmp/eprc-cross-policy/diffusion.json
+      - name: Probe frozen VQ-BeT policy
+        run: |
+          python research/eprc/real_policy/vqbet_pusht_probe.py \
+            --output /tmp/eprc-cross-policy/vqbet.json
+      - name: Fail-closed cross-policy adjudication
+        run: |
+          python research/eprc/cross_policy_report_adjudicator.py \
+            /tmp/eprc-cross-policy/diffusion.json \
+            /tmp/eprc-cross-policy/vqbet.json \
+            --output /tmp/eprc-cross-policy/adjudication.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("/tmp/eprc-cross-policy/adjudication.json").read_text())
+          assert d["comparable"] is True
+          assert d["policy_a"] == "lerobot/diffusion_pusht"
+          assert d["policy_b"] == "lerobot/vqbet_pusht"
+          print(json.dumps(d, indent=2, sort_keys=True))
+          PY
+      - name: Upload paired frozen-policy evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eprc-paired-cross-policy-pusht
+          path: /tmp/eprc-cross-policy
+          if-no-files-found: warn
+          retention-days: 30
