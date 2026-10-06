@@ -20,6 +20,12 @@ from lerobot.common.policies.vqbet.modeling_vqbet import VQBeTPolicy
 
 from research.eprc.contract_signature import contract_signature, signature_distance
 from research.eprc.dec_uncertainty import estimate_dec_uncertainty
+from research.eprc.linear_authority import LinearActionAuthority
+from research.eprc.robust_repairability import (
+    empirical_operator_envelope,
+    robust_repair_certificate,
+    robust_support_radius_linear_authority,
+)
 from research.eprc.real_policy.pusht_exact_state import (
     STATE_RESTORE_PROTOCOL,
     PushTSnapshot,
@@ -36,6 +42,8 @@ PROTOCOL_ID = "pusht-block-xyt-fine-4px-4px-0.02rad-coarse-8px-8px-0.04rad-v1"
 HELDOUT_PHYSICAL_DELTA = np.array([10.0, -6.0, 0.35], dtype=np.float64)
 IMAGE_KEY = "observation.image"
 STATE_KEY = "observation.state"
+ROBUST_SUPPORT_TRUST_RADIUS = 0.50
+ROBUST_ACTION_RESIDUAL_TOLERANCE = 4.0
 
 
 def _finite(name: str, value: float) -> float:
@@ -169,6 +177,29 @@ def main(output: Path) -> int:
     replicate_seeds = [123, 456, 789, 101112, 131415]
     replicate_jacobians = [small_j] + [central(0.25, seed)[0] for seed in replicate_seeds[1:]]
     flat_replicates = np.stack([j.reshape(-1, j.shape[-1]) for j in replicate_jacobians])
+    first_action_normalized_support_maps = np.stack(
+        [j[0] * SUPPORT_SCALE[np.newaxis, :] for j in replicate_jacobians]
+    )
+    robust_center, robust_envelope = empirical_operator_envelope(
+        first_action_normalized_support_maps, quantile=1.0
+    )
+    action_low = np.asarray(env.action_space.low, dtype=np.float64)
+    action_high = np.asarray(env.action_space.high, dtype=np.float64)
+    authority = LinearActionAuthority.from_box(action_low, action_high)
+    robust_radius = robust_support_radius_linear_authority(
+        repeat_a[0],
+        robust_center,
+        authority,
+        epsilon_j=robust_envelope.epsilon_g,
+        trust_radius=ROBUST_SUPPORT_TRUST_RADIUS,
+    )
+    robust_cert = robust_repair_certificate(
+        robust_center,
+        heldout_first_action_response,
+        physical_map_uncertainty=robust_envelope,
+        certified_radius=robust_radius.certified_radius,
+        residual_tolerance=ROBUST_ACTION_RESIDUAL_TOLERANCE,
+    )
     uncertainty = estimate_dec_uncertainty(
         flat_replicates, min_replicates=5, max_q95_radius=0.15
     )
@@ -224,6 +255,33 @@ def main(output: Path) -> int:
         "probe_seconds": _finite("elapsed", elapsed),
         "horizon": int(small_j.shape[0]),
         "action_dim": int(small_j.shape[1]),
+        "robust_crg": {
+            "support_chart": "dimensionless block-xyt normalized by support_scale",
+            "support_trust_radius": ROBUST_SUPPORT_TRUST_RADIUS,
+            "action_residual_tolerance": ROBUST_ACTION_RESIDUAL_TOLERANCE,
+            "first_action_replicate_maps": first_action_normalized_support_maps.tolist(),
+            "operator_norm_uncertainty_observed_max": _finite(
+                "robust_operator_uncertainty", robust_envelope.epsilon_g
+            ),
+            "robust_authority_radius": _finite(
+                "robust_authority_radius", robust_radius.authority_radius
+            ),
+            "robust_certified_radius": _finite(
+                "robust_certified_radius", robust_radius.certified_radius
+            ),
+            "decision": robust_cert.decision.value,
+            "nominal_residual_norm": _finite(
+                "robust_nominal_residual", robust_cert.nominal_residual_norm
+            ),
+            "worst_case_residual_upper": _finite(
+                "robust_worst_case_upper", robust_cert.worst_case_residual_upper
+            ),
+            "best_case_residual_lower": _finite(
+                "robust_best_case_lower", robust_cert.best_case_residual_lower
+            ),
+            "reason": robust_cert.reason,
+            "evidence_scope": "empirical observed-max RNG envelope; not a formal confidence interval",
+        },
         "dec": {
             "first_action_step_jacobian": small_j[0].tolist(),
             "jacobian_small": small_j.tolist(),
