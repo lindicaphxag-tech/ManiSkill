@@ -9,6 +9,7 @@ import torch
 from mani_skill.agents.controllers import PDEEPoseController
 from mani_skill.trajectory.utils.actions.conversion import (
     _bounded_pd_ee_rotation_action,
+    _compile_bounded_pd_ee_rotation_action,
     _normalized_pd_ee_rotation_action,
     delta_pose_to_pd_ee_delta,
     euler_xyz_from_quaternion,
@@ -226,3 +227,57 @@ def test_bounded_so3_compiler_preserves_exact_reachable_target():
         target_euler.numpy(),
         atol=1e-5,
     )
+
+
+
+@pytest.mark.parametrize("sign_preserving_controller", [False, True])
+def test_geodesic_compiler_receipt_matches_realized_so3_residual(
+    sign_preserving_controller,
+):
+    controller = _small_step_controller(sign_preserving_controller)
+    target_euler = torch.tensor([0.22, -0.16, 0.18], dtype=torch.float32)
+    desired_q = rotation_conversions.matrix_to_quaternion(
+        rotation_conversions.euler_angles_to_matrix(target_euler, "XYZ")
+    )
+
+    receipt = _compile_bounded_pd_ee_rotation_action(
+        controller,
+        desired_q.numpy(),
+    )
+    assert not receipt.exact_reachable
+    assert 0.0 < receipt.geodesic_progress < 1.0
+    assert receipt.action_norm <= 1.0 + 1e-8
+    assert receipt.feasibility_margin >= 0.0
+
+    realized = controller._clip_and_scale_action(
+        torch.cat(
+            [
+                torch.zeros(3),
+                torch.as_tensor(receipt.action, dtype=torch.float32),
+            ]
+        )[None, :]
+    )[0, 3:]
+    actual_error_deg = _rotation_error_deg(realized, desired_q)
+    predicted_error_deg = float(
+        np.degrees(receipt.residual_geodesic_error_rad)
+    )
+
+    assert abs(actual_error_deg - predicted_error_deg) <= 2e-3
+
+
+def test_geodesic_compiler_exact_reachable_receipt_has_full_progress():
+    controller = _small_step_controller(sign_preserving=True)
+    target_euler = torch.tensor([0.02, -0.03, 0.01], dtype=torch.float32)
+    desired_q = rotation_conversions.matrix_to_quaternion(
+        rotation_conversions.euler_angles_to_matrix(target_euler, "XYZ")
+    )
+
+    receipt = _compile_bounded_pd_ee_rotation_action(
+        controller,
+        desired_q.numpy(),
+    )
+
+    assert receipt.exact_reachable
+    assert receipt.geodesic_progress == 1.0
+    assert receipt.residual_geodesic_error_rad == 0.0
+    assert receipt.action_norm < 1.0
