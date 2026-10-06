@@ -50,17 +50,54 @@ def main():
         <= 1.0e-3
     )
 
+    # Separate semantic interaction from task-level replay.  On this metric a
+    # strict compensating bundle exists when both singleton repairs are worse
+    # than the current-main baseline while the composed repair is no worse.
+    mean_error = {
+        name: variants[name]["rotation_error_deg"]["mean"]
+        for name in ("main", "converter_only", "controller_only", "composed")
+    }
+    strict_semantic_compensation = bool(
+        mean_error["converter_only"] > mean_error["main"]
+        and mean_error["controller_only"] > mean_error["main"]
+        and mean_error["composed"] <= mean_error["main"]
+    )
+
     report = {
-        "schema_version": 1,
+        "schema_version": 2,
         "metric": (
             "SO(3) converter-to-controller target round-trip error on "
-            "unclipped official-demo conversion calls"
+            "official-demo conversion calls"
         ),
         "claim_boundary": (
-            "Direct local semantic fidelity; independent of task-success labels."
+            "Direct local semantic fidelity; independent of task-success labels "
+            "and execution-domain feasibility."
         ),
         "variants": variants,
         "checks": checks,
+        "semantic_interaction": {
+            "objective": "minimize",
+            "mean_rotation_error_deg": mean_error,
+            "strict_compensating_bundle": strict_semantic_compensation,
+            "bundle": (
+                ["controller-sign", "converter-representation"]
+                if strict_semantic_compensation
+                else []
+            ),
+            "authorization": {
+                "converter_only": (
+                    "reject" if strict_semantic_compensation else "undetermined"
+                ),
+                "controller_only": (
+                    "reject" if strict_semantic_compensation else "undetermined"
+                ),
+                "composed": (
+                    "advance_to_execution_domain_gate"
+                    if strict_semantic_compensation
+                    else "undetermined"
+                ),
+            },
+        },
         "adaptive_decision": (
             "semantic_fidelity_candidate"
             if checks["adaptive_controller_invariant"]
