@@ -33,6 +33,7 @@ from research.eprc.dec_uncertainty import estimate_dec_uncertainty
 from research.eprc.evidence_action_router import route_inconclusive_certificate
 from research.eprc.linear_authority import LinearActionAuthority
 from research.eprc.locality_uncertainty import empirical_locality_envelope
+from research.eprc.locality_refinement import evaluate_locality_refinement
 from research.eprc.robust_repairability import (
     RobustRepairDecision,
     empirical_operator_envelope,
@@ -61,6 +62,7 @@ PROTOCOL_ID = "pusht-block-xyt-fine-4px-4px-0.02rad-coarse-8px-8px-0.04rad-v1"
 HELDOUT_PHYSICAL_DELTA = np.array([10.0, -6.0, 0.35], dtype=np.float64)
 IMAGE_KEY = "observation.image"
 STATE_KEY = "observation.state"
+FINEST_EPSILON = 0.125
 FINE_EPSILON = 0.25
 COARSE_EPSILON = 0.50
 ROBUST_SUPPORT_TRUST_RADIUS = 0.50
@@ -74,7 +76,7 @@ def _finite(name: str, value: float) -> float:
     return value
 
 
-def main(output: Path) -> int:
+def main(output: Path, *, locality_refinement: bool = False) -> int:
     device = torch.device("cpu")
     policy = VQBeTPolicy.from_pretrained(
         MODEL_ID,
@@ -262,6 +264,156 @@ def main(output: Path) -> int:
         stochastic_radius=locality_breakdown.stochastic_radius,
         scale_drift_radius=locality_breakdown.scale_drift_radius,
     )
+
+    locality_refinement_payload = None
+    if locality_refinement:
+        refinement_seeds = [20261001, 20261002, 20261003, 20261004, 20261005]
+        queries_before_refinement = query_calls
+
+        # Query-budget-matched same-scale arm: 5 seeds x (baseline + 6 signed probes).
+        extra_fine_jacobians = [
+            central(FINE_EPSILON, seed)[0] for seed in refinement_seeds
+        ]
+        same_scale_queries = query_calls - queries_before_refinement
+        if same_scale_queries != 35:
+            raise RuntimeError(
+                f"unexpected same-scale query count: {same_scale_queries} != 35"
+            )
+
+        queries_before_finer = query_calls
+        finer_jacobians = [
+            central(FINEST_EPSILON, seed)[0] for seed in refinement_seeds
+        ]
+        finer_queries = query_calls - queries_before_finer
+        if finer_queries != 35:
+            raise RuntimeError(
+                f"unexpected finer-scale query count: {finer_queries} != 35"
+            )
+
+        extra_fine_maps = np.stack(
+            [
+                metric_whitened_support_jacobian(j[0], SUPPORT_METRIC)
+                for j in extra_fine_jacobians
+            ]
+        )
+        finer_maps = np.stack(
+            [
+                metric_whitened_support_jacobian(j[0], SUPPORT_METRIC)
+                for j in finer_jacobians
+            ]
+        )
+
+        original_fine_center = np.mean(first_action_normalized_support_maps, axis=0)
+        extra_fine_center = np.mean(extra_fine_maps, axis=0)
+        same_scale_center_shift = float(
+            np.linalg.norm(extra_fine_center - original_fine_center, ord=2)
+        )
+        _, extra_fine_stochastic = empirical_operator_envelope(
+            extra_fine_maps, quantile=1.0
+        )
+
+        refinement, refined_uncertainty = evaluate_locality_refinement(
+            coarse_map=coarse_first_action_normalized_support_map,
+            fine_map_replicates=first_action_normalized_support_maps,
+            finer_map_replicates=finer_maps,
+            contraction_threshold=0.75,
+            refined_trust_radius=FINEST_EPSILON,
+            quantile=1.0,
+        )
+
+        refined_cert_payload = None
+        if refinement.contracting:
+            refined_radius = robust_support_radius_linear_authority(
+                repeat_a[0],
+                refinement.refined_center,
+                authority,
+                epsilon_j=refined_uncertainty.epsilon_g,
+                trust_radius=refinement.recommended_trust_radius,
+            )
+            refined_cert = robust_repair_certificate(
+                refinement.refined_center,
+                heldout_first_action_response,
+                physical_map_uncertainty=refined_uncertainty,
+                certified_radius=refined_radius.certified_radius,
+                residual_tolerance=ROBUST_ACTION_RESIDUAL_TOLERANCE,
+            )
+            refined_witness_payload = None
+            if refined_cert.decision is RobustRepairDecision.CERTIFIED_IMPOSSIBLE:
+                normal = (
+                    heldout_first_action_response
+                    - refined_cert.nominal_physical_repair
+                )
+                witness = build_robust_separation_witness(
+                    refinement.refined_center,
+                    heldout_first_action_response,
+                    certified_radius=refined_radius.certified_radius,
+                    epsilon_g=refined_uncertainty.epsilon_g,
+                    residual_tolerance=ROBUST_ACTION_RESIDUAL_TOLERANCE,
+                    normal=normal,
+                )
+                verified = verify_robust_separation_witness(
+                    refinement.refined_center,
+                    heldout_first_action_response,
+                    certified_radius=refined_radius.certified_radius,
+                    epsilon_g=refined_uncertainty.epsilon_g,
+                    witness=witness,
+                )
+                if not verified:
+                    raise RuntimeError(
+                        "refined robust impossibility lacks a valid dual witness"
+                    )
+                refined_witness_payload = {
+                    "verified": True,
+                    "normal": witness.normal.tolist(),
+                    "margin_over_tolerance": float(witness.margin_over_tolerance),
+                    "distance_lower_bound": float(witness.distance_lower_bound),
+                }
+
+            refined_cert_payload = {
+                "decision": refined_cert.decision.value,
+                "certified_radius": float(refined_radius.certified_radius),
+                "nominal_residual_norm": float(refined_cert.nominal_residual_norm),
+                "best_case_residual_lower": float(
+                    refined_cert.best_case_residual_lower
+                ),
+                "worst_case_residual_upper": float(
+                    refined_cert.worst_case_residual_upper
+                ),
+                "proof_carrying_impossibility_witness": refined_witness_payload,
+            }
+
+        locality_refinement_payload = {
+            "status": "executed_prospective_protocol",
+            "protocol_file": "research/eprc/VQBET_LOCALITY_REFINEMENT_PROTOCOL.md",
+            "refinement_seeds": refinement_seeds,
+            "same_scale_additional_queries": int(same_scale_queries),
+            "finer_scale_additional_queries": int(finer_queries),
+            "same_scale_center_shift": float(same_scale_center_shift),
+            "same_scale_stochastic_radius": float(
+                extra_fine_stochastic.epsilon_g
+            ),
+            "coarse_fine_drift": float(refinement.coarse_fine_drift),
+            "fine_finer_drift": float(refinement.fine_finer_drift),
+            "contraction_ratio": float(refinement.contraction_ratio),
+            "frozen_contraction_threshold": 0.75,
+            "contracting": bool(refinement.contracting),
+            "finer_stochastic_radius": float(
+                refinement.finer_stochastic_radius
+            ),
+            "refined_uncertainty_radius": float(
+                refinement.refined_uncertainty_radius
+            ),
+            "recommended_trust_radius": float(
+                refinement.recommended_trust_radius
+            ),
+            "routing_decision": (
+                "REFINED_FIRST_ORDER_CERTIFICATE"
+                if refinement.contracting
+                else "REJECT_FIRST_ORDER_LOCAL_MODEL"
+            ),
+            "reason": refinement.reason,
+            "refined_robust_crg": refined_cert_payload,
+        }
     robust_witness_payload = None
     if robust_cert.decision is RobustRepairDecision.CERTIFIED_IMPOSSIBLE:
         robust_normal = heldout_first_action_response - robust_cert.nominal_physical_repair
@@ -407,6 +559,7 @@ def main(output: Path) -> int:
             ),
             "rationale": evidence_action.rationale,
         },
+        "locality_refinement": locality_refinement_payload,
         "active_minimal_certificate": {
             "status": "planning_only_no_additional_policy_queries_executed",
             "initial_decision": active_plan.initial_certificate.decision.value,
@@ -461,5 +614,12 @@ def main(output: Path) -> int:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, default=Path("vqbet_pusht_probe.json"))
+    parser.add_argument(
+        "--locality-refinement",
+        action="store_true",
+        help="execute the pre-registered 0.25-vs-0.125 matched-query locality gate",
+    )
     args = parser.parse_args()
-    raise SystemExit(main(args.output))
+    raise SystemExit(
+        main(args.output, locality_refinement=args.locality_refinement)
+    )
