@@ -1,4 +1,4 @@
-name: Contract adapter v2 episode-8 protocol trace
+name: Contract adapter v2 episode-1 protocol trace
 
 on:
   push:
@@ -37,7 +37,7 @@ jobs:
 
       - name: Run exact-sha episode 8 trace
         env:
-          TARGET_EPISODE: "8"
+          TARGET_EPISODE: "1"
           ROOT: ${{ github.workspace }}/.validation-contract-adapter-trace
           MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
         run: bash validation/pr1495/run_episode8_protocol_trace.sh
@@ -52,7 +52,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: contract-adapter-v2-episode-8-trace
+          name: contract-adapter-v2-episode-1-trace
           path: |
             .validation-contract-adapter-trace/current_main.json
             .validation-contract-adapter-trace/contract_adapter_v2.json
