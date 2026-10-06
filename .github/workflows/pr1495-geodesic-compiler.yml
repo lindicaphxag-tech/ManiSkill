@@ -1,4 +1,4 @@
-name: PR1495 bounded SO3 semantic compiler
+name: PR1495 deterministic geodesic semantic compiler
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ on:
       - ".github/workflows/pr1495-geodesic-compiler.yml"
   push:
     branches:
-      - "validation/pr1495-geodesic-compiler"
+      - "validation/pr1495-geodesic-ray-v2"
 
 jobs:
   bounded-compiler:
@@ -39,6 +39,10 @@ jobs:
       - name: Run focused semantic compiler tests
         run: |
           python -m pytest -q tests/test_action_conversion.py
+          if grep -n "scipy" mani_skill/trajectory/utils/actions/conversion.py; then
+            echo "production converter must not depend on SciPy optimization" >&2
+            exit 1
+          fi
 
       - name: Download official PegInsertionSide demos
         run: |
@@ -96,4 +100,5 @@ jobs:
         with:
           name: pr1495-bounded-so3-semantic-compiler
           path: .validation-pr1495-geodesic/*.json
-          if-no-files-found: warn
+          if-no-files-found: error
+          include-hidden-files: true
