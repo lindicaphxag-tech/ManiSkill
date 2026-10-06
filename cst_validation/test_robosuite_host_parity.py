@@ -8,6 +8,7 @@ from contextual_trace_morphism import (
 )
 from robosuite_joint_semantics import (
     certify_robosuite_delta_affine_region,
+    compile_robosuite_delta_goal_partition,
     robosuite_joint_position_ir,
 )
 
@@ -145,3 +146,45 @@ def test_compiled_cst_matches_both_robosuite_controller_modes():
         np.testing.assert_allclose(
             target_host.goal_qpos, source_host.goal_qpos, atol=1e-12
         )
+
+
+
+def test_piecewise_compiler_matches_host_across_real_qpos_saturation():
+    limits = np.array([[-1.0, -1.0], [1.0, 1.0]])
+    partition = compile_robosuite_delta_goal_partition(
+        d=2,
+        state_low=np.array([-1.0, -1.0]),
+        state_high=np.array([1.0, 1.0]),
+        qpos_limits=limits,
+    )
+    rng = np.random.default_rng(2704)
+    saw_saturation = False
+    for _ in range(2000):
+        x = rng.uniform(-1.0, 1.0, size=2)
+        u_delta = rng.uniform(-1.0, 1.0, size=2)
+        source_host = _host_controller(
+            input_type="delta",
+            current_qpos=x,
+            qpos_limits=limits,
+        )
+        source_host.set_goal(u_delta)
+
+        compiled_goal = partition.evaluate(np.concatenate([u_delta, x]))
+        np.testing.assert_allclose(
+            compiled_goal, source_host.goal_qpos, atol=1e-9
+        )
+
+        raw_goal = x + 0.05 * u_delta
+        if np.any(raw_goal < limits[0]) or np.any(raw_goal > limits[1]):
+            saw_saturation = True
+
+        # robosuite absolute set_goal uses the supplied physical joint target.
+        target_host = _host_controller(
+            input_type="absolute",
+            current_qpos=x,
+        )
+        target_host.set_goal(compiled_goal)
+        np.testing.assert_allclose(
+            target_host.goal_qpos, source_host.goal_qpos, atol=1e-9
+        )
+    assert saw_saturation
