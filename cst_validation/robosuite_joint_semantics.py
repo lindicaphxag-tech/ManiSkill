@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from trace_semantics import StatefulTraceIR
+from piecewise_affine_clip import compile_clipped_affine_partition
 
 
 @dataclass(frozen=True)
@@ -192,4 +193,55 @@ def certify_robosuite_delta_affine_region(
         qpos_low=qlow,
         qpos_high=qhigh,
         reason=reason,
+    )
+
+
+def compile_robosuite_delta_goal_partition(
+    *,
+    d,
+    state_low,
+    state_high,
+    input_min=-1.0,
+    input_max=1.0,
+    output_min=-0.05,
+    output_max=0.05,
+    qpos_limits=None,
+):
+    """Compile robosuite delta joint goals including qpos clipping exactly.
+
+    Input variable is v = [native_delta_action, current_qpos].
+    For fixed-impedance JOINT_POSITION before clipping,
+
+        goal = S u + x + b.
+
+    Coordinate-wise qpos clipping makes this piecewise affine.  The returned
+    polyhedral partition is exact on the full declared action/state box.
+    """
+    if qpos_limits is None:
+        raise ValueError("qpos_limits are required for clipped partition")
+    state_low = _as_vector(state_low, d)
+    state_high = _as_vector(state_high, d)
+    input_min_v = _as_vector(input_min, d)
+    input_max_v = _as_vector(input_max, d)
+    output_min_v = _as_vector(output_min, d)
+    output_max_v = _as_vector(output_max, d)
+    limits = np.asarray(qpos_limits, dtype=float)
+    if limits.shape != (2, d):
+        raise ValueError("qpos_limits must have shape [2, D]")
+
+    scale = np.abs(output_max_v - output_min_v) / np.abs(
+        input_max_v - input_min_v
+    )
+    input_mid = 0.5 * (input_max_v + input_min_v)
+    output_mid = 0.5 * (output_max_v + output_min_v)
+    b = output_mid - scale * input_mid
+    A = np.concatenate([np.diag(scale), np.eye(d)], axis=1)
+
+    return compile_clipped_affine_partition(
+        A=A,
+        b=b,
+        clip_low=limits[0],
+        clip_high=limits[1],
+        input_low=np.concatenate([input_min_v, state_low]),
+        input_high=np.concatenate([input_max_v, state_high]),
     )
