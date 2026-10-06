@@ -31,6 +31,7 @@ from research.eprc.robust_repairability import (
     robust_repair_certificate,
     robust_support_radius_linear_authority,
 )
+from research.eprc.repairability_geometry import metric_whitened_support_jacobian
 from research.eprc.robust_repairability_witness import (
     build_robust_separation_witness,
     verify_robust_separation_witness,
@@ -47,6 +48,7 @@ MODEL_ID = "lerobot/vqbet_pusht"
 MODEL_REVISION = "390e5e4c079c880b22e873dad53ecfac706bc78a"
 LEROBOT_TRAINING_COMMIT = "3c0a209f9fac4d2a57617e686a7f2a2309144ba2"
 SUPPORT_SCALE = np.array([16.0, 16.0, 0.08], dtype=np.float64)
+SUPPORT_METRIC = np.diag(1.0 / np.square(SUPPORT_SCALE))
 PROTOCOL_ID = "pusht-block-xyt-fine-4px-4px-0.02rad-coarse-8px-8px-0.04rad-v1"
 HELDOUT_PHYSICAL_DELTA = np.array([10.0, -6.0, 0.35], dtype=np.float64)
 IMAGE_KEY = "observation.image"
@@ -187,10 +189,13 @@ def main(output: Path) -> int:
     replicate_jacobians = [small_j] + [central(0.25, seed)[0] for seed in replicate_seeds[1:]]
     flat_replicates = np.stack([j.reshape(-1, j.shape[-1]) for j in replicate_jacobians])
     first_action_normalized_support_maps = np.stack(
-        [j[0] * SUPPORT_SCALE[np.newaxis, :] for j in replicate_jacobians]
+        [
+            metric_whitened_support_jacobian(j[0], SUPPORT_METRIC)
+            for j in replicate_jacobians
+        ]
     )
     coarse_first_action_normalized_support_map = (
-        large_j[0] * SUPPORT_SCALE[np.newaxis, :]
+        metric_whitened_support_jacobian(large_j[0], SUPPORT_METRIC)
     )
     robust_center, robust_envelope, locality_breakdown = empirical_locality_envelope(
         first_action_normalized_support_maps,
@@ -315,6 +320,11 @@ def main(output: Path) -> int:
             "block_angular_velocity": float(base_snapshot.block_angular_velocity),
         },
         "support_scale": SUPPORT_SCALE.tolist(),
+        "support_metric_physical": SUPPORT_METRIC.tolist(),
+        "support_metric_semantics": (
+            "physical support xi=[dx_px,dy_px,dtheta_rad] uses xi^T M xi; "
+            "the normalized probe chart is the metric-whitened unit chart"
+        ),
         "jacobian_support_units": ["pixel", "pixel", "radian"],
         "small_epsilon": 0.25,
         "large_epsilon": 0.50,
