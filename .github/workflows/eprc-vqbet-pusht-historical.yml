@@ -42,6 +42,24 @@ jobs:
         run: |
           python research/eprc/real_policy/historical_vqbet_pusht_probe.py             --output /tmp/historical_vqbet_pusht_dec.json
 
+      - name: Validate frozen protocol and provenance
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("/tmp/historical_vqbet_pusht_dec.json")
+          d=json.loads(p.read_text())
+          assert d["runtime_provenance"]["lerobot_commit"] == "2cb0bf5d4154c8fefe03d1dca394fc5e1d778a97"
+          assert d["runtime_provenance"]["model_revision"] == "bff7190"
+          assert d["protocol_id"] == "pusht-block-xyt-fine-4px-4px-0.02rad-coarse-8px-8px-0.04rad-v1"
+          assert d["environment_reset_seed"] == 17
+          assert d["fine_physical_probe"] == [4.0, 4.0, 0.02]
+          assert d["coarse_physical_probe"] == [8.0, 8.0, 0.04]
+          assert d["paired_repeat_max_abs_error"] <= 1e-6
+          assert d["certification_eligible"] is False
+          print("historical-native VQ-BeT provenance/protocol validated")
+          PY
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
