@@ -1,0 +1,99 @@
+name: PR1495 bounded SO3 semantic compiler
+
+on:
+  pull_request:
+    paths:
+      - "mani_skill/trajectory/utils/actions/conversion.py"
+      - "tests/test_action_conversion.py"
+      - "validation/pr1495/measure_bounded_compiler.py"
+      - ".github/workflows/pr1495-geodesic-compiler.yml"
+  push:
+    branches:
+      - "validation/pr1495-geodesic-compiler"
+
+jobs:
+  bounded-compiler:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install software Vulkan
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libegl1 mesa-vulkan-drivers vulkan-tools
+          LVP_ICD="$(find /usr/share/vulkan/icd.d -maxdepth 1 -type f -name 'lvp_icd*.json' | head -n1)"
+          test -n "$LVP_ICD"
+          echo "VK_ICD_FILENAMES=$LVP_ICD" >> "$GITHUB_ENV"
+          VK_ICD_FILENAMES="$LVP_ICD" vulkaninfo --summary
+
+      - name: Install exact prototype
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install pytest
+
+      - name: Run focused semantic compiler tests
+        run: |
+          python -m pytest -q tests/test_action_conversion.py
+
+      - name: Download official PegInsertionSide demos
+        run: |
+          cd /tmp
+          python -m mani_skill.utils.download_demo PegInsertionSide-v1
+
+      - name: Measure bounded-vs-radial error on official replay calls
+        env:
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+        run: |
+          python validation/pr1495/measure_bounded_compiler.py \
+            --traj-path "$HOME/.maniskill/demos/PegInsertionSide-v1/motionplanning/trajectory.h5" \
+            --count 10 \
+            --expected-source-root "$GITHUB_WORKSPACE" \
+            --output .validation-pr1495-geodesic/bounded_compiler.json
+
+      - name: Replay converted official demos with bounded compiler
+        env:
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+        run: |
+          ROOT=.validation-pr1495-geodesic
+          mkdir -p "$ROOT"
+          cp "$HOME/.maniskill/demos/PegInsertionSide-v1/motionplanning/trajectory.h5" "$ROOT/trajectory.h5"
+          cp "$HOME/.maniskill/demos/PegInsertionSide-v1/motionplanning/trajectory.json" "$ROOT/trajectory.json"
+          python -m mani_skill.trajectory.replay_trajectory \
+            --traj-path "$ROOT/trajectory.h5" \
+            --use-first-env-state \
+            -c pd_ee_delta_pose -o state --save-traj \
+            --count 10 --num-envs 2 -b physx_cpu
+          python - <<'PY'
+          import h5py, json
+          from pathlib import Path
+          root=Path(".validation-pr1495-geodesic")
+          path=root/"trajectory.state.pd_ee_delta_pose.physx_cpu.h5"
+          with h5py.File(path,"r") as f:
+              keys=[k for k in f if k.startswith("traj_")]
+              steps=sum(len(f[k]["actions"]) for k in keys if "actions" in f[k])
+          result={
+              "expected_episodes":10,
+              "episodes":len(keys),
+              "steps":int(steps),
+              "success_fraction":len(keys)/10.0,
+              "acceptance_gate":"episodes >= 9 to match current-main replay count",
+              "passes_baseline_non_regression":len(keys)>=9,
+          }
+          (root/"replay_summary.json").write_text(json.dumps(result,indent=2)+"\n")
+          print(json.dumps(result,indent=2))
+          if len(keys)<9:
+              raise SystemExit("bounded compiler regressed below current-main 9/10 replay")
+          PY
+
+      - name: Upload public evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr1495-bounded-so3-semantic-compiler
+          path: .validation-pr1495-geodesic/*.json
+          if-no-files-found: warn
