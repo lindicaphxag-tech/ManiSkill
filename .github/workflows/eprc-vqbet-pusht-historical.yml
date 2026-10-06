@@ -1,0 +1,50 @@
+name: EPRC Historical VQ-BeT PushT Probe
+
+on:
+  pull_request:
+    paths:
+      - "research/eprc/real_policy/historical_vqbet_pusht_probe.py"
+      - "research/eprc/contract_signature.py"
+      - "research/eprc/dec_uncertainty.py"
+      - ".github/workflows/eprc-vqbet-pusht-historical.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eprc-historical-vqbet-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  historical-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Checkout checkpoint-era LeRobot
+        run: |
+          git clone https://github.com/huggingface/lerobot.git /tmp/lerobot
+          cd /tmp/lerobot
+          git checkout 2cb0bf5d4154c8fefe03d1dca394fc5e1d778a97
+
+      - name: Install checkpoint-era PushT stack
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e "/tmp/lerobot[pusht]"
+
+      - name: Probe historical-native official VQ-BeT checkpoint
+        run: |
+          python research/eprc/real_policy/historical_vqbet_pusht_probe.py             --output /tmp/historical_vqbet_pusht_dec.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: historical-vqbet-pusht-dec
+          path: /tmp/historical_vqbet_pusht_dec.json
+          if-no-files-found: warn
