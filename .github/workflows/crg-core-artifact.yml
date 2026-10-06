@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - "artifact/crg-core-v1-2026-10-06"
+  pull_request:
+    paths:
+      - "research/eprc/**"
+      - "tests/test_eprc_*.py"
+      - "CRG_CORE_REVIEW.md"
+      - ".github/workflows/crg-core-artifact.yml"
   workflow_dispatch:
 
 permissions:
