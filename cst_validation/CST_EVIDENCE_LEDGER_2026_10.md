@@ -27,6 +27,8 @@ does not treat that statement as adoption or endorsement of CST.
 | Native hidden-state necessity / target-delta transport | ManiSkill Actions #37404990097 | 5/5 PASS total suite | A real target-delta controller is transported to an absolute controller over a multi-step sequence. Finite-stiffness tracking makes measured qpos diverge from the controller-owned previous target, so current-qpos stateless interpretation is observably wrong; state-aware transport preserves target/qpos/qvel equivalence. |
 | Black-box closed-loop transport core | ManiSkill Actions #37407103809 | PASS | Minimum-residual executable-effect adapter synthesis, irreducible unit-action error lower bound, finite-horizon error propagation, two-scale black-box Jacobian estimation, and held-out counterexample refusal are executable and tested. |
 | Native PhysX black-box controller certificate | ManiSkill Actions #37407148766 | PASS | From fresh independent headless PhysX rollouts, finite-difference executable effects recover the delta-current -> absolute joint adapter and pass held-out action perturbations in an augmented [qpos, qvel, target] observable without using analytic controller Jacobians. |
+| Stateful linear simulation-relation synthesis | ManiSkill Actions #37407381190 | PASS | Solver automatically distinguishes action-only transport from a source-state-aware handshake u_t=Lz_s+Ku_s, recovers exact target-delta -> absolute semantics only when previous-target state is admitted, and checks next-state closure rather than one-step output equality alone. |
+| Second controller-family refusal witness | ManiSkill Actions #37407564799 | 2/2 PASS | Native PhysX black-box certification accepts delta-position -> absolute transport but rejects delta-position -> velocity despite equal action dimensionality because their 1-step/5-step [qpos,qvel] executable-effect directions are not equivalent. |
 
 ## Pending evidence
 
@@ -115,6 +117,8 @@ Current accepted evidence on that branch:
 
 - **#37407103809 — PASS:** local executable-effect image inclusion, minimum-residual adapter synthesis, irreducible error witness, finite-horizon error envelope, two-scale black-box effect estimation, and held-out falsification.
 - **#37407148766 — PASS:** a native headless PhysX assay estimates the source and target executable effects from fresh simulator/controller rollouts and certifies the held-out delta-current -> absolute transport.
+- **#37407381190 — PASS:** stateful simulation-relation synthesis proves that target-delta -> absolute has no stateless action-only solution under the declared transducers, while automatically recovering the exact source-state-aware handshake.
+- **#37407564799 — 2/2 PASS:** the same native black-box pipeline accepts a true delta-position -> absolute equivalence and refuses a position -> velocity controller swap from short-horizon physical response traces.
 
 The closed-loop branch still remains **L8-candidate**. These are self-authored
 validation results, not maintained external adoption. Promotion still requires
