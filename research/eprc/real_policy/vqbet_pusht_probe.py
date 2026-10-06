@@ -24,6 +24,7 @@ from research.eprc.certificate_directed_probing import ProbeInformation
 from research.eprc.contract_signature import contract_signature, signature_distance
 from research.eprc.dec_uncertainty import estimate_dec_uncertainty
 from research.eprc.linear_authority import LinearActionAuthority
+from research.eprc.locality_uncertainty import empirical_locality_envelope
 from research.eprc.robust_repairability import (
     RobustRepairDecision,
     empirical_operator_envelope,
@@ -188,8 +189,13 @@ def main(output: Path) -> int:
     first_action_normalized_support_maps = np.stack(
         [j[0] * SUPPORT_SCALE[np.newaxis, :] for j in replicate_jacobians]
     )
-    robust_center, robust_envelope = empirical_operator_envelope(
-        first_action_normalized_support_maps, quantile=1.0
+    coarse_first_action_normalized_support_map = (
+        large_j[0] * SUPPORT_SCALE[np.newaxis, :]
+    )
+    robust_center, robust_envelope, locality_breakdown = empirical_locality_envelope(
+        first_action_normalized_support_maps,
+        coarse_first_action_normalized_support_map,
+        quantile=1.0,
     )
     action_low = np.asarray(env.action_space.low, dtype=np.float64)
     action_high = np.asarray(env.action_space.high, dtype=np.float64)
@@ -330,6 +336,20 @@ def main(output: Path) -> int:
             "operator_norm_uncertainty_observed_max": _finite(
                 "robust_operator_uncertainty", robust_envelope.epsilon_g
             ),
+            "uncertainty_breakdown": {
+                "rng_stochastic_radius": _finite(
+                    "rng_stochastic_radius", locality_breakdown.stochastic_radius
+                ),
+                "finite_difference_scale_drift_radius": _finite(
+                    "scale_drift_radius", locality_breakdown.scale_drift_radius
+                ),
+                "combined_empirical_locality_radius": _finite(
+                    "combined_locality_radius", locality_breakdown.combined_radius
+                ),
+            },
+            "coarse_first_action_normalized_support_map": (
+                coarse_first_action_normalized_support_map.tolist()
+            ),
             "robust_authority_radius": _finite(
                 "robust_authority_radius", robust_radius.authority_radius
             ),
@@ -348,7 +368,10 @@ def main(output: Path) -> int:
             ),
             "reason": robust_cert.reason,
             "proof_carrying_impossibility_witness": robust_witness_payload,
-            "evidence_scope": "empirical observed-max RNG envelope; not a formal confidence interval",
+            "evidence_scope": (
+                "empirical max of RNG repeatability and fine-vs-coarse finite-difference "
+                "scale drift; not a formal confidence interval"
+            ),
         },
         "active_minimal_certificate": {
             "status": "planning_only_no_additional_policy_queries_executed",
