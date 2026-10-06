@@ -110,9 +110,7 @@ def test_target_ambiguity_witness_is_nonzero_native_direction_with_zero_observab
 
     ambiguity = witness.target_ambiguity_direction
     assert ambiguity is not None
-    assert np.linalg.norm(ambiguity) == np.testing.assert_allclose(
-        np.linalg.norm(ambiguity), 1.0, atol=1e-10
-    ) or np.linalg.norm(ambiguity)
+    np.testing.assert_allclose(np.linalg.norm(ambiguity), 1.0, atol=1e-10)
     np.testing.assert_allclose(B @ ambiguity, np.zeros(2), atol=1e-10)
 
 
