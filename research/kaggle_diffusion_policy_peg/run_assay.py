@@ -132,7 +132,7 @@ def apply_controller_pr_overlay(commit: str) -> None:
     test_path.write_bytes(test_bytes)
 
 def apply_kaggle_worker_compatibility() -> str:
-    """Use fresh workers and Gymnasium info semantics expected by evaluation."""
+    """Use spawn/SAME_STEP workers and normalize NumPy evaluation metrics."""
     env_path = REPO / "examples" / "baselines" / "diffusion_policy" / "diffusion_policy" / "make_env.py"
     source = env_path.read_text(encoding="utf-8")
     old = 'context="forkserver"'
@@ -140,7 +140,24 @@ def apply_kaggle_worker_compatibility() -> str:
     if source.count(old) != 1:
         raise RuntimeError("Expected exactly one diffusion-policy forkserver context")
     env_path.write_text(source.replace(old, new), encoding="utf-8")
-    return sha256(env_path)
+
+    eval_path = REPO / "examples" / "baselines" / "diffusion_policy" / "diffusion_policy" / "evaluate.py"
+    eval_source = eval_path.read_text(encoding="utf-8")
+    tensor_metric = "eval_metrics[k].append(v.float().cpu().numpy())"
+    scalar_metric = "eval_metrics[k].append(v)\n"
+    if eval_source.count(tensor_metric) != 1 or eval_source.count(scalar_metric) != 1:
+        raise RuntimeError("Unexpected diffusion-policy evaluation metric conversion sites")
+    eval_source = eval_source.replace(
+        tensor_metric,
+        "eval_metrics[k].append(torch.as_tensor(v).float().cpu().numpy())",
+    )
+    eval_source = eval_source.replace(
+        scalar_metric,
+        "eval_metrics[k].append(torch.as_tensor(v).float().cpu().numpy())\n",
+    )
+    eval_path.write_text(eval_source, encoding="utf-8")
+    compatibility_digests = f"{sha256(env_path)}:{sha256(eval_path)}"
+    return hashlib.sha256(compatibility_digests.encode("ascii")).hexdigest()
 
 def sha256(path: Path) -> str:
     h = hashlib.sha256()
@@ -406,6 +423,16 @@ try:
         demonstrations[arm]["paired_episode_count"] = len(common_seeds)
         demonstrations[arm]["paired_source_seed_sha256"] = common_seed_sha256
 
+    run_record["demonstrations"] = demonstrations
+    run_record["pairing"] = {
+        "requested_source_episodes": len(selected_episodes),
+        "successful_converted_episodes": {
+            arm: demonstrations[arm]["successful_episode_count"] for arm, _, _ in arms
+        },
+        "paired_episode_count": len(common_seeds),
+        "paired_source_seed_sha256": common_seed_sha256,
+    }
+
     # Both arms now train on the same successful source-seed set. The two
     # HDF5 files remain arm-specific because their action/state conversions differ.
     for arm, _, _ in arms:
@@ -463,6 +490,7 @@ try:
             shutil.copy2(event, dest)
             saved_events.append(str(dest.relative_to(OUTPUT)))
         run_summaries.append({"arm": arm, "source_commit": start_commit, "controller_overlay_commit": extra_commit, "source_tree": tree, "runtime_compatibility_sha256": runtime_compatibility_sha256, "demo_sha256": demonstrations[arm]["paired_sha256"], "paired_num_demos": len(common_seeds), "paired_source_seed_sha256": common_seed_sha256, "run_name": run_name, "scalar_count": len(rows), "metrics": by_tag, "event_files": saved_events})
+        run_record["run_summaries"] = run_summaries
         # Retain TensorBoard evidence and compact log only; drop checkpoints/videos.
         shutil.rmtree(run_dir, ignore_errors=True)
         print(json.dumps(run_summaries[-1], sort_keys=True), flush=True)
