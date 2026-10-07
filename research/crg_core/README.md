@@ -92,9 +92,15 @@ turn a stable but nonlocal Jacobian into false confidence.
 A 30-minute external path is available in
 `research/crg_core/REPLICATION_30_MIN.md`.
 
-The record gate requires a real frozen policy, immutable provenance, explicit
-query/error accounting, and at least one observed execution outcome. Negative
-results are accepted. Owner-authored records are rejected as external evidence.
+The schema requests a real frozen policy, immutable provenance, explicit
+query/error accounting, and at least one observed execution outcome. These
+values are **self-asserted** until a reviewer verifies source/checkpoint
+identity and raw execution receipts. A successful SHA-256 schema check does
+**not** establish independence or genuine policy execution. Negative results
+are welcome and owner-authored results count as zero external recognition.
+
+The walkthrough covers core tests and JSON validation; a new frozen-policy
+experiment will take longer than the walkthrough.
 
 ```bash
 cp research/crg_core/replication_example.json result.json
