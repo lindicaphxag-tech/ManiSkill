@@ -19,6 +19,7 @@ import sys
 import time
 import traceback
 import urllib.request
+import zipfile
 from pathlib import Path
 
 WORK = Path("/kaggle/working")
@@ -31,6 +32,14 @@ BASE = "62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3"
 CONVERSION = "875ae4d8777678119b2f192ee186c6c15e6894d5"
 CONTROLLER = "eed9be164797d41540421bda8adb3840377d7087"
 UPSTREAM = "https://github.com/mani-skill/ManiSkill.git"
+DEMO_DATASET_REVISION = "d674485bbffdd533914e52d272fdda34c0515608"
+DEMO_ARCHIVE_RELATIVE_PATH = "demos/PegInsertionSide-v1.zip"
+DEMO_ARCHIVE_SHA256 = "7d61e4319a0395b220574f1e26ea65bd4ad1406387fb3debfbea96a2ddbb6a9c"
+DEMO_ARCHIVE_URL = (
+    "https://huggingface.co/datasets/haosulab/ManiSkill_Demonstrations/resolve/"
+    f"{DEMO_DATASET_REVISION}/{DEMO_ARCHIVE_RELATIVE_PATH}?download=true"
+)
+DEMO_ARCHIVE = WORK / "PegInsertionSide-v1.zip"
 DEMO_NAME = "trajectory.state.pd_ee_delta_pose.physx_cpu.h5"
 CONFIG = {
     "env_id": "PegInsertionSide-v1",
@@ -137,6 +146,35 @@ def sha256(path: Path) -> str:
             h.update(block)
     return h.hexdigest()
 
+def download_pinned_demo_dataset() -> dict:
+    """Download and verify the exact public demo archive used by the assay."""
+    DEMO_ARCHIVE.parent.mkdir(parents=True, exist_ok=True)
+    with urllib.request.urlopen(DEMO_ARCHIVE_URL, timeout=120) as response:
+        with DEMO_ARCHIVE.open("wb") as out:
+            shutil.copyfileobj(response, out)
+    actual_sha256 = sha256(DEMO_ARCHIVE)
+    if actual_sha256 != DEMO_ARCHIVE_SHA256:
+        raise RuntimeError(
+            f"Demo archive SHA-256 mismatch: expected {DEMO_ARCHIVE_SHA256}, "
+            f"got {actual_sha256}"
+        )
+
+    DEMO_ROOT.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(DEMO_ARCHIVE) as archive:
+        root = DEMO_ROOT.resolve()
+        for member in archive.infolist():
+            target = (root / member.filename).resolve()
+            if not target.is_relative_to(root):
+                raise RuntimeError(f"Unsafe path in pinned demo archive: {member.filename}")
+        archive.extractall(root)
+    return {
+        "repository": "haosulab/ManiSkill_Demonstrations",
+        "revision": DEMO_DATASET_REVISION,
+        "path": DEMO_ARCHIVE_RELATIVE_PATH,
+        "sha256": actual_sha256,
+        "size_bytes": DEMO_ARCHIVE.stat().st_size,
+    }
+
 def export_scalars(run_name: str, tb_dir: Path) -> list[dict]:
     from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
     acc = EventAccumulator(str(tb_dir), size_guidance={"scalars": 0})
@@ -187,7 +225,11 @@ try:
     if not torch.cuda.is_available():
         raise RuntimeError("Kaggle GPU was requested but CUDA is unavailable")
 
-    run_stream([sys.executable, "-m", "mani_skill.utils.download_demo", "PegInsertionSide-v1", "--output_dir", str(DEMO_ROOT)], OUTPUT / "dataset.log")
+    raw_dataset_record = download_pinned_demo_dataset()
+    run_record["raw_dataset"] = raw_dataset_record
+    (OUTPUT / "raw_dataset.json").write_text(
+        json.dumps(raw_dataset_record, indent=2) + "\n", encoding="utf-8"
+    )
     raw_demo_path = DEMO_ROOT / "PegInsertionSide-v1" / "motionplanning" / "trajectory.h5"
     if not raw_demo_path.is_file():
         raise FileNotFoundError(f"Official raw motion-planning demo missing: {raw_demo_path}")
@@ -323,3 +365,4 @@ finally:
     }, indent=2) + "\n", encoding="utf-8")
     shutil.rmtree(REPO, ignore_errors=True)
     shutil.rmtree(DEMO_ROOT, ignore_errors=True)
+    DEMO_ARCHIVE.unlink(missing_ok=True)
