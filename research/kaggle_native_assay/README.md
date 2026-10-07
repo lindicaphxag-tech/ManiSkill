@@ -8,6 +8,7 @@ This reproducibility package exercises the ManiSkill native PickCube environment
 - Hardware requested: NVIDIA Tesla T4; the run uses GPU rendering. PhysX simulation remains on CPU.
 - Frozen test source commit: `102c584f90af83d862ce32ca05a23112603be2ed` on `research/native-delta-pose-assay`.
 - Kernel runner: [`run_assay.py`](run_assay.py). It verifies the checkout SHA, installs the environment, enables SAPIEN GPU rendering, and runs conversion and native controller tests. It emits `assay_result.json`, `experiment_log.json`, and `artifacts_manifest.json`.
+- The manifest records byte sizes and SHA-256 hashes for the result and run log. Verify a downloaded bundle with `python research/kaggle_native_assay/audit_results.py research/kaggle_native_assay/results/v10`.
 - Recorded runs: [`results/v9/`](results/v9/) and [`results/v10/`](results/v10/).
 
 The runner omits ManiSkill's Linux extra `mplib==0.1.1`, which has no compatible Python 3.13 distribution, because this PickCube controller assay does not invoke motion planning. All other listed runtime dependencies are installed. This is an explicit scope limitation, not a full dependency-installation claim.
@@ -32,7 +33,9 @@ Kernel version 10 is public and completed successfully at the Kaggle URL above. 
 
 ## Relation to upstream PR #1495
 
-The frozen assay commit is on the fork's `research/native-delta-pose-assay` branch. It includes sign compensation for the installed controller's negative normalized rotation scaling. The current upstream PR head (`cdd6db713ffe7edc3e0df3abfab51ea5320c1c0b`, [#1495](https://github.com/mani-skill/ManiSkill/pull/1495)) instead emits positive XYZ Euler values and states that it should follow the separate controller sign fix. Consequently, this Kaggle run is **not exact-head validation of #1495** and must not be read as evidence that the current upstream PR alone passes the native production controller.
+The frozen assay commit is `102c584f90af83d862ce32ca05a23112603be2ed` on the fork's `research/native-delta-pose-assay` branch. The public #1495 head was subsequently updated to `875ae4d8777678119b2f192ee186c6c15e6894d5`, adding a runtime probe of the active controller's signed action scale. The Kaggle v9/v10 runs do **not** check out that PR head; they are mechanistic regression evidence for the frozen assay source only. They must not be described as exact-head CI or as proof that #1495 is accepted or merged.
+
+The two recorded runs use the same source commit, seed, and deterministic setup. They confirm that this narrow measurement repeated identically; they are not independent-seed replications. The assay's repaired unsaturated first-command error is below `1e-5` rad, compared with about `1.06e-3` rad for the legacy conversion. For the larger saturated target, the repaired final error is worse at 16 steps and lower at 64 steps. No general performance-superiority claim follows from these runs.
 
 ## Scope and evidence limits
 

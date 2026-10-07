@@ -1,6 +1,7 @@
 """Run the native ManiSkill regression on a Kaggle GPU and emit evidence."""
 
 import json
+import hashlib
 import os
 import shutil
 import subprocess
@@ -110,13 +111,21 @@ finally:
     log["elapsed_seconds"] = round(time.time() - started, 3)
     if REPO.exists():
         shutil.rmtree(REPO)
-    (WORK / "experiment_log.json").write_text(json.dumps(log, indent=2) + "\n")
+    log_path = WORK / "experiment_log.json"
+    log_path.write_text(json.dumps(log, indent=2) + "\n")
+    files = {}
+    for name in ("assay_result.json", "experiment_log.json"):
+        path = WORK / name
+        if path.is_file():
+            data = path.read_bytes()
+            files[name] = {
+                "size_bytes": len(data),
+                "sha256": hashlib.sha256(data).hexdigest(),
+            }
     (WORK / "artifacts_manifest.json").write_text(
         json.dumps(
             {
-                "assay_result": "assay_result.json",
-                "experiment_log": "experiment_log.json",
-                "manifest": "artifacts_manifest.json",
+                "files": files,
                 "repository_commit": log.get("commit"),
                 "status": log["status"],
             },
