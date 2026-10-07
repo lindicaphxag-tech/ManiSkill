@@ -262,3 +262,108 @@ Current external adoption remains 0. L8 achieved: NO. L9 achieved: NO.
 - Final pre-commit validation is being completed before the clean branch is
   considered submission-ready.
 - This is **not** an upstream PR or adoption yet.
+
+
+## PR-ready external-stack evidence — 2026-10-08
+
+### robomimic #270
+
+External issue `ARISE-Initiative/robomimic#270` requests absolute->delta
+dataset conversion; maintainer `amandlek` has publicly stated that they are
+happy to accept a PR.
+
+A clean upstream candidate now exists in the user fork:
+
+- fork: `lindicaphxag-tech/robomimic`
+- PR-final branch: `fix/add-delta-actions-converter-pr`
+- parent: official robomimic `master` at
+  `d309eaecc18acf4152a830a895a6984b8ac71b05`
+- candidate commit:
+  `40ac075975f9d13bf7a09dcb6c3cbe1be5549add`
+- history: **1 commit / 5 files**
+- submitted blobs are byte-identical to the previously validated working
+  branch.
+
+Focused semantic validation:
+
+- run: https://github.com/lindicaphxag-tech/robomimic/actions/runs/37682594954
+- result: **4 passed**
+- covers 1,000 affine scaling round trips, 500 randomized non-commuting SO(3)
+  goal round trips, saturation evidence and an explicit counterexample to
+  naive rotation-vector subtraction.
+
+Live controller validation:
+
+- run: https://github.com/lindicaphxag-tech/robomimic/actions/runs/37684361211
+- result: **SUCCESS**
+- runtime: robosuite **1.5.1**, MuJoCo **3.2.3**
+- system: live Panda `OSC_POSE` controller in robosuite `Lift`
+- random trials: 25
+- comparison is against the actual robosuite controller's
+  `scale_action`, `goal_pos` and `goal_ori`, not a duplicate forward
+  model in CST.
+- maximum physical-goal error: **2.944e-08**
+- maximum recovered native-action error: **4.814e-08**
+
+The first two live-runtime attempts failed before controller execution because
+unconstrained pip resolution installed MuJoCo 3.15.0 with robosuite 1.5.x;
+the successful run uses the robomimic-documented robosuite v1.5.1 line and a
+compatible MuJoCo runtime. Those infrastructure failures are not method
+failures.
+
+The GitHub integration attempted to create the upstream PR and received HTTP
+403 `Resource not accessible by integration`. The PR therefore still needs
+one manual GitHub UI submission. This is **PR-ready evidence, not upstream
+review or adoption**.
+
+### LeRobot #3312
+
+External issue `huggingface/lerobot#3312` is open and assigned to maintainer
+`pkooij`. The maintainer explicitly stated that relative actions had been
+implemented for pi0/pi05 and invited an ACT PR.
+
+The candidate was re-audited against the then-current official main:
+
+- official base:
+  `ca69a2068462a37f7cdcb74180927a2f863d2bf7`
+- PR-final branch:
+  `lindicaphxag-tech/lerobot:fix/act-relative-action-support-pr`
+- candidate commit:
+  `c8ce923108368dda3625ab388e3a466cf07cac31`
+- history: **1 commit / 3 files**
+- production diff: only `ACTConfig` and ACT processor construction;
+  generic relative-action processors, rollout engines and ACT model queue
+  logic are unchanged.
+- default `use_relative_actions=False` path returns the original default ACT
+  processors unchanged.
+- enabled path mirrors the existing pi0/pi05 contract:
+  raw -> relative -> normalize -> model -> unnormalize -> absolute.
+
+Validation:
+
+- run: https://github.com/lindicaphxag-tech/lerobot/actions/runs/37683329900
+- result: **8 passed, 5 skipped**
+- `ruff check`: **all checks passed**
+- submitted final blobs are identical to the validated working branch.
+
+LeRobot's contribution guide additionally requires a contributor to review at
+least one other open PR before their own PR receives attention. A technical
+review of #4862 has been prepared; direct submission through the connected
+GitHub integration returned HTTP 403 and therefore requires one manual UI
+action.
+
+LeRobot's AI policy requires disclosure of significant AI assistance. The
+eventual ACT PR must disclose that AI assistance was used for implementation
+and testing while the contributor takes responsibility for understanding and
+verification.
+
+### Recognition boundary
+
+These two candidates materially strengthen the cross-stack evidence, but they
+are not external adoption yet.
+
+- upstream maintainer review: pending
+- upstream merges of these candidates: 0
+- maintained external use of CST: 0
+- L8 achieved: **NO**
+- L9 achieved: **NO**
