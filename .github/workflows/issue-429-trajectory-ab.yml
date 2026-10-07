@@ -23,6 +23,16 @@ jobs:
           python-version: "3.11"
           cache: pip
 
+      - name: Install software Vulkan runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libvulkan1 mesa-vulkan-drivers vulkan-tools
+          ls -la /usr/share/vulkan/icd.d
+          LVP_ICD="$(find /usr/share/vulkan/icd.d -maxdepth 1 -type f -name '*lvp*.json' | head -n 1)"
+          test -n "$LVP_ICD"
+          echo "VK_ICD_FILENAMES=$LVP_ICD" >> "$GITHUB_ENV"
+          echo "MESA_VK_DEVICE_SELECT=llvmpipe" >> "$GITHUB_ENV"
+
       - name: Fetch upstream main and fix branch
         run: |
           git fetch https://github.com/haosulab/ManiSkill.git main:refs/remotes/upstream/main ||           git fetch https://github.com/mani-skill/ManiSkill.git main:refs/remotes/upstream/main
