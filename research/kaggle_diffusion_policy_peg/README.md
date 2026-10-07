@@ -30,7 +30,9 @@ Version 2, from research commit `3ea1aa4`, pinned the dataset revision and diges
 
 Version 3, from research commit `75fd6da`, implemented the source-seed pairing protocol. Kaggle successfully replayed both arms: baseline saved 90/100, treatment saved 91/100, and the shared source-seed intersection contained 90 demos. The baseline trainer loaded all 90 paired trajectories (13,805 transitions; 13,715 diffusion windows). It failed at initial evaluation, before an optimizer update, because the pinned Gymnasium vector environment returned NumPy metric arrays while the upstream evaluator called `.float()` on them. Version 3 has paired-data evidence but no policy-performance evidence. The compact [v3 result summary](results/v3/assay_summary.json), raw run record, pinned-data record, artifact manifest, and baseline log are committed alongside this README.
 
-The next runner revision patches the isolated evaluation copy to convert both tensor and NumPy episode metrics through `torch.as_tensor(...).float().cpu().numpy()`. It also records a combined digest of the worker and evaluator compatibility files. This is a runtime compatibility shim for the pinned Kaggle stack; it is not represented as an upstream ManiSkill change.
+Version 4 of the corrected paired-assay kernel includes this evaluation shim: it converts tensor and NumPy episode metrics through `torch.as_tensor(...).float().cpu().numpy()` and records a combined digest of the worker and evaluator compatibility files. This is a runtime compatibility shim for the pinned Kaggle stack; it is not represented as an upstream ManiSkill change.
+
+Version 4 was submitted on 2026-10-08 after version 3 exposed the NumPy metric mismatch. Unlike the earlier, invalid `maniskill-dp-peg-1495-1472` version 4, this corrected runner replays demonstrations independently under both source trees, intersects the successful trajectories by source `episode_seed`, and trains both arms on the resulting paired set. At 2026-10-07 19:43 UTC, Kaggle reported this corrected kernel as `RUNNING`; no v4 metrics or output artifacts were available. The live status alone is not evidence of progress or a successful run. Do not interpret v4 as policy evidence until the final logs and result manifest are retrieved and audited.
 
 ## Novelty boundary
 
@@ -38,12 +40,12 @@ This experiment does not claim a new general SO(3) action representation: the [S
 
 ### Validity audit and correction
 
-Before interpreting v4, an audit found that its runner replayed the raw demos
+An earlier kernel, `maniskill-dp-peg-1495-1472` version 4, replayed the raw demos
 only once under the frozen base, then reused that converted dataset for both
 arms. That is not a valid paired comparison for a change to action conversion.
-No result from v4 is evidence for either PR. An earlier local audit used an
-unpublished stale branch (`034e40c`) and incorrectly concluded the public PR
-heads were sign-incompatible. The actual public #1495 head was `cdd6db7` and the
+No result from that earlier run is evidence for either PR. An earlier local audit
+used an unpublished stale branch (`034e40c`) and incorrectly concluded the public
+#1495 heads were sign-incompatible. The actual public #1495 head was `cdd6db7` and the
 current PR branch now includes a runtime scale adapter; see
 [the corrected action-sign audit](ACTION_SIGN_AUDIT.md).
 
