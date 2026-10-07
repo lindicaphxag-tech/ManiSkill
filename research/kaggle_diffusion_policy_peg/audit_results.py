@@ -9,11 +9,14 @@ inputs are intentionally not included in the public result package.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
+from urllib.request import Request, urlopen
 
 
 def _read_json(root: Path, name: str) -> dict[str, Any]:
@@ -26,7 +29,35 @@ def _read_json(root: Path, name: str) -> dict[str, Any]:
     return value
 
 
-def audit(root: Path) -> list[str]:
+def _verify_source_dataset(dataset: dict[str, Any]) -> tuple[int, str]:
+    repository = str(dataset["repository"])
+    revision = str(dataset["revision"])
+    source_path = str(dataset["path"])
+    url = (
+        "https://huggingface.co/datasets/"
+        f"{quote(repository, safe='/')}/resolve/{quote(revision, safe='')}/"
+        f"{quote(source_path, safe='/')}?download=true"
+    )
+    request = Request(url, headers={"User-Agent": "ManiSkill-assay-evidence-auditor/1"})
+    digest = hashlib.sha256()
+    size = 0
+    with urlopen(request, timeout=120) as response:
+        while chunk := response.read(1024 * 1024):
+            digest.update(chunk)
+            size += len(chunk)
+    actual_sha256 = digest.hexdigest()
+    if size != int(dataset["size_bytes"]):
+        raise ValueError(
+            f"Downloaded source dataset size mismatch: expected {dataset['size_bytes']}, got {size}"
+        )
+    if actual_sha256 != dataset["sha256"]:
+        raise ValueError(
+            f"Downloaded source dataset SHA-256 mismatch: expected {dataset['sha256']}, got {actual_sha256}"
+        )
+    return size, actual_sha256
+
+
+def audit(root: Path, verify_source_dataset: bool = False) -> list[str]:
     summary = _read_json(root, "assay_summary.json")
     run = _read_json(root, "experiment_log.json")
     dataset = _read_json(root, "raw_dataset.json")
@@ -55,10 +86,17 @@ def audit(root: Path) -> list[str]:
         raise ValueError("Recorded source dataset SHA-256 is malformed")
     if int(dataset.get("size_bytes", 0)) <= 0:
         raise ValueError("Recorded source dataset size must be positive")
-    findings.append(
-        f"Source dataset identity agrees across records; SHA-256 is recorded, "
-        f"not recomputed (archive exported={bool(manifest.get('raw_demos_exported'))})"
-    )
+    if verify_source_dataset:
+        verified_size, verified_sha256 = _verify_source_dataset(dataset)
+        findings.append(
+            f"Pinned source archive downloaded and verified: {verified_size} bytes, "
+            f"SHA-256 {verified_sha256}"
+        )
+    else:
+        findings.append(
+            "Source dataset identity agrees across records; SHA-256 is recorded, "
+            f"not recomputed (archive exported={bool(manifest.get('raw_demos_exported'))})"
+        )
 
     outcomes = summary.get("arm_replay_outcomes")
     if not isinstance(outcomes, list) or len(outcomes) != 2:
@@ -150,9 +188,14 @@ def main() -> int:
         type=Path,
         help="Directory containing assay_summary.json and the recorded run files",
     )
+    parser.add_argument(
+        "--verify-source-dataset",
+        action="store_true",
+        help="Download the pinned public archive and recompute its size and SHA-256",
+    )
     args = parser.parse_args()
     try:
-        findings = audit(args.result_dir)
+        findings = audit(args.result_dir, verify_source_dataset=args.verify_source_dataset)
     except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
         print(f"AUDIT FAILED: {exc}", file=sys.stderr)
         return 1
