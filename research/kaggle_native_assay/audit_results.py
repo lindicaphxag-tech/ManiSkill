@@ -45,9 +45,12 @@ def audit(root: Path) -> list[str]:
         raise ValueError("Result status or duplicated measurements disagree")
     assay = result.get("assay")
     if assay == "native-pickcube-pr1495-exact-head":
-        expected_commit = "875ae4d8777678119b2f192ee186c6c15e6894d5"
-        if commit != expected_commit:
-            raise ValueError(f"Expected exact PR #1495 head {expected_commit}, got {commit}")
+        supported_pr_heads = {
+            "875ae4d8777678119b2f192ee186c6c15e6894d5",
+            "5a09b2a4f5a1b1076f88ba01cdacf1683f5494af",
+        }
+        if commit not in supported_pr_heads:
+            raise ValueError(f"Unrecognized exact PR #1495 head: {commit}")
         if log.get("pull_request") != "https://github.com/mani-skill/ManiSkill/pull/1495":
             raise ValueError("Experiment log does not identify ManiSkill PR #1495")
         if log.get("validation_harness") != "test_pr1495_native_assay.py":
