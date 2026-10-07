@@ -1,0 +1,31 @@
+name: CST robosuite OSC parity
+
+on:
+  push:
+    branches:
+      - "research/controller-semantic-transport-v0"
+    paths:
+      - "research/controller_semantic_transport/cst/robosuite_osc.py"
+      - "research/controller_semantic_transport/integration/robosuite_osc_parity.py"
+      - ".github/workflows/cst-robosuite-parity.yml"
+  workflow_dispatch:
+
+jobs:
+  upstream-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install frozen robosuite
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy scipy
+          python -m pip install "robosuite @ git+https://github.com/ARISE-Initiative/robosuite.git@5ce6643f3092639d08f7b0f90ed1c6a84f50552c"
+      - name: Run upstream OSC semantic parity
+        env:
+          PYTHONPATH: research/controller_semantic_transport
+        run: python research/controller_semantic_transport/integration/robosuite_osc_parity.py
