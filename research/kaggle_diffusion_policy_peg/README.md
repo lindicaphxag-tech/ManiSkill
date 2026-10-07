@@ -18,6 +18,10 @@ The private Kaggle kernel `oblivicore/maniskill-dp-peg-1495-1472` was submitted 
 
 The runner installs ManiSkill in editable no-dependency mode, then installs its explicit runtime requirements without the unrelated `mplib` extra; policy training does not call motion planning. It then fetches and independently replays the official PegInsertionSide demos for each arm. The raw demos and generated replay datasets are deleted before output packaging.
 
+## Corrected rerun
+
+The corrected runner from research commit `704a9f9` was submitted as private Kaggle kernel [maniskill-dp-peg-paired-assay-corrected](https://www.kaggle.com/code/oblivicore/maniskill-dp-peg-paired-assay-corrected), version 1, on 2026-10-08. The runner source in the Kaggle staging directory matches the committed source by SHA-256. The kernel reports `RUNNING`; no training result has been collected yet. Version 5's failed output is retained separately and excluded from this rerun.
+
 ### Validity audit and correction
 
 Before interpreting v4, an audit found that its runner replayed the raw demos
