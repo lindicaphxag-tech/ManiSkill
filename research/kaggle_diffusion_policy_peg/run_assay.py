@@ -113,13 +113,25 @@ try:
         ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader"],
         check=False, capture_output=True, text=True
     ).stdout.strip()
-    run_stream([sys.executable, "-m", "pip", "install", "-e", str(REPO)], OUTPUT / "install.log")
+    run_stream([sys.executable, "-m", "pip", "install", "--no-deps", "-e", str(REPO)], OUTPUT / "install.log")
+    runtime_requirements = ["numpy>=1.22", "scipy", "dacite", "gymnasium>=0.29.1", "h5py", "pyyaml", "tqdm", "GitPython", "tabulate", "transforms3d", "trimesh", "imageio[ffmpeg]", "IPython", "pytorch_kinematics==0.7.6", "defusedxml", "nvidia-ml-py", "tyro>=0.8.5", "huggingface_hub", "sapien>=3.0.3", "pin"]
+    run_stream([sys.executable, "-m", "pip", "install", *runtime_requirements], OUTPUT / "install.log")
     dp_dir = REPO / "examples" / "baselines" / "diffusion_policy"
-    run_stream([sys.executable, "-m", "pip", "install", "-e", str(dp_dir)], OUTPUT / "install.log")
+    run_stream([sys.executable, "-m", "pip", "install", "--no-deps", "-e", str(dp_dir)], OUTPUT / "install.log")
+    run_stream([sys.executable, "-m", "pip", "install", "diffusers", "tensorboard"], OUTPUT / "install.log")
     import torch
     run_record["torch"] = torch.__version__
     run_record["cuda_available"] = bool(torch.cuda.is_available())
     run_record["cuda_version"] = torch.version.cuda
+    from importlib.metadata import PackageNotFoundError, version
+    package_names = ["mani-skill", "diffusion_policy", "torch", "sapien", "diffusers", "tensorboard", "tyro", "numpy"]
+    package_versions = {}
+    for name in package_names:
+        try:
+            package_versions[name] = version(name)
+        except PackageNotFoundError:
+            package_versions[name] = None
+    run_record["package_versions"] = package_versions
     if not torch.cuda.is_available():
         raise RuntimeError("Kaggle GPU was requested but CUDA is unavailable")
 
@@ -226,3 +238,5 @@ finally:
         "videos_exported": False,
         "status": run_record["status"],
     }, indent=2) + "\n", encoding="utf-8")
+    shutil.rmtree(REPO, ignore_errors=True)
+    shutil.rmtree(DEMO_ROOT, ignore_errors=True)
