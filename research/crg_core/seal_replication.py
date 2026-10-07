@@ -17,7 +17,7 @@ def seal_record(path: Path) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Seal and validate one independent CRG replication record."
+        description="Seal and schema-check a claimed CRG replication; independence requires external audit."
     )
     parser.add_argument("record", type=Path)
     args = parser.parse_args()
