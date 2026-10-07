@@ -2,7 +2,7 @@
 
 The Kaggle kernel downloads the official public PegInsertionSide demonstrations,
 then independently replays the raw trajectories under the frozen base and the
-exact stacked open PR #1495/#1472 heads before training each arm. TensorBoard
+#1495/#1472 changed-file combination before training each arm. TensorBoard
 scalars are exported as JSON/CSV; no dataset, checkpoint, video, or credential
 is included.
 """
@@ -24,8 +24,8 @@ WORK = Path("/kaggle/working")
 REPO = WORK / "ManiSkill"
 OUTPUT = WORK / "assay_output"
 DEMO_ROOT = WORK / "demos"
-# ManiSkill needs an explicit renderer backend in Kaggle's headless container.
-os.environ["MANISKILL_RENDER_BACKEND"] = "gpu"
+# The physics backend is CPU; policy optimization alone uses Kaggle's GPU.
+os.environ["MANISKILL_RENDER_BACKEND"] = "cpu"
 BASE = "62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3"
 CONVERSION = "875ae4d8777678119b2f192ee186c6c15e6894d5"
 CONTROLLER = "eed9be164797d41540421bda8adb3840377d7087"
@@ -99,6 +99,17 @@ def apply_controller_pr_overlay(commit: str) -> None:
         text=True,
     )
     test_path.write_text(test_source, encoding="utf-8")
+
+def apply_kaggle_worker_compatibility() -> str:
+    """Avoid CUDA state inherited by ManiSkill's forkserver evaluation workers."""
+    env_path = REPO / "examples" / "baselines" / "diffusion_policy" / "diffusion_policy" / "make_env.py"
+    source = env_path.read_text(encoding="utf-8")
+    old = 'context="forkserver"'
+    new = 'context="spawn"'
+    if source.count(old) != 1:
+        raise RuntimeError("Expected exactly one diffusion-policy forkserver context")
+    env_path.write_text(source.replace(old, new), encoding="utf-8")
+    return sha256(env_path)
 
 def sha256(path: Path) -> str:
     h = hashlib.sha256()
@@ -177,6 +188,12 @@ try:
         subprocess.run(["git", "-C", str(REPO), "checkout", "--detach", start_commit], check=True)
         if extra_commit:
             apply_controller_pr_overlay(extra_commit)
+            subprocess.run([
+                "git", "-C", str(REPO), "add",
+                "mani_skill/agents/controllers/pd_ee_pose.py",
+                "tests/test_pd_ee_pose_controller.py",
+            ], check=True)
+            subprocess.run(["git", "-C", str(REPO), "diff", "--cached", "--check"], check=True)
         subprocess.run(["git", "-C", str(REPO), "diff", "--check"], check=True)
         tree = git("write-tree")
         # Regenerate state/action demonstrations under each source tree. PR #1495
@@ -207,6 +224,7 @@ try:
             "episode_count": len(meta_data.get("episodes", [])),
             "raw_data_exported": False,
         }
+        runtime_compatibility_sha256 = apply_kaggle_worker_compatibility()
         run_name = f"dp_peg_insertion_{arm}_seed_{CONFIG['seed']}"
         cmd = [
             sys.executable, "train.py",
@@ -244,7 +262,7 @@ try:
             dest = event_dir / event.name
             shutil.copy2(event, dest)
             saved_events.append(str(dest.relative_to(OUTPUT)))
-        run_summaries.append({"arm": arm, "source_commit": start_commit, "controller_overlay_commit": extra_commit, "source_tree": tree, "demo_sha256": demonstrations[arm]["sha256"], "run_name": run_name, "scalar_count": len(rows), "metrics": by_tag, "event_files": saved_events})
+        run_summaries.append({"arm": arm, "source_commit": start_commit, "controller_overlay_commit": extra_commit, "source_tree": tree, "runtime_compatibility_sha256": runtime_compatibility_sha256, "demo_sha256": demonstrations[arm]["sha256"], "run_name": run_name, "scalar_count": len(rows), "metrics": by_tag, "event_files": saved_events})
         # Retain TensorBoard evidence and compact log only; drop checkpoints/videos.
         shutil.rmtree(run_dir, ignore_errors=True)
         print(json.dumps(run_summaries[-1], sort_keys=True), flush=True)
