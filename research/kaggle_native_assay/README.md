@@ -7,9 +7,9 @@ This reproducibility package exercises the ManiSkill native PickCube environment
 - Public Kaggle GPU kernel: <https://www.kaggle.com/code/oblivicore/maniskill-native-delta-pose-assay>
 - Hardware requested: NVIDIA Tesla T4; the run uses GPU rendering. PhysX simulation remains on CPU.
 - Exact upstream source under validation: ManiSkill #1495 head `875ae4d8777678119b2f192ee186c6c15e6894d5` on `fix/delta-pose-euler-action`.
-- Kernel runner: [`run_assay.py`](run_assay.py). It verifies the checkout SHA, installs the environment, enables SAPIEN GPU rendering, and runs conversion and native controller tests. It emits `assay_result.json`, `experiment_log.json`, and `artifacts_manifest.json`.
+- Kernel runner: [`run_assay.py`](run_assay.py). Build the single-file Kaggle upload with `python research/kaggle_native_assay/build_kaggle_kernel.py --output <kernel-directory>`. The runner verifies the checkout SHA, installs the environment, enables SAPIEN GPU rendering, and runs the PR unit tests plus a hash-identified native rollout harness. It emits `assay_result.json`, `experiment_log.json`, and `artifacts_manifest.json`.
 - The manifest records byte sizes and SHA-256 hashes for the result and run log. Verify a downloaded bundle with `python research/kaggle_native_assay/audit_results.py <bundle-directory>`.
-- Historical runs [`results/v9/`](results/v9/) and [`results/v10/`](results/v10/) used frozen research commit `102c584f90af83d862ce32ca05a23112603be2ed`; they are not exact-head validation of #1495. The refreshed runner pins #1495's current head and adds a hash-recorded native rollout harness as a test-only file overlay. Its result will be recorded separately after Kaggle completes.
+- Historical runs [`results/v9/`](results/v9/) and [`results/v10/`](results/v10/) used frozen research commit `102c584f90af83d862ce32ca05a23112603be2ed`; they are not exact-head validation of #1495. Exact-head v12 artifacts and the raw Kaggle console log are in [`results/pr1495_head_v12/`](results/pr1495_head_v12/).
 
 The runner omits ManiSkill's Linux extra `mplib==0.1.1`, which has no compatible Python 3.13 distribution, because this PickCube controller assay does not invoke motion planning. All other listed runtime dependencies are installed. This is an explicit scope limitation, not a full dependency-installation claim.
 
@@ -31,13 +31,25 @@ The native controller clips each Euler axis to `[-0.1, 0.1]` rad per step. The l
 
 Kernel version 10 is public and completed successfully at the Kaggle URL above. It emitted the same orientation measurements as v9 on the frozen test source commit. The repeated run confirms execution reproducibility for this one deterministic setup; it is not independent seed replication or statistical validation. Both runs report Tesla T4 hardware and GPU rendering, while PhysX remains CPU-based.
 
+## Exact PR-head validation (v12)
+
+Kaggle kernel version 12 cloned and checked out #1495 head `875ae4d8777678119b2f192ee186c6c15e6894d5` and completed on a Tesla T4 with Python 3.13.15, PyTorch 2.11.0+cu128, SAPIEN 3.0.3, CUDA available, and GPU rendering. The upstream `tests/test_action_conversion.py` and the hash-identified native controller rollout both passed: 10 tests total. The run emitted dependency/deprecation warnings; they did not fail the tests.
+
+| Regime | Horizon | Legacy final orientation error | PR #1495 final orientation error |
+|---|---:|---:|---:|
+| Unsaturated XYZ target `[0.035, -0.028, 0.042]` rad | 16 | 0.00099086 rad | 0.00013078 rad |
+| Composed saturated XYZ target `[0.55, -0.48, 0.62]` rad | 16 | 0.21240359 rad | 0.22804119 rad |
+| Same composed target | 64 | 0.00053337 rad | 0.00009818 rad |
+
+For the unsaturated one-step command, target reconstruction error was `5.36e-9` rad for PR #1495 and `0.00105560` rad for the legacy axis-angle conversion. The repaired path is worse at the 16-step saturated horizon, so this run does not support a blanket superiority claim. It is one deterministic seed and one environment, not a statistical policy-performance result.
+
+The first exact-head attempt, kernel v11, stopped before tests because Kaggle did not stage a separate harness file. The v12 builder embeds that harness in the uploaded script; the v12 console log and manifest are preserved with the result.
+
 ## Relation to upstream PR #1495
 
-The current assay runner pins public #1495 head `875ae4d8777678119b2f192ee186c6c15e6894d5`, which adds a runtime probe of the active controller's signed action scale. It overlays a separate test-only native rollout file; the ManiSkill source itself remains at the pinned PR commit. Build the self-contained Kaggle script with `python research/kaggle_native_assay/build_kaggle_kernel.py --output <kernel-directory>`, then push that directory with the Kaggle CLI. The runner records the harness SHA-256. The earlier Kaggle v9/v10 runs do **not** check out that PR head and remain mechanistic evidence for their frozen research source only. A passing Kaggle run is validation evidence, not proof that #1495 is accepted or merged.
+The exact-head v12 run checks out the public PR commit and overlays only a test harness; the ManiSkill source remains unchanged at the pinned PR commit. The runner records the harness SHA-256, and the auditor verifies it against the published source. The earlier v9/v10 runs do **not** check out that PR head and remain mechanistic evidence for their frozen research source only. A passing Kaggle run is validation evidence, not proof that #1495 is accepted or merged.
 
-Kaggle kernel version 11 checked out the exact PR commit but stopped before tests because Kaggle did not stage the auxiliary harness file beside its script (`FileNotFoundError` under `/kaggle/src`). It produced no measurements. The builder now embeds the hash-identified test in the single uploaded script; the next version reruns the same exact-head check with that packaging fix.
-
-The two recorded runs use the same source commit, seed, and deterministic setup. They confirm that this narrow measurement repeated identically; they are not independent-seed replications. The assay's repaired unsaturated first-command error is below `1e-5` rad, compared with about `1.06e-3` rad for the legacy conversion. For the larger saturated target, the repaired final error is worse at 16 steps and lower at 64 steps. No general performance-superiority claim follows from these runs.
+The v9/v10 runs repeat the same source commit, seed, and deterministic setup; they are not independent-seed replications. The v12 exact-head run is one paired baseline comparison. All results remain a narrow controller-conversion regression, with no general performance-superiority claim.
 
 ## Scope and evidence limits
 
