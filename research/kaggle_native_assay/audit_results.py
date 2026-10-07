@@ -49,6 +49,7 @@ def audit(root: Path) -> list[str]:
             "875ae4d8777678119b2f192ee186c6c15e6894d5",
             "5a09b2a4f5a1b1076f88ba01cdacf1683f5494af",
             "fcbf03331985e88e0ba0805c0260dfb8ce7485c2",
+            "69facfaafaa0ef233d36ef19e6cd9a0f03532ee0",
         }
         if commit not in supported_pr_heads:
             raise ValueError(f"Unrecognized exact PR #1495 head: {commit}")

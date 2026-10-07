@@ -6,7 +6,7 @@ This reproducibility package exercises the ManiSkill native PickCube environment
 
 - Public Kaggle GPU kernel: <https://www.kaggle.com/code/oblivicore/maniskill-native-delta-pose-assay>
 - Hardware requested: NVIDIA Tesla T4; the run uses GPU rendering. PhysX simulation remains on CPU.
-- Current upstream source under validation: ManiSkill #1495 head `fcbf03331985e88e0ba0805c0260dfb8ce7485c2` on `fix/delta-pose-euler-action`.
+- Current upstream source under validation: ManiSkill #1495 head `69facfaafaa0ef233d36ef19e6cd9a0f03532ee0` on `fix/delta-pose-euler-action`.
 - Kernel runner: [`run_assay.py`](run_assay.py). Build the single-file Kaggle upload with `python research/kaggle_native_assay/build_kaggle_kernel.py --output <kernel-directory>`. The runner verifies the checkout SHA, installs the environment, enables SAPIEN GPU rendering, and runs the PR unit tests plus a hash-identified native rollout harness. It emits `assay_result.json`, `experiment_log.json`, and `artifacts_manifest.json`.
 - The manifest records byte sizes and SHA-256 hashes for the result and run log. Verify a downloaded bundle with `python research/kaggle_native_assay/audit_results.py <bundle-directory>`.
 - Historical runs [`results/v9/`](results/v9/) and [`results/v10/`](results/v10/) used frozen research commit `102c584f90af83d862ce32ca05a23112603be2ed`; they are not exact-head validation of #1495. Exact-head v12/v13/v14 artifacts are in [`results/pr1495_head_v12/`](results/pr1495_head_v12/), [`results/pr1495_head_v13/`](results/pr1495_head_v13/), and [`results/pr1495_head_v14/`](results/pr1495_head_v14/).
@@ -57,9 +57,11 @@ The current PR head adds a seeded 128-case batched XYZ Euler → quaternion → 
 
 The v14 native measurements match v12/v13. The 128-case test exercises the representation round trip only; it is not 128 robot rollouts or independent task seeds. The policy/controller performance evidence remains the same single-seed experiment.
 
+After v14, GitHub rewrote the PR branch into one commit (`69facfa…`). The v14 checkout (`fcbf033…`) and current PR head have identical Git tree SHA `ff9427533266cc6cabc42e53a0255ca236ae9238`; a direct tree diff is empty. Thus the v14 run tested the exact same source files as the current head. The runner is now pinned to the current commit SHA for future reruns.
+
 ## Relation to upstream PR #1495
 
-The current runner pins PR head `fcbf03331985e88e0ba0805c0260dfb8ce7485c2`, which adds a fixed-seed batch rotation round trip on top of anisotropic-scale and invalid-mapping tests. It overlays only the hash-recorded native rollout harness; the ManiSkill source remains unchanged at the pinned PR commit. The v13 run validates the immediately preceding test-only head `5a09b2a…`; v12 validates `875ae4d…`; the earlier v9/v10 runs do not check out any of those PR heads and remain mechanistic evidence for their frozen research source only. A passing Kaggle run is validation evidence, not proof that #1495 is accepted or merged.
+The current runner pins PR head `69facfaafaa0ef233d36ef19e6cd9a0f03532ee0`, which adds a fixed-seed batch rotation round trip on top of anisotropic-scale and invalid-mapping tests. It overlays only the hash-recorded native rollout harness; the ManiSkill source remains unchanged at the pinned PR commit. The v14 run checked out the tree-identical predecessor `fcbf033…`; v13 validates the preceding test-only head `5a09b2a…`; v12 validates `875ae4d…`; the earlier v9/v10 runs do not check out any PR head and remain mechanistic evidence for their frozen research source only. A passing Kaggle run is validation evidence, not proof that #1495 is accepted or merged.
 
 The v9/v10 runs repeat the same source commit, seed, and deterministic setup; they are not independent-seed replications. The v12/v13/v14 exact-head runs use the same deterministic rollout seed and do not provide independent statistical replication. All results remain a narrow controller-conversion regression, with no general performance-superiority claim.
 
