@@ -162,6 +162,9 @@ try:
         ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader"],
         check=False, capture_output=True, text=True
     ).stdout.strip()
+    # ManiSkill pins mplib==0.1.1 on Linux, which is unavailable for Python
+    # 3.13. This policy assay consumes motion-planning demos but never imports
+    # or invokes mplib; install runtime dependencies explicitly below.
     run_stream([sys.executable, "-m", "pip", "install", "--no-deps", "-e", str(REPO)], OUTPUT / "install.log")
     runtime_requirements = ["numpy>=1.22", "scipy", "dacite", "gymnasium>=0.29.1", "h5py", "pyyaml", "tqdm", "GitPython", "tabulate", "transforms3d", "trimesh", "imageio[ffmpeg]", "IPython", "pytorch_kinematics==0.7.6", "defusedxml", "nvidia-ml-py", "tyro>=0.8.5", "huggingface_hub", "sapien>=3.0.3", "pin"]
     run_stream([sys.executable, "-m", "pip", "install", *runtime_requirements], OUTPUT / "install.log")
