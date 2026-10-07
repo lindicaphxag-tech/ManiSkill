@@ -23,14 +23,23 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
-WORK = Path("/kaggle/working")
+SMOKE_MODE = os.environ.get("SEMREPAIR_DP_SMOKE", "0") == "1"
+WORK = (
+    Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "semrepair_dp_smoke"
+    if SMOKE_MODE
+    else Path("/kaggle/working")
+)
 REPO = WORK / "ManiSkill"
 OUTPUT = WORK / "assay_output"
 DEMO_ROOT = WORK / "demos"
-# The physics backend is CPU; policy optimization alone uses Kaggle's GPU.
+# State-based evaluation uses PhysX CPU.  The smoke mode disables rendering.
 os.environ["MANISKILL_RENDER_BACKEND"] = "cpu"
 BASE = "62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3"
-CONVERSION = "875ae4d8777678119b2f192ee186c6c15e6894d5"
+CONVERSION = (
+    "69facfaafaa0ef233d36ef19e6cd9a0f03532ee0"
+    if SMOKE_MODE
+    else "875ae4d8777678119b2f192ee186c6c15e6894d5"
+)
 CONTROLLER = "eed9be164797d41540421bda8adb3840377d7087"
 UPSTREAM = "https://github.com/mani-skill/ManiSkill.git"
 DEMO_DATASET_REVISION = "d674485bbffdd533914e52d272fdda34c0515608"
@@ -61,6 +70,23 @@ CONFIG = {
     "wandb_tracking": False,
     "measurement_deviation": "evaluation is reduced from upstream defaults (100 episodes/5000 iterations) to 20 episodes/10000 iterations to fit paired Kaggle GPU execution; optimizer/training/demo configuration follows baselines.sh",
 }
+if SMOKE_MODE:
+    CONFIG.update(
+        requested_num_demos=8,
+        minimum_paired_demos=4,
+        replay_count=8,
+        max_episode_steps=20,
+        total_iters=2,
+        batch_size=32,
+        eval_freq=1,
+        num_eval_episodes=2,
+        num_eval_envs=2,
+        measurement_deviation=(
+            "CPU-only pipeline smoke: eight source demos, source-seed pairing, "
+            "two optimizer updates, two SAME_STEP eval workers, no rendering. "
+            "This is compatibility evidence only, not policy-performance evidence."
+        ),
+    )
 
 started = time.time()
 OUTPUT.mkdir(parents=True, exist_ok=True)
@@ -132,7 +158,11 @@ def apply_controller_pr_overlay(commit: str) -> None:
     test_path.write_bytes(test_bytes)
 
 def apply_kaggle_worker_compatibility() -> str:
-    """Use spawn/SAME_STEP workers and normalize NumPy evaluation metrics."""
+    """Use spawn/SAME_STEP workers and normalize NumPy evaluation metrics.
+
+    Smoke mode additionally disables the unused RGB render surface so the
+    state-only PhysX-CPU path can execute on a renderer-less GitHub runner.
+    """
     env_path = REPO / "examples" / "baselines" / "diffusion_policy" / "diffusion_policy" / "make_env.py"
     source = env_path.read_text(encoding="utf-8")
     old = 'context="forkserver"'
@@ -156,7 +186,28 @@ def apply_kaggle_worker_compatibility() -> str:
         "eval_metrics[k].append(torch.as_tensor(v).float().cpu().numpy())\n",
     )
     eval_path.write_text(eval_source, encoding="utf-8")
-    compatibility_digests = f"{sha256(env_path)}:{sha256(eval_path)}"
+
+    compatibility_paths = [env_path, eval_path]
+    if SMOKE_MODE:
+        train_path = REPO / "examples" / "baselines" / "diffusion_policy" / "train.py"
+        train_source = train_path.read_text(encoding="utf-8")
+        old_env_line = (
+            '    env_kwargs = dict(control_mode=args.control_mode, reward_mode="sparse", '
+            'obs_mode="state", render_mode="rgb_array", '
+            'human_render_camera_configs=dict(shader_pack="default"))'
+        )
+        new_env_line = (
+            '    env_kwargs = dict(control_mode=args.control_mode, reward_mode="sparse", '
+            'obs_mode="state", render_mode=None)'
+        )
+        if train_source.count(old_env_line) != 1:
+            raise RuntimeError("Unexpected state-policy render configuration")
+        train_path.write_text(
+            train_source.replace(old_env_line, new_env_line), encoding="utf-8"
+        )
+        compatibility_paths.append(train_path)
+
+    compatibility_digests = ":".join(sha256(path) for path in compatibility_paths)
     return hashlib.sha256(compatibility_digests.encode("ascii")).hexdigest()
 
 def sha256(path: Path) -> str:
@@ -264,10 +315,13 @@ try:
     subprocess.run(["git", "-C", str(REPO), "merge-base", "--is-ancestor", BASE, CONVERSION], check=True)
 
     subprocess.run(["git", "-C", str(REPO), "checkout", "--detach", BASE], check=True)
-    run_record["hardware"] = subprocess.run(
-        ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader"],
-        check=False, capture_output=True, text=True
-    ).stdout.strip()
+    if shutil.which("nvidia-smi"):
+        run_record["hardware"] = subprocess.run(
+            ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader"],
+            check=False, capture_output=True, text=True
+        ).stdout.strip()
+    else:
+        run_record["hardware"] = "CPU-only GitHub smoke runner"
     # ManiSkill pins mplib==0.1.1 on Linux, which is unavailable for Python
     # 3.13. This policy assay consumes motion-planning demos but never imports
     # or invokes mplib; install runtime dependencies explicitly below.
@@ -290,7 +344,7 @@ try:
         except PackageNotFoundError:
             package_versions[name] = None
     run_record["package_versions"] = package_versions
-    if not torch.cuda.is_available():
+    if not SMOKE_MODE and not torch.cuda.is_available():
         raise RuntimeError("Kaggle GPU was requested but CUDA is unavailable")
 
     raw_dataset_record = download_pinned_demo_dataset()
@@ -364,7 +418,7 @@ try:
             sys.executable, "-m", "mani_skill.trajectory.replay_trajectory",
             "--traj-path", str(arm_raw_path), "--use-first-env-state",
             "-c", CONFIG["control_mode"], "-o", "state", "--save-traj",
-            "--num-envs", "10", "-b", CONFIG["sim_backend"],
+            "--num-envs", ("4" if SMOKE_MODE else "10"), "-b", CONFIG["sim_backend"],
             "--count", str(CONFIG["replay_count"]),
         ], OUTPUT / "dataset.log", cwd=REPO)
         demo_path = arm_demo_dir / DEMO_NAME
