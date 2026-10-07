@@ -74,8 +74,22 @@ def restore_snapshot(env: Any, snapshot: PushTSnapshot) -> None:
 
     restored = capture_snapshot(env)
     for name in ("agent_position", "agent_velocity", "block_position", "block_velocity"):
-        if not np.array_equal(getattr(restored, name), getattr(snapshot, name)):
-            raise RuntimeError(f"PushT exact restore mismatch in {name}")
+        expected = getattr(snapshot, name)
+        observed = getattr(restored, name)
+        if not np.array_equal(observed, expected):
+            # Do not silently relax exact restoration: prospective bank seeds,
+            # perturbations, and decision thresholds remain frozen. This detail
+            # distinguishes invalid/non-finite states from float round-trip drift
+            # and helps attribute source-level rather than method-level failures.
+            delta = observed - expected
+            raise RuntimeError(
+                f"PushT exact restore mismatch in {name}: "
+                f"expected={expected.tolist()!r}, "
+                f"observed={observed.tolist()!r}, "
+                f"delta={delta.tolist()!r}, "
+                f"expected_finite={bool(np.isfinite(expected).all())}, "
+                f"observed_finite={bool(np.isfinite(observed).all())}"
+            )
     if restored.block_angle != snapshot.block_angle:
         raise RuntimeError("PushT exact restore mismatch in block_angle")
     if restored.block_angular_velocity != snapshot.block_angular_velocity:
