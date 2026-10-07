@@ -19,6 +19,11 @@ class _NormalizedController:
         self.action_space_low = np.asarray(low, dtype=float)
         self.action_space_high = np.asarray(high, dtype=float)
 
+    def get_state(self):
+        if self.config.use_target:
+            return {"target_qpos": np.zeros_like(self.action_space_low)}
+        return {}
+
 
 class _PhysicalController:
     def __init__(self, *, use_delta, use_target, low, high):
@@ -32,6 +37,11 @@ class _PhysicalController:
             high=np.asarray(high, dtype=float),
         )
 
+    def get_state(self):
+        if self.config.use_target:
+            return {"target_qpos": np.zeros_like(self.single_action_space.low)}
+        return {}
+
 
 def test_extractor_reads_normalized_runtime_bounds():
     controller = _NormalizedController(
@@ -43,7 +53,12 @@ def test_extractor_reads_normalized_runtime_bounds():
     extracted = extract_maniskill_joint_position_contract(controller)
     assert extracted.normalized
     assert not extracted.uses_previous_target
+    assert extracted.reference_owner == "current_qpos"
+    assert extracted.controller_state_observable
+    assert extracted.controller_state_keys == ()
+    assert not extracted.requires_stateful_migration
     assert "action_space_low" in extracted.evidence_fields
+    assert "get_state()" in extracted.evidence_fields
     np.testing.assert_allclose(extracted.contract.low, [-0.1, -0.2])
 
 
@@ -56,6 +71,8 @@ def test_extractor_reads_physical_action_space_when_not_normalized():
     )
     extracted = extract_maniskill_joint_position_contract(controller)
     assert not extracted.normalized
+    assert extracted.reference_owner == "absolute"
+    assert not extracted.requires_stateful_migration
     assert "single_action_space.low" in extracted.evidence_fields
     np.testing.assert_allclose(extracted.contract.high, [2.0, 3.0])
 
@@ -131,3 +148,40 @@ def test_extractor_rejects_incomplete_runtime_contract():
         assert "action_space_low" in str(exc)
     else:
         raise AssertionError("incomplete controller contract was accepted")
+
+
+def test_extractor_marks_target_relative_controller_as_stateful():
+    controller = _NormalizedController(
+        use_delta=True,
+        use_target=True,
+        low=[-0.1, -0.1],
+        high=[0.1, 0.1],
+    )
+
+    extracted = extract_maniskill_joint_position_contract(controller)
+
+    assert extracted.uses_previous_target
+    assert extracted.reference_owner == "controller_target"
+    assert extracted.requires_stateful_migration
+    assert extracted.controller_state_observable
+    assert extracted.controller_state_keys == ("target_qpos",)
+    assert "get_state()" in extracted.evidence_fields
+
+
+def test_extractor_fails_closed_on_state_visibility_not_by_guessing_keys():
+    controller = SimpleNamespace(
+        config=SimpleNamespace(
+            use_delta=True,
+            use_target=True,
+            normalize_action=True,
+        ),
+        action_space_low=np.array([-0.1]),
+        action_space_high=np.array([0.1]),
+    )
+
+    extracted = extract_maniskill_joint_position_contract(controller)
+
+    assert extracted.reference_owner == "controller_target"
+    assert extracted.requires_stateful_migration
+    assert not extracted.controller_state_observable
+    assert extracted.controller_state_keys == ()
