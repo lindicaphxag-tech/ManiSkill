@@ -7,6 +7,7 @@
 - Claim / adoption ledger: [EVIDENCE_LEDGER.md](EVIDENCE_LEDGER.md)
 - Reproduction: [REPRODUCE.md](REPRODUCE.md)
 - Novelty boundary: [NOVELTY_BOUNDARY_2026_10_06.md](NOVELTY_BOUNDARY_2026_10_06.md)
+- Competitive boundary update: [COMPETITIVE_BOUNDARY_2026_10_08.md](COMPETITIVE_BOUNDARY_2026_10_08.md)
 - External trigger queue: [EXTERNAL_TRIGGER_QUEUE_2026_10_06.md](EXTERNAL_TRIGGER_QUEUE_2026_10_06.md)
 
 Latest full public suite: **75 passed in 3.20s**. External maintained adoption: **0**.
