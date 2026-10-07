@@ -56,17 +56,69 @@ def euler_xyz_from_quaternion(quat: np.ndarray) -> np.ndarray:
     return rotation_conversions.matrix_to_euler_angles(matrix, "XYZ").cpu().numpy()
 
 
-def inverse_delta_to_pd_ee_euler(quat: np.ndarray) -> np.ndarray:
-    """Encode the desired relative rotation in PDEEPoseController's XYZ Euler convention.
+def inverse_delta_to_pd_ee_euler(
+    quat: np.ndarray, rotation_action_scale: Union[np.ndarray, float, None] = None
+) -> np.ndarray:
+    """Encode a trajectory-relative quaternion as controller XYZ Euler actions.
 
-    The trajectory converter supplies ``current * target.inv()``, i.e. the
-    inverse of the desired relative rotation. Invert that quaternion, then
-    express the result in the XYZ Euler representation consumed by the pose
-    controller. Rotation-action scaling is a separate controller concern.
+    The trajectory converter supplies ``current * target.inv()``. Inverting it
+    recovers the desired relative rotation. When given the signed physical scale
+    applied by the controller, return a normalized action that reconstructs that
+    rotation under either the legacy ``rot_lower`` or corrected ``rot_upper``
+    mapping. The default preserves the helper's positive-Euler representation
+    contract for downstream callers.
     """
     quat = torch.as_tensor(quat)
     target_delta = rotation_conversions.quaternion_invert(quat)
-    return euler_xyz_from_quaternion(target_delta.numpy())
+    euler = euler_xyz_from_quaternion(target_delta.numpy())
+    if rotation_action_scale is None:
+        return euler
+    scale = np.asarray(rotation_action_scale, dtype=np.float64)
+    if scale.ndim == 0:
+        scale = np.full(3, scale, dtype=np.float64)
+    if (
+        scale.shape != (3,)
+        or not np.all(np.isfinite(scale))
+        or np.any(np.isclose(scale, 0))
+    ):
+        raise ValueError(
+            "rotation_action_scale must contain three finite nonzero values"
+        )
+    return euler / scale
+
+
+def _get_controller_rotation_action_scale(controller: PDEEPoseController) -> np.ndarray:
+    """Read the signed action-to-Euler scale from the production action mapper.
+
+    Axis-basis probes make the controller's mapper the source of truth, so a
+    controller change from ``rot_lower`` to ``rot_upper`` cannot silently
+    invalidate trajectory conversion. The scale is static for a controller and
+    is cached after the first probe.
+    """
+    if not isinstance(controller, PDEEPoseController):
+        raise TypeError("rotation action scaling requires a PDEEPoseController")
+    cache_name = "_trajectory_conversion_rotation_action_scale"
+    cached = getattr(controller, cache_name, None)
+    if cached is not None:
+        return np.asarray(cached, dtype=np.float64).copy()
+
+    bounds = controller.action_space_low
+    probe = torch.zeros((3, 6), dtype=bounds.dtype, device=bounds.device)
+    probe[:, 3:] = torch.eye(3, dtype=bounds.dtype, device=bounds.device)
+    with torch.no_grad():
+        mapped_rotation = controller._clip_and_scale_action(probe)[:, 3:]
+    scale = torch.diagonal(mapped_rotation)
+    if not torch.allclose(
+        mapped_rotation, torch.diag_embed(scale), atol=1e-6, rtol=1e-6
+    ):
+        raise ValueError("controller rotation action mapping is not axis-separable")
+    scale_np = scale.detach().cpu().numpy().astype(np.float64)
+    if not np.all(np.isfinite(scale_np)) or np.any(np.isclose(scale_np, 0)):
+        raise ValueError(
+            "controller rotation action mapping has a zero or non-finite scale"
+        )
+    setattr(controller, cache_name, scale_np)
+    return scale_np.copy()
 
 
 def delta_pose_to_pd_ee_delta(
@@ -88,11 +140,12 @@ def delta_pose_to_pd_ee_delta(
         return gym_utils.inv_scale_action(
             delta_pose.p, low.cpu().numpy(), high.cpu().numpy()
         )
-    delta_pose = np.r_[
-        delta_pose.p,
-        inverse_delta_to_pd_ee_euler(delta_pose.q),
-    ]
-    return gym_utils.inv_scale_action(delta_pose, low.cpu().numpy(), high.cpu().numpy())
+    position_action = gym_utils.inv_scale_action(
+        delta_pose.p, low[:3].cpu().numpy(), high[:3].cpu().numpy()
+    )
+    rotation_scale = _get_controller_rotation_action_scale(controller)
+    rotation_action = inverse_delta_to_pd_ee_euler(delta_pose.q, rotation_scale)
+    return np.r_[position_action, rotation_action]
 
 
 def from_pd_joint_pos_to_ee(
