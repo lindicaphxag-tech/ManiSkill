@@ -9,6 +9,8 @@ on:
       - "research/eprc/evidence/cross_policy_prospective_bank_v1.json"
       - "research/eprc/cross_policy_dec_gate.py"
       - "tests/test_eprc_cross_policy_prospective_execution.py"
+      - "tests/test_eprc_pusht_restore_roundoff.py"
+      - "research/eprc/real_policy/pusht_exact_state.py"
       - ".github/workflows/eprc-cross-policy-prospective-bank-v1.yml"
   workflow_dispatch:
 
@@ -95,7 +97,7 @@ jobs:
       - name: Verify frozen bank cardinality
         run: |
           test "$(find /tmp/eprc-cross-policy-bank -name 'state-*.json' | wc -l)" -eq 10
-          python -m pytest -q tests/test_eprc_cross_policy_prospective_execution.py tests/test_eprc_cross_policy_dec_gate.py
+          python -m pytest -q tests/test_eprc_cross_policy_prospective_execution.py tests/test_eprc_cross_policy_dec_gate.py tests/test_eprc_pusht_restore_roundoff.py
       - name: Adjudicate frozen 20-case gate
         run: |
           python research/eprc/real_policy/aggregate_cross_policy_prospective_bank.py \
