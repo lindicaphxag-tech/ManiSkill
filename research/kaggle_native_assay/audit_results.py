@@ -43,7 +43,50 @@ def audit(root: Path) -> list[str]:
         raise ValueError("Experiment log and manifest do not both report passed")
     if result.get("status") != "passed" or log.get("measurements") != result:
         raise ValueError("Result status or duplicated measurements disagree")
-    if result.get("assay") != "native-pickcube-multiaxis-delta-pose":
+    assay = result.get("assay")
+    if assay == "native-pickcube-pr1495-exact-head":
+        expected_commit = "875ae4d8777678119b2f192ee186c6c15e6894d5"
+        if commit != expected_commit:
+            raise ValueError(f"Expected exact PR #1495 head {expected_commit}, got {commit}")
+        if log.get("pull_request") != "https://github.com/mani-skill/ManiSkill/pull/1495":
+            raise ValueError("Experiment log does not identify ManiSkill PR #1495")
+        if log.get("validation_harness") != "test_pr1495_native_assay.py":
+            raise ValueError("Unexpected native validation harness")
+        harness_path = Path(__file__).with_name("test_pr1495_native_assay.py")
+        harness_sha256 = hashlib.sha256(harness_path.read_bytes()).hexdigest()
+        if log.get("validation_harness_sha256") != harness_sha256:
+            raise ValueError("Native validation harness SHA-256 does not match the published source")
+        if result.get("cuda_available") is not True or result.get("render_backend") != "gpu":
+            raise ValueError("Recorded exact-head run did not use CUDA with GPU rendering")
+        if result.get("seed") != 2026:
+            raise ValueError("Unexpected native rollout seed")
+        measurements = result.get("results", {})
+        try:
+            one_step = measurements["unsaturated_xyz"]["1"]
+            short = measurements["unsaturated_xyz"]["16"]["pr1495"]
+            long = measurements["composed_saturated_xyz"]["64"]["pr1495"]
+            repaired_first = float(one_step["pr1495"]["first_command_error_rad"])
+            legacy_first = float(one_step["legacy"]["first_command_error_rad"])
+            repaired_short = float(short["final_orientation_error_rad"])
+            repaired_long = float(long["final_orientation_error_rad"])
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError("Exact-head native measurements are incomplete") from error
+        values = (repaired_first, legacy_first, repaired_short, repaired_long)
+        if not all(math.isfinite(value) and value >= 0 for value in values):
+            raise ValueError("Exact-head orientation errors must be finite and nonnegative")
+        if repaired_first >= legacy_first or repaired_first >= 1e-5:
+            raise ValueError("PR conversion did not improve unsaturated first-command reconstruction")
+        if repaired_short >= 1e-3 or repaired_long >= 1e-3:
+            raise ValueError("PR conversion exceeded the recorded native rollout error bounds")
+        return [
+            f"SHA-256 and sizes verified for {len(files)} artifacts",
+            f"Exact source commit and PR URL verified: {commit}",
+            f"Published native harness hash verified: {harness_sha256}",
+            f"Unsaturated first-command error: PR {repaired_first:.3g} rad, legacy {legacy_first:.3g} rad",
+            "The saturated 16-step comparison is intentionally not treated as a superiority claim.",
+        ]
+
+    if assay != "native-pickcube-multiaxis-delta-pose":
         raise ValueError("Unexpected assay identity")
     if result.get("torch_cuda_available") is not True or result.get("render_backend") != "gpu":
         raise ValueError("Recorded run did not use CUDA with GPU rendering")
