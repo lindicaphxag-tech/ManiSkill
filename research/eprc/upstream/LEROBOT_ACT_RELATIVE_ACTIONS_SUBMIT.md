@@ -6,7 +6,7 @@ Once the public handoff CI is green, the remaining steps are mechanical.
 ```bash
 git clone https://github.com/huggingface/lerobot.git
 cd lerobot
-git checkout d40e8709cffb93644db66e30604ef50fdec003cb
+git checkout ca69a2068462a37f7cdcb74180927a2f863d2bf7
 git switch -c feat/act-relative-actions
 
 python /path/to/apply_lerobot_act_relative_actions.py .
