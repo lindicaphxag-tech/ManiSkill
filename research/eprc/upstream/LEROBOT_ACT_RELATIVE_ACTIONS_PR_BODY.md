@@ -58,7 +58,7 @@ as Pi0. The generic `make_policy` path already populates
 
 Targeted validation is frozen against LeRobot commit:
 
-`d40e8709cffb93644db66e30604ef50fdec003cb`
+`ca69a2068462a37f7cdcb74180927a2f863d2bf7`
 
 The handoff CI performs:
 
