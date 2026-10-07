@@ -93,6 +93,57 @@ Per the frozen rule, the result is:
 The richer local model is retained only as negative evidence, not as a main
 method component.
 
+## Paired cross-policy witness
+
+A same-runner, same-runtime, same-physical-protocol experiment now compares two
+official frozen LeRobot policies on the identical PushT support chart and held-out
+disturbance.
+
+**Diffusion PushT**
+- five-seed DEC q95 radius: **~3.826**;
+- stochastic local-map radius: **~21.435**;
+- scale-drift radius: **~10.215**;
+- bottleneck: **STOCHASTIC_LIMITED**;
+- robust CRG: **INCONCLUSIVE**.
+
+**VQ-BeT PushT**
+- five-seed DEC q95 radius: **0.0**;
+- stochastic local-map radius: **0.0**;
+- scale-drift radius: **~3.013**;
+- bottleneck: **LOCALITY_LIMITED**;
+- robust CRG: **INCONCLUSIVE**.
+
+The fail-closed adjudicator reports:
+- same frozen protocol: **yes**;
+- reports comparable: **yes**;
+- DEC signature distance: **~0.259**;
+- held-out response relative distance: **~1.530**;
+- robust CRG decisions agree: **yes**;
+- both DEC stability gates pass: **no**.
+
+Therefore the project does **not** claim cross-policy numerical DEC equality.
+The surviving cross-policy claim is narrower: the same physical-repairability
+framework can expose different evidence bottlenecks across frozen policy
+families and refuse unsupported repair for different reasons.
+
+See `CROSS_POLICY_RESULT_2026_10_06.md`.
+
+## Flagship freeze
+
+No additional model-order mechanism is promoted without a new prospective gate.
+The response jet was rejected at 0/5 rescues and remains negative evidence.
+The flagship surface is now frozen around:
+
+1. DEC semantic lifting;
+2. robust CRG repairability certificates;
+3. evidence-bottleneck / locality routing;
+4. certificate-directed identifiability;
+5. paired real frozen-policy evidence;
+6. machine-verifiable external replication.
+
+New auxiliary mechanisms belong in appendices/tooling unless they change one of
+these frozen claims under a prospective benchmark.
+
 ## External evidence boundary
 
 These do **not** count as external validation:
