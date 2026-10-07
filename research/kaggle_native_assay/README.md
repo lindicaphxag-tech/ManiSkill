@@ -61,6 +61,34 @@ After v14, GitHub rewrote the PR branch into one commit (`69facfa…`). The v14 
 
 Kernel v15 is being run against the current PR commit. It additionally captures `pip freeze --all` and includes that snapshot in the hashed manifest, so the resolved runtime can be audited rather than inferred from only the major framework versions.
 
+## Exact squashed-head GitHub compatibility closure
+
+After review-hygiene squashing, the current upstream PR head is:
+
+`69facfaafaa0ef233d36ef19e6cd9a0f03532ee0`
+
+and the upstream PR is again **1 commit / 2 files**.
+
+A separate public validation branch,
+`validation/pr1495-squashed-head-v1`, binds directly to that commit and proves
+the production/test blobs before executing either compatibility path.
+
+Public workflow run **37687749068 — success**:
+
+- current / legacy mapper: **13 passed**;
+- exact #1472 controller and controller-test blobs overlaid on the same squashed
+  converter: **18 passed**.
+
+The #1472 job verifies the exact controller source/test blob hashes before
+running the combined tests. The legacy job verifies the current conversion and
+test blobs against the squashed upstream PR head before execution.
+
+This closes the gap created by the history rewrite: v14 remains native
+tree-identical evidence, while run 37687749068 is the explicit
+**current-commit identity-bound compatibility check**.
+
+Neither result establishes learned-policy task success or maintainer acceptance.
+
 ## Relation to upstream PR #1495
 
 The current runner pins PR head `69facfaafaa0ef233d36ef19e6cd9a0f03532ee0`, which adds a fixed-seed batch rotation round trip on top of anisotropic-scale and invalid-mapping tests. It overlays only the hash-recorded native rollout harness; the ManiSkill source remains unchanged at the pinned PR commit. The v14 run checked out the tree-identical predecessor `fcbf033…`; v13 validates the preceding test-only head `5a09b2a…`; v12 validates `875ae4d…`; the earlier v9/v10 runs do not check out any PR head and remain mechanistic evidence for their frozen research source only. A passing Kaggle run is validation evidence, not proof that #1495 is accepted or merged.
