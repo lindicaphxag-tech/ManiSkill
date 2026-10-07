@@ -8,7 +8,7 @@ This reproducibility package exercises the ManiSkill native PickCube environment
 - Hardware requested: NVIDIA Tesla T4; the run uses GPU rendering. PhysX simulation remains on CPU.
 - Exact upstream source under validation: ManiSkill #1495 head `875ae4d8777678119b2f192ee186c6c15e6894d5` on `fix/delta-pose-euler-action`.
 - Kernel runner: [`run_assay.py`](run_assay.py). It verifies the checkout SHA, installs the environment, enables SAPIEN GPU rendering, and runs conversion and native controller tests. It emits `assay_result.json`, `experiment_log.json`, and `artifacts_manifest.json`.
-- The manifest records byte sizes and SHA-256 hashes for the result and run log. Verify a downloaded bundle with `python research/kaggle_native_assay/audit_results.py research/kaggle_native_assay/results/v10`.
+- The manifest records byte sizes and SHA-256 hashes for the result and run log. Verify a downloaded bundle with `python research/kaggle_native_assay/audit_results.py <bundle-directory>`.
 - Historical runs [`results/v9/`](results/v9/) and [`results/v10/`](results/v10/) used frozen research commit `102c584f90af83d862ce32ca05a23112603be2ed`; they are not exact-head validation of #1495. The refreshed runner pins #1495's current head and adds a hash-recorded native rollout harness as a test-only file overlay. Its result will be recorded separately after Kaggle completes.
 
 The runner omits ManiSkill's Linux extra `mplib==0.1.1`, which has no compatible Python 3.13 distribution, because this PickCube controller assay does not invoke motion planning. All other listed runtime dependencies are installed. This is an explicit scope limitation, not a full dependency-installation claim.
@@ -33,7 +33,9 @@ Kernel version 10 is public and completed successfully at the Kaggle URL above. 
 
 ## Relation to upstream PR #1495
 
-The current assay runner pins public #1495 head `875ae4d8777678119b2f192ee186c6c15e6894d5`, which adds a runtime probe of the active controller's signed action scale. It overlays a separate test-only native rollout file; the ManiSkill source itself remains at the pinned PR commit. The earlier Kaggle v9/v10 runs do **not** check out that PR head and remain mechanistic evidence for their frozen research source only. A passing Kaggle run is validation evidence, not proof that #1495 is accepted or merged.
+The current assay runner pins public #1495 head `875ae4d8777678119b2f192ee186c6c15e6894d5`, which adds a runtime probe of the active controller's signed action scale. It overlays a separate test-only native rollout file; the ManiSkill source itself remains at the pinned PR commit. Build the self-contained Kaggle script with `python research/kaggle_native_assay/build_kaggle_kernel.py --output <kernel-directory>`, then push that directory with the Kaggle CLI. The runner records the harness SHA-256. The earlier Kaggle v9/v10 runs do **not** check out that PR head and remain mechanistic evidence for their frozen research source only. A passing Kaggle run is validation evidence, not proof that #1495 is accepted or merged.
+
+Kaggle kernel version 11 checked out the exact PR commit but stopped before tests because Kaggle did not stage the auxiliary harness file beside its script (`FileNotFoundError` under `/kaggle/src`). It produced no measurements. The builder now embeds the hash-identified test in the single uploaded script; the next version reruns the same exact-head check with that packaging fix.
 
 The two recorded runs use the same source commit, seed, and deterministic setup. They confirm that this narrow measurement repeated identically; they are not independent-seed replications. The assay's repaired unsaturated first-command error is below `1e-5` rad, compared with about `1.06e-3` rad for the legacy conversion. For the larger saturated target, the repaired final error is worse at 16 steps and lower at 64 steps. No general performance-superiority claim follows from these runs.
 

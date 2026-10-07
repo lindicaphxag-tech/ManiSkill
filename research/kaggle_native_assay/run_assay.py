@@ -1,6 +1,7 @@
 """Run the native ManiSkill regression on a Kaggle GPU and emit evidence."""
 
 import hashlib
+import base64
 import json
 import os
 import shutil
@@ -16,7 +17,9 @@ GITHUB_REPO = "https://github.com/lindicaphxag-tech/ManiSkill.git"
 BRANCH = "fix/delta-pose-euler-action"
 COMMIT = "875ae4d8777678119b2f192ee186c6c15e6894d5"
 PR_URL = "https://github.com/mani-skill/ManiSkill/pull/1495"
-HARNESS = Path(__file__).resolve().with_name("test_pr1495_native_assay.py")
+HARNESS_NAME = "test_pr1495_native_assay.py"
+HARNESS_BASE64 = "__NATIVE_TEST_HARNESS_B64__"
+HARNESS_BYTES = base64.b64decode(HARNESS_BASE64)
 started = time.time()
 log = {
     "assay": "native-pickcube-multiaxis-delta-pose",
@@ -49,8 +52,8 @@ try:
         raise RuntimeError(f"Checked out {commit}, expected frozen commit {COMMIT}")
     log["commit"] = commit
     log["pull_request"] = PR_URL
-    log["validation_harness_sha256"] = hashlib.sha256(HARNESS.read_bytes()).hexdigest()
-    log["validation_harness"] = HARNESS.name
+    log["validation_harness_sha256"] = hashlib.sha256(HARNESS_BYTES).hexdigest()
+    log["validation_harness"] = HARNESS_NAME
     # ManiSkill's Linux extra pins mplib==0.1.1, which has no Python 3.13
     # distribution. This PickCube controller path does not use motion planning.
     # Install the project without dependency resolution, then install every
@@ -92,7 +95,8 @@ try:
         raise RuntimeError("Kaggle GPU was requested but torch.cuda.is_available() is false")
     os.environ["MANISKILL_RENDER_BACKEND"] = "gpu"
     os.environ["MANISKILL_ASSAY_RESULT"] = str(WORK / "assay_result.json")
-    shutil.copy2(HARNESS, REPO / "tests" / HARNESS.name)
+    harness_path = REPO / "tests" / HARNESS_NAME
+    harness_path.write_bytes(HARNESS_BYTES)
     os.chdir(REPO)
     run(
         [
@@ -102,7 +106,7 @@ try:
             "-q",
             "-s",
             "tests/test_action_conversion.py",
-            f"tests/{HARNESS.name}",
+            f"tests/{HARNESS_NAME}",
         ]
     )
     log["status"] = "passed"
