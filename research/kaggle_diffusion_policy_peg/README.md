@@ -22,6 +22,10 @@ The runner installs ManiSkill in editable no-dependency mode, then installs its 
 
 The corrected runner from research commit `704a9f9` was submitted as private Kaggle kernel [maniskill-dp-peg-paired-assay-corrected](https://www.kaggle.com/code/oblivicore/maniskill-dp-peg-paired-assay-corrected), version 1, on 2026-10-08. The runner source in the Kaggle staging directory matches the committed source by SHA-256. The kernel reports `RUNNING`; no training result has been collected yet. Version 5's failed output is retained separately and excluded from this rerun.
 
+## Novelty boundary
+
+This experiment does not claim a new general SO(3) action representation: the [SO(3) action representation study](https://openreview.net/forum?id=g4ZrpMQL1Z) already compares common representations at scale. It also does not claim that Cartesian delta actions or action adapters are new; [SPACE](https://arxiv.org/abs/2606.24049) studies them across embodiments and dynamics shifts. Controller-gain effects on behavior cloning are studied in [Tune to Learn](https://arxiv.org/abs/2604.02523). The narrower engineering question here is whether two specific ManiSkill action-conversion/controller changes compose correctly and alter the official PegInsertionSide diffusion-policy pipeline. The current two-arm comparison only estimates their combined effect; it cannot attribute an effect to either PR individually. No performance claim is justified without a four-cell factorial comparison and replicated seeds.
+
 ### Validity audit and correction
 
 Before interpreting v4, an audit found that its runner replayed the raw demos
