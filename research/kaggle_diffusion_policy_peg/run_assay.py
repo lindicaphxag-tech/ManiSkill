@@ -1,9 +1,10 @@
-"""Run a matched ManiSkill Diffusion Policy assay for ManiSkill PR #1495.
+"""Run a matched ManiSkill Diffusion Policy assay for ManiSkill PRs #1495/#1472.
 
 The Kaggle kernel downloads the official public PegInsertionSide demonstrations,
 then independently replays the raw trajectories under the frozen base and the
-exact open PR #1495 head before training each arm. TensorBoard scalars are
-exported as JSON/CSV; no dataset, checkpoint, video, or credential is included.
+exact stacked open PR #1495/#1472 heads before training each arm. TensorBoard
+scalars are exported as JSON/CSV; no dataset, checkpoint, video, or credential
+is included.
 """
 from __future__ import annotations
 
@@ -26,7 +27,8 @@ DEMO_ROOT = WORK / "demos"
 # ManiSkill needs an explicit renderer backend in Kaggle's headless container.
 os.environ["MANISKILL_RENDER_BACKEND"] = "gpu"
 BASE = "62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3"
-CONVERSION = "cdd6db713ffe7edc3e0df3abfab51ea5320c1c0b"
+CONVERSION = "875ae4d8777678119b2f192ee186c6c15e6894d5"
+CONTROLLER = "eed9be164797d41540421bda8adb3840377d7087"
 UPSTREAM = "https://github.com/mani-skill/ManiSkill.git"
 DEMO_NAME = "trajectory.state.pd_ee_delta_pose.physx_cpu.h5"
 CONFIG = {
@@ -55,7 +57,8 @@ run_record = {
     "upstream_repository": UPSTREAM,
     "base_commit": BASE,
     "conversion_pr": {"number": 1495, "head": CONVERSION},
-    "arms": ["upstream_baseline", "pr1495_conversion"],
+    "controller_pr": {"number": 1472, "head": CONTROLLER},
+    "arms": ["upstream_baseline", "combined_pr1495_pr1472"],
     "config": CONFIG,
     "platform": platform.platform(),
     "python": sys.version,
@@ -79,6 +82,24 @@ def run_stream(command: list[str], log_path: Path, cwd: Path | None = None) -> N
 def git(*args: str) -> str:
     return subprocess.check_output(["git", "-C", str(REPO), *args], text=True).strip()
 
+def apply_controller_pr_overlay(commit: str) -> None:
+    """Apply the two changed files from #1472's root-shaped PR commit."""
+    controller_path = REPO / "mani_skill" / "agents" / "controllers" / "pd_ee_pose.py"
+    source = controller_path.read_text(encoding="utf-8")
+    old = "rot_action = rot_action * self.config.rot_lower"
+    new = "rot_action = rot_action * self.config.rot_upper"
+    if source.count(old) != 1:
+        raise RuntimeError("#1472 controller patch context is missing or ambiguous")
+    controller_path.write_text(source.replace(old, new), encoding="utf-8")
+
+    test_path = REPO / "tests" / "test_pd_ee_pose_controller.py"
+    test_path.parent.mkdir(parents=True, exist_ok=True)
+    test_source = subprocess.check_output(
+        ["git", "-C", str(REPO), "show", f"{commit}:tests/test_pd_ee_pose_controller.py"],
+        text=True,
+    )
+    test_path.write_text(test_source, encoding="utf-8")
+
 def sha256(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as f:
@@ -101,11 +122,10 @@ try:
         raise RuntimeError(f"Refusing to overwrite existing checkout: {REPO}")
     run_stream(["git", "clone", UPSTREAM, str(REPO)], OUTPUT / "setup.log")
     git("fetch", "origin", f"refs/pull/1495/head:refs/remotes/origin/pr-1495")
-    for commit in (BASE, CONVERSION):
+    git("fetch", "origin", f"refs/pull/1472/head:refs/remotes/origin/pr-1472")
+    for commit in (BASE, CONVERSION, CONTROLLER):
         subprocess.run(["git", "-C", str(REPO), "cat-file", "-e", f"{commit}^{{commit}}"], check=True)
-    parent = git("show", "-s", "--format=%P", CONVERSION).split()
-    if BASE not in parent:
-        raise RuntimeError(f"PR #1495 no longer has the frozen base as parent: {parent}")
+    subprocess.run(["git", "-C", str(REPO), "merge-base", "--is-ancestor", BASE, CONVERSION], check=True)
 
     subprocess.run(["git", "-C", str(REPO), "checkout", "--detach", BASE], check=True)
     run_record["hardware"] = subprocess.run(
@@ -144,18 +164,23 @@ try:
     inventory = [str(p.relative_to(DEMO_ROOT)) for p in DEMO_ROOT.rglob("*") if p.is_file()]
     (OUTPUT / "dataset_inventory.json").write_text(json.dumps(inventory, indent=2) + "\n", encoding="utf-8")
 
-    arms = [("upstream_baseline", BASE), ("pr1495_conversion", CONVERSION)]
+    arms = [
+        ("upstream_baseline", BASE, None),
+        ("combined_pr1495_pr1472", CONVERSION, CONTROLLER),
+    ]
     all_scalars: list[dict] = []
     run_summaries = []
     demonstrations = {}
-    for arm, start_commit in arms:
+    for arm, start_commit, extra_commit in arms:
         subprocess.run(["git", "-C", str(REPO), "reset", "--hard", BASE], check=True)
         subprocess.run(["git", "-C", str(REPO), "clean", "-fd"], check=True, stdout=subprocess.DEVNULL)
         subprocess.run(["git", "-C", str(REPO), "checkout", "--detach", start_commit], check=True)
+        if extra_commit:
+            apply_controller_pr_overlay(extra_commit)
         subprocess.run(["git", "-C", str(REPO), "diff", "--check"], check=True)
         tree = git("write-tree")
         # Regenerate state/action demonstrations under each source tree. PR #1495
-        # changes action conversion, so sharing one replayed dataset would
+        # and #1472 change conversion/controller semantics, so sharing one replayed dataset would
         # confound the treatment with a dataset encoded under the other arm.
         arm_demo_dir = DEMO_ROOT / "converted" / arm / "PegInsertionSide-v1" / "motionplanning"
         arm_demo_dir.mkdir(parents=True, exist_ok=True)
@@ -219,7 +244,7 @@ try:
             dest = event_dir / event.name
             shutil.copy2(event, dest)
             saved_events.append(str(dest.relative_to(OUTPUT)))
-        run_summaries.append({"arm": arm, "source_commit": start_commit, "source_tree": tree, "demo_sha256": demonstrations[arm]["sha256"], "run_name": run_name, "scalar_count": len(rows), "metrics": by_tag, "event_files": saved_events})
+        run_summaries.append({"arm": arm, "source_commit": start_commit, "controller_overlay_commit": extra_commit, "source_tree": tree, "demo_sha256": demonstrations[arm]["sha256"], "run_name": run_name, "scalar_count": len(rows), "metrics": by_tag, "event_files": saved_events})
         # Retain TensorBoard evidence and compact log only; drop checkpoints/videos.
         shutil.rmtree(run_dir, ignore_errors=True)
         print(json.dumps(run_summaries[-1], sort_keys=True), flush=True)
