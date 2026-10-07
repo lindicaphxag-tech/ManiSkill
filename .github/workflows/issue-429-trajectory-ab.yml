@@ -1,0 +1,130 @@
+name: Issue 429 trajectory A/B
+
+on:
+  push:
+    branches:
+      - "validation/issue-429-trajectory-ab"
+    paths:
+      - ".github/workflows/issue-429-trajectory-ab.yml"
+
+jobs:
+  pickcube:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      COUNT: "10"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Fetch upstream main and fix branch
+        run: |
+          git fetch https://github.com/haosulab/ManiSkill.git main:refs/remotes/upstream/main ||           git fetch https://github.com/mani-skill/ManiSkill.git main:refs/remotes/upstream/main
+          git fetch origin fix/joint-delta-to-joint-pos-pr:refs/remotes/origin/fix/joint-delta-to-joint-pos-pr
+
+      - name: Install ManiSkill
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Download official PickCube demonstrations
+        run: |
+          git checkout upstream/main
+          python -m mani_skill.utils.download_demo PickCube-v1 --quiet
+          find "$HOME/.maniskill/demos/PickCube-v1" -maxdepth 3 -type f \( -name "trajectory.h5" -o -name "trajectory.json" \) -print
+
+      - name: Build one shared pd_joint_delta_pos source dataset
+        shell: bash
+        run: |
+          set -euo pipefail
+          RAW=""
+          for candidate in             "$HOME/.maniskill/demos/PickCube-v1/motionplanning/trajectory.h5"             "$HOME/.maniskill/demos/PickCube-v1/teleop/trajectory.h5"             "$HOME/.maniskill/demos/PickCube-v1/rl/trajectory.h5"; do
+            if [ -f "$candidate" ]; then
+              RAW="$candidate"
+              break
+            fi
+          done
+          if [ -z "$RAW" ]; then
+            RAW="$(find "$HOME/.maniskill/demos/PickCube-v1" -type f -name trajectory.h5 | head -n 1)"
+          fi
+          test -n "$RAW"
+          echo "RAW=$RAW" | tee /tmp/source_path.txt
+
+          python -m mani_skill.trajectory.replay_trajectory             --traj-path "$RAW"             --save-traj             --target-control-mode pd_joint_delta_pos             --obs-mode none             --use-first-env-state             --count "$COUNT"             --num-envs 1             2>&1 | tee /tmp/source_generation.log
+
+          SOURCE="$(find "$(dirname "$RAW")" -maxdepth 1 -type f -name 'trajectory.none.pd_joint_delta_pos.*.h5' | head -n 1)"
+          test -n "$SOURCE"
+          test -f "${SOURCE%.h5}.json"
+          echo "SOURCE=$SOURCE" | tee -a /tmp/source_path.txt
+          echo "SOURCE=$SOURCE" >> "$GITHUB_ENV"
+
+      - name: Baseline upstream main conversion
+        shell: bash
+        run: |
+          set -o pipefail
+          git checkout upstream/main
+          python -m mani_skill.trajectory.replay_trajectory             --traj-path "$SOURCE"             --target-control-mode pd_joint_pos             --use-first-env-state             --count "$COUNT"             --num-envs 1             --verbose             2>&1 | tee /tmp/baseline.log
+
+      - name: Fixed conversion
+        shell: bash
+        run: |
+          set -o pipefail
+          git checkout origin/fix/joint-delta-to-joint-pos-pr
+          python -m mani_skill.trajectory.replay_trajectory             --traj-path "$SOURCE"             --target-control-mode pd_joint_pos             --use-first-env-state             --count "$COUNT"             --num-envs 1             --verbose             2>&1 | tee /tmp/fixed.log
+
+      - name: Summarize A/B result
+        run: |
+          python - <<'PY'
+          import json
+          import pathlib
+          import re
+
+          def parse(path):
+              text = pathlib.Path(path).read_text(errors="replace")
+              matches = re.findall(
+                  r"Replayed\s+(\d+)\s+episodes,\s+(\d+)/(\d+)=([0-9.]+)% demos saved",
+                  text,
+              )
+              if not matches:
+                  raise RuntimeError(f"Could not parse replay summary from {path}")
+              replayed, successful, denominator, percent = matches[-1]
+              return {
+                  "replayed": int(replayed),
+                  "successful": int(successful),
+                  "denominator": int(denominator),
+                  "success_percent": float(percent),
+              }
+
+          result = {
+              "source_generation": parse("/tmp/source_generation.log"),
+              "upstream_main": parse("/tmp/baseline.log"),
+              "fixed_branch": parse("/tmp/fixed.log"),
+          }
+          result["absolute_success_gain"] = (
+              result["fixed_branch"]["success_percent"]
+              - result["upstream_main"]["success_percent"]
+          )
+          pathlib.Path("/tmp/issue429_ab_summary.json").write_text(
+              json.dumps(result, indent=2)
+          )
+          print(json.dumps(result, indent=2))
+          PY
+
+      - name: Upload replay evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-429-pickcube-ab
+          path: |
+            /tmp/source_generation.log
+            /tmp/baseline.log
+            /tmp/fixed.log
+            /tmp/source_path.txt
+            /tmp/issue429_ab_summary.json
+          if-no-files-found: warn
