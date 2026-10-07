@@ -47,6 +47,7 @@ CONFIG = {
     "control_mode": "pd_ee_delta_pose",
     "sim_backend": "physx_cpu",
     "num_demos": 100,
+    "replay_count": 100,
     "max_episode_steps": 300,
     "total_iters": 100000,
     "batch_size": 1024,
@@ -129,11 +130,11 @@ def apply_controller_pr_overlay(commit: str) -> None:
     test_path.write_bytes(test_bytes)
 
 def apply_kaggle_worker_compatibility() -> str:
-    """Avoid CUDA state inherited by ManiSkill's forkserver evaluation workers."""
+    """Use fresh workers and Gymnasium info semantics expected by evaluation."""
     env_path = REPO / "examples" / "baselines" / "diffusion_policy" / "diffusion_policy" / "make_env.py"
     source = env_path.read_text(encoding="utf-8")
     old = 'context="forkserver"'
-    new = 'context="spawn"'
+    new = 'context="spawn", autoreset_mode=gym.vector.AutoresetMode.SAME_STEP'
     if source.count(old) != 1:
         raise RuntimeError("Expected exactly one diffusion-policy forkserver context")
     env_path.write_text(source.replace(old, new), encoding="utf-8")
@@ -204,7 +205,7 @@ try:
     # 3.13. This policy assay consumes motion-planning demos but never imports
     # or invokes mplib; install runtime dependencies explicitly below.
     run_stream([sys.executable, "-m", "pip", "install", "--no-deps", "-e", str(REPO)], OUTPUT / "install.log")
-    runtime_requirements = ["numpy>=1.22", "scipy", "dacite", "gymnasium>=0.29.1", "h5py", "pyyaml", "tqdm", "GitPython", "tabulate", "transforms3d", "trimesh", "imageio[ffmpeg]", "IPython", "pytorch_kinematics==0.7.6", "defusedxml", "nvidia-ml-py", "tyro>=0.8.5", "huggingface_hub", "sapien>=3.0.3", "pin"]
+    runtime_requirements = ["numpy>=1.22", "scipy", "dacite", "gymnasium==1.2.0", "h5py", "pyyaml", "tqdm", "GitPython", "tabulate", "transforms3d", "trimesh", "imageio[ffmpeg]", "IPython", "pytorch_kinematics==0.7.6", "defusedxml", "nvidia-ml-py", "tyro>=0.8.5", "huggingface_hub", "sapien>=3.0.3", "pin"]
     run_stream([sys.executable, "-m", "pip", "install", *runtime_requirements], OUTPUT / "install.log")
     dp_dir = REPO / "examples" / "baselines" / "diffusion_policy"
     run_stream([sys.executable, "-m", "pip", "install", "--no-deps", "-e", str(dp_dir)], OUTPUT / "install.log")
@@ -214,7 +215,7 @@ try:
     run_record["cuda_available"] = bool(torch.cuda.is_available())
     run_record["cuda_version"] = torch.version.cuda
     from importlib.metadata import PackageNotFoundError, version
-    package_names = ["mani-skill", "diffusion_policy", "torch", "sapien", "diffusers", "tensorboard", "tyro", "numpy"]
+    package_names = ["mani-skill", "diffusion_policy", "torch", "sapien", "diffusers", "tensorboard", "tyro", "numpy", "gymnasium"]
     package_versions = {}
     for name in package_names:
         try:
@@ -236,6 +237,29 @@ try:
     raw_meta_path = raw_demo_path.with_suffix(".json")
     if not raw_meta_path.is_file():
         raise FileNotFoundError(f"Official raw motion-planning metadata missing: {raw_meta_path}")
+    raw_meta = json.loads(raw_meta_path.read_text(encoding="utf-8"))
+    selected_episodes = raw_meta.get("episodes", [])[:CONFIG["replay_count"]]
+    if len(selected_episodes) != CONFIG["replay_count"]:
+        raise RuntimeError(
+            f"Expected at least {CONFIG['replay_count']} raw demonstrations, "
+            f"found {len(raw_meta.get('episodes', []))}"
+        )
+    unsuccessful_ids = [
+        episode.get("episode_id") for episode in selected_episodes
+        if not episode.get("success", False)
+    ]
+    if unsuccessful_ids:
+        raise RuntimeError(
+            f"The pinned replay prefix contains unsuccessful episodes: {unsuccessful_ids[:10]}"
+        )
+    raw_dataset_record["replay_selection"] = {
+        "episode_ids": [episode["episode_id"] for episode in selected_episodes],
+        "count": len(selected_episodes),
+        "all_successful": True,
+    }
+    (OUTPUT / "raw_dataset.json").write_text(
+        json.dumps(raw_dataset_record, indent=2) + "\n", encoding="utf-8"
+    )
     inventory = [str(p.relative_to(DEMO_ROOT)) for p in DEMO_ROOT.rglob("*") if p.is_file()]
     (OUTPUT / "dataset_inventory.json").write_text(json.dumps(inventory, indent=2) + "\n", encoding="utf-8")
 
@@ -273,6 +297,7 @@ try:
             "--traj-path", str(arm_raw_path), "--use-first-env-state",
             "-c", CONFIG["control_mode"], "-o", "state", "--save-traj",
             "--num-envs", "10", "-b", CONFIG["sim_backend"],
+            "--count", str(CONFIG["replay_count"]),
         ], OUTPUT / "dataset.log", cwd=REPO)
         demo_path = arm_demo_dir / DEMO_NAME
         meta_path = demo_path.with_suffix(".json")
