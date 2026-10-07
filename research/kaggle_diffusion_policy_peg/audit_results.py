@@ -126,6 +126,8 @@ def _audit_pairing_evidence(
             raise ValueError(f"Successful seed count differs for arm {arm}")
         if evidence.get("successful_episode_seeds_sha256") != _seed_digest(seeds):
             raise ValueError(f"Successful seed hash differs for arm {arm}")
+        if [seed for seed in requested if seed in set(seeds)] != seeds:
+            raise ValueError(f"Successful seeds are not in source order for arm {arm}")
         if int(outcomes[index].get("episodes_saved", -1)) != len(seeds):
             raise ValueError(f"Successful seed count differs from replay summary for arm {arm}")
         arm_seed_sets[arm] = set(seeds)
@@ -150,6 +152,20 @@ def _audit_pairing_evidence(
         raise ValueError("Paired seed hash differs from the summary")
     if paired_hash != run.get("config", {}).get("paired_source_seed_sha256"):
         raise ValueError("Paired seed hash differs from the run config")
+    config = run.get("config", {})
+    if paired_count < int(config.get("minimum_paired_demos", 0)):
+        raise ValueError("Paired seed count is below the configured minimum")
+    run_pairing = run.get("pairing", {})
+    if run_pairing.get("requested_episode_seeds_sha256") != _seed_digest(requested):
+        raise ValueError("Requested seed hash differs from the experiment log")
+    if int(run_pairing.get("paired_episode_count", -1)) != paired_count:
+        raise ValueError("Paired seed count differs from the experiment log")
+    if run_pairing.get("paired_source_seed_sha256") != paired_hash:
+        raise ValueError("Paired seed hash differs from the experiment log")
+    run_arm_hashes = run_pairing.get("successful_episode_seeds_sha256", {})
+    for arm, evidence in arms.items():
+        if run_arm_hashes.get(arm) != evidence.get("successful_episode_seeds_sha256"):
+            raise ValueError(f"Arm seed hash differs from the experiment log for {arm}")
     return [
         "Pairing evidence verifies the exact ordered intersection: "
         f"{paired_count} seeds from {len(requested)} requested source episodes"
