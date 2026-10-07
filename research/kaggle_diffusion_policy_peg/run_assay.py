@@ -396,6 +396,14 @@ try:
     source_seed_order = [int(episode["episode_seed"]) for episode in selected_episodes]
     if len(source_seed_order) != len(set(source_seed_order)):
         raise RuntimeError("The selected source demonstrations contain duplicate episode seeds")
+    arm_success_seeds = {
+        arm: [
+            seed
+            for seed in source_seed_order
+            if seed in prepared_arms[arm]["indexed_episodes"]
+        ]
+        for arm, _, _ in arms
+    }
     common_seeds = [
         seed for seed in source_seed_order
         if all(seed in prepared_arms[arm]["indexed_episodes"] for arm, _, _ in arms)
@@ -408,6 +416,35 @@ try:
     common_seed_sha256 = hashlib.sha256(
         json.dumps(common_seeds, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
+    seed_evidence = {
+        "schema_version": 1,
+        "source_dataset": {
+            key: raw_dataset_record[key]
+            for key in ("repository", "revision", "path", "sha256", "size_bytes")
+        },
+        "requested_episode_seeds": source_seed_order,
+        "requested_episode_seeds_sha256": hashlib.sha256(
+            json.dumps(source_seed_order, separators=(",", ":")).encode("utf-8")
+        ).hexdigest(),
+        "arms": {
+            arm: {
+                "successful_episode_seeds": seeds,
+                "successful_count": len(seeds),
+                "successful_episode_seeds_sha256": hashlib.sha256(
+                    json.dumps(seeds, separators=(",", ":")).encode("utf-8")
+                ).hexdigest(),
+            }
+            for arm, seeds in arm_success_seeds.items()
+        },
+        "paired_episode_seeds": common_seeds,
+        "paired_count": len(common_seeds),
+        "paired_episode_seeds_sha256": common_seed_sha256,
+        "raw_demos_exported": False,
+        "converted_trajectories_exported": False,
+    }
+    (OUTPUT / "pairing_evidence.json").write_text(
+        json.dumps(seed_evidence, indent=2) + "\n", encoding="utf-8"
+    )
     CONFIG["effective_paired_num_demos"] = len(common_seeds)
     CONFIG["paired_source_seed_sha256"] = common_seed_sha256
     for arm, _, _ in arms:
@@ -426,11 +463,19 @@ try:
     run_record["demonstrations"] = demonstrations
     run_record["pairing"] = {
         "requested_source_episodes": len(selected_episodes),
+        "requested_episode_seeds_sha256": seed_evidence[
+            "requested_episode_seeds_sha256"
+        ],
         "successful_converted_episodes": {
             arm: demonstrations[arm]["successful_episode_count"] for arm, _, _ in arms
         },
+        "successful_episode_seeds_sha256": {
+            arm: evidence["successful_episode_seeds_sha256"]
+            for arm, evidence in seed_evidence["arms"].items()
+        },
         "paired_episode_count": len(common_seeds),
         "paired_source_seed_sha256": common_seed_sha256,
+        "pairing_evidence_file": "pairing_evidence.json",
     }
 
     # Both arms now train on the same successful source-seed set. The two
@@ -522,6 +567,11 @@ finally:
         "metrics_jsonl": "metrics.jsonl",
         "metrics_csv": "metrics.csv",
         "event_files_directory": "events/",
+        "pairing_evidence": (
+            "pairing_evidence.json"
+            if (OUTPUT / "pairing_evidence.json").is_file()
+            else None
+        ),
         "raw_demos_exported": False,
         "model_checkpoints_exported": False,
         "videos_exported": False,

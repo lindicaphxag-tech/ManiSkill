@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """Audit the internal consistency and limits of a packaged assay run.
 
-This checks recorded metadata and local artifact presence. It cannot validate
-the source dataset digest or recompute paired-seed membership when those raw
-inputs are intentionally not included in the public result package.
+This checks recorded metadata, local artifact presence, and optional source
+archive/pairing evidence. It does not evaluate policy performance.
 """
 
 from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
 import re
 import sys
@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 from urllib.request import Request, urlopen
+from zipfile import ZipFile
 
 
 def _read_json(root: Path, name: str) -> dict[str, Any]:
@@ -29,7 +30,14 @@ def _read_json(root: Path, name: str) -> dict[str, Any]:
     return value
 
 
-def _verify_source_dataset(dataset: dict[str, Any]) -> tuple[int, str]:
+def _seed_digest(seeds: list[int]) -> str:
+    payload = json.dumps(seeds, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _verify_source_dataset(
+    dataset: dict[str, Any], requested_seeds: list[int] | None = None
+) -> tuple[int, str]:
     repository = str(dataset["repository"])
     revision = str(dataset["revision"])
     source_path = str(dataset["path"])
@@ -40,10 +48,13 @@ def _verify_source_dataset(dataset: dict[str, Any]) -> tuple[int, str]:
     )
     request = Request(url, headers={"User-Agent": "ManiSkill-assay-evidence-auditor/1"})
     digest = hashlib.sha256()
+    archive_bytes = io.BytesIO() if requested_seeds is not None else None
     size = 0
     with urlopen(request, timeout=120) as response:
         while chunk := response.read(1024 * 1024):
             digest.update(chunk)
+            if archive_bytes is not None:
+                archive_bytes.write(chunk)
             size += len(chunk)
     actual_sha256 = digest.hexdigest()
     if size != int(dataset["size_bytes"]):
@@ -54,7 +65,95 @@ def _verify_source_dataset(dataset: dict[str, Any]) -> tuple[int, str]:
         raise ValueError(
             f"Downloaded source dataset SHA-256 mismatch: expected {dataset['sha256']}, got {actual_sha256}"
         )
+    if archive_bytes is not None:
+        with ZipFile(archive_bytes) as archive:
+            metadata_paths = [
+                name
+                for name in archive.namelist()
+                if name.endswith("/motionplanning/trajectory.json")
+            ]
+            if len(metadata_paths) != 1:
+                raise ValueError(
+                    "Expected one motion-planning trajectory metadata file in source archive"
+                )
+            metadata = json.loads(archive.read(metadata_paths[0]))
+        source_seeds = [
+            int(episode["episode_seed"])
+            for episode in metadata.get("episodes", [])[: len(requested_seeds)]
+        ]
+        if source_seeds != requested_seeds:
+            raise ValueError(
+                "Requested episode seeds do not match the pinned source archive prefix"
+            )
     return size, actual_sha256
+
+
+def _audit_pairing_evidence(
+    pairing: dict[str, Any],
+    dataset: dict[str, Any],
+    summary: dict[str, Any],
+    run: dict[str, Any],
+) -> list[str]:
+    identity_fields = ("repository", "revision", "path", "sha256", "size_bytes")
+    if any(
+        pairing.get("source_dataset", {}).get(key) != dataset.get(key)
+        for key in identity_fields
+    ):
+        raise ValueError("Pairing evidence names a different source dataset")
+
+    requested = [int(seed) for seed in pairing.get("requested_episode_seeds", [])]
+    if not requested or len(requested) != len(set(requested)):
+        raise ValueError("Requested source episode seeds are empty or duplicated")
+    if pairing.get("requested_episode_seeds_sha256") != _seed_digest(requested):
+        raise ValueError("Requested source episode seed hash does not match its list")
+    if len(requested) != int(run.get("config", {}).get("replay_count", -1)):
+        raise ValueError("Requested seed list length differs from replay_count")
+
+    arms = pairing.get("arms")
+    if not isinstance(arms, dict) or len(arms) != 2:
+        raise ValueError("Pairing evidence must include exactly two arms")
+    run_arms = run.get("arms", [])
+    outcomes = summary.get("arm_replay_outcomes", [])
+    if len(run_arms) != 2 or len(outcomes) != 2 or set(run_arms) != set(arms):
+        raise ValueError("Run, summary, and pairing evidence disagree on the two arms")
+    arm_seed_sets: dict[str, set[int]] = {}
+    for index, arm in enumerate(run_arms):
+        evidence = arms[arm]
+        seeds = [int(seed) for seed in evidence.get("successful_episode_seeds", [])]
+        if len(seeds) != len(set(seeds)) or not set(seeds).issubset(requested):
+            raise ValueError(f"Invalid successful source seeds for arm {arm}")
+        if int(evidence.get("successful_count", -1)) != len(seeds):
+            raise ValueError(f"Successful seed count differs for arm {arm}")
+        if evidence.get("successful_episode_seeds_sha256") != _seed_digest(seeds):
+            raise ValueError(f"Successful seed hash differs for arm {arm}")
+        if int(outcomes[index].get("episodes_saved", -1)) != len(seeds):
+            raise ValueError(f"Successful seed count differs from replay summary for arm {arm}")
+        arm_seed_sets[arm] = set(seeds)
+
+    paired = [int(seed) for seed in pairing.get("paired_episode_seeds", [])]
+    expected = [
+        seed
+        for seed in requested
+        if all(seed in values for values in arm_seed_sets.values())
+    ]
+    if paired != expected:
+        raise ValueError("Paired seed list is not the ordered intersection of both arms")
+    paired_count = int(pairing.get("paired_count", -1))
+    if paired_count != len(paired) or paired_count != int(
+        summary.get("paired_demo_count", -2)
+    ):
+        raise ValueError("Paired seed count differs from the summary")
+    paired_hash = pairing.get("paired_episode_seeds_sha256")
+    if paired_hash != _seed_digest(paired):
+        raise ValueError("Paired seed hash does not match its list")
+    if paired_hash != summary.get("paired_source_seed_sha256"):
+        raise ValueError("Paired seed hash differs from the summary")
+    if paired_hash != run.get("config", {}).get("paired_source_seed_sha256"):
+        raise ValueError("Paired seed hash differs from the run config")
+    return [
+        "Pairing evidence verifies the exact ordered intersection: "
+        f"{paired_count} seeds from {len(requested)} requested source episodes"
+    ]
 
 
 def audit(root: Path, verify_source_dataset: bool = False) -> list[str]:
@@ -63,6 +162,8 @@ def audit(root: Path, verify_source_dataset: bool = False) -> list[str]:
     dataset = _read_json(root, "raw_dataset.json")
     manifest = _read_json(root, "artifacts_manifest.json")
     findings: list[str] = []
+    pairing_name = manifest.get("pairing_evidence")
+    pairing = _read_json(root, pairing_name) if pairing_name else None
 
     run_status = run.get("status")
     manifest_status = manifest.get("status")
@@ -87,11 +188,20 @@ def audit(root: Path, verify_source_dataset: bool = False) -> list[str]:
     if int(dataset.get("size_bytes", 0)) <= 0:
         raise ValueError("Recorded source dataset size must be positive")
     if verify_source_dataset:
-        verified_size, verified_sha256 = _verify_source_dataset(dataset)
+        requested_seeds = (
+            [int(seed) for seed in pairing.get("requested_episode_seeds", [])]
+            if pairing
+            else None
+        )
+        verified_size, verified_sha256 = _verify_source_dataset(
+            dataset, requested_seeds
+        )
         findings.append(
             f"Pinned source archive downloaded and verified: {verified_size} bytes, "
             f"SHA-256 {verified_sha256}"
         )
+        if requested_seeds is not None:
+            findings.append("Requested seeds match the pinned archive metadata prefix")
     else:
         findings.append(
             "Source dataset identity agrees across records; SHA-256 is recorded, "
@@ -125,11 +235,14 @@ def audit(root: Path, verify_source_dataset: bool = False) -> list[str]:
         raise ValueError("Paired source-seed SHA-256 is missing or malformed")
     if config.get("paired_source_seed_sha256") != paired_hash:
         raise ValueError("Paired source-seed hash differs between records")
-    findings.append(
-        f"Paired replay count is internally bounded ({paired_count} <= "
-        f"{min(saved_counts)} saved in the smaller arm); seed membership cannot "
-        "be recomputed because replayed trajectories are not exported"
-    )
+    if pairing:
+        findings.extend(_audit_pairing_evidence(pairing, dataset, summary, run))
+    else:
+        findings.append(
+            f"Paired replay count is internally bounded ({paired_count} <= "
+            f"{min(saved_counts)} saved in the smaller arm); this legacy result "
+            "does not include seed lists, so membership cannot be recomputed"
+        )
 
     updates = int(summary.get("training_updates_completed", -1))
     if updates < 0:
@@ -154,12 +267,18 @@ def audit(root: Path, verify_source_dataset: bool = False) -> list[str]:
     else:
         findings.append(f"Optimizer updates recorded: {updates}")
 
-    required_on_success = {"run_summaries", "metrics_jsonl", "metrics_csv"}
+    required_on_success = {
+        "run_summaries",
+        "metrics_jsonl",
+        "metrics_csv",
+        "pairing_evidence",
+    }
     for field in (
         "run_summaries",
         "metrics_jsonl",
         "metrics_csv",
         "event_files_directory",
+        "pairing_evidence",
     ):
         name = manifest.get(field)
         if not name:
