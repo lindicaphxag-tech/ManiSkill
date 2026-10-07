@@ -18,6 +18,7 @@ import subprocess
 import sys
 import time
 import traceback
+import urllib.request
 from pathlib import Path
 
 WORK = Path("/kaggle/working")
@@ -84,6 +85,8 @@ def git(*args: str) -> str:
 
 def apply_controller_pr_overlay(commit: str) -> None:
     """Apply the two changed files from #1472's root-shaped PR commit."""
+    if commit != CONTROLLER:
+        raise RuntimeError("Controller overlay commit differs from the pinned #1472 head")
     controller_path = REPO / "mani_skill" / "agents" / "controllers" / "pd_ee_pose.py"
     source = controller_path.read_text(encoding="utf-8")
     old = "rot_action = rot_action * self.config.rot_lower"
@@ -94,11 +97,27 @@ def apply_controller_pr_overlay(commit: str) -> None:
 
     test_path = REPO / "tests" / "test_pd_ee_pose_controller.py"
     test_path.parent.mkdir(parents=True, exist_ok=True)
-    test_source = subprocess.check_output(
-        ["git", "-C", str(REPO), "show", f"{commit}:tests/test_pd_ee_pose_controller.py"],
-        text=True,
+    request = urllib.request.Request(
+        "https://api.github.com/repos/mani-skill/ManiSkill/pulls/1472/files?per_page=100",
+        headers={"Accept": "application/vnd.github+json", "User-Agent": "ManiSkill-assay"},
     )
-    test_path.write_text(test_source, encoding="utf-8")
+    with urllib.request.urlopen(request, timeout=30) as response:
+        changed_files = json.load(response)
+    test_patch = next(
+        (item for item in changed_files if item.get("filename") == "tests/test_pd_ee_pose_controller.py"),
+        None,
+    )
+    if not test_patch or test_patch.get("status") != "added" or test_patch.get("additions") != 76:
+        raise RuntimeError("Could not resolve the pinned #1472 controller regression test patch")
+    patch_lines = test_patch.get("patch", "").splitlines()
+    if any(line and not line.startswith(("+", "@@")) for line in patch_lines):
+        raise RuntimeError("#1472 test patch is not a pure file addition")
+    test_source = "\n".join(line[1:] for line in patch_lines if line.startswith("+")) + "\n"
+    test_bytes = test_source.encode("utf-8")
+    git_blob_sha = hashlib.sha1(b"blob " + str(len(test_bytes)).encode() + b"\0" + test_bytes).hexdigest()
+    if git_blob_sha != "ce7e6e66cf3e286168d3d82f763307e18b587659":
+        raise RuntimeError("#1472 test patch does not match the pinned Git blob")
+    test_path.write_bytes(test_bytes)
 
 def apply_kaggle_worker_compatibility() -> str:
     """Avoid CUDA state inherited by ManiSkill's forkserver evaluation workers."""
