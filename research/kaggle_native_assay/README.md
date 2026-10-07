@@ -9,7 +9,7 @@ This reproducibility package exercises the ManiSkill native PickCube environment
 - Current upstream source under validation: ManiSkill #1495 head `fcbf03331985e88e0ba0805c0260dfb8ce7485c2` on `fix/delta-pose-euler-action`.
 - Kernel runner: [`run_assay.py`](run_assay.py). Build the single-file Kaggle upload with `python research/kaggle_native_assay/build_kaggle_kernel.py --output <kernel-directory>`. The runner verifies the checkout SHA, installs the environment, enables SAPIEN GPU rendering, and runs the PR unit tests plus a hash-identified native rollout harness. It emits `assay_result.json`, `experiment_log.json`, and `artifacts_manifest.json`.
 - The manifest records byte sizes and SHA-256 hashes for the result and run log. Verify a downloaded bundle with `python research/kaggle_native_assay/audit_results.py <bundle-directory>`.
-- Historical runs [`results/v9/`](results/v9/) and [`results/v10/`](results/v10/) used frozen research commit `102c584f90af83d862ce32ca05a23112603be2ed`; they are not exact-head validation of #1495. Exact-head v12/v13 artifacts are in [`results/pr1495_head_v12/`](results/pr1495_head_v12/) and [`results/pr1495_head_v13/`](results/pr1495_head_v13/); v14 targets the current test-only head.
+- Historical runs [`results/v9/`](results/v9/) and [`results/v10/`](results/v10/) used frozen research commit `102c584f90af83d862ce32ca05a23112603be2ed`; they are not exact-head validation of #1495. Exact-head v12/v13/v14 artifacts are in [`results/pr1495_head_v12/`](results/pr1495_head_v12/), [`results/pr1495_head_v13/`](results/pr1495_head_v13/), and [`results/pr1495_head_v14/`](results/pr1495_head_v14/).
 
 The runner omits ManiSkill's Linux extra `mplib==0.1.1`, which has no compatible Python 3.13 distribution, because this PickCube controller assay does not invoke motion planning. All other listed runtime dependencies are installed. This is an explicit scope limitation, not a full dependency-installation claim.
 
@@ -53,13 +53,15 @@ The v13 table values match v12: unsaturated 16-step final error was `0.00013078 
 
 ## Batched rotation stress test (v14)
 
-The current PR head adds a seeded 128-case batched XYZ Euler → quaternion → Euler → matrix round trip, alongside the scale-mapping boundary cases. The fixed-seed local exact-head suite passed 13 conversion tests. Kaggle v14 is being run against commit `fcbf03331985e88e0ba0805c0260dfb8ce7485c2`; its result will be added here after retrieval and audit.
+The current PR head adds a seeded 128-case batched XYZ Euler → quaternion → Euler → matrix round trip, alongside the scale-mapping boundary cases. The exact-head conversion suite passed 13 tests locally. Kaggle v14 checked out commit `fcbf03331985e88e0ba0805c0260dfb8ce7485c2`; all 13 conversion tests plus the native controller rollout passed (**14 passed**, 599 dependency/deprecation warnings). Its hashes, run record, measurements, and console log are in [`results/pr1495_head_v14/`](results/pr1495_head_v14/).
+
+The v14 native measurements match v12/v13. The 128-case test exercises the representation round trip only; it is not 128 robot rollouts or independent task seeds. The policy/controller performance evidence remains the same single-seed experiment.
 
 ## Relation to upstream PR #1495
 
 The current runner pins PR head `fcbf03331985e88e0ba0805c0260dfb8ce7485c2`, which adds a fixed-seed batch rotation round trip on top of anisotropic-scale and invalid-mapping tests. It overlays only the hash-recorded native rollout harness; the ManiSkill source remains unchanged at the pinned PR commit. The v13 run validates the immediately preceding test-only head `5a09b2a…`; v12 validates `875ae4d…`; the earlier v9/v10 runs do not check out any of those PR heads and remain mechanistic evidence for their frozen research source only. A passing Kaggle run is validation evidence, not proof that #1495 is accepted or merged.
 
-The v9/v10 runs repeat the same source commit, seed, and deterministic setup; they are not independent-seed replications. The v12/v13 exact-head runs use the same deterministic rollout seed and do not provide independent statistical replication. All results remain a narrow controller-conversion regression, with no general performance-superiority claim.
+The v9/v10 runs repeat the same source commit, seed, and deterministic setup; they are not independent-seed replications. The v12/v13/v14 exact-head runs use the same deterministic rollout seed and do not provide independent statistical replication. All results remain a narrow controller-conversion regression, with no general performance-superiority claim.
 
 ## Scope and evidence limits
 
