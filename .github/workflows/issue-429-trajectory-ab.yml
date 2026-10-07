@@ -75,6 +75,7 @@ jobs:
           echo "SOURCE=$SOURCE" >> "$GITHUB_ENV"
 
       - name: Baseline upstream main conversion
+        continue-on-error: true
         shell: bash
         run: |
           set -o pipefail
@@ -82,6 +83,7 @@ jobs:
           python -m mani_skill.trajectory.replay_trajectory             --traj-path "$SOURCE"             --target-control-mode pd_joint_pos             --use-first-env-state             --count "$COUNT"             --num-envs 1             --verbose             2>&1 | tee /tmp/baseline.log
 
       - name: Fixed conversion
+        if: always()
         shell: bash
         run: |
           set -o pipefail
@@ -89,6 +91,7 @@ jobs:
           python -m mani_skill.trajectory.replay_trajectory             --traj-path "$SOURCE"             --target-control-mode pd_joint_pos             --use-first-env-state             --count "$COUNT"             --num-envs 1             --verbose             2>&1 | tee /tmp/fixed.log
 
       - name: Summarize A/B result
+        if: always()
         run: |
           python - <<'PY'
           import json
@@ -146,6 +149,7 @@ jobs:
           PY
 
       - name: Gate fixed replay recovery
+        if: always()
         run: |
           python - <<'PY'
           import json
