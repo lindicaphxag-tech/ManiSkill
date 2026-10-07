@@ -7,8 +7,8 @@ This reproducibility package exercises the ManiSkill native PickCube environment
 - Public Kaggle GPU kernel: <https://www.kaggle.com/code/oblivicore/maniskill-native-delta-pose-assay>
 - Hardware requested: NVIDIA Tesla T4; the run uses GPU rendering. PhysX simulation remains on CPU.
 - Current upstream source under validation: ManiSkill #1495 head `69facfaafaa0ef233d36ef19e6cd9a0f03532ee0` on `fix/delta-pose-euler-action`.
-- Kernel runner: [`run_assay.py`](run_assay.py). Build the single-file Kaggle upload with `python research/kaggle_native_assay/build_kaggle_kernel.py --output <kernel-directory>`. The runner verifies the checkout SHA, installs the environment, enables SAPIEN GPU rendering, and runs the PR unit tests plus a hash-identified native rollout harness. It emits `assay_result.json`, `experiment_log.json`, and `artifacts_manifest.json`.
-- The manifest records byte sizes and SHA-256 hashes for the result and run log. Verify a downloaded bundle with `python research/kaggle_native_assay/audit_results.py <bundle-directory>`.
+- Kernel runner: [`run_assay.py`](run_assay.py). Build the single-file Kaggle upload with `python research/kaggle_native_assay/build_kaggle_kernel.py --output <kernel-directory>`. The runner verifies the checkout SHA, installs the environment, enables SAPIEN GPU rendering, and runs the PR unit tests plus a hash-identified native rollout harness. Current runs also emit a complete `pip freeze --all` environment snapshot.
+- The manifest records byte sizes and SHA-256 hashes for the result, run log, and resolved environment. Verify a downloaded bundle with `python research/kaggle_native_assay/audit_results.py <bundle-directory>`.
 - Historical runs [`results/v9/`](results/v9/) and [`results/v10/`](results/v10/) used frozen research commit `102c584f90af83d862ce32ca05a23112603be2ed`; they are not exact-head validation of #1495. Exact-head v12/v13/v14 artifacts are in [`results/pr1495_head_v12/`](results/pr1495_head_v12/), [`results/pr1495_head_v13/`](results/pr1495_head_v13/), and [`results/pr1495_head_v14/`](results/pr1495_head_v14/).
 
 The runner omits ManiSkill's Linux extra `mplib==0.1.1`, which has no compatible Python 3.13 distribution, because this PickCube controller assay does not invoke motion planning. All other listed runtime dependencies are installed. This is an explicit scope limitation, not a full dependency-installation claim.
@@ -58,6 +58,8 @@ The current PR head adds a seeded 128-case batched XYZ Euler → quaternion → 
 The v14 native measurements match v12/v13. The 128-case test exercises the representation round trip only; it is not 128 robot rollouts or independent task seeds. The policy/controller performance evidence remains the same single-seed experiment.
 
 After v14, GitHub rewrote the PR branch into one commit (`69facfa…`). The v14 checkout (`fcbf033…`) and current PR head have identical Git tree SHA `ff9427533266cc6cabc42e53a0255ca236ae9238`; a direct tree diff is empty. Thus the v14 run tested the exact same source files as the current head. The runner is now pinned to the current commit SHA for future reruns.
+
+Kernel v15 is being run against the current PR commit. It additionally captures `pip freeze --all` and includes that snapshot in the hashed manifest, so the resolved runtime can be audited rather than inferred from only the major framework versions.
 
 ## Relation to upstream PR #1495
 

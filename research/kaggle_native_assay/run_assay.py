@@ -1,7 +1,7 @@
 """Run the native ManiSkill regression on a Kaggle GPU and emit evidence."""
 
-import hashlib
 import base64
+import hashlib
 import json
 import os
 import shutil
@@ -89,6 +89,18 @@ try:
         ]
     )
 
+    environment = subprocess.run(
+        [sys.executable, "-m", "pip", "freeze", "--all"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    environment_path = WORK / "resolved_environment.txt"
+    environment_path.write_text(environment, encoding="utf-8")
+    log["resolved_environment_sha256"] = hashlib.sha256(
+        environment_path.read_bytes()
+    ).hexdigest()
+
     import torch
 
     if not torch.cuda.is_available():
@@ -124,7 +136,11 @@ finally:
     log_path = WORK / "experiment_log.json"
     log_path.write_text(json.dumps(log, indent=2) + "\n")
     files = {}
-    for name in ("assay_result.json", "experiment_log.json"):
+    for name in (
+        "assay_result.json",
+        "experiment_log.json",
+        "resolved_environment.txt",
+    ):
         path = WORK / name
         if path.is_file():
             data = path.read_bytes()

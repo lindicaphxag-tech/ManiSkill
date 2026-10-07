@@ -24,11 +24,13 @@ def audit(root: Path) -> list[str]:
     log = read_json(root, "experiment_log.json")
     result = read_json(root, "assay_result.json")
     files = manifest.get("files")
-    if not isinstance(files, dict) or set(files) != {
-        "assay_result.json",
-        "experiment_log.json",
-    }:
-        raise ValueError("Manifest must hash the result and experiment log")
+    required_files = {"assay_result.json", "experiment_log.json"}
+    allowed_files = required_files | {"resolved_environment.txt"}
+    if not isinstance(files, dict) or set(files) not in (
+        required_files,
+        allowed_files,
+    ):
+        raise ValueError("Manifest has an unexpected set of artifacts")
 
     for name, record in files.items():
         data = (root / name).read_bytes()
@@ -43,6 +45,13 @@ def audit(root: Path) -> list[str]:
         raise ValueError("Experiment log and manifest do not both report passed")
     if result.get("status") != "passed" or log.get("measurements") != result:
         raise ValueError("Result status or duplicated measurements disagree")
+    if "resolved_environment.txt" in files:
+        environment_sha256 = files["resolved_environment.txt"].get("sha256")
+        if log.get("resolved_environment_sha256") != environment_sha256:
+            raise ValueError("Resolved environment hash differs from the run log")
+        environment = (root / "resolved_environment.txt").read_text(encoding="utf-8")
+        if not environment.strip() or "==" not in environment:
+            raise ValueError("Resolved environment snapshot is empty or malformed")
     assay = result.get("assay")
     if assay == "native-pickcube-pr1495-exact-head":
         supported_pr_heads = {
@@ -61,6 +70,11 @@ def audit(root: Path) -> list[str]:
         harness_sha256 = hashlib.sha256(harness_path.read_bytes()).hexdigest()
         if log.get("validation_harness_sha256") != harness_sha256:
             raise ValueError("Native validation harness SHA-256 does not match the published source")
+        if (
+            commit == "69facfaafaa0ef233d36ef19e6cd9a0f03532ee0"
+            and "resolved_environment.txt" not in files
+        ):
+            raise ValueError("Current exact-head bundle lacks its resolved environment snapshot")
         if result.get("cuda_available") is not True or result.get("render_backend") != "gpu":
             raise ValueError("Recorded exact-head run did not use CUDA with GPU rendering")
         if result.get("seed") != 2026:
