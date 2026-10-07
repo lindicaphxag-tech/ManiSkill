@@ -1,134 +1,137 @@
 # ManiSkill #1495 — maintainer decision packet
 
-This is a one-page handoff from the public validation work. It is intentionally
-separate from the large audit branch.
+This is the current one-page handoff for upstream
+[mani-skill/ManiSkill#1495](https://github.com/mani-skill/ManiSkill/pull/1495).
 
 ## Recommended current action
 
-**Do not merge converter-only #1495 as a standalone fix.**
+**#1495 can now be reviewed independently of #1472.**
 
-The representation diagnosis is real, but current-main behavior contains a
-second controller-sign semantic defect (#1469 / #1472). The defects interact,
-and local correctness does not imply safe activation.
+The current converter head no longer hard-codes the sign convention implied by
+either `rot_lower` or `rot_upper`.  It probes the active controller's
+production action mapper for signed, axis-separable rotation scale and encodes
+the inverse relative quaternion into that active chart.
+
+This removes the old merge-order dependency on #1472 while preserving an
+explicit failure mode for non-axis-separable / zero / non-finite mappers.
 
 ## Frozen identities
 
-- current-main validation base:
-  `mani-skill/ManiSkill@107c9528b23b55bd276cf723c260a45ae7ce00ec`
-- converter-only #1495:
-  `lindicaphxag-tech/ManiSkill@cdd6db713ffe7edc3e0df3abfab51ea5320c1c0b`
-- controller-only #1472:
-  `VihaanAgarwal/ManiSkill@eed9be164797d41540421bda8adb3840377d7087`
+- upstream #1495 head:
+  `875ae4d8777678119b2f192ee186c6c15e6894d5`
+- current converter blob:
+  `438c4c41c7fe067194d8e090b9114ad0b5251128`
+- current focused test blob:
+  `363637b0c52828e98fe4956ab8f7bd5af7700344`
+- exact #1472 head used as compatibility environment:
+  `eed9be164797d41540421bda8adb3840377d7087`
+- #1472 controller blob:
+  `bc4e811f336ef67d0f6cccf30116be238bb4031d`
+- #1472 test blob:
+  `ce7e6e66cf3e286168d3d82f763307e18b587659`
 
-## 1. Direct semantic fidelity: strict interaction
+## Current-head public compatibility gate
 
-Canonical workflow: **37401619096**
+Canonical public workflow:
 
-Two independently generated request corpora, 10 episode clusters each.
+**https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37682148773**
 
-| corpus | current main | converter-only | controller-only | composed |
-| --- | ---: | ---: | ---: | ---: |
-| baseline-generated | 0.0198999° | 2.7191730° | 2.7166088° | **0.0139691°** |
-| composed-generated | 0.0212494° | 2.8296431° | 2.8268872° | **0.0143369°** |
+The workflow has two independent jobs.
 
-Both singleton fixes are worse than current main at the converter→controller
-SO(3) boundary. The composed repair is semantically better.
+### A. Current legacy controller
 
-Decision at this gate:
+Before testing, the job proves that the production converter and focused test
+are byte-identical to upstream #1495 head.
 
-```text
-converter-only -> reject
-controller-only -> reject
-composed        -> advance
-```
-
-## 2. Official-demo execution: semantic correctness is not enough
-
-Four-way replay workflow: **37399675564**
-
-| variant | saved official PegInsertionSide replays |
-| --- | ---: |
-| current main | 9 / 10 |
-| converter-only | 1 / 10 |
-| controller-only | 0 / 10 |
-| composed | 8 / 10 |
-
-The composed pair recovers most execution behavior but remains below main.
-
-The stronger repeatability-qualified comparison then ran five fresh processes:
+Result:
 
 ```text
-current main:     {0,1,3,4,5,6,7,8,9} = 9/10, identical in 5/5 repeats
-clean adapter v2: {0,3,4,5,6,7,8,9}   = 8/10, identical in 5/5 repeats
+tests/test_action_conversion.py
+9 passed
 ```
 
-Canonical repeatability workflow: **37407944746**
+### B. Real #1472 controller
 
-Therefore:
+The second job keeps the exact #1495 converter, then overlays the exact
+controller and controller-test blobs from #1472.
+
+Result:
 
 ```text
-semantic improvement != execution non-regression
+tests/test_action_conversion.py
+tests/test_pd_ee_pose_controller.py
+
+14 passed
 ```
 
-and the clean adapter is currently rejected at the execution-effect gate.
-
-## 3. Strong semantic/execution decoupling
-
-Public workflow: **37467272509**
-
-A frozen source interpolation uses alpha = 0, 0.1, 0.25, 0.5, 1.0.
-
-Semantic SO(3) error improves monotonically:
+Therefore the current #1495 implementation has one demonstrated property that
+the earlier converter-only head did not:
 
 ```text
-0.0198999 -> 0.0192890 -> 0.0183792 -> 0.0168820 -> 0.0139691 deg
+current legacy signed mapper  -> pass
+real #1472 positive mapper    -> pass
 ```
 
-but episode-1 execution is exactly repeatable and non-monotone:
+So **#1472 is now a tested compatibility environment, not a prerequisite for
+merging #1495**.
+
+## What changed relative to the old evidence packet
+
+The previous packet was bound to converter head
+`cdd6db713ffe7edc3e0df3abfab51ea5320c1c0b`.
+
+That implementation assumed a particular signed controller scale.  Under the
+then-current controller, the converter and controller defects could partially
+compensate, so fixing only one side produced a strong interaction.
+
+Those results remain useful evidence of a real compensating-semantic-fault
+pattern, but they **must not be used as a merge recommendation for current
+#1495**, because current head `875ae4d...` changed the production repair.
+
+The current implementation asks the active mapper what signed chart it
+actually implements.
+
+## Historical causal evidence retained
+
+The earlier 2x2 experiment remains useful as a diagnosis of the old boundary:
 
 ```text
-success -> fail -> fail -> success -> fail
+old converter + old controller   ~= 5.0767 deg
+old converter + #1472            ~= 64.7473 deg
+old #1495 + old controller       ~= 66.1280 deg
+old #1495 + #1472                ~= 4.83e-06 deg
 ```
 
-Five fresh-process repeats agree at every alpha.
+This showed why a representation-only patch that assumes a sign convention can
+be unsafe when another local defect compensates it.
 
-This rules out a simple "more semantically correct = monotonically safer task
-execution" assumption for this frozen protocol.
+Current #1495 addresses that exact review concern by deriving the sign/scale
+from the production mapper instead of assuming it.
 
-## 4. What this means for upstream
+## Remaining evidence boundary
 
-The smallest defensible upstream fix should pass both:
+The current compatibility workflow establishes controller-contract correctness
+for the focused conversion boundary.
 
-```text
-semantic contract correctness
-AND
-qualified execution non-regression
-```
+It does **not** yet establish:
 
-Focused unit tests alone are insufficient for this particular coupled boundary.
+- improved learned-policy task success;
+- exact replay equality across arbitrary controllers;
+- compatibility with a future ManiSkill 4 controller rewrite;
+- maintainer adoption.
 
-I would therefore prefer one of two maintainer decisions:
+A paired learned-policy / PegInsertionSide assay remains useful downstream
+evidence, but the lack of that result should not be confused with an unresolved
+merge-order dependency on #1472.
 
-1. **close/supersede #1495** until a joint converter/controller change passes
-   both gates; or
-2. keep #1495 as a diagnosis surface, but explicitly block standalone merge
-   on the interaction with #1472.
+## Single maintainer question
 
-## Single question for maintainers
+**Does probing the active `PDEEPoseController` mapper for its signed per-axis
+rotation scale match the intended current controller contract?**
 
-**Would you prefer #1495 to be closed/superseded now, or kept open as the
-converter-side diagnosis while a joint minimal fix is developed?**
-
-No merge is being requested from this evidence packet.
+If yes, the current #1495 can be reviewed on its own two-file diff.
 
 ## Evidence boundary
 
-All validation above is self-authored public evidence.
-
-It does not count as:
-- maintainer review;
-- upstream adoption;
-- policy-training improvement;
-- independent external reuse.
-
-Negative results were retained rather than tuned away.
+All validation here is self-authored public evidence.  It is not maintainer
+review or upstream adoption.
