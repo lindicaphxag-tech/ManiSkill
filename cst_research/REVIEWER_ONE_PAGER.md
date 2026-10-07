@@ -103,7 +103,7 @@ the existing robomimic delta->absolute script.
 
 Latest public run:
 
-`79 passed in 2.88s`
+`81 passed in 2.91s`
 
 ### ManiSkill contract matrix
 
