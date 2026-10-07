@@ -136,16 +136,19 @@ try:
         raise RuntimeError("Kaggle GPU was requested but CUDA is unavailable")
 
     run_stream([sys.executable, "-m", "mani_skill.utils.download_demo", "PegInsertionSide-v1", "--output_dir", str(DEMO_ROOT)], OUTPUT / "dataset.log")
-    matches = list(DEMO_ROOT.rglob(DEMO_NAME))
-    if len(matches) != 1:
-        raise RuntimeError(f"Expected exactly one official demo file named {DEMO_NAME}; found {len(matches)}")
-    demo_path = matches[0]
+    inventory = [str(p.relative_to(DEMO_ROOT)) for p in DEMO_ROOT.rglob("*") if p.is_file()]
+    (OUTPUT / "dataset_inventory.json").write_text(json.dumps(inventory, indent=2) + "\n", encoding="utf-8")
+    candidates = [p for p in DEMO_ROOT.rglob("*.h5") if ".state." in p.name and "pd_ee_delta_pose" in p.name]
+    if not candidates:
+        raise RuntimeError(f"Official demo archive has no state pd_ee_delta_pose HDF5 file. Archive contents: {inventory}")
+    cpu_candidates = [p for p in candidates if "physx_cpu" in p.name]
+    demo_path = (cpu_candidates or candidates)[0]
     meta_path = demo_path.with_suffix(".json")
     if not meta_path.is_file():
         raise FileNotFoundError(f"Demo metadata missing: {meta_path}")
     run_record["demonstrations"] = {
         "source": "haosulab/ManiSkill_Demonstrations PegInsertionSide-v1 official download",
-        "filename": DEMO_NAME,
+        "filename": demo_path.name,
         "sha256": sha256(demo_path),
         "metadata_sha256": sha256(meta_path),
         "raw_data_exported": False,
