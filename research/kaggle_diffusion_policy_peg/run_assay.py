@@ -9,6 +9,7 @@ is included.
 from __future__ import annotations
 
 import csv
+import copy
 import hashlib
 import json
 import os
@@ -46,7 +47,8 @@ CONFIG = {
     "demo_type": "motionplanning",
     "control_mode": "pd_ee_delta_pose",
     "sim_backend": "physx_cpu",
-    "num_demos": 100,
+    "requested_num_demos": 100,
+    "minimum_paired_demos": 32,
     "replay_count": 100,
     "max_episode_steps": 300,
     "total_iters": 100000,
@@ -146,6 +148,54 @@ def sha256(path: Path) -> str:
         for block in iter(lambda: f.read(1024 * 1024), b""):
             h.update(block)
     return h.hexdigest()
+
+def index_converted_episodes(demo_path: Path) -> dict[int, dict]:
+    """Index successful converted trajectories by their propagated source seed."""
+    import h5py
+
+    metadata = json.loads(demo_path.with_suffix(".json").read_text(encoding="utf-8"))
+    result = {}
+    with h5py.File(demo_path, "r") as h5_file:
+        for episode in metadata.get("episodes", []):
+            if episode.get("success") is not True:
+                continue
+            if "episode_seed" not in episode:
+                raise RuntimeError(f"Converted episode is missing episode_seed: {episode}")
+            seed = int(episode["episode_seed"])
+            if seed in result:
+                raise RuntimeError(f"Converted replay has duplicate episode seed {seed}")
+            source_key = f"traj_{int(episode['episode_id'])}"
+            if source_key not in h5_file:
+                raise RuntimeError(f"Converted metadata points to missing HDF5 key {source_key}")
+            result[seed] = {"source_key": source_key, "metadata": episode}
+    if not result:
+        raise RuntimeError(f"No successful converted demonstrations found in {demo_path}")
+    return result
+
+def write_paired_dataset(demo_path: Path, indexed_episodes: dict[int, dict], seeds: list[int]) -> Path:
+    """Copy the same source-seed subset into a compact, order-stable HDF5 dataset."""
+    import h5py
+
+    metadata = json.loads(demo_path.with_suffix(".json").read_text(encoding="utf-8"))
+    metadata_by_seed = {
+        int(item["episode_seed"]): item
+        for item in metadata.get("episodes", [])
+        if item.get("success") is True and "episode_seed" in item
+    }
+    paired_path = demo_path.with_name(demo_path.stem + ".paired.h5")
+    paired_metadata = copy.deepcopy(metadata)
+    paired_metadata["episodes"] = []
+    with h5py.File(demo_path, "r") as source, h5py.File(paired_path, "w") as target:
+        for new_id, seed in enumerate(seeds):
+            item = indexed_episodes[seed]
+            source.copy(item["source_key"], target, name=f"traj_{new_id}")
+            episode = copy.deepcopy(metadata_by_seed[seed])
+            episode["episode_id"] = new_id
+            paired_metadata["episodes"].append(episode)
+    paired_path.with_suffix(".json").write_text(
+        json.dumps(paired_metadata, indent=2) + "\n", encoding="utf-8"
+    )
+    return paired_path
 
 def download_pinned_demo_dataset() -> dict:
     """Download and verify the exact public demo archive used by the assay."""
@@ -270,6 +320,7 @@ try:
     all_scalars: list[dict] = []
     run_summaries = []
     demonstrations = {}
+    prepared_arms = {}
     for arm, start_commit, extra_commit in arms:
         subprocess.run(["git", "-C", str(REPO), "reset", "--hard", BASE], check=True)
         subprocess.run(["git", "-C", str(REPO), "clean", "-fd"], check=True, stdout=subprocess.DEVNULL)
@@ -304,6 +355,7 @@ try:
         if not demo_path.is_file() or not meta_path.is_file():
             raise FileNotFoundError(f"Arm-specific replay output missing: {demo_path}")
         meta_data = json.loads(meta_path.read_text(encoding="utf-8"))
+        indexed_episodes = index_converted_episodes(demo_path)
         demonstrations[arm] = {
             "source": "haosulab/ManiSkill_Demonstrations PegInsertionSide-v1 official download",
             "replay_source_commit": start_commit,
@@ -311,8 +363,67 @@ try:
             "sha256": sha256(demo_path),
             "metadata_sha256": sha256(meta_path),
             "episode_count": len(meta_data.get("episodes", [])),
+            "successful_episode_count": len(indexed_episodes),
             "raw_data_exported": False,
         }
+        prepared_arms[arm] = {
+            "start_commit": start_commit,
+            "extra_commit": extra_commit,
+            "tree": tree,
+            "demo_path": demo_path,
+            "indexed_episodes": indexed_episodes,
+        }
+
+    if any("episode_seed" not in episode for episode in selected_episodes):
+        raise RuntimeError("The pinned source metadata does not expose stable episode_seed values")
+    source_seed_order = [int(episode["episode_seed"]) for episode in selected_episodes]
+    if len(source_seed_order) != len(set(source_seed_order)):
+        raise RuntimeError("The selected source demonstrations contain duplicate episode seeds")
+    common_seeds = [
+        seed for seed in source_seed_order
+        if all(seed in prepared_arms[arm]["indexed_episodes"] for arm, _, _ in arms)
+    ]
+    if len(common_seeds) < CONFIG["minimum_paired_demos"]:
+        raise RuntimeError(
+            f"Only {len(common_seeds)} source-seed-matched successful demos survived both replays; "
+            f"minimum is {CONFIG['minimum_paired_demos']}"
+        )
+    common_seed_sha256 = hashlib.sha256(
+        json.dumps(common_seeds, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    CONFIG["effective_paired_num_demos"] = len(common_seeds)
+    CONFIG["paired_source_seed_sha256"] = common_seed_sha256
+    for arm, _, _ in arms:
+        paired_path = write_paired_dataset(
+            prepared_arms[arm]["demo_path"],
+            prepared_arms[arm]["indexed_episodes"],
+            common_seeds,
+        )
+        prepared_arms[arm]["paired_demo_path"] = paired_path
+        demonstrations[arm]["paired_filename"] = paired_path.name
+        demonstrations[arm]["paired_sha256"] = sha256(paired_path)
+        demonstrations[arm]["paired_metadata_sha256"] = sha256(paired_path.with_suffix(".json"))
+        demonstrations[arm]["paired_episode_count"] = len(common_seeds)
+        demonstrations[arm]["paired_source_seed_sha256"] = common_seed_sha256
+
+    # Both arms now train on the same successful source-seed set. The two
+    # HDF5 files remain arm-specific because their action/state conversions differ.
+    for arm, _, _ in arms:
+        start_commit = prepared_arms[arm]["start_commit"]
+        extra_commit = prepared_arms[arm]["extra_commit"]
+        demo_path = prepared_arms[arm]["paired_demo_path"]
+        subprocess.run(["git", "-C", str(REPO), "reset", "--hard", BASE], check=True)
+        subprocess.run(["git", "-C", str(REPO), "clean", "-fd"], check=True, stdout=subprocess.DEVNULL)
+        subprocess.run(["git", "-C", str(REPO), "checkout", "--detach", start_commit], check=True)
+        if extra_commit:
+            apply_controller_pr_overlay(extra_commit)
+            subprocess.run([
+                "git", "-C", str(REPO), "add",
+                "mani_skill/agents/controllers/pd_ee_pose.py",
+                "tests/test_pd_ee_pose_controller.py",
+            ], check=True)
+        subprocess.run(["git", "-C", str(REPO), "diff", "--check"], check=True)
+        tree = git("write-tree")
         runtime_compatibility_sha256 = apply_kaggle_worker_compatibility()
         run_name = f"dp_peg_insertion_{arm}_seed_{CONFIG['seed']}"
         cmd = [
@@ -321,7 +432,7 @@ try:
             "--demo-path", str(demo_path),
             "--control-mode", CONFIG["control_mode"],
             "--sim-backend", CONFIG["sim_backend"],
-            "--num-demos", str(CONFIG["num_demos"]),
+            "--num-demos", str(len(common_seeds)),
             "--max_episode_steps", str(CONFIG["max_episode_steps"]),
             "--total_iters", str(CONFIG["total_iters"]),
             "--batch_size", str(CONFIG["batch_size"]),
@@ -351,7 +462,7 @@ try:
             dest = event_dir / event.name
             shutil.copy2(event, dest)
             saved_events.append(str(dest.relative_to(OUTPUT)))
-        run_summaries.append({"arm": arm, "source_commit": start_commit, "controller_overlay_commit": extra_commit, "source_tree": tree, "runtime_compatibility_sha256": runtime_compatibility_sha256, "demo_sha256": demonstrations[arm]["sha256"], "run_name": run_name, "scalar_count": len(rows), "metrics": by_tag, "event_files": saved_events})
+        run_summaries.append({"arm": arm, "source_commit": start_commit, "controller_overlay_commit": extra_commit, "source_tree": tree, "runtime_compatibility_sha256": runtime_compatibility_sha256, "demo_sha256": demonstrations[arm]["paired_sha256"], "paired_num_demos": len(common_seeds), "paired_source_seed_sha256": common_seed_sha256, "run_name": run_name, "scalar_count": len(rows), "metrics": by_tag, "event_files": saved_events})
         # Retain TensorBoard evidence and compact log only; drop checkpoints/videos.
         shutil.rmtree(run_dir, ignore_errors=True)
         print(json.dumps(run_summaries[-1], sort_keys=True), flush=True)
