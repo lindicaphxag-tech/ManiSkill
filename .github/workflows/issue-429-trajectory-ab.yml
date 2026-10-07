@@ -95,35 +95,75 @@ jobs:
           import pathlib
           import re
 
-          def parse(path):
+          pattern = re.compile(
+              r"Replayed\\s+(\\d+)\\s+episodes,\\s+(\\d+)/(\\d+)=([0-9.]+)% demos saved"
+          )
+
+          def parse(path, exit_code_path=None):
               text = pathlib.Path(path).read_text(errors="replace")
-              matches = re.findall(
-                  r"Replayed\s+(\d+)\s+episodes,\s+(\d+)/(\d+)=([0-9.]+)% demos saved",
-                  text,
-              )
-              if not matches:
-                  raise RuntimeError(f"Could not parse replay summary from {path}")
-              replayed, successful, denominator, percent = matches[-1]
+              exit_code = 0
+              if exit_code_path is not None and pathlib.Path(exit_code_path).exists():
+                  exit_code = int(pathlib.Path(exit_code_path).read_text().strip())
+              matches = pattern.findall(text)
+              if matches:
+                  replayed, successful, denominator, percent = matches[-1]
+                  return {
+                      "status": "completed" if exit_code == 0 else "completed_nonzero",
+                      "exit_code": exit_code,
+                      "replayed": int(replayed),
+                      "successful": int(successful),
+                      "denominator": int(denominator),
+                      "success_percent": float(percent),
+                  }
+
+              traceback_tail = ""
+              marker = "Traceback (most recent call last):"
+              if marker in text:
+                  traceback_tail = text[text.rfind(marker):].strip()[-4000:]
               return {
-                  "replayed": int(replayed),
-                  "successful": int(successful),
-                  "denominator": int(denominator),
-                  "success_percent": float(percent),
+                  "status": "runtime_error",
+                  "exit_code": exit_code,
+                  "success_percent": None,
+                  "traceback_tail": traceback_tail,
               }
 
           result = {
               "source_generation": parse("/tmp/source_generation.log"),
-              "upstream_main": parse("/tmp/baseline.log"),
-              "fixed_branch": parse("/tmp/fixed.log"),
+              "upstream_main": parse("/tmp/baseline.log", "/tmp/baseline_exit_code"),
+              "fixed_branch": parse("/tmp/fixed.log", "/tmp/fixed_exit_code"),
           }
+          baseline_percent = result["upstream_main"].get("success_percent")
+          fixed_percent = result["fixed_branch"].get("success_percent")
           result["absolute_success_gain"] = (
-              result["fixed_branch"]["success_percent"]
-              - result["upstream_main"]["success_percent"]
+              None
+              if baseline_percent is None or fixed_percent is None
+              else fixed_percent - baseline_percent
           )
           pathlib.Path("/tmp/issue429_ab_summary.json").write_text(
               json.dumps(result, indent=2)
           )
           print(json.dumps(result, indent=2))
+          PY
+
+      - name: Gate fixed replay recovery
+        run: |
+          python - <<'PY'
+          import json
+          import pathlib
+
+          result = json.loads(pathlib.Path("/tmp/issue429_ab_summary.json").read_text())
+          fixed = result["fixed_branch"]
+          if fixed["exit_code"] != 0:
+              raise SystemExit("fixed branch still raises during trajectory conversion")
+          if fixed.get("success_percent") is None:
+              raise SystemExit("fixed branch produced no replay success summary")
+          if fixed["success_percent"] <= 0:
+              raise SystemExit("fixed branch completed but recovered no successful trajectories")
+          print(
+              "Fixed branch recovered",
+              f"{fixed['successful']}/{fixed['denominator']}",
+              f"({fixed['success_percent']:.2f}%)",
+          )
           PY
 
       - name: Upload replay evidence
@@ -136,5 +176,7 @@ jobs:
             /tmp/baseline.log
             /tmp/fixed.log
             /tmp/source_path.txt
+            /tmp/baseline_exit_code
+            /tmp/fixed_exit_code
             /tmp/issue429_ab_summary.json
           if-no-files-found: warn
