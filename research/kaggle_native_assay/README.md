@@ -6,16 +6,16 @@ This reproducibility package exercises the ManiSkill native PickCube environment
 
 - Public Kaggle GPU kernel: <https://www.kaggle.com/code/oblivicore/maniskill-native-delta-pose-assay>
 - Hardware requested: NVIDIA Tesla T4; the run uses GPU rendering. PhysX simulation remains on CPU.
-- Frozen test source commit: `102c584f90af83d862ce32ca05a23112603be2ed` on `research/native-delta-pose-assay`.
+- Exact upstream source under validation: ManiSkill #1495 head `875ae4d8777678119b2f192ee186c6c15e6894d5` on `fix/delta-pose-euler-action`.
 - Kernel runner: [`run_assay.py`](run_assay.py). It verifies the checkout SHA, installs the environment, enables SAPIEN GPU rendering, and runs conversion and native controller tests. It emits `assay_result.json`, `experiment_log.json`, and `artifacts_manifest.json`.
 - The manifest records byte sizes and SHA-256 hashes for the result and run log. Verify a downloaded bundle with `python research/kaggle_native_assay/audit_results.py research/kaggle_native_assay/results/v10`.
-- Recorded runs: [`results/v9/`](results/v9/) and [`results/v10/`](results/v10/).
+- Historical runs [`results/v9/`](results/v9/) and [`results/v10/`](results/v10/) used frozen research commit `102c584f90af83d862ce32ca05a23112603be2ed`; they are not exact-head validation of #1495. The refreshed runner pins #1495's current head and adds a hash-recorded native rollout harness as a test-only file overlay. Its result will be recorded separately after Kaggle completes.
 
 The runner omits ManiSkill's Linux extra `mplib==0.1.1`, which has no compatible Python 3.13 distribution, because this PickCube controller assay does not invoke motion planning. All other listed runtime dependencies are installed. This is an explicit scope limitation, not a full dependency-installation claim.
 
 ## Results
 
-The v9 and v10 runs passed on Linux x86_64, Python 3.13.15, PyTorch 2.11.0+cu128, and SAPIEN 3.0.3, with CUDA available and the GPU render backend active. Their orientation measurements are identical.
+The v9 and v10 runs passed on Linux x86_64, Python 3.13.15, PyTorch 2.11.0+cu128, and SAPIEN 3.0.3, with CUDA available and the GPU render backend active. Their orientation measurements are identical. Those results describe only their frozen research commit, not the current #1495 head.
 
 | Regime | Horizon | Legacy final orientation error | Repaired final orientation error |
 |---|---:|---:|---:|
@@ -33,7 +33,7 @@ Kernel version 10 is public and completed successfully at the Kaggle URL above. 
 
 ## Relation to upstream PR #1495
 
-The frozen assay commit is `102c584f90af83d862ce32ca05a23112603be2ed` on the fork's `research/native-delta-pose-assay` branch. The public #1495 head was subsequently updated to `875ae4d8777678119b2f192ee186c6c15e6894d5`, adding a runtime probe of the active controller's signed action scale. The Kaggle v9/v10 runs do **not** check out that PR head; they are mechanistic regression evidence for the frozen assay source only. They must not be described as exact-head CI or as proof that #1495 is accepted or merged.
+The current assay runner pins public #1495 head `875ae4d8777678119b2f192ee186c6c15e6894d5`, which adds a runtime probe of the active controller's signed action scale. It overlays a separate test-only native rollout file; the ManiSkill source itself remains at the pinned PR commit. The earlier Kaggle v9/v10 runs do **not** check out that PR head and remain mechanistic evidence for their frozen research source only. A passing Kaggle run is validation evidence, not proof that #1495 is accepted or merged.
 
 The two recorded runs use the same source commit, seed, and deterministic setup. They confirm that this narrow measurement repeated identically; they are not independent-seed replications. The assay's repaired unsaturated first-command error is below `1e-5` rad, compared with about `1.06e-3` rad for the legacy conversion. For the larger saturated target, the repaired final error is worse at 16 steps and lower at 64 steps. No general performance-superiority claim follows from these runs.
 
