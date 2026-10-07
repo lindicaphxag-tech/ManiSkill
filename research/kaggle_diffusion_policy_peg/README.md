@@ -16,4 +16,18 @@ The private Kaggle kernel `oblivicore/maniskill-dp-peg-1495-1472` was submitted 
 
 The runner installs ManiSkill in editable no-dependency mode and installs only the runtime packages this non-planning assay needs. The official PegInsertionSide demos and generated replay dataset are deleted before output packaging.
 
+### Validity audit in progress
+
+Before interpreting v4, an audit found that its runner replays the raw demos only
+once under the frozen base, then reuses that converted dataset for both arms.
+That is not a valid paired comparison for a change to action conversion. The
+current v4 run is therefore retained only as a pipeline diagnostic; its policy
+metrics, if emitted, must not be used as evidence for either PR. A valid rerun
+must replay the raw trajectories independently under each arm and record each
+arm's converted-data identity. The audit also found that PR #1495's current
+negative Euler compensation matches the legacy `rot_lower` controller but
+appears sign-inconsistent with #1472's proposed positive `rot_upper` scaling.
+These two points must be resolved before any combined-head result is treated as
+PR validation.
+
 A single seed supports a paired mechanistic comparison, not a statistically powered performance claim. Success-rate increments have 0.05 resolution at each 20-episode evaluation point.
