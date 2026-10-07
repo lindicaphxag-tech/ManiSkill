@@ -77,6 +77,8 @@ def audit(root: Path) -> list[str]:
     paired_count = int(summary.get("paired_demo_count", -1))
     if paired_count < 0 or paired_count > min(saved_counts):
         raise ValueError("Paired demo count exceeds one arm's replayed successes")
+    if int(summary.get("baseline_loaded_trajectories", -1)) != paired_count:
+        raise ValueError("Baseline trainer trajectory count differs from paired demo count")
     config = run.get("config", {})
     if int(config.get("effective_paired_num_demos", -1)) != paired_count:
         raise ValueError("Paired demo count differs from experiment config")
@@ -95,8 +97,19 @@ def audit(root: Path) -> list[str]:
     if updates < 0:
         raise ValueError("training_updates_completed is missing or negative")
     if updates == 0:
-        if not summary.get("evaluation_error"):
+        evaluation_error = summary.get("evaluation_error")
+        if not evaluation_error:
             raise ValueError("Zero-update run has no recorded evaluation error")
+        log_path = root / "upstream_baseline.log"
+        if not log_path.is_file():
+            raise ValueError("Zero-update run has no upstream_baseline.log")
+        baseline_log = log_path.read_text(encoding="utf-8", errors="replace")
+        error_type = str(evaluation_error).split(":", maxsplit=1)[0]
+        if error_type not in baseline_log:
+            raise ValueError(
+                "Evaluation error type in summary is absent from upstream_baseline.log"
+            )
+        findings.append(f"Failure signature is corroborated by upstream_baseline.log ({error_type})")
         findings.append(
             "No optimizer update completed: this run provides no policy-performance evidence"
         )
