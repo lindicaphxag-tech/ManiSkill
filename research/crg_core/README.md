@@ -85,3 +85,19 @@ unobserved small-scale limit when multiple robust contraction ratios support it.
 
 This is deliberately fail-closed: more same-scale samples are not allowed to
 turn a stable but nonlocal Jacobian into false confidence.
+
+
+## Independent replication
+
+A 30-minute external path is available in
+`research/crg_core/REPLICATION_30_MIN.md`.
+
+The record gate requires a real frozen policy, immutable provenance, explicit
+query/error accounting, and at least one observed execution outcome. Negative
+results are accepted. Owner-authored records are rejected as external evidence.
+
+```bash
+cp research/crg_core/replication_example.json result.json
+python -m research.crg_core.seal_replication result.json
+python -m research.crg_core.replication_record result.json
+```
