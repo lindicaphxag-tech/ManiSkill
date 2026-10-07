@@ -92,3 +92,26 @@ Required before claiming a strong L8-level representative work:
 Until these gates are crossed, use **L8-candidate**, not L8 achieved.
 L9 additionally requires independent adoption / reuse or strong paper-level
 external recognition.
+
+
+## Very recent controller-retuning boundary: PHRetune
+
+A 2026-10-05 preprint, *Demonstration-Calibrated Port-Hamiltonian Retuning
+for Manipulation Policies* (PHRetune), already studies a frozen manipulation
+policy deployed through a downstream impedance controller and derives
+stiffness / damping gain retuning from demonstrations.
+
+Therefore CST must also **not** claim novelty for the broad phrase
+"adapting a downstream controller for a frozen policy" or for frozen-policy
+controller-gain retuning.
+
+The distinction CST must preserve is:
+
+- PHRetune: keep the policy action representation and controller family, retune
+  downstream impedance gains;
+- CST candidate: migrate between executable controller semantics / state
+  machines, including action charts, current-vs-target reference ownership,
+  controller-owned dynamic state, representability and refusal.
+
+Future title / abstract language should prefer **controller migration** or
+**controller-semantic swap**, not the broader "controller adaptation."
