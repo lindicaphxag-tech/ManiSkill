@@ -54,3 +54,37 @@ current PR branch now includes a runtime scale adapter; see
 [the corrected action-sign audit](ACTION_SIGN_AUDIT.md).
 
 A single seed supports a paired mechanistic comparison, not a statistically powered performance claim. Success-rate increments have 0.05 resolution at each 20-episode evaluation point.
+
+
+## GitHub CPU smoke boundary
+
+A renderer-less state-policy smoke was attempted on public GitHub Actions to
+reduce Kaggle iteration latency:
+
+- branch: `validation/dp-peg-state-smoke-v1`;
+- run: **37701725145**;
+- Python 3.13 with CPU-only PyTorch;
+- requested replay: `-o state -b physx_cpu`.
+
+The run failed **before Diffusion Policy training or evaluation**. The failure
+occurred inside ManiSkill's official `replay_trajectory` environment
+construction:
+
+```text
+RuntimeError: vk::createInstanceUnique: ErrorIncompatibleDriver
+Your GPU driver does not support Vulkan.
+```
+
+Therefore the current evidence boundary is:
+
+- the official state-based Diffusion Policy configuration itself uses
+  `physx_cpu`;
+- however, the official trajectory-replay path still initializes SAPIEN/Vulkan
+  on this GitHub runner even for state observations;
+- run 37701725145 is an execution-environment limitation, **not** a policy
+  performance result and not evidence against #1495;
+- real source-demo replay remains on the Kaggle T4 / Vulkan-capable path.
+
+A future renderer-free dataset-to-optimizer smoke may validate only the
+training/evaluator compatibility layer. It must not be substituted for the
+real paired source-demo replay protocol.
