@@ -3,57 +3,64 @@
 This is the current one-page handoff for upstream
 [mani-skill/ManiSkill#1495](https://github.com/mani-skill/ManiSkill/pull/1495).
 
-## Recommended current action
+## Decision summary
 
-**#1495 can now be reviewed independently of #1472.**
+**Current #1495 is reviewer-ready as a standalone two-file patch.**
 
-The current converter head no longer hard-codes the sign convention implied by
-either `rot_lower` or `rot_upper`.  It probes the active controller's
-production action mapper for signed, axis-separable rotation scale and encodes
-the inverse relative quaternion into that active chart.
+The converter no longer hard-codes a particular rotation sign convention. It
+probes the active `PDEEPoseController` production action mapper, extracts the
+signed axis-separable rotation scale, and encodes the target XYZ-Euler delta in
+that active action chart.
 
-This removes the old merge-order dependency on #1472 while preserving an
-explicit failure mode for non-axis-separable / zero / non-finite mappers.
+Unsupported mappings fail explicitly rather than silently guessing.
 
-## Frozen identities
+## Frozen current identities
 
 - upstream #1495 head:
-  `875ae4d8777678119b2f192ee186c6c15e6894d5`
-- current converter blob:
+  `69facfaafaa0ef233d36ef19e6cd9a0f03532ee0`
+- PR shape:
+  **1 commit / 2 files**
+- converter blob:
   `438c4c41c7fe067194d8e090b9114ad0b5251128`
-- current focused test blob:
-  `363637b0c52828e98fe4956ab8f7bd5af7700344`
-- exact #1472 head used as compatibility environment:
+- focused test blob:
+  `71254e58d690c2d4d8690eea4c6b8f637f157dd4`
+- exact #1472 compatibility head:
   `eed9be164797d41540421bda8adb3840377d7087`
 - #1472 controller blob:
   `bc4e811f336ef67d0f6cccf30116be238bb4031d`
-- #1472 test blob:
+- #1472 controller-test blob:
   `ce7e6e66cf3e286168d3d82f763307e18b587659`
 
-## Current-head public compatibility gate
+## Exact-current-head compatibility closure
 
 Canonical public workflow:
 
-**https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37682148773**
+**https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37687749068**
 
-The workflow has two independent jobs.
+The workflow first proves that the production/test blobs are byte-identical to
+the current squashed upstream PR head.
 
-### A. Current legacy controller
-
-Before testing, the job proves that the production converter and focused test
-are byte-identical to upstream #1495 head.
+### A. Current / legacy mapper
 
 Result:
 
 ```text
 tests/test_action_conversion.py
-9 passed
+13 passed
 ```
 
-### B. Real #1472 controller
+Coverage includes:
 
-The second job keeps the exact #1495 converter, then overlays the exact
-controller and controller-test blobs from #1472.
+- compound XYZ rotations;
+- seeded 128-case quaternion/Euler round trip;
+- anisotropic signed scales;
+- zero-scale rejection;
+- non-axis-separable mapping rejection.
+
+### B. Exact #1472 mapper
+
+The second job overlays the exact #1472 controller and controller-test blobs,
+verifies their hashes, and runs the same current converter against that mapper.
 
 Result:
 
@@ -61,39 +68,40 @@ Result:
 tests/test_action_conversion.py
 tests/test_pd_ee_pose_controller.py
 
+18 passed
+```
+
+Therefore #1472 is a tested compatibility environment, not a prerequisite for
+reviewing or merging current #1495.
+
+## Native controller evidence
+
+Kaggle v15 checked out the same exact current head
+`69facfaafaa0ef233d36ef19e6cd9a0f03532ee0` on a Tesla T4 and ran the upstream
+conversion tests plus a native PickCube controller assay:
+
+```text
 14 passed
 ```
 
-Therefore the current #1495 implementation has one demonstrated property that
-the earlier converter-only head did not:
+The run records a hashed `pip freeze --all` environment snapshot.
 
-```text
-current legacy signed mapper  -> pass
-real #1472 positive mapper    -> pass
-```
+Artifacts:
+https://github.com/lindicaphxag-tech/ManiSkill/tree/research/native-delta-pose-assay/research/kaggle_native_assay/results/pr1495_head_v15
 
-So **#1472 is now a tested compatibility environment, not a prerequisite for
-merging #1495**.
+Narrow native measurement:
 
-## What changed relative to the old evidence packet
+- unsaturated one-step controller-target error:
+  **5.36e-9 rad** for current #1495;
+- legacy axis-angle baseline:
+  **1.06e-3 rad**.
 
-The previous packet was bound to converter head
-`cdd6db713ffe7edc3e0df3abfab51ea5320c1c0b`.
+The saturated 16-step case is mixed (**0.228 vs 0.212 rad**), so this packet
+makes no broad performance or task-success claim.
 
-That implementation assumed a particular signed controller scale.  Under the
-then-current controller, the converter and controller defects could partially
-compensate, so fixing only one side produced a strong interaction.
+## Historical compensating-fault evidence
 
-Those results remain useful evidence of a real compensating-semantic-fault
-pattern, but they **must not be used as a merge recommendation for current
-#1495**, because current head `875ae4d...` changed the production repair.
-
-The current implementation asks the active mapper what signed chart it
-actually implements.
-
-## Historical causal evidence retained
-
-The earlier 2x2 experiment remains useful as a diagnosis of the old boundary:
+Earlier converter/controller versions exposed a genuine interaction:
 
 ```text
 old converter + old controller   ~= 5.0767 deg
@@ -102,36 +110,35 @@ old #1495 + old controller       ~= 66.1280 deg
 old #1495 + #1472                ~= 4.83e-06 deg
 ```
 
-This showed why a representation-only patch that assumes a sign convention can
-be unsafe when another local defect compensates it.
+That result is retained as historical diagnosis, not as the merge argument for
+current #1495.
 
-Current #1495 addresses that exact review concern by deriving the sign/scale
-from the production mapper instead of assuming it.
-
-## Remaining evidence boundary
-
-The current compatibility workflow establishes controller-contract correctness
-for the focused conversion boundary.
-
-It does **not** yet establish:
-
-- improved learned-policy task success;
-- exact replay equality across arbitrary controllers;
-- compatibility with a future ManiSkill 4 controller rewrite;
-- maintainer adoption.
-
-A paired learned-policy / PegInsertionSide assay remains useful downstream
-evidence, but the lack of that result should not be confused with an unresolved
-merge-order dependency on #1472.
+Current #1495 addresses the review concern by asking the active production
+mapper which signed chart it actually implements rather than assuming one.
 
 ## Single maintainer question
 
-**Does probing the active `PDEEPoseController` mapper for its signed per-axis
-rotation scale match the intended current controller contract?**
+**Is deriving the converter's signed per-axis rotation action scale from the
+active `PDEEPoseController._clip_and_scale_action` mapper the intended current
+controller contract?**
 
-If yes, the current #1495 can be reviewed on its own two-file diff.
+If yes, the current upstream PR can be reviewed on its existing one-commit,
+two-file diff.
 
 ## Evidence boundary
 
-All validation here is self-authored public evidence.  It is not maintainer
-review or upstream adoption.
+This packet establishes:
+
+- exact-current-head regression coverage;
+- compatibility with both the current/legacy mapper and exact #1472 mapper;
+- one deterministic native-controller reproduction.
+
+It does **not** establish:
+
+- learned-policy task success;
+- arbitrary-controller replay equivalence;
+- compatibility with a future ManiSkill 4 controller rewrite;
+- maintainer acceptance or upstream adoption.
+
+All evidence here is self-authored public evidence until a maintainer or third
+party independently validates or retains the patch.
