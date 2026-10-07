@@ -26,6 +26,9 @@ class ReplicationAudit:
     false_accept_count: int
     false_reject_count: int
     observed_execution_count: int
+    schema_valid: bool
+    claimed_independent: bool
+    independence_verified: bool
     eligible_external_evidence: bool
     evidence_digest: str
 
@@ -109,7 +112,14 @@ def validate_replication_record(path: str | Path) -> ReplicationAudit:
         false_accept_count=false_accept,
         false_reject_count=false_reject,
         observed_execution_count=observed,
-        eligible_external_evidence=True,
+        # A self-declared producer name, independent=True, and a self-computed
+        # SHA-256 digest are not independent attestation. The offline validator
+        # checks internal consistency only; reviewer-side source provenance and
+        # actual execution evidence must be verified separately.
+        schema_valid=True,
+        claimed_independent=True,
+        independence_verified=False,
+        eligible_external_evidence=False,
         evidence_digest=digest,
     )
 
