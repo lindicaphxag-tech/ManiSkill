@@ -29,13 +29,16 @@ Synthetic matrices alone do not satisfy the external-evidence gate.
 
 ## 3. Seal and validate the result
 
-Create a JSON record following
-`research/crg_core/replication_example.json`, compute its canonical digest with
-`canonical_digest`, then run:
+Copy the template, fill in your real result, then seal and validate it:
 
 ```bash
+cp research/crg_core/replication_example.json result.json
+python -m research.crg_core.seal_replication result.json
 python -m research.crg_core.replication_record result.json
 ```
+
+The seal command rewrites `evidence_digest` with the canonical SHA-256 and
+immediately validates the resulting record.
 
 A valid external record prints:
 
