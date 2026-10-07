@@ -10,7 +10,7 @@
 - Competitive boundary update: [COMPETITIVE_BOUNDARY_2026_10_08.md](COMPETITIVE_BOUNDARY_2026_10_08.md)
 - External trigger queue: [EXTERNAL_TRIGGER_QUEUE_2026_10_06.md](EXTERNAL_TRIGGER_QUEUE_2026_10_06.md)
 
-Latest full public suite: **79 passed in 2.88s**. External maintained adoption: **0**.
+Latest full public suite: **81 passed in 2.91s**. External maintained adoption: **0**.
 
 Question:
 
@@ -163,7 +163,7 @@ This is cross-stack validation, not external adoption.
 
 ### 5. Causal deployability of action chunks
 
-CST distinguishes a trace that can be converted after rollout from a controller migration that can be executed online. If a whole action chunk is emitted at query time but a target native action for future step t needs the future measured state or controller-owned target at t, exact conversion cannot be precomputed. CST therefore returns PRECOMPUTABLE, REQUIRES_STEP_HOOK, EXECUTABLE_WITH_STEP_HOOK, or REFUSE_MISSING_RUNTIME_STATE. The latest full public suite contains 79 passing tests.
+CST distinguishes a trace that can be converted after rollout from a controller migration that can be executed online. If a whole action chunk is emitted at query time but a target native action for future step t needs the future measured state or controller-owned target at t, exact conversion cannot be precomputed. CST therefore returns PRECOMPUTABLE, REQUIRES_STEP_HOOK, EXECUTABLE_WITH_STEP_HOOK, or REFUSE_MISSING_RUNTIME_STATE. The latest full public suite contains 81 passing tests.
 
 ## Bounded LeRobot -> current-state JIT migration
 
@@ -177,7 +177,7 @@ A pinned LeRobot source implementation is used as the source semantics. With rel
 
 The key point is causal: the target current-state reference for future steps does not exist when the source chunk is emitted, so exact migration must be performed at execution time rather than by copying or precomputing the whole target chunk.
 
-Latest complete public research suite: **79 tests passed**.
+Latest complete public research suite: **81 tests passed**.
 
 ## robomimic / robosuite second stack
 
