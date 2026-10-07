@@ -9,7 +9,7 @@ This reproducibility package exercises the ManiSkill native PickCube environment
 - Exact upstream source under validation: ManiSkill #1495 head `5a09b2a4f5a1b1076f88ba01cdacf1683f5494af` on `fix/delta-pose-euler-action`.
 - Kernel runner: [`run_assay.py`](run_assay.py). Build the single-file Kaggle upload with `python research/kaggle_native_assay/build_kaggle_kernel.py --output <kernel-directory>`. The runner verifies the checkout SHA, installs the environment, enables SAPIEN GPU rendering, and runs the PR unit tests plus a hash-identified native rollout harness. It emits `assay_result.json`, `experiment_log.json`, and `artifacts_manifest.json`.
 - The manifest records byte sizes and SHA-256 hashes for the result and run log. Verify a downloaded bundle with `python research/kaggle_native_assay/audit_results.py <bundle-directory>`.
-- Historical runs [`results/v9/`](results/v9/) and [`results/v10/`](results/v10/) used frozen research commit `102c584f90af83d862ce32ca05a23112603be2ed`; they are not exact-head validation of #1495. Exact-head v12 artifacts and the raw Kaggle console log are in [`results/pr1495_head_v12/`](results/pr1495_head_v12/).
+- Historical runs [`results/v9/`](results/v9/) and [`results/v10/`](results/v10/) used frozen research commit `102c584f90af83d862ce32ca05a23112603be2ed`; they are not exact-head validation of #1495. Exact-head v12 and v13 artifacts and raw Kaggle console logs are in [`results/pr1495_head_v12/`](results/pr1495_head_v12/) and [`results/pr1495_head_v13/`](results/pr1495_head_v13/).
 
 The runner omits ManiSkill's Linux extra `mplib==0.1.1`, which has no compatible Python 3.13 distribution, because this PickCube controller assay does not invoke motion planning. All other listed runtime dependencies are installed. This is an explicit scope limitation, not a full dependency-installation claim.
 
@@ -45,11 +45,17 @@ For the unsaturated one-step command, target reconstruction error was `5.36e-9` 
 
 The first exact-head attempt, kernel v11, stopped before tests because Kaggle did not stage a separate harness file. The v12 builder embeds that harness in the uploaded script; the v12 console log and manifest are preserved with the result.
 
+## Updated PR-head validation (v13)
+
+Kaggle kernel version 13 checked out the updated #1495 head `5a09b2a4f5a1b1076f88ba01cdacf1683f5494af`. This head adds three edge-case tests without changing the implementation. On the same Tesla T4 stack, all 12 conversion tests and the native controller rollout passed: **13 passed**. It emitted 599 dependency/deprecation warnings. The native measurements match v12 because the code under test is unchanged; v13 verifies the new test cases on the Kaggle stack.
+
+The v13 table values match v12: unsaturated 16-step final error was `0.00013078 rad` for #1495 and `0.00099086 rad` for the legacy baseline; the saturated 16-step result remains worse for #1495 (`0.22804` vs `0.21240 rad`), while at 64 steps it is lower (`0.00009818` vs `0.00053337 rad`). This remains one deterministic rollout seed, not a policy-learning benchmark or significance test.
+
 ## Relation to upstream PR #1495
 
-The current runner pins PR head `5a09b2a4f5a1b1076f88ba01cdacf1683f5494af`, which adds tests for anisotropic scales and rejected invalid mappings. It overlays only the hash-recorded native rollout harness; the ManiSkill source remains unchanged at the pinned PR commit. The earlier v12 run validates the immediately preceding head `875ae4d…`; the earlier v9/v10 runs do not check out either PR head and remain mechanistic evidence for their frozen research source only. A passing Kaggle run is validation evidence, not proof that #1495 is accepted or merged.
+The v13 runner pins PR head `5a09b2a4f5a1b1076f88ba01cdacf1683f5494af`, which adds tests for anisotropic scales and rejected invalid mappings. It overlays only the hash-recorded native rollout harness; the ManiSkill source remains unchanged at the pinned PR commit. The v12 run validates the immediately preceding head `875ae4d…`; the earlier v9/v10 runs do not check out either PR head and remain mechanistic evidence for their frozen research source only. A passing Kaggle run is validation evidence, not proof that #1495 is accepted or merged.
 
-The v9/v10 runs repeat the same source commit, seed, and deterministic setup; they are not independent-seed replications. The v12 exact-head run is one paired baseline comparison. All results remain a narrow controller-conversion regression, with no general performance-superiority claim.
+The v9/v10 runs repeat the same source commit, seed, and deterministic setup; they are not independent-seed replications. The v12/v13 exact-head runs use the same deterministic rollout seed and do not provide independent statistical replication. All results remain a narrow controller-conversion regression, with no general performance-superiority claim.
 
 ## Scope and evidence limits
 
