@@ -210,3 +210,24 @@ not only staged inside the CST research branch:
 
 Neither branch counts as external adoption until an upstream maintainer reviews,
 merges, or otherwise retains the contribution.
+
+
+### PR-ready second and third stack candidates
+
+**robomimic #270**
+- maintainer-invited feature;
+- clean 1-commit / 5-file PR-final branch;
+- focused tests green;
+- live robosuite 1.5.1 Panda OSC assay: max goal error `2.944e-08`,
+  max recovered native-action error `4.814e-08`.
+
+**LeRobot #3312**
+- maintainer explicitly invited ACT support;
+- rebased/audited on official main `ca69a206...`;
+- clean 1-commit / 3-file PR-final branch;
+- `8 passed, 5 skipped`; ruff all green;
+- default ACT processor path is unchanged unless relative actions are explicitly
+  enabled.
+
+Neither candidate is upstream-reviewed or merged yet; GitHub App permissions
+block upstream PR/review writes and require manual UI submission.
