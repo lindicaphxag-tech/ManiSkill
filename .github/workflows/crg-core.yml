@@ -7,6 +7,7 @@ on:
       - "tests/test_crg_core.py"
       - "tests/test_crg_active_probe.py"
       - "tests/test_crg_local_model.py"
+      - "tests/test_crg_replication_record.py"
       - ".github/workflows/crg-core.yml"
   workflow_dispatch:
 
@@ -19,5 +20,10 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install -q numpy pytest
-      - run: python -m pytest -q tests/test_crg_core.py tests/test_crg_active_probe.py tests/test_crg_local_model.py
+      - run: python -m pytest -q tests/test_crg_core.py tests/test_crg_active_probe.py tests/test_crg_local_model.py tests/test_crg_replication_record.py
       - run: python research/crg_core/demo.py
+      - name: Exercise external-replication seal and validator
+        run: |
+          cp research/crg_core/replication_example.json /tmp/crg-replication.json
+          python -m research.crg_core.seal_replication /tmp/crg-replication.json
+          python -m research.crg_core.replication_record /tmp/crg-replication.json
