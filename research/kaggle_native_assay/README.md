@@ -1,5 +1,12 @@
 # Native ManiSkill delta-pose assay
 
+> **Reviewer shortcut:** the current one-page maintainer decision packet is
+> [PR1495_MAINTAINER_DECISION.md](https://github.com/lindicaphxag-tech/ManiSkill/blob/handoff/pr1495-maintainer-decision/validation/PR1495_MAINTAINER_DECISION.md).
+> It binds the current upstream head `69facfaa...`, the 1-commit/2-file review
+> shape, exact-current-head **13/18 passed** compatibility closure, native v15
+> evidence, and the single remaining controller-contract question.
+
+
 This reproducibility package exercises the ManiSkill native PickCube environment and its production delta-pose controller. It compares legacy and repaired multi-axis rotation conversion against the same requested target, then measures controller-target error and closed-loop orientation error at 1, 16, and 64 steps.
 
 ## Reproduction
