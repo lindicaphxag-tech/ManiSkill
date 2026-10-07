@@ -1,0 +1,70 @@
+{
+  "assay": "native-pickcube-multiaxis-delta-pose",
+  "status": "passed",
+  "repository": "https://github.com/lindicaphxag-tech/ManiSkill.git",
+  "branch": "fix/delta-pose-euler-action",
+  "hardware": "Tesla T4, 15360 MiB\nTesla T4, 15360 MiB",
+  "commit": "69facfaafaa0ef233d36ef19e6cd9a0f03532ee0",
+  "pull_request": "https://github.com/mani-skill/ManiSkill/pull/1495",
+  "validation_harness_sha256": "6bb0ddb28df489a0e48e62ddf012929e18dbd24dc96ad282a05e39963f774f60",
+  "validation_harness": "test_pr1495_native_assay.py",
+  "resolved_environment_sha256": "2cfbc0b4e41781c795fab01db83a5c217a903a53ee1d20964db8a08593a66d3d",
+  "measurements": {
+    "assay": "native-pickcube-pr1495-exact-head",
+    "status": "passed",
+    "platform": "Linux-6.18.48+-x86_64-with-glibc2.39",
+    "python": "3.13.15",
+    "torch": "2.11.0+cu128",
+    "sapien": "3.0.3",
+    "cuda_available": true,
+    "render_backend": "gpu",
+    "seed": 2026,
+    "results": {
+      "unsaturated_xyz": {
+        "1": {
+          "legacy": {
+            "first_command_error_rad": 0.001055596889805632,
+            "final_orientation_error_rad": 0.03565424842933524
+          },
+          "pr1495": {
+            "first_command_error_rad": 5.355420107377995e-09,
+            "final_orientation_error_rad": 0.03551165587766851
+          }
+        },
+        "16": {
+          "legacy": {
+            "first_command_error_rad": 0.001055596889805632,
+            "final_orientation_error_rad": 0.0009908625278174721
+          },
+          "pr1495": {
+            "first_command_error_rad": 5.355420107377995e-09,
+            "final_orientation_error_rad": 0.00013078049214077528
+          }
+        }
+      },
+      "composed_saturated_xyz": {
+        "16": {
+          "legacy": {
+            "first_command_error_rad": 0.7560722345095477,
+            "final_orientation_error_rad": 0.21240358518954877
+          },
+          "pr1495": {
+            "first_command_error_rad": 0.7596491279433135,
+            "final_orientation_error_rad": 0.22804119297245506
+          }
+        },
+        "64": {
+          "legacy": {
+            "first_command_error_rad": 0.7560722345095477,
+            "final_orientation_error_rad": 0.0005333654572473178
+          },
+          "pr1495": {
+            "first_command_error_rad": 0.7596491279433135,
+            "final_orientation_error_rad": 9.81772899770417e-05
+          }
+        }
+      }
+    }
+  },
+  "elapsed_seconds": 117.406
+}

@@ -59,7 +59,7 @@ The v14 native measurements match v12/v13. The 128-case test exercises the repre
 
 After v14, GitHub rewrote the PR branch into one commit (`69facfa…`). The v14 checkout (`fcbf033…`) and current PR head have identical Git tree SHA `ff9427533266cc6cabc42e53a0255ca236ae9238`; a direct tree diff is empty. Thus the v14 run tested the exact same source files as the current head. The runner is now pinned to the current commit SHA for future reruns.
 
-Kernel v15 is being run against the current PR commit. It additionally captures `pip freeze --all` and includes that snapshot in the hashed manifest, so the resolved runtime can be audited rather than inferred from only the major framework versions.
+Kaggle v15 completed successfully against the current PR commit on a Tesla T4. It passed the upstream conversion suite and native rollout (**14 passed**), and captured `pip freeze --all` as a hashed artifact. The complete v15 bundle is preserved in [`results/pr1495_head_v15/`](results/pr1495_head_v15/); `audit_results.py` verifies all three artifact hashes, the exact source commit, and the embedded harness hash. The resolved environment snapshot SHA-256 is `2cfbc0b4e41781c795fab01db83a5c217a903a53ee1d20964db8a08593a66d3d`.
 
 ## Exact squashed-head GitHub compatibility closure
 
