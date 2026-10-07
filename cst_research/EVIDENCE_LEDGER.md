@@ -197,8 +197,8 @@ Novelty boundary: high-frequency action chunks, interpolation and asynchronous e
 
 ## Latest 75-test public suite and staged robomimic converter
 
-- Full-suite run: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37471248763
-- Result: `75 passed in 3.20s`.
+- Full-suite run: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37701605515
+- Result: `79 passed in 2.88s`.
 - Workflow compiles the complete `cst_research` tree and runs every
   `test_*.py` file with NumPy, SciPy and pytest.
 - The robomimic second-stack semantic core is therefore included in the same
@@ -367,3 +367,23 @@ are not external adoption yet.
 - maintained external use of CST: 0
 - L8 achieved: **NO**
 - L9 achieved: **NO**
+
+
+## Reference-ownership impossibility witness
+
+- Public full-suite run: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37701605515
+- Result: `79 passed in 2.88s`.
+- ManiSkill's current `PDJointPosController` distinguishes current-relative
+  delta control from previous-target-relative delta control using
+  `config.use_target`; the latter serializes `target_qpos` through
+  `get_state/set_state`.
+- CST now contains a two-history certificate showing that if two executions
+  have identical policy-visible `(q, d)` but different hidden target states
+  `r_a != r_b`, any one memoryless adapted action leaves the two target goals
+  separated by `r_a-r_b`.
+- Therefore at least one of the two histories has residual
+  `>= ||r_a-r_b||/2` from the common desired goal.
+- A stateful adapter removes the obstruction exactly with
+  `v = q + d - r`.
+- This is a controller-state / reference-ownership result, not a claim that
+  hidden static action ABI identification is novel.
