@@ -1,12 +1,58 @@
 {
-  "case": "ManiSkill clean adapter semantic/execution decoupling",
-  "measurement_certificate_id": "workflow:37458605789",
-  "measurement_qualified": true,
-  "repair_certificate_id": "paired-semantic-fidelity:37401619096",
-  "repair_verified": true,
-  "interaction_certificate_id": "paired-semantic-interaction:37401619096",
-  "interaction_authorized": true,
-  "execution_evidence_id": "repeatability:37407944746",
-  "execution_non_regressive": false,
-  "effect_policy_id": "semrepair/effect-policy@v1"
+  "case_id": "maniskill-clean-adapter-v2",
+  "context_digest": "b12ac3306d46950bf8f3161c5540abf6b3bc6041946c627294b6ddc83fa50fcd",
+  "effect_policy_id": "semrepair/effect-policy@v1",
+  "measurement_certificate": {
+    "certificate_type": "measurement",
+    "case_id": "maniskill-clean-adapter-v2",
+    "context_digest": "b12ac3306d46950bf8f3161c5540abf6b3bc6041946c627294b6ddc83fa50fcd",
+    "issuer_id": "semrepair/measurement-qualification@v2",
+    "measurement_qualified": true,
+    "decision": "measurement_qualified",
+    "source_evidence": [
+      "workflow:37409249764",
+      "artifact:11388857046",
+      "sha256:b3f25c970da8870684f125b9b48447c2cd8929f9d088ce184fccf68d729b06fc"
+    ],
+    "certificate_sha256": "ca23c593e8282f26eb40d13ae87481ea1f476a0c12cb057cec91effdbc91184b"
+  },
+  "repair_certificate": {
+    "certificate_type": "repair",
+    "case_id": "maniskill-clean-adapter-v2",
+    "context_digest": "b12ac3306d46950bf8f3161c5540abf6b3bc6041946c627294b6ddc83fa50fcd",
+    "issuer_id": "semrepair/repair-verifier@v1",
+    "status": "verified",
+    "repair_id": "controller-contract-adapter-v2",
+    "source_evidence": [
+      "workflow:37401619096"
+    ],
+    "certificate_sha256": "a2fe64e81f0cfaffd154ac7a61ff73c36254d0f7ce809e683826f95306659d04"
+  },
+  "interaction_certificate": {
+    "certificate_type": "interaction",
+    "case_id": "maniskill-clean-adapter-v2",
+    "context_digest": "b12ac3306d46950bf8f3161c5540abf6b3bc6041946c627294b6ddc83fa50fcd",
+    "issuer_id": "semrepair/interaction-verifier@v1",
+    "authorized": true,
+    "repair_set": [
+      "controller-sign",
+      "converter-representation"
+    ],
+    "source_evidence": [
+      "workflow:37401619096"
+    ],
+    "certificate_sha256": "fbad6ae0bea57fb6214924433bc63e48ec7f614fdd3e24d397ebba29289a82c8"
+  },
+  "execution_certificate": {
+    "certificate_type": "execution",
+    "case_id": "maniskill-clean-adapter-v2",
+    "context_digest": "b12ac3306d46950bf8f3161c5540abf6b3bc6041946c627294b6ddc83fa50fcd",
+    "issuer_id": "semrepair/execution-effect@v1",
+    "non_regressive": false,
+    "source_evidence": [
+      "workflow:37407944746"
+    ],
+    "observation": "current-main 9/10 x5; clean-adapter-v2 8/10 x5",
+    "certificate_sha256": "3c081ce8db5cdcb9c62045ef9e2a991179a88e2dd97b6b3f034b50000f74421d"
+  }
 }
