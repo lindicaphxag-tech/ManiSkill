@@ -77,7 +77,23 @@ def validate_data(d,task,fault,start):
             calculated=classify_empirical_public_response(
                 probe["achieved_pre_probe_xyz"],probe["achieved_post_probe_xyz"],
                 candidates["held"],candidates["applied"],task=task)
-            if cls!=calculated:
+            def _cross_python_equal(left,right):
+                # Numerical distances from the unchanged Python/NumPy PhysX
+                # source may differ by a few ulps across CPython/libm builds.
+                # Never relax exact labels, state compatibility or provenance.
+                if type(left) is bool or type(right) is bool:
+                    return type(left) is type(right) and left==right
+                if type(left) in (int,float) and type(right) in (int,float):
+                    return math.isfinite(left) and math.isfinite(right) and math.isclose(
+                        float(left),float(right),rel_tol=0,abs_tol=2e-11)
+                if isinstance(left,dict) and isinstance(right,dict):
+                    return left.keys()==right.keys() and all(
+                        _cross_python_equal(left[k],right[k]) for k in left)
+                if isinstance(left,(list,tuple)) and isinstance(right,(list,tuple)):
+                    return len(left)==len(right) and all(
+                        _cross_python_equal(a,b) for a,b in zip(left,right))
+                return type(left) is type(right) and left==right
+            if not _cross_python_equal(cls,calculated):
                 raise ValueError("Submitted public-only history label or response evidence differs from frozen source calculator")
             truth_name="held" if fault=="neutral_arm_delta_no_ack" else "applied"
             if not cls[f"{truth_name}_compatible"]:
