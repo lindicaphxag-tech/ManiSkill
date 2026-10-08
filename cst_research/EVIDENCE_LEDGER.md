@@ -403,3 +403,28 @@ are not external adoption yet.
   unavailable state evidence.
 - This connects the reference-ownership lower bound to implementation-derived
   controller semantics rather than a hand-authored contract only.
+
+
+## 2026-10-08 — Executable OSC state migration (90-test suite)
+
+- Source module: `cst_research/executable_osc_migration.py`
+- Regression tests: `cst_research/test_executable_osc_migration.py`
+- Full test CI:
+  https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37709468190
+- Result: **90 passed in 1.87 s**.
+- Scope: applies a nullspace-reference state handshake only after
+  checking supplied common-MJCF provenance, fixed impedance, achieved
+  reference, current joint-state consistency, matching gains and frames;
+  otherwise returns an explicit REFUSED result.
+- Real underlying phenomenon (separate official robosuite 1.5.2/MuJoCo
+  3.3.0 validation): 8/8 strict tests passed at
+  https://github.com/lindicaphxag-tech/robomimic/actions/runs/37706956215.
+- Public replication invitation updated as an actual comment on
+  https://github.com/lindicaphxag-tech/lindicaphxag-tech/issues/77.
+- Real controller integration of **this newly extracted compiler module**
+  is being validated separately. Until confirmed green, its 90-test run
+  constitutes *contract/unit tests* and not end-to-end runtime success.
+- Official ManiSkill baseline-vs-fix RL demonstration validation:
+  https://github.com/lindicaphxag-tech/ManiSkill/tree/validation/mani429-official-replay-20261008
+  (still under validation; do not claim a success-rate increase).
+- Maintained external CST adoption is **0**.
