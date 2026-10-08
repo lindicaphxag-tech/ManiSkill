@@ -1,0 +1,94 @@
+{
+  "schema": "stateful_action_abi_memory_mechanism_v1",
+  "preregistered_at": "2026-10-09",
+  "research_question": "Is live previous-target pose, rather than bounded clipping/action-chart conversion alone, causally required for zero-training PPO transfer from achieved-relative pd_ee_delta_pose to target-relative pd_ee_target_delta_pose?",
+  "source_repository": "lindicaphxag-tech/ManiSkill",
+  "base_branch": "validation/heldout-ppo-memory-projected-21001-21032",
+  "baseline_runner_blob_sha1": "520439a5ce3031d8e06a60802c3c9dd03e66a9cb",
+  "method_source_commit": "2a1c2e739c234098e2d08b0e5633026c05aaf721",
+  "model": {
+    "owner": "kattri15/actionshift-baselines",
+    "checkpoint": "ppo/pick_cube_final_ckpt.pt",
+    "sha256": "3e6c95d63a2132843323e24cf7ba962b8cf2610f04b2a5a43f3efb6fef8497a8"
+  },
+  "environment": {
+    "name": "PickCube-v1",
+    "sim_backend": "physx_cpu",
+    "obs_mode": "state",
+    "horizon": 50,
+    "control_source": "pd_ee_delta_pose",
+    "control_target": "pd_ee_target_delta_pose",
+    "reconfiguration_freq": 1
+  },
+  "known_development_and_confirmatory_data_excluded": [
+    [
+      20001,
+      20032
+    ],
+    [
+      21001,
+      21032
+    ]
+  ],
+  "prospective_unseen_seed_range_inclusive": [
+    22001,
+    22032
+  ],
+  "split": {
+    "chunks": 4,
+    "chunk_size": 8,
+    "seed_chunks": [
+      [
+        22001,
+        22008
+      ],
+      [
+        22009,
+        22016
+      ],
+      [
+        22017,
+        22024
+      ],
+      [
+        22025,
+        22032
+      ]
+    ]
+  },
+  "arms": {
+    "source": "source policy and original achieved-relative native controller",
+    "naive": "frozen policy 7-D direct-copy action to target controller with source observation restored",
+    "strict": "source intended physical target reconstructed from achieved EE, invert actual previous target pose; refuse nonrepresentable controls",
+    "memory_projected": "same inversion but explicitly mark nonexact clipped/projected translation box and rotation unit ball",
+    "memory_blind_projected": "identical source intended physical target and identical normalization/bounded projection, but *intentionally substitute current achieved target-arm EE pose for the true previous target pose* when calculating the target-relative command"
+  },
+  "primary_endpoint": "official simulator info.success ever true by 50 steps for each arm; one row per seed and all five arms",
+  "primary_paired_contrast": "memory_projected minus memory_blind_projected, paired per original physical reset seed",
+  "precommitted_gates": {
+    "complete_32_distinct_seed_rows": true,
+    "identical_initial_source_abi_observations_max_abs": 0.0005,
+    "source_competence_min_successes": 24,
+    "memory_information_mechanism_support_min_net_paired_successes": 6,
+    "negative_or_null_must_be_reported": true,
+    "all_refusals_count_as_unsuccessful_for_that_arm": true
+  },
+  "secondary_endpoints": [
+    "source vs naive",
+    "memory_projected vs strict",
+    "stateblind projection steps vs memoryaware projection steps",
+    "projected-only and stateless-only discordant pair counts",
+    "record all initialization, refusal and projection amplitudes"
+  ],
+  "prohibited": [
+    "changing seed list after result",
+    "retraining policy",
+    "tuning projection scaling on these holdout seeds",
+    "using previous known seeds as new test",
+    "calling approximate projection exact",
+    "calling author-executed simulation third-party replication",
+    "claiming new robot/controller families generalized",
+    "using test outcomes to select a winner"
+  ],
+  "interpretation": "A strong paired advantage would isolate *use of live controller target memory* under the same rotation, scaling, clipping and source policy, not prove novel first-ever adapter, formal safety, or real-world transfer. A null/negative result rejects this mechanism claim for this task."
+}
