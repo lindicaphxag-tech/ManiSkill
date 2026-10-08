@@ -124,7 +124,10 @@ def trial(policy,seed):
         "seed":seed,"task":TASK_NAME,"success_once":{n:False for n in NAMES},
         "steps":{},"initial_obs_diff":{},"faults":{},"refusals":{},
         "native_projection_NOT_EXACT":{},
-        "privileged_target_readback_decision_count":{n:0 for n in NAMES},
+        # -1 explicitly denotes unrestricted privileged target access in the
+        # oracle, NOT zero decision readbacks. All other arms count real queries.
+        "privileged_target_readback_decision_count":{
+            n:(-1 if n=="fault_oracle_private_target" else 0) for n in NAMES},
         "robust_common_action_authorizations":{},
         "robust_common_action_refusals":{},
         "robust_native_target_bound_checks":{},
