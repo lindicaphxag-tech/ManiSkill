@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   source-seed-ledger:
@@ -28,3 +29,38 @@ jobs:
         run: python -m py_compile research/kaggle_diffusion_policy_peg/audit_factorial_replay.py
       - name: Validate synthetic 2x2 replay fixture and tamper refusal
         run: python research/kaggle_diffusion_policy_peg/audit_factorial_replay.py --self-test
+
+  frozen-public-eight-case:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Download original immutable 8-demo GitHub Actions evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/semrepair-factorial-evidence
+          gh run download 37715587885 --repo lindicaphxag-tech/ManiSkill \
+            --name dp-peg-factorial-2x2-replay \
+            --dir /tmp/semrepair-factorial-evidence
+      - name: Independently audit actual per-seed 2x2 outputs and fail on tampering
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from research.kaggle_diffusion_policy_peg.audit_factorial_replay import audit
+          matches=list(Path("/tmp/semrepair-factorial-evidence").rglob("factorial_replay.json"))
+          assert len(matches)==1, f"Expected one pinned real factorial outcome; got {matches}"
+          result=audit(json.loads(matches[0].read_text()))
+          assert result["sample_size"] == 8
+          assert result["success_counts"] == {
+              "upstream_baseline":6,
+              "converter_only_pr1495":6,
+              "controller_only_pr1472":0,
+              "combined_pr1495_pr1472":6,
+          }
+          assert result["four_way_intersection"] == 0
+          print(json.dumps(result,sort_keys=True,indent=2))
+          PY
