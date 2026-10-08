@@ -1,0 +1,87 @@
+{
+  "schema": "action_abi_unknown_arm_command_ack_prospective_physx_v1",
+  "status": "PREOUTCOME_FIXED_BEFORE_CODE_AND_RUN",
+  "date": "2026-10-09",
+  "source_base": "main",
+  "frozen_external_policy_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+  "train_policy": false,
+  "studies": {
+    "pull_cube": {
+      "environment": "PullCube-v1",
+      "checkpoint": "ppo/pull_cube_final_ckpt.pt",
+      "sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+      "seeds": [
+        94001,
+        94008
+      ]
+    },
+    "stack_cube": {
+      "environment": "StackCube-v1",
+      "checkpoint": "ppo/stack_cube_final_ckpt.pt",
+      "sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c",
+      "seeds": [
+        95001,
+        95008
+      ]
+    }
+  },
+  "fault": {
+    "time_step_zero_indexed": 2,
+    "conditions": [
+      "applied_no_ack",
+      "neutral_arm_delta_no_ack"
+    ],
+    "neutral_arm_action": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "note": "Fault changes the arm reference command only; gripper command still applied; physics env.step still occurs; NOT a real network dropout or robot action timeout. At exactly step 2, receiver reports unknown acknowledgement regardless of which arm command physical simulator applied."
+  },
+  "world_arms": [
+    "source",
+    "oracle_live_memory",
+    "recovered_one_readback",
+    "optimistic_assume_applied",
+    "pessimistic_assume_neutral",
+    "fail_closed_stop"
+  ],
+  "design": {
+    "backend": "physx_cpu",
+    "obs_mode": "state",
+    "steps": 50,
+    "per_task_per_condition": 8,
+    "total_paired_task_condition_states": 32,
+    "retune_on_results": false,
+    "paired_same_seed_reset": true,
+    "independent_pretrained_tasks": 2,
+    "policy_updates": 0,
+    "explicit_source_goal_projection": "bounded NOT_EXACT",
+    "decision_memory_policy": "Recovered arm may request one trusted controller target readback immediately after unknown ACK, never read target during other control decisions; other observer arms never use private target getter"
+  },
+  "measures": [
+    "official_success_once",
+    "fault_reached",
+    "pre_fault_observation_match",
+    "true_target_vs_observer_error_after_fault",
+    "recovered_readback_position_error_m",
+    "known_ambiguity_positional_diameter_m",
+    "post_fault_readback_queries",
+    "fail_closed_post_fault_actions",
+    "nonexact_projection_count",
+    "per_condition_original_rows"
+  ],
+  "gates": {
+    "complete_32_source_state_rows": true,
+    "all_faults_executed_or_explicitly_reported": true,
+    "all_arms_have_native_simulator_success_flags_or_explicit_refusal": true,
+    "max_resync_target_position_error_m": 0.00003,
+    "source_min_success_out_of_8": 5,
+    "source_competence_gate_separate_from_recovery_result": true,
+    "never_conflate_collision_or_safety": false
+  },
+  "interpretation": "A one-read privileged target-state resynchronization is an achievable but stronger-information baseline; a positive result does NOT solve unknown-ack recovery from achieved-state alone, eliminate observation/sensor costs, demonstrate hardware-safe intervention, or prove learned policy robustness. Failure/null results must be published. Observer information access and readback count disclosed."
+}
