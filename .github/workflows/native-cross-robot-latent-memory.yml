@@ -1,0 +1,77 @@
+name: Native cross-robot latent joint-memory controller validation
+
+on:
+  push:
+    branches:
+      - research/cross-robot-joint-target-latent-memory-v1
+  pull_request:
+    paths:
+      - 'research/LATENT_MEMORY_CROSS_ROBOT_PRECOMMIT_V1.json'
+      - 'research/verify_native_cross_robot_joint_memory.py'
+      - '.github/workflows/native-cross-robot-latent-memory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  genuine-fetch-and-xarm6-target-qpos-controllers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      PYTHONUNBUFFERED: '1'
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate prespecified two-embodiment protocol before physics
+        run: |
+          test "$(git hash-object research/LATENT_MEMORY_CROSS_ROBOT_PRECOMMIT_V1.json)" = "58e92975a8e465eb0463ed4e8460d5b43029f41f"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path('research/LATENT_MEMORY_CROSS_ROBOT_PRECOMMIT_V1.json').read_text())
+          assert p['robot_seed_cases']==[['fetch',1271],['fetch',1282],['xarm6_robotiq',2373],['xarm6_robotiq',2384]]
+          assert p['memory_uncertainty_radius_rad']==.001
+          PY
+      - name: Install real official source Panda/Fetch/XArm6 controller stack
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+      - name: Install official xArm6 Robotiq URDF/model assets without interactive prompts
+        run: |
+          python -m mani_skill.utils.download_asset xarm6 -y --quiet
+          test -s "$HOME/.maniskill/data/robots/xarm6/xarm6_robotiq.urdf"
+      - name: Execute both non-Panda robot embodiments without guessed action widths
+        run: |
+          set -o pipefail
+          python research/verify_native_cross_robot_joint_memory.py 2>&1 | tee latent_memory_cross_robot_native.log
+          test -s latent_memory_cross_robot_native_v1.json
+      - name: Verify all four original non-Panda controller identities and results
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('latent_memory_cross_robot_native_v1.json').read_text())
+          assert d['n_cases']==4 and d['n_distinct_robot_embodiments']==2
+          assert d['hardware_robot_tested'] is False
+          assert [(x['robot'],x['seed']) for x in d['records']]==[
+            ('fetch',1271),('fetch',1282),('xarm6_robotiq',2373),('xarm6_robotiq',2384)]
+          for q in d['records']:
+              assert q['actual_robot_arm_joint_dof'] in (6,7)
+              assert q['native_next_target_qpos_prediction_error_rad']<.0001
+              assert abs(q['certificate_max_interval_error_rad']-.001)<1e-8
+              assert not q['policy_performance_measured'] and not q['real_robot_execution']
+          print('PASS native source-verified two-robot positional target-memory claim')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-fetch-xarm6-cross-robot-joint-memory-controller-v1
+          path: |
+            latent_memory_cross_robot_native_v1.json
+            latent_memory_cross_robot_native.log
