@@ -1,0 +1,66 @@
+{
+  "title": "Pre-outcome frozen PPO arm-command hold under unacknowledged delivery",
+  "id": "CST-FAULT-ACK-V1-20261009",
+  "declared_before_physics_runner": true,
+  "source_model_repo": "kattri15/actionshift-baselines",
+  "frozen_model_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+  "models": {
+    "pull_cube": {
+      "task": "PullCube-v1",
+      "sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+      "seeds": [
+        102001,
+        102002,
+        102003,
+        102004,
+        102005,
+        102006,
+        102007,
+        102008
+      ]
+    },
+    "stack_cube": {
+      "task": "StackCube-v1",
+      "sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c",
+      "seeds": [
+        112001,
+        112002,
+        112003,
+        112004,
+        112005,
+        112006,
+        112007,
+        112008
+      ]
+    }
+  },
+  "controls": [
+    "source_no_fault",
+    "translated_no_fault",
+    "fault_privileged_private_goal",
+    "fault_optimistic_action_history",
+    "fault_public_observation_one_shot_resync",
+    "fault_finite_belief_exact_refusal"
+  ],
+  "fault": {
+    "step_zero_based": 2,
+    "destination_modes_only": true,
+    "mechanism": "replace arm command at fixed controller step with normalized 6-D zeros (target-hold on symmetric Panda root-frame target controller); gripper policy command preserved; simulation still advances one ordinary period",
+    "knowledge_condition": "controller fault injection knows physically dropped arm command; adapters only observe ambiguous acknowledgement",
+    "unknown_delivery_reported_to": "finite_belief_exact_refusal",
+    "optimistic_assumes_accepted": true,
+    "public_observation_readback": "7D target_pose field from post-step state observation only once immediately following injected arm hold; no private getter",
+    "oracle_scope": "privileged target controller private memory for reference only"
+  },
+  "outcomes": [
+    "complete paired episode success and success step",
+    "exactly one forced arm-hold per active fault target world and actual nonzero requested native delta",
+    "terminal target memory drift of optimistic and publicly resynchronized adapters (audit only)",
+    "number of belief branches after ambiguous delivery, exact inverse refusal, action representability",
+    "all 16 initial observation SHA-256 hashes",
+    "frozen policy checkpoint SHA and runtime/pip freeze",
+    "all failures including competent-source failures"
+  ],
+  "scientific_scope": "Two third-party frozen PPO checkpoints and only one Panda root-frame target controller implementation. Fault simulated as a substituted no-op arm command, not physical packet loss. Public observation target channel is privileged additional sensing even though not a private API. Must not claim robotic safety or general hardware recovery.",
+  "interpretation_gate": "Accept no tuned thresholds, seeded cohort edits, or hidden dropped cases after launch. Positive claim only if execution artifacts actually demonstrate predicted results; zero or negative results remain."
+}
