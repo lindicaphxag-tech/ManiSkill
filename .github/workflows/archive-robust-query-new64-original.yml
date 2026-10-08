@@ -1,0 +1,203 @@
+name: Permanently preserve original 64 NEW frozen-query PhysX evidence
+
+on:
+  pull_request:
+    paths:
+      - 'research/ROBUST_QUERY_NEW64_PREDECLARED_V1.json'
+      - 'research/audit_new64_bounded_query.py'
+      - '.github/workflows/archive-robust-query-new64-original.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/ROBUST_QUERY_NEW64_PREDECLARED_V1.json'
+      - 'research/audit_new64_bounded_query.py'
+      - '.github/workflows/archive-robust-query-new64-original.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  original-byte-check-and-destructive-source-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify actual original source run, eight immutable ZIP digests, all 64 identities and tampering
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/ROBUST_QUERY_NEW64_PREDECLARED_V1.json)" = "70a16b787acb4380f9c7109c741a996453be1319"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37828426195 --jq .head_sha)" = "d91081d30b3d56824e30dd9b3673b4f6db3b5f96"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37828426195 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11572507931 --jq .digest)" = "sha256:39edcee01016f87f993a31d60c1cde124ab2af42ef1a99b17350e0bbe0b27ecb"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11572507803 --jq .digest)" = "sha256:b99abed7fb44c2ad58ff4cbb635121d97d6de346cbcb07a23700a35ab2eb4b21"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11572488160 --jq .digest)" = "sha256:4840efd31f49762c9016cd38b627912ef6f6e22069f4cd656999876716810e6b"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11572563130 --jq .digest)" = "sha256:aec99c48120af65381c2bcbaa757e6c30c8b61fb179458a949c6c00bee295b59"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11572243644 --jq .digest)" = "sha256:54d65982af6ef3b216c0b42e69fc6a17024e4bd68810d6dc6c5d1643df5b9b14"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11572940738 --jq .digest)" = "sha256:2a8c9a2bb5c9fe88e3dcc9b59068406eaf7bbfd1036e5fb881072e03c406e6b9"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11571833770 --jq .digest)" = "sha256:88a92c490d8c80528b202f223c9fe744e12e3e7e933ac75466ff0a90ba63d89d"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11573030189 --jq .digest)" = "sha256:9631ed3992afbf60f3ff66a50da1cd87048bd4025fec08073edbc9f4250d0cd2"
+          mkdir -p /tmp/new64-query-source /tmp/new64-query-exact
+          gh run download 37828426195 --repo "$GITHUB_REPOSITORY" --pattern "original-new64-*" --dir /tmp/new64-query-source
+          test -s "/tmp/new64-query-source/original-new64-pull_cube-chunk-0/bounded_query_holdout_pull_cube_chunk0_original8.json" && cp "/tmp/new64-query-source/original-new64-pull_cube-chunk-0/bounded_query_holdout_pull_cube_chunk0_original8.json" "/tmp/new64-query-exact/bounded_query_holdout_pull_cube_chunk0_original8.json"
+          test -s "/tmp/new64-query-source/original-new64-pull_cube-chunk-1/bounded_query_holdout_pull_cube_chunk1_original8.json" && cp "/tmp/new64-query-source/original-new64-pull_cube-chunk-1/bounded_query_holdout_pull_cube_chunk1_original8.json" "/tmp/new64-query-exact/bounded_query_holdout_pull_cube_chunk1_original8.json"
+          test -s "/tmp/new64-query-source/original-new64-pull_cube-chunk-2/bounded_query_holdout_pull_cube_chunk2_original8.json" && cp "/tmp/new64-query-source/original-new64-pull_cube-chunk-2/bounded_query_holdout_pull_cube_chunk2_original8.json" "/tmp/new64-query-exact/bounded_query_holdout_pull_cube_chunk2_original8.json"
+          test -s "/tmp/new64-query-source/original-new64-pull_cube-chunk-3/bounded_query_holdout_pull_cube_chunk3_original8.json" && cp "/tmp/new64-query-source/original-new64-pull_cube-chunk-3/bounded_query_holdout_pull_cube_chunk3_original8.json" "/tmp/new64-query-exact/bounded_query_holdout_pull_cube_chunk3_original8.json"
+          test -s "/tmp/new64-query-source/original-new64-stack_cube-chunk-0/bounded_query_holdout_stack_cube_chunk0_original8.json" && cp "/tmp/new64-query-source/original-new64-stack_cube-chunk-0/bounded_query_holdout_stack_cube_chunk0_original8.json" "/tmp/new64-query-exact/bounded_query_holdout_stack_cube_chunk0_original8.json"
+          test -s "/tmp/new64-query-source/original-new64-stack_cube-chunk-1/bounded_query_holdout_stack_cube_chunk1_original8.json" && cp "/tmp/new64-query-source/original-new64-stack_cube-chunk-1/bounded_query_holdout_stack_cube_chunk1_original8.json" "/tmp/new64-query-exact/bounded_query_holdout_stack_cube_chunk1_original8.json"
+          test -s "/tmp/new64-query-source/original-new64-stack_cube-chunk-2/bounded_query_holdout_stack_cube_chunk2_original8.json" && cp "/tmp/new64-query-source/original-new64-stack_cube-chunk-2/bounded_query_holdout_stack_cube_chunk2_original8.json" "/tmp/new64-query-exact/bounded_query_holdout_stack_cube_chunk2_original8.json"
+          test -s "/tmp/new64-query-source/original-new64-stack_cube-chunk-3/bounded_query_holdout_stack_cube_chunk3_original8.json" && cp "/tmp/new64-query-source/original-new64-stack_cube-chunk-3/bounded_query_holdout_stack_cube_chunk3_original8.json" "/tmp/new64-query-exact/bounded_query_holdout_stack_cube_chunk3_original8.json"
+          python -m research.audit_new64_bounded_query --input-dir /tmp/new64-query-exact --output /tmp/new64-query-audit.json
+          python - <<'PY'
+          import shutil, tempfile, json
+          from pathlib import Path
+          from research.audit_new64_bounded_query import audit
+          src=Path('/tmp/new64-query-exact')
+          files=sorted(src.glob('*.json'))
+          assert len(files)==8 and audit(src)['unique_original_seed_states']==64
+          with tempfile.TemporaryDirectory() as d:
+              dest=Path(d)/'modified'
+              shutil.copytree(src,dest)
+              (dest/files[0].name).unlink()
+              try: audit(dest); raise AssertionError('missing file was accepted')
+              except ValueError: pass
+          with tempfile.TemporaryDirectory() as d:
+              dest=Path(d)/'modified'
+              shutil.copytree(src,dest)
+              f=dest/files[0].name; j=json.loads(f.read_text())
+              j['episodes'][0]['seed']=j['episodes'][1]['seed']
+              f.write_text(json.dumps(j))
+              try: audit(dest); raise AssertionError('duplicate seed was accepted')
+              except ValueError: pass
+          with tempfile.TemporaryDirectory() as d:
+              dest=Path(d)/'modified'
+              shutil.copytree(src,dest)
+              f=dest/files[0].name; j=json.loads(f.read_text())
+              v=j['episodes'][0]['success_once']['fault_robust_then_single_privileged_query']
+              j['episodes'][0]['success_once']['fault_robust_then_single_privileged_query']=not v
+              f.write_text(json.dumps(j))
+              try: audit(dest); raise AssertionError('tampered success was accepted')
+              except ValueError: pass
+          with tempfile.TemporaryDirectory() as d:
+              dest=Path(d)/'modified'
+              shutil.copytree(src,dest)
+              f=dest/files[0].name; j=json.loads(f.read_text())
+              j['episodes'][0]['privileged_target_readback_decision_count']['fault_robust_then_single_privileged_query']=2
+              f.write_text(json.dumps(j))
+              try: audit(dest); raise AssertionError('excess decision readback was accepted')
+              except ValueError: pass
+          print('PASS 64 original new-seed source records, four adversarial negative tests')
+          PY
+  trusted-main-permanent-original-archive:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: original-byte-check-and-destructive-source-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Revalidate eight exact original source artifacts and all 64 states on trusted main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/ROBUST_QUERY_NEW64_PREDECLARED_V1.json)" = "70a16b787acb4380f9c7109c741a996453be1319"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37828426195 --jq .head_sha)" = "d91081d30b3d56824e30dd9b3673b4f6db3b5f96"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37828426195 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11572507931 --jq .digest)" = "sha256:39edcee01016f87f993a31d60c1cde124ab2af42ef1a99b17350e0bbe0b27ecb"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11572507803 --jq .digest)" = "sha256:b99abed7fb44c2ad58ff4cbb635121d97d6de346cbcb07a23700a35ab2eb4b21"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11572488160 --jq .digest)" = "sha256:4840efd31f49762c9016cd38b627912ef6f6e22069f4cd656999876716810e6b"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11572563130 --jq .digest)" = "sha256:aec99c48120af65381c2bcbaa757e6c30c8b61fb179458a949c6c00bee295b59"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11572243644 --jq .digest)" = "sha256:54d65982af6ef3b216c0b42e69fc6a17024e4bd68810d6dc6c5d1643df5b9b14"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11572940738 --jq .digest)" = "sha256:2a8c9a2bb5c9fe88e3dcc9b59068406eaf7bbfd1036e5fb881072e03c406e6b9"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11571833770 --jq .digest)" = "sha256:88a92c490d8c80528b202f223c9fe744e12e3e7e933ac75466ff0a90ba63d89d"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11573030189 --jq .digest)" = "sha256:9631ed3992afbf60f3ff66a50da1cd87048bd4025fec08073edbc9f4250d0cd2"
+          mkdir -p /tmp/new64-query-source /tmp/new64-query-exact
+          gh run download 37828426195 --repo "$GITHUB_REPOSITORY" --pattern "original-new64-*" --dir /tmp/new64-query-source
+          test -s "/tmp/new64-query-source/original-new64-pull_cube-chunk-0/bounded_query_holdout_pull_cube_chunk0_original8.json" && cp "/tmp/new64-query-source/original-new64-pull_cube-chunk-0/bounded_query_holdout_pull_cube_chunk0_original8.json" "/tmp/new64-query-exact/bounded_query_holdout_pull_cube_chunk0_original8.json"
+          test -s "/tmp/new64-query-source/original-new64-pull_cube-chunk-1/bounded_query_holdout_pull_cube_chunk1_original8.json" && cp "/tmp/new64-query-source/original-new64-pull_cube-chunk-1/bounded_query_holdout_pull_cube_chunk1_original8.json" "/tmp/new64-query-exact/bounded_query_holdout_pull_cube_chunk1_original8.json"
+          test -s "/tmp/new64-query-source/original-new64-pull_cube-chunk-2/bounded_query_holdout_pull_cube_chunk2_original8.json" && cp "/tmp/new64-query-source/original-new64-pull_cube-chunk-2/bounded_query_holdout_pull_cube_chunk2_original8.json" "/tmp/new64-query-exact/bounded_query_holdout_pull_cube_chunk2_original8.json"
+          test -s "/tmp/new64-query-source/original-new64-pull_cube-chunk-3/bounded_query_holdout_pull_cube_chunk3_original8.json" && cp "/tmp/new64-query-source/original-new64-pull_cube-chunk-3/bounded_query_holdout_pull_cube_chunk3_original8.json" "/tmp/new64-query-exact/bounded_query_holdout_pull_cube_chunk3_original8.json"
+          test -s "/tmp/new64-query-source/original-new64-stack_cube-chunk-0/bounded_query_holdout_stack_cube_chunk0_original8.json" && cp "/tmp/new64-query-source/original-new64-stack_cube-chunk-0/bounded_query_holdout_stack_cube_chunk0_original8.json" "/tmp/new64-query-exact/bounded_query_holdout_stack_cube_chunk0_original8.json"
+          test -s "/tmp/new64-query-source/original-new64-stack_cube-chunk-1/bounded_query_holdout_stack_cube_chunk1_original8.json" && cp "/tmp/new64-query-source/original-new64-stack_cube-chunk-1/bounded_query_holdout_stack_cube_chunk1_original8.json" "/tmp/new64-query-exact/bounded_query_holdout_stack_cube_chunk1_original8.json"
+          test -s "/tmp/new64-query-source/original-new64-stack_cube-chunk-2/bounded_query_holdout_stack_cube_chunk2_original8.json" && cp "/tmp/new64-query-source/original-new64-stack_cube-chunk-2/bounded_query_holdout_stack_cube_chunk2_original8.json" "/tmp/new64-query-exact/bounded_query_holdout_stack_cube_chunk2_original8.json"
+          test -s "/tmp/new64-query-source/original-new64-stack_cube-chunk-3/bounded_query_holdout_stack_cube_chunk3_original8.json" && cp "/tmp/new64-query-source/original-new64-stack_cube-chunk-3/bounded_query_holdout_stack_cube_chunk3_original8.json" "/tmp/new64-query-exact/bounded_query_holdout_stack_cube_chunk3_original8.json"
+          python -m research.audit_new64_bounded_query --input-dir /tmp/new64-query-exact --output /tmp/new64-query-audit.json
+          python - <<'PY'
+          import shutil, tempfile, json
+          from pathlib import Path
+          from research.audit_new64_bounded_query import audit
+          src=Path('/tmp/new64-query-exact')
+          files=sorted(src.glob('*.json'))
+          assert len(files)==8 and audit(src)['unique_original_seed_states']==64
+          with tempfile.TemporaryDirectory() as d:
+              dest=Path(d)/'modified'
+              shutil.copytree(src,dest)
+              (dest/files[0].name).unlink()
+              try: audit(dest); raise AssertionError('missing file was accepted')
+              except ValueError: pass
+          with tempfile.TemporaryDirectory() as d:
+              dest=Path(d)/'modified'
+              shutil.copytree(src,dest)
+              f=dest/files[0].name; j=json.loads(f.read_text())
+              j['episodes'][0]['seed']=j['episodes'][1]['seed']
+              f.write_text(json.dumps(j))
+              try: audit(dest); raise AssertionError('duplicate seed was accepted')
+              except ValueError: pass
+          with tempfile.TemporaryDirectory() as d:
+              dest=Path(d)/'modified'
+              shutil.copytree(src,dest)
+              f=dest/files[0].name; j=json.loads(f.read_text())
+              v=j['episodes'][0]['success_once']['fault_robust_then_single_privileged_query']
+              j['episodes'][0]['success_once']['fault_robust_then_single_privileged_query']=not v
+              f.write_text(json.dumps(j))
+              try: audit(dest); raise AssertionError('tampered success was accepted')
+              except ValueError: pass
+          with tempfile.TemporaryDirectory() as d:
+              dest=Path(d)/'modified'
+              shutil.copytree(src,dest)
+              f=dest/files[0].name; j=json.loads(f.read_text())
+              j['episodes'][0]['privileged_target_readback_decision_count']['fault_robust_then_single_privileged_query']=2
+              f.write_text(json.dumps(j))
+              try: audit(dest); raise AssertionError('excess decision readback was accepted')
+              except ValueError: pass
+          print('PASS 64 original new-seed source records, four adversarial negative tests')
+          PY
+      - name: Commit exact original eight raw result JSONs and per-file SHA256SUMS
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/robust_query_new64_142001_152032
+          mkdir -p "$dest"
+          cp /tmp/new64-query-exact/*.json "$dest/"
+          (cd "$dest" && sha256sum *.json > SHA256SUMS && sha256sum -c SHA256SUMS)
+          python -m research.audit_new64_bounded_query --input-dir "$dest" --output /tmp/new64-query-permanent-audit.json
+          printf '%s\n' \
+          '# Original preregistered 64 NEW-seed frozen PPO bounded-or-query holdout' \
+          '' \
+          'Exactly eight byte-identical original source CI JSONs from real ManiSkill PhysX CPU run 37828426195, exact original source head d91081d30b3d56824e30dd9b3673b4f6db3b5f96.' \
+          'Frozen prior to implementation: 9ebb39ef01c06869c60f923cdba5d1e4e5626b1d; prereg Git blob 70a16b787acb4380f9c7109c741a996453be1319.' \
+          'Frozen original successful code db4fe4dd9d09aaff67c5dcf12213ad737162282d; method and certificate blobs checked by the original evaluation CI.' \
+          '64 truly NEW distinct reset state IDs (Pull 142001-142032, Stack 152001-152032), never used in the original 16-state discovery; all original failures retained.' \
+          'Original real simulator task success: bounded-or-selective-query 60/64 using 15 privileged decision target readbacks, mandatory single query 57/64 using 64, zero-readback bounded 47/64, optimistic 42/64.' \
+          'These task-level results do NOT prove collision/force safety or real network packet loss; only simulated Panda controller arm target-hold at step 2, two released frozen PPOs, author-run outcomes.' \
+          'The 76.5625 percent reduction is in controller privileged decision readback CALLS, not latency/energy. Paired selective vs mandatory task successes are 5:2; do not claim significance or external reproduction.' \
+          'The original artifact byte-integrity provenance and destructive source checks are pinned by .github/workflows/archive-robust-query-new64-original.yml.' \
+          'Verify: sha256sum -c SHA256SUMS; python -m research.audit_new64_bounded_query --input-dir THIS_DIRECTORY --output /tmp/query-verify.json.' \
+          > "$dest/README.md"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dest"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'evidence: permanently preserve all eight original 64-unique-seed bounded-query JSONs'
+          git pull --rebase origin main
+          git push origin HEAD:main

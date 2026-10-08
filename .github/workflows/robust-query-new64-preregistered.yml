@@ -1,0 +1,68 @@
+name: Prospective genuinely NEW 64 reset states of frozen bounded-or-query PhysX
+
+on:
+  pull_request:
+    paths:
+      - 'research/ROBUST_QUERY_NEW64_PREDECLARED_V1.json'
+      - 'research/run_bounded_query_new64_holdout.py'
+      - '.github/workflows/robust-query-new64-preregistered.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  true-physx-independent-new-seeds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      ABI_CHUNK: ${{ matrix.chunk }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify immutable preregistration and identical discovery method Git blobs
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/ROBUST_QUERY_NEW64_PREDECLARED_V1.json)" = "70a16b787acb4380f9c7109c741a996453be1319"
+          test "$(git hash-object research/frozen_ppo_ack_bounded_query.py)" = "1dc653cdc44e422c8340475ad00f828b3a41eb4f"
+          test "$(git hash-object research/two_history_se3_robust.py)" = "bb5fd155b7291fb127f94138fca321201c8271c3"
+          python -m py_compile research/run_bounded_query_new64_holdout.py research/frozen_ppo_ack_bounded_query.py research/two_history_se3_robust.py
+          python - <<'PY'
+          import json
+          p=json.load(open('research/ROBUST_QUERY_NEW64_PREDECLARED_V1.json'))
+          assert p['original_method_source_commit']=='db4fe4dd9d09aaff67c5dcf12213ad737162282d'
+          assert p['unique_seed_count']==64
+          assert p['models']['pull_cube']['seeds']==[142001,142032]
+          assert p['models']['stack_cube']['seeds']==[152001,152032]
+          assert p['method_changes_permitted'] is False
+          PY
+      - name: Install real ManiSkill PhysX CPU and original third-party frozen PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+          python -m pip freeze --all > robust_query_holdout_environment.freeze.txt
+      - name: Run eight fully paired NEW-seed genuine physical simulator episodes
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_bounded_query_new64_holdout.py 2>&1 | tee robust_query_holdout_stdout.log
+          test -s "bounded_query_holdout_${ABI_TASK}_chunk${ABI_CHUNK}_original8.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-new64-${{ matrix.task }}-chunk-${{ matrix.chunk }}
+          path: |
+            bounded_query_holdout_*.json
+            robust_query_holdout_stdout.log
+            robust_query_holdout_environment.freeze.txt
+          retention-days: 90
