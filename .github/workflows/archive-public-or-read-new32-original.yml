@@ -1,0 +1,207 @@
+name: Archive and adversarially audit original public-evidence-or-read32 PhysX
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/archive-public-or-read-new32-original.yml'
+      - 'research/audit_public_response_or_read32.py'
+      - 'research/PHYSICAL_RESPONSE_OR_READ32_PREDECLARED_V1.json'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-public-or-read-new32-original.yml'
+      - 'research/audit_public_response_or_read32.py'
+      - 'research/PHYSICAL_RESPONSE_OR_READ32_PREDECLARED_V1.json'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  source-provenance-and-five-adversarial-tamper-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify exact original 8 PhysX source ZIP digests, all truth labels and privilege ledger
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/PHYSICAL_RESPONSE_OR_READ32_PREDECLARED_V1.json)" = "bdcad7dff2fbe55ef7f1215f15adcda9d7372407"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37834088246 --jq .head_sha)" = "f1423b307ed37c2e6413868d3213412424c6dc97"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37834088246 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11575141229 --jq .digest)" = "sha256:23bc95132925cbbc5ccd88c2cd00fd9437e3adf4afe52a87d31371bb9bf68695"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11575580533 --jq .digest)" = "sha256:2c903ed05acc6d3af178630eb305d66772c9bdad126cdfd72f5ff995dc037040"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11575505568 --jq .digest)" = "sha256:8bab08d037e19655d832cf3cc2bf32deed49c9bfd36818702271f9d6daa5e822"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11574119834 --jq .digest)" = "sha256:376cba6c4566a6ba124de412766d635ef3640791366aeb6282b327d82611be65"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11574817153 --jq .digest)" = "sha256:8f2be3d5f2815ebb1a84424a99b808b2e764ec7c65cf7c8ac84dd6a4a300789e"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11575835044 --jq .digest)" = "sha256:afccd7126a6dd2ac05f5cc072d9523d10b3f021afaccbce83d4f3050f88a909d"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11574911831 --jq .digest)" = "sha256:23d6b82d51dfba3c327f1e8cd3e744a55c3b16af17ce1e3659a4e4fb9b88de30"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11575725221 --jq .digest)" = "sha256:a922c65a92a61c111114340f75d9b2bc991ae39638aa304ca06356711097d53b"
+          mkdir -p /tmp/public-or-read-source /tmp/public-or-read-exact
+          gh run download 37834088246 --repo "$GITHUB_REPOSITORY" --pattern "public-or-read-native-*" --dir /tmp/public-or-read-source
+          test -s "/tmp/public-or-read-source/public-or-read-native-pull_cube-applied_no_ack-part-0/public_or_read_pull_cube_applied_no_ack_0_fresh4.json" && cp "/tmp/public-or-read-source/public-or-read-native-pull_cube-applied_no_ack-part-0/public_or_read_pull_cube_applied_no_ack_0_fresh4.json" "/tmp/public-or-read-exact/public_or_read_pull_cube_applied_no_ack_0_fresh4.json"
+          test -s "/tmp/public-or-read-source/public-or-read-native-pull_cube-applied_no_ack-part-4/public_or_read_pull_cube_applied_no_ack_4_fresh4.json" && cp "/tmp/public-or-read-source/public-or-read-native-pull_cube-applied_no_ack-part-4/public_or_read_pull_cube_applied_no_ack_4_fresh4.json" "/tmp/public-or-read-exact/public_or_read_pull_cube_applied_no_ack_4_fresh4.json"
+          test -s "/tmp/public-or-read-source/public-or-read-native-pull_cube-neutral_arm_delta_no_ack-part-0/public_or_read_pull_cube_neutral_arm_delta_no_ack_0_fresh4.json" && cp "/tmp/public-or-read-source/public-or-read-native-pull_cube-neutral_arm_delta_no_ack-part-0/public_or_read_pull_cube_neutral_arm_delta_no_ack_0_fresh4.json" "/tmp/public-or-read-exact/public_or_read_pull_cube_neutral_arm_delta_no_ack_0_fresh4.json"
+          test -s "/tmp/public-or-read-source/public-or-read-native-pull_cube-neutral_arm_delta_no_ack-part-4/public_or_read_pull_cube_neutral_arm_delta_no_ack_4_fresh4.json" && cp "/tmp/public-or-read-source/public-or-read-native-pull_cube-neutral_arm_delta_no_ack-part-4/public_or_read_pull_cube_neutral_arm_delta_no_ack_4_fresh4.json" "/tmp/public-or-read-exact/public_or_read_pull_cube_neutral_arm_delta_no_ack_4_fresh4.json"
+          test -s "/tmp/public-or-read-source/public-or-read-native-stack_cube-applied_no_ack-part-0/public_or_read_stack_cube_applied_no_ack_0_fresh4.json" && cp "/tmp/public-or-read-source/public-or-read-native-stack_cube-applied_no_ack-part-0/public_or_read_stack_cube_applied_no_ack_0_fresh4.json" "/tmp/public-or-read-exact/public_or_read_stack_cube_applied_no_ack_0_fresh4.json"
+          test -s "/tmp/public-or-read-source/public-or-read-native-stack_cube-applied_no_ack-part-4/public_or_read_stack_cube_applied_no_ack_4_fresh4.json" && cp "/tmp/public-or-read-source/public-or-read-native-stack_cube-applied_no_ack-part-4/public_or_read_stack_cube_applied_no_ack_4_fresh4.json" "/tmp/public-or-read-exact/public_or_read_stack_cube_applied_no_ack_4_fresh4.json"
+          test -s "/tmp/public-or-read-source/public-or-read-native-stack_cube-neutral_arm_delta_no_ack-part-0/public_or_read_stack_cube_neutral_arm_delta_no_ack_0_fresh4.json" && cp "/tmp/public-or-read-source/public-or-read-native-stack_cube-neutral_arm_delta_no_ack-part-0/public_or_read_stack_cube_neutral_arm_delta_no_ack_0_fresh4.json" "/tmp/public-or-read-exact/public_or_read_stack_cube_neutral_arm_delta_no_ack_0_fresh4.json"
+          test -s "/tmp/public-or-read-source/public-or-read-native-stack_cube-neutral_arm_delta_no_ack-part-4/public_or_read_stack_cube_neutral_arm_delta_no_ack_4_fresh4.json" && cp "/tmp/public-or-read-source/public-or-read-native-stack_cube-neutral_arm_delta_no_ack-part-4/public_or_read_stack_cube_neutral_arm_delta_no_ack_4_fresh4.json" "/tmp/public-or-read-exact/public_or_read_stack_cube_neutral_arm_delta_no_ack_4_fresh4.json"
+          python -m research.audit_public_response_or_read32 --input-dir /tmp/public-or-read-exact --output /tmp/public-or-read-original-audit.json
+          python - <<'PY'
+          import tempfile, shutil, json
+          from pathlib import Path
+          from research.audit_public_response_or_read32 import audit
+          src=Path('/tmp/public-or-read-exact')
+          files=sorted(src.glob('*.json'))
+          assert len(files)==8
+          x=audit(src)
+          assert x['total_task_seed_fault_conditions']==32
+          assert x['unique_reset_states']==16
+          assert x['hybrid_privileged_reads']==11
+          assert x['privileged_always_reads']==32
+          assert x['hybrid_decided_by_public']==21
+          assert x['hybrid_false_confident_labels']==0
+          assert x['native_task_success']['PUBLIC_FIT_OR_EXPLICIT_ONE_PRIVATE_READ']==27
+          assert x['native_task_success']['privileged_once_after_probe']==27
+          assert x['paired_hybrid_only']==0 and x['paired_authority_only']==0
+          for tamper in ('remove','flip_task_success','hide_private_read','duplicate_seed','fabricate_public_label'):
+              with tempfile.TemporaryDirectory() as d:
+                  q=Path(d)/'mutated'
+                  shutil.copytree(src,q)
+                  f=q/files[0].name
+                  if tamper=='remove':f.unlink()
+                  else:
+                      j=json.loads(f.read_text())
+                      row=j['rows'][0]
+                      if tamper=='flip_task_success':
+                          k='PUBLIC_FIT_OR_EXPLICIT_ONE_PRIVATE_READ'
+                          row['success_once'][k]=not row['success_once'][k]
+                      if tamper=='hide_private_read':
+                          row['private_memory_reads_during_action_decision']['privileged_once_after_probe']=0
+                      if tamper=='duplicate_seed':
+                          row['seed']=j['rows'][1]['seed']
+                      if tamper=='fabricate_public_label':
+                          h=row['hybrid_classifier']
+                          h['empirical_response_epsilon_m']=5.0
+                      f.write_text(json.dumps(j))
+                  try:audit(q); raise AssertionError('Auditor accepted tampering '+tamper)
+                  except ValueError:pass
+          print('PASS all eight original source SHA archives, complete 32 paired conditions and five deliberate data corruption attacks')
+          PY
+  trusted-main-byte-identical-original-archive:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: source-provenance-and-five-adversarial-tamper-checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Revalidate original 32 cases and trusted artifact provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/PHYSICAL_RESPONSE_OR_READ32_PREDECLARED_V1.json)" = "bdcad7dff2fbe55ef7f1215f15adcda9d7372407"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37834088246 --jq .head_sha)" = "f1423b307ed37c2e6413868d3213412424c6dc97"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37834088246 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11575141229 --jq .digest)" = "sha256:23bc95132925cbbc5ccd88c2cd00fd9437e3adf4afe52a87d31371bb9bf68695"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11575580533 --jq .digest)" = "sha256:2c903ed05acc6d3af178630eb305d66772c9bdad126cdfd72f5ff995dc037040"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11575505568 --jq .digest)" = "sha256:8bab08d037e19655d832cf3cc2bf32deed49c9bfd36818702271f9d6daa5e822"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11574119834 --jq .digest)" = "sha256:376cba6c4566a6ba124de412766d635ef3640791366aeb6282b327d82611be65"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11574817153 --jq .digest)" = "sha256:8f2be3d5f2815ebb1a84424a99b808b2e764ec7c65cf7c8ac84dd6a4a300789e"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11575835044 --jq .digest)" = "sha256:afccd7126a6dd2ac05f5cc072d9523d10b3f021afaccbce83d4f3050f88a909d"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11574911831 --jq .digest)" = "sha256:23d6b82d51dfba3c327f1e8cd3e744a55c3b16af17ce1e3659a4e4fb9b88de30"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11575725221 --jq .digest)" = "sha256:a922c65a92a61c111114340f75d9b2bc991ae39638aa304ca06356711097d53b"
+          mkdir -p /tmp/public-or-read-source /tmp/public-or-read-exact
+          gh run download 37834088246 --repo "$GITHUB_REPOSITORY" --pattern "public-or-read-native-*" --dir /tmp/public-or-read-source
+          test -s "/tmp/public-or-read-source/public-or-read-native-pull_cube-applied_no_ack-part-0/public_or_read_pull_cube_applied_no_ack_0_fresh4.json" && cp "/tmp/public-or-read-source/public-or-read-native-pull_cube-applied_no_ack-part-0/public_or_read_pull_cube_applied_no_ack_0_fresh4.json" "/tmp/public-or-read-exact/public_or_read_pull_cube_applied_no_ack_0_fresh4.json"
+          test -s "/tmp/public-or-read-source/public-or-read-native-pull_cube-applied_no_ack-part-4/public_or_read_pull_cube_applied_no_ack_4_fresh4.json" && cp "/tmp/public-or-read-source/public-or-read-native-pull_cube-applied_no_ack-part-4/public_or_read_pull_cube_applied_no_ack_4_fresh4.json" "/tmp/public-or-read-exact/public_or_read_pull_cube_applied_no_ack_4_fresh4.json"
+          test -s "/tmp/public-or-read-source/public-or-read-native-pull_cube-neutral_arm_delta_no_ack-part-0/public_or_read_pull_cube_neutral_arm_delta_no_ack_0_fresh4.json" && cp "/tmp/public-or-read-source/public-or-read-native-pull_cube-neutral_arm_delta_no_ack-part-0/public_or_read_pull_cube_neutral_arm_delta_no_ack_0_fresh4.json" "/tmp/public-or-read-exact/public_or_read_pull_cube_neutral_arm_delta_no_ack_0_fresh4.json"
+          test -s "/tmp/public-or-read-source/public-or-read-native-pull_cube-neutral_arm_delta_no_ack-part-4/public_or_read_pull_cube_neutral_arm_delta_no_ack_4_fresh4.json" && cp "/tmp/public-or-read-source/public-or-read-native-pull_cube-neutral_arm_delta_no_ack-part-4/public_or_read_pull_cube_neutral_arm_delta_no_ack_4_fresh4.json" "/tmp/public-or-read-exact/public_or_read_pull_cube_neutral_arm_delta_no_ack_4_fresh4.json"
+          test -s "/tmp/public-or-read-source/public-or-read-native-stack_cube-applied_no_ack-part-0/public_or_read_stack_cube_applied_no_ack_0_fresh4.json" && cp "/tmp/public-or-read-source/public-or-read-native-stack_cube-applied_no_ack-part-0/public_or_read_stack_cube_applied_no_ack_0_fresh4.json" "/tmp/public-or-read-exact/public_or_read_stack_cube_applied_no_ack_0_fresh4.json"
+          test -s "/tmp/public-or-read-source/public-or-read-native-stack_cube-applied_no_ack-part-4/public_or_read_stack_cube_applied_no_ack_4_fresh4.json" && cp "/tmp/public-or-read-source/public-or-read-native-stack_cube-applied_no_ack-part-4/public_or_read_stack_cube_applied_no_ack_4_fresh4.json" "/tmp/public-or-read-exact/public_or_read_stack_cube_applied_no_ack_4_fresh4.json"
+          test -s "/tmp/public-or-read-source/public-or-read-native-stack_cube-neutral_arm_delta_no_ack-part-0/public_or_read_stack_cube_neutral_arm_delta_no_ack_0_fresh4.json" && cp "/tmp/public-or-read-source/public-or-read-native-stack_cube-neutral_arm_delta_no_ack-part-0/public_or_read_stack_cube_neutral_arm_delta_no_ack_0_fresh4.json" "/tmp/public-or-read-exact/public_or_read_stack_cube_neutral_arm_delta_no_ack_0_fresh4.json"
+          test -s "/tmp/public-or-read-source/public-or-read-native-stack_cube-neutral_arm_delta_no_ack-part-4/public_or_read_stack_cube_neutral_arm_delta_no_ack_4_fresh4.json" && cp "/tmp/public-or-read-source/public-or-read-native-stack_cube-neutral_arm_delta_no_ack-part-4/public_or_read_stack_cube_neutral_arm_delta_no_ack_4_fresh4.json" "/tmp/public-or-read-exact/public_or_read_stack_cube_neutral_arm_delta_no_ack_4_fresh4.json"
+          python -m research.audit_public_response_or_read32 --input-dir /tmp/public-or-read-exact --output /tmp/public-or-read-original-audit.json
+          python - <<'PY'
+          import tempfile, shutil, json
+          from pathlib import Path
+          from research.audit_public_response_or_read32 import audit
+          src=Path('/tmp/public-or-read-exact')
+          files=sorted(src.glob('*.json'))
+          assert len(files)==8
+          x=audit(src)
+          assert x['total_task_seed_fault_conditions']==32
+          assert x['unique_reset_states']==16
+          assert x['hybrid_privileged_reads']==11
+          assert x['privileged_always_reads']==32
+          assert x['hybrid_decided_by_public']==21
+          assert x['hybrid_false_confident_labels']==0
+          assert x['native_task_success']['PUBLIC_FIT_OR_EXPLICIT_ONE_PRIVATE_READ']==27
+          assert x['native_task_success']['privileged_once_after_probe']==27
+          assert x['paired_hybrid_only']==0 and x['paired_authority_only']==0
+          for tamper in ('remove','flip_task_success','hide_private_read','duplicate_seed','fabricate_public_label'):
+              with tempfile.TemporaryDirectory() as d:
+                  q=Path(d)/'mutated'
+                  shutil.copytree(src,q)
+                  f=q/files[0].name
+                  if tamper=='remove':f.unlink()
+                  else:
+                      j=json.loads(f.read_text())
+                      row=j['rows'][0]
+                      if tamper=='flip_task_success':
+                          k='PUBLIC_FIT_OR_EXPLICIT_ONE_PRIVATE_READ'
+                          row['success_once'][k]=not row['success_once'][k]
+                      if tamper=='hide_private_read':
+                          row['private_memory_reads_during_action_decision']['privileged_once_after_probe']=0
+                      if tamper=='duplicate_seed':
+                          row['seed']=j['rows'][1]['seed']
+                      if tamper=='fabricate_public_label':
+                          h=row['hybrid_classifier']
+                          h['empirical_response_epsilon_m']=5.0
+                      f.write_text(json.dumps(j))
+                  try:audit(q); raise AssertionError('Auditor accepted tampering '+tamper)
+                  except ValueError:pass
+          print('PASS all eight original source SHA archives, complete 32 paired conditions and five deliberate data corruption attacks')
+          PY
+      - name: Archive all original raw JSON bytes and SHA-256 file manifests on trusted main only
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/public_or_read_new32_180101_190108
+          mkdir -p "$dest"
+          cp /tmp/public-or-read-exact/*.json "$dest/"
+          (cd "$dest" && sha256sum *.json > SHA256SUMS && sha256sum -c SHA256SUMS)
+          python -m research.audit_public_response_or_read32 --input-dir "$dest" --output /tmp/public-or-read32-aftercopy.json
+          printf '%s\n' \
+          '# 32 predeclared physical-response-or-one-read real ManiSkill PhysX original samples' \
+          '' \
+          'Original native PhysX source run: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37834088246 ; exact original source head f1423b307ed37c2e6413868d3213412424c6dc97.' \
+          'BEFORE trial implementation freeze: https://github.com/lindicaphxag-tech/ManiSkill/commit/fa17350711f6c2c7cffb4cfa2bb7f8289f3ee0c4 ; original prereg Git blob bdcad7dff2fbe55ef7f1215f15adcda9d7372407.' \
+          'Eight original byte-identical JSONs, two physically possible execution truths per task×seed, 16 distinct reset states, 32 task×truth conditions. The original frozen pretrained PPO was not retrained.' \
+          'Original complete result: empirical public physical evidence OR one privileged controller target read achieved 27/32 official task successes with 11 privileged reads; mandatory one target read 27/32 with 32 reads; public-only abstaining 19/32; optimistic 23/32.' \
+          'Exactly 21/32 public classifications confidently determined one hypothetical execution history with zero observed wrong confident labels. 11/32 cases consumed explicit privileged target readback. Neither type was hidden nor excluded.' \
+          'The empirical response bounds learned on a small historical reset-state training subset are NOT externally attested physical dynamics guarantees. This study does not certify physical safety or actual network packet loss.' \
+          'Original source artifact SHA-256 digest verification, five intentional auditor tamper tests and original source SHA are pinned in .github/workflows/archive-public-or-read-new32-original.yml.' \
+          'Use: sha256sum -c SHA256SUMS && python -m research.audit_public_response_or_read32 --input-dir . --output /tmp/public-check.json' \
+          > "$dest/README.md"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dest"
+          if git diff --cached --quiet;then exit 0;fi
+          git commit -m 'evidence: publish all eight byte-identical original public-evidence-or-read PhysX files'
+          for i in 1 2 3 4 5;do
+            git pull --rebase origin main
+            if git push origin HEAD:main;then exit 0;fi
+          done
+          exit 1
