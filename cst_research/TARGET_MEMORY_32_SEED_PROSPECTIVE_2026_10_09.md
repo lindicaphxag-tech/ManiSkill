@@ -1,6 +1,15 @@
-# CST target-memory + bounded feasibility: prospective 32-seed pilot
+# CST target-memory + bounded feasibility: **replication** of previously observed 32-seed cohort
 
-Protocol committed **before running** the dedicated 32-seed experiment.
+**Correction dated 2026-10-09:** Although this document was committed
+before the specific October 9 re-execution, the identical 32-seed cohort
+**20001–20032 had already been run and publicly disclosed** on October 8
+at https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37746168558
+with identical aggregate outcomes (31/32 source, 5/32 strict,
+32/32 bounded, 3/32 naive). A 48-seed cohort 20001–20048 also
+overlaps. Accordingly this is **replication of a known cohort**, NOT
+an independently selected, unseen or prospective holdout. It MUST NOT
+be counted as 32 additional independent generalization samples.
+
 Previous developmental outcomes for seeds 42,270,429,2026 are known:
 source 4/4, strict memory 2/4 (two valid refusals), bounded-memory 4/4
 (two documented approximate steps), naive 1/4.
@@ -8,7 +17,7 @@ Those four development seeds must **never be included** in these numbers.
 
 ## Prespecified seeds and intervention
 
-**All 32 integer seeds 20001 through 20032**, fixed in numeric order.
+**Repeat** all 32 integer seeds 20001 through 20032, in numeric order.
 One public externally trained PPO checkpoint:
 `kattri15/actionshift-baselines/ppo/pick_cube_final_ckpt.pt`
 SHA256 `3e6c95d63a2132843323e24cf7ba962b8cf2610f04b2a5a43f3efb6fef8497a8`.
@@ -38,7 +47,7 @@ come from the actual ManiSkill PickCube task oracle.
 
 ## Fixed reporting metrics
 
-- Four unconditional success fractions out of all **32** scheduled seeds,
+- Four unconditional success fractions out of all **32** scheduled previously observed seeds,
   with per-seed success/failure/invalid status.
 - Paired bounded-minus-strict, bounded-minus-naive, bounded-minus-source
   success differences, including discordant successes and failures.
@@ -52,7 +61,7 @@ come from the actual ManiSkill PickCube task oracle.
 - All results remain published even if source transfer fails.
 
 **Do not include previously observed 4 development seeds.**
-No hyperparameter choices based on unseen pilot labels; the projection
+No new hyperparameter choices based on already-known cohort labels; the projection
 operation is the same previously tested implementation.
 
 This is still a single-policy single-task CPU pilot with known action
