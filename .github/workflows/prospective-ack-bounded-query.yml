@@ -1,0 +1,105 @@
+name: Prospective bounded-or-query unknown-ACK PPO recovery
+
+on:
+  push:
+    branches: [research/ambiguous-ack-robust-query-closedloop-v1]
+  pull_request:
+    paths:
+      - 'research/UNKNOWN_ACK_BOUNDED_QUERY_FROZEN_V1.json'
+      - 'research/frozen_ppo_ack_bounded_query.py'
+      - 'research/ack_bounded_query_aggregate.py'
+      - 'research/two_history_se3_robust.py'
+      - 'tests/test_two_history_se3_robust.py'
+      - '.github/workflows/prospective-ack-bounded-query.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-protocol-and-real-code-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure protocol was frozen before this runner
+        run: |
+          test "$(git hash-object research/UNKNOWN_ACK_BOUNDED_QUERY_FROZEN_V1.json)" = "36f01321c7f5502f3cc0b188d5201f1c2cedb131"
+          python - <<'PY'
+          import json
+          p=json.load(open('research/UNKNOWN_ACK_BOUNDED_QUERY_FROZEN_V1.json'))
+          assert p['tasks']['pull_cube']['seeds_inclusive']==[122001,122008]
+          assert p['tasks']['stack_cube']['seeds_inclusive']==[132001,132008]
+          assert p['robust_budgets']['worst_case_position_infinity_norm_m']==.05
+          assert p['robust_budgets']['worst_case_rotation_geodesic_rad']==.05
+          assert len(p['arms'])==7
+          PY
+      - name: Verify both tasks' actual run code compiles unchanged
+        run: |
+          python -m py_compile research/frozen_ppo_ack_bounded_query.py research/ack_bounded_query_aggregate.py research/two_history_se3_robust.py
+      - name: Run numeric authorization checks before PhysX execution
+        run: |
+          python -m pip install numpy scipy
+          python -m unittest discover -s tests -p test_two_history_se3_robust.py -v
+
+  original-seven-arm-native-physx:
+    needs: frozen-protocol-and-real-code-proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+    env:
+      PYTHONUNBUFFERED: '1'
+      ABI_TASK: ${{ matrix.task }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install genuine simulator and pinned external policy runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Run all 8 frozen task states and 7 independent official control arms
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/frozen_ppo_ack_bounded_query.py 2>&1 | tee "ack_bounded_query_${ABI_TASK}.log"
+          test -s "unknown_ack_bounded_query_${ABI_TASK}_original8.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-ack-bounded-query-${{ matrix.task }}
+          path: |
+            unknown_ack_bounded_query_*.json
+            ack_bounded_query_*.log
+
+  full-original-denominator-audit:
+    needs: original-seven-arm-native-physx
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-ack-bounded-query-*
+          path: /tmp/ack_source
+          merge-multiple: true
+      - name: Independently recompute 16 source-state success flags, fault integrity and query counts
+        run: |
+          python -m research.ack_bounded_query_aggregate --input-dir /tmp/ack_source --output original_ack_bounded_query_16_aggregate.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: original-16state-seven-arm-fault-robust-query-complete-audit
+          path: |
+            /tmp/ack_source/*.json
+            original_ack_bounded_query_16_aggregate.json
