@@ -64,7 +64,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: abi-shadow-${d}{{ matrix.task }}-${d}{{ matrix.chunk }}
+          name: abi-shadow-${{ matrix.task }}-${{ matrix.chunk }}
           path: |
             abi_shadow_*.json
             abi_shadow_*.log
