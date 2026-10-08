@@ -5,6 +5,29 @@
 
 **Status.** Owner-operated, source-pinned official ManiSkill PhysX experiments, frozen externally published ActionShift PPOs, multiple failure-mode and ablation checks. **Not peer reviewed**, no independent robotics-lab reproduction, no hardware guarantee, no novel generic POMDP or minimax theorem.
 
+### Current strongest frozen-policy result: public-response observability + conditional authority
+
+In a **separate prospectively preregistered new 32-condition frozen-PPO PhysX cohort**, a controller adapter with an **empirically calibrated (but NOT independently attested) public achieved-motion response model** chooses a hidden commanded-target history only when exactly one historical candidate explains the one-step public achieved-EE response; otherwise it reads the trusted controller target once instead of guessing.
+
+| Matched actual simulator controller arm | Frozen task-success outcomes | Privileged controller-target decision reads |
+| --- | ---: | ---: |
+| Blind optimistic assume-command-applied (same physical probe) | **23/32** | 0 |
+| Public response only, refuse when ambiguous | **19/32** | 0 |
+| **Public response + query true target ONLY when ambiguous / model-invalid** | **27/32** | **11** |
+| Mandatory true target read after the identical native probe | **27/32** | **32** |
+
+**All 32 exact paired hybrid/mandatory task outcomes agree**: both succeed 27/32, both fail 5/32, no paired-exclusive wins. The hybrid selected 21 histories using ONLY achieved XYZ and action-history candidates, observed **zero wrong confident labels** on this finite cohort, and reduced privileged reads by **65.625%**. Source reset seeds: PullCube 180101–180108 and StackCube 190101–190108 under EACH simulated actual applied-versus-neutral arm-command truth. **32 task/truth conditions are not 32 independent policies; each 8-seed task population is paired across two truth worlds**.
+
+- **Preoutcome fixed method:** [commit 9f4c70d8](https://github.com/lindicaphxag-tech/ManiSkill/commit/9f4c70d8b0dd45045561dd91b2f0e372fa347135).
+- **Original eight real native PhysX jobs:** [run 37833095443](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37833095443); every original physical simulator shard succeeded. Its FIRST auditor failed from a **Python variable-shadowing bug**, corrected without any physics method changes.
+- **Independent source-only GREEN full-denominator audit + unchanged eight raw-JSON artifact archive and SHA-256s:** [run 37833936506](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37833936506) · [permanent evidence](evidence/observability_gated_query_fresh32).
+- **Clean, public reproducible source merged into contributor-owned fork only:** [PR #94](https://github.com/lindicaphxag-tech/ManiSkill/pull/94), **not external official ManiSkill merge**.
+- **Necessary caveat:** the same historical response model on a DIFFERENT prospective 32-condition cohort produced 24 confident labels/32, no observed false confident labels, **ONE true hidden-history excluded by the historical model bound**, and only **22/32 task success** versus 30/32 with one privileged read. [Original source #37832214332](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37832214332) · [archived original bytes](evidence/empirical_public_response_new32). Training 4 old reset seeds per task does not validate any future physical error envelope; this method has no general or hardware-safety certificate.
+
+**Related-work scope:** [SPACE (2026)](https://arxiv.org/abs/2606.24049) already studies transferable robot action representation and adaptive execution, while [Demystifying Action Space Design (2026)](https://arxiv.org/abs/2602.23408) presents extensive action-space design experiments. We do **not** claim to invent delta-action conversion, belief-space control, standard minimax set-membership or generic active sensing. Our narrower experimentally falsifiable question is **state-provenance/authority when a controller's accumulated target history and actual command execution become uncertain**, and the cost of evidence needed before continuing a frozen policy.
+
+
+
 ### The mechanism in three sentences
 
 In an achieved-relative controller, the physical target is decoded against the *current measured achieved pose*. In an accumulated-target controller, the same numeric action is decoded against *the previously commanded target*, an internal history state not necessarily recoverable from current achieved pose. A successful adapter must preserve the physical goal **and** justify the state provenance used in the inverse action.
