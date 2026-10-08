@@ -28,12 +28,18 @@ def make_test_fixture(root: Path, *, factorial: bool = False) -> None:
         "config": {
             **({"experimental_design": "converter_x_controller_2x2_factorial"} if factorial else {}),
             "total_iters": 4, "eval_freq": 2, "num_eval_episodes": 20,
+            "replay_count": 4,
             "seed": 1, "minimum_paired_demos": 2,
             "effective_paired_num_demos": 4, "paired_source_seed_sha256": h,
         },
         "pairing": {
             "requested_episode_seeds_sha256": h,
             "paired_source_seed_sha256": h,
+            "successful_converted_episodes": {arm: 4 for arm in arms},
+        },
+        "demonstrations": {
+            arm: {"successful_episode_count": 4}
+            for arm in arms
         },
     }
     manifest = {"status": "passed", "pairing_evidence": "pairing_evidence.json"}
@@ -208,7 +214,7 @@ class PolicyEvidenceGateTests(unittest.TestCase):
         self._factorial()
         verify_factorial_design(FACTORIAL)
         result = gate(self.root)
-        self.assertEqual(result["status"], "descriptive_single_seed_factorial_training_only")
+        self.assertEqual(result["status"], "descriptive_single_seed_posttreatment_selected_factorial_only")
         self.assertEqual(len(result["factorial_contrasts"]), 6)
         self.assertEqual(len(result["curves"]), 3)
         self.assertEqual(len(result["curves"][-1]), 5)  # 4 arms + step
@@ -220,7 +226,8 @@ class PolicyEvidenceGateTests(unittest.TestCase):
             result["factorial_contrasts"][-1]["descriptive_contrasts"]["difference_in_differences"],
             four_cell_differences(values)["difference_in_differences"],
         )
-        self.assertTrue(any("one training seed" in x for x in result["limitations"]))
+        self.assertTrue(any("post-treatment" in x for x in result["limitations"]))
+        self.assertEqual(result["replay_by_arm"][FACTORIAL[2].name]["original_replay_requested"], 4)
 
     def test_factorial_requires_all_four_source_treatments(self):
         self._factorial()
@@ -236,6 +243,16 @@ class PolicyEvidenceGateTests(unittest.TestCase):
             lambda x: x[2].update(paired_source_seed_sha256="f" * 64),
         )
         self.reject("trained arm differs from pinned paired seeds")
+
+    def test_factorial_rejects_false_replay_selection_counts(self):
+        self._factorial()
+        self.mutate_json(
+            "experiment_log.json",
+            lambda x: x["demonstrations"][FACTORIAL[1].name].update(
+                successful_episode_count=3
+            ),
+        )
+        self.reject("arm-specific replay success denominator mismatch")
 
     def test_factorial_refuses_wrong_controller_only_source(self):
         self._factorial()
