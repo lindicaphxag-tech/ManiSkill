@@ -1,0 +1,76 @@
+name: Audit genuine 100-case source-seed 2x2 evidence
+
+on:
+  push:
+    branches:
+      - validation/factorial-100-source-audit-20261008
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  native-100-ledger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Audit's own adversarial regression
+        run: python research/kaggle_diffusion_policy_peg/audit_factorial_replay.py --self-test
+      - name: Download unmodified 100-demo original upstream workflow evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/semrepair-factorial-100
+          gh run download 37719545972 --repo lindicaphxag-tech/ManiSkill \
+            --name dp-peg-factorial-100-replay \
+            --dir /tmp/semrepair-factorial-100
+      - name: Recompute per-seed 100-demo factorial and original-cohort identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from research.kaggle_diffusion_policy_peg.audit_factorial_replay import audit
+
+          root=Path("/tmp/semrepair-factorial-100")
+          found=list(root.rglob("factorial_replay.json"))
+          assert len(found)==1, f"Expected one original experiment matrix, got {found}"
+          doc=json.loads(found[0].read_text())
+          logfiles=list(root.rglob("experiment_log.json"))
+          assert len(logfiles)==1, f"Expected one original experiment log, got {logfiles}"
+          log=json.loads(logfiles[0].read_text())
+          assert log["status"]=="passed"
+          assert log["source_episode_offset"]==0
+          assert log["source_episode_indices"]==list(range(100))
+          assert log["factorial_replay"]["source_seed_matrix"]==doc["source_seed_matrix"]
+          assert log["factorial_replay"]["per_arm_success_count"]==doc["per_arm_success_count"]
+          result=audit(doc)
+          expected={
+              "upstream_baseline":90,
+              "converter_only_pr1495":91,
+              "controller_only_pr1472":1,
+              "combined_pr1495_pr1472":91,
+          }
+          assert result["sample_size"]==100
+          assert result["success_counts"]==expected, result
+          assert result["four_way_intersection"]==1, result
+          assert result["source_matched_factorial_interaction_exact"]=="89/100", result
+          assert result["all_four_cells_trainable"] is False
+          out=Path("factorial_100_independent_recomputed.json")
+          out.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(out.read_text())
+          PY
+      - name: Retain independently recomputed summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: independent-factorial-100-audit
+          path: factorial_100_independent_recomputed.json
+          if-no-files-found: error
