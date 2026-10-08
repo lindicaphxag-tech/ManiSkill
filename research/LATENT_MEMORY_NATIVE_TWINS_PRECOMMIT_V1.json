@@ -1,0 +1,60 @@
+{
+  "schema": "native_hidden_target_indistinguishable_twins_v1",
+  "precommit_date": "2026-10-09",
+  "purpose": "Official native ManiSkill counterfactual replay of two equal physical observations with different valid saved previous controller target poses. Prove live target-state inversion yields equal commanded targets and achieved-pose-only command cannot, at one single step.",
+  "tasks": [
+    [
+      "PickCube-v1",
+      773
+    ],
+    [
+      "PushCube-v1",
+      884
+    ],
+    [
+      "PullCube-v1",
+      995
+    ],
+    [
+      "StackCube-v1",
+      1106
+    ]
+  ],
+  "physical_target_shift_m": [
+    0.02,
+    0,
+    0
+  ],
+  "desired_next_commanded_target_offset_from_initial_memory_m": [
+    0,
+    0,
+    0.004
+  ],
+  "controller": "pd_ee_target_delta_pose",
+  "conditions": [
+    "official controller use_target=true",
+    "use_delta=true",
+    "root_translation command, normalized action",
+    "native action physical interval includes both required commands",
+    "three seeded-reset worlds have identical initial robot qpos/qvel and achieved EE pose",
+    "world B and blind C must use official controller.set_state API to shift saved target without moving physical qpos"
+  ],
+  "arms": {
+    "world_A": "unshifted stored m_A and target-inverted physical command d-m_A",
+    "world_B": "different stored target m_B=m_A+(0.02,0,0), target-inverted command d-m_B",
+    "world_C": "same saved m_B as world B but blindly applies world-A action d-m_A (counterexample)"
+  },
+  "frozen_expected": {
+    "max_identical_initial_achieved_pose_m": 0.00001,
+    "commanded_target_equal_A_B_tolerance_m": 0.0001,
+    "commanded_target_blind_C_deviation_x_m": [
+      0.0199,
+      0.0201
+    ],
+    "hidden_state_identifiability_lower_bound_m": 0.01,
+    "all_four_seeded_task_cases_must_run": true
+  },
+  "constraints": "Controlled valid state replay via native controller.set_state, not claiming these are naturally reachable histories, physical robot safety or task-success improvement. The full simulator observation exposes target state; indistinguishability concerns source-policy observations with target-state slice withheld.",
+  "prior_experiment": "Latent target minimax CPU model and 4 task running native audit are independent. This fresh controlled state-replay witness is not another 32-seed success evaluation.",
+  "no_posthoc_seed_or_threshold_changes": true
+}
