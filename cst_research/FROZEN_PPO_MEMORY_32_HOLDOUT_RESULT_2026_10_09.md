@@ -1,3 +1,5 @@
+> **Research-record correction (2026-10-09):** This is **NOT an independent new holdout cohort.** Seeds `20001–20032` and the same four-arm results were already reported in the project's 2026-10-08 prospective pilot: [original results](FROZEN_PPO_MEMORY_32SEED_PILOT_RESULT_2026_10_08.md), [original CI](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37746168558). The two October 9 runs are additional **reproducibility replications** of an already-observed cohort, not 64 new independent seeds, and the October 9 preregistration cannot be presented as the original preregistration. Do not pool three runs as 96 independent episode samples.
+
 # Controller-owned target memory + bounded feasibility transport — 32-seed result
 
 **Canonical public run:** https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37808039983
