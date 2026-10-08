@@ -98,6 +98,22 @@ if SMOKE_MODE:
         ),
     )
 
+if FACTORIAL_REPLAY_MODE:
+    # Frozen expanded official-demo prefix, not a selected successful subset.
+    # The 8-demo pilot is descriptive; the new 48 prefix is predeclared before
+    # examining any expanded results. This mode only measures conversion replay.
+    CONFIG.update(
+        requested_num_demos=48,
+        replay_count=48,
+        minimum_paired_demos=4,
+        measurement_deviation=(
+            "Predeclared first 48 source demonstrations. Four independent "
+            "converter/controller replay cells, immutable public dataset, "
+            "source-seed pairing, zero-success cells retained. NO DP TRAINING "
+            "AND NO LEARNED-POLICY TASK-SUCCESS CLAIM."
+        ),
+    )
+
 started = time.time()
 OUTPUT.mkdir(parents=True, exist_ok=True)
 run_record = {
