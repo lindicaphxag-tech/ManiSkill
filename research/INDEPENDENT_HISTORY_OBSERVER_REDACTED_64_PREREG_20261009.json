@@ -1,0 +1,53 @@
+{
+  "schema": "independent_history_observer_redacted_prospective_v1",
+  "date": "2026-10-09",
+  "status": "FROZEN_BEFORE_FIRST_SIMULATOR_OUTCOME",
+  "fork": "lindicaphxag-tech/ManiSkill",
+  "frozen_observer_pr_head": "0865e6d50ec30d6a069e2d7dfee1f9be834c2c21",
+  "frozen_policy_hf_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+  "question": "Can a separately implemented action-history target observer match a live-memory controller under true PhysX frozen-PPO feedback when the target-memory input slice is poisoned with NaN before policy-input conversion?",
+  "protocol_falsifier": "Count paired observer-vs-live successes and compare final true-memory audit only after each full episode. Any mismatches and all failed policy episodes remain in denominator.",
+  "predeclared_cohorts": {
+    "pull_cube": {
+      "environment": "PullCube-v1",
+      "first_seed": 83001,
+      "last_seed": 83032,
+      "checkpoint_sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7"
+    },
+    "stack_cube": {
+      "environment": "StackCube-v1",
+      "first_seed": 93001,
+      "last_seed": 93032,
+      "checkpoint_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+    }
+  },
+  "per_task_seed_shards": 4,
+  "seeds_per_shard": 8,
+  "total_episodes": 64,
+  "horizon": 50,
+  "sim_backend": "physx_cpu",
+  "arms": [
+    "source",
+    "memory",
+    "projected",
+    "observer",
+    "stateless",
+    "naive"
+  ],
+  "fixed_core_files": [
+    "research/action_abi_history_observer.py",
+    "research/frozen_ppo_action_history_observer.py",
+    "research/frozen_ppo_observer_policy.py"
+  ],
+  "intervention": "Replace only target controller's 7D target-pose observation field by NaNs immediately before extracting the frozen PPO's no-memory source observation for observer arm. Preserve all physical env/controller state and original method logic; this tests explicit observer policy-input non-use only.",
+  "audit": "After complete observer episode, compare reconstructed last target with private target getter (AUDIT ONLY) under preexisting 3e-5 m / 3e-4 rad tolerance.",
+  "predeclared_decision": {
+    "source_competence_min_success_per_task": 24,
+    "observer_vs_live_min_agreements_per_task": 30,
+    "max_audit_target_position_abs_m": 0.00003,
+    "max_audit_target_rotation_rad": 0.0003,
+    "failure_reporting": "Report no-increase, differences, refusers, non-exact projections, and missing outcomes."
+  },
+  "limits": "This is owner-run Panda root-aligned target-setpoint simulation with deterministic confirmed env.step action delivery. It does not handle lost ACK, unknown resets, contact safety, other robot controllers, or independent third-party validation.",
+  "note": "Source original runner remains unchanged byte for byte; a separate wrapper adds a redaction intervention and a source-preserving external auditor; no retraining or seed tuning."
+}
