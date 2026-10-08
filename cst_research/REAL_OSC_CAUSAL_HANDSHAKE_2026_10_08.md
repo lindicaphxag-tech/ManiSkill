@@ -157,3 +157,50 @@ separate Panda/Lift simulator instances. It found:
 Thus full-scene differences between independent simulated environments
 are **confounded by model geometry**. They cannot automatically be
 attributed to a controller-interface migration.
+
+
+## Identical-MJCF source-to-target CLOSED-LOOP migration
+
+Canonical public run:
+https://github.com/lindicaphxag-tech/robomimic/actions/runs/37706956215
+
+**8/8 CPU simulation tests passed** (robosuite 1.5.2, MuJoCo 3.3.0).
+
+Experimental controls:
+- real Panda/Lift physics, source delta OSC and target absolute OSC;
+- exactly the same MJCF XML reloaded in target;
+- identical initial flattened physics state and copied warm-start state;
+- target OSC nullspace posture `initial_joint` set to source;
+- source policy-native OSC deltas analytically compiled to target absolute
+  pose actions at every one of the 8 closed-loop steps.
+
+Source-vs-target maximum error over these 8 steps:
+- full-scene qpos: **1.836504e-7**;
+- arm joint qpos: **1.836504e-7** radians;
+- controller goals: **5.148608e-9**.
+
+For comparison in the **same public workflow**, an identical delta-OSC
+controller pair using the same MJCF/physics alignment had a full-scene
+qpos error of **1.078719e-7**.
+
+When the controller types differed AND the MJCF geometry was not aligned,
+full-scene qpos mismatch was **7.228455e-4** despite arm joints being
+near-equivalent. This is why model identity is part of the replay protocol.
+
+Also in this run:
+- 32 synthetic OSC controller-memory perturbations:
+  p10 `0.3009982`, median `0.8095894`, p90 `1.912405`
+  maximum torque error, while matched state error `8.929123e-7`.
+- 8-step synthetic HDF5 dataset through actual robomimic `convert_demo`:
+  native action max error `1.665335e-15`, zero saturation.
+
+**Scientific claim boundary:** this is finite-horizon, single-scene,
+CPU-simulated controller-interface migration for a prescribed sequence of
+bounded OSC commands. It is NOT a trained frozen VLA policy result, proof of
+general nonlinear-region bisimulation, or validated contact-rich task
+success-rate parity. Full-state error close to same-controller numerical
+baseline is strong empirical evidence, not a universal certificate.
+
+The important mechanism combines an action-chart inversion with controller-
+owned state mapping and exact physics-model replay. An action vector
+conversion by itself does not establish these guarantees.
