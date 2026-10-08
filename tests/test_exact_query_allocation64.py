@@ -77,7 +77,7 @@ class ExactFinitePopulationTest(unittest.TestCase):
                 hashlib.sha256(file.read_bytes()).hexdigest())
             self.assertNotEqual(original,forged)
             manifest.write_text(forged)
-            with self.assertRaisesRegex(ValueError,"original published finite-population SHA manifest"):
+            with self.assertRaisesRegex(ValueError,"Original published finite-population SHA manifest"):
                 ensure_original_source(p)
 
     def test_missing_original_episode_shard_and_bad_digest_fail(self):
