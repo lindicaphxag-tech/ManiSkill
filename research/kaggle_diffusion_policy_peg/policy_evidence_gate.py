@@ -24,7 +24,12 @@ from typing import Any
 BASE = "62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3"
 CONVERSION = "875ae4d8777678119b2f192ee186c6c15e6894d5"
 CONTROLLER = "eed9be164797d41540421bda8adb3840377d7087"
+from research.kaggle_diffusion_policy_peg.assay_design import (
+    FACTORIAL, assay_arms, four_cell_differences,
+)
+
 ARMS = ("upstream_baseline", "combined_pr1495_pr1472")
+FACTORIAL_NAMES = tuple(a.name for a in FACTORIAL)
 EVAL_TAGS = ("eval/success_once", "eval/success_at_end")
 
 
@@ -57,6 +62,7 @@ def _source_seed_digest(seeds: list[int]) -> str:
 def _verified_pairing(
     pairing: dict[str, Any], manifest: dict[str, Any],
     record: dict[str, Any], summaries: dict[str, dict[str, Any]],
+    active_arms: tuple[str, ...],
 ) -> tuple[int, str]:
     if manifest.get("pairing_evidence") != "pairing_evidence.json":
         raise UnverifiablePolicyEvidence("pairing evidence is not in artifact manifest")
@@ -78,10 +84,10 @@ def _verified_pairing(
     if requested_digest != record.get("pairing", {}).get("requested_episode_seeds_sha256"):
         raise UnverifiablePolicyEvidence("paired experiment source-seed digest mismatch")
     each_arm = pairing.get("arms")
-    if not isinstance(each_arm, dict) or set(each_arm) != set(ARMS):
+    if not isinstance(each_arm, dict) or set(each_arm) != set(active_arms):
         raise UnverifiablePolicyEvidence("missing per-arm successful source-seed evidence")
     successes = []
-    for arm in ARMS:
+    for arm in active_arms:
         data = each_arm[arm]
         seeds = data.get("successful_episode_seeds")
         if not isinstance(seeds, list) or any(type(x) is not int for x in seeds):
@@ -110,7 +116,7 @@ def _verified_pairing(
         raise UnverifiablePolicyEvidence("paired source-seed identity mismatch")
     if len(paired) < _strict_int(cfg.get("minimum_paired_demos"), "minimum paired demos", 1):
         raise UnverifiablePolicyEvidence("paired demonstration count below protocol minimum")
-    for arm in ARMS:
+    for arm in active_arms:
         if summaries[arm].get("paired_source_seed_sha256") != paired_digest:
             raise UnverifiablePolicyEvidence("trained arm differs from pinned paired seeds")
         if summaries[arm].get("paired_num_demos") != len(paired):
@@ -138,22 +144,30 @@ def gate(root: Path) -> dict[str, Any]:
         or run.get("controller_pr", {}).get("head") != CONTROLLER
     ):
         raise UnverifiablePolicyEvidence("unfrozen base / converter / controller source")
-    if run.get("arms") != list(ARMS):
+    is_factorial = (
+        run.get("config", {}).get("experimental_design")
+        == "converter_x_controller_2x2_factorial"
+    )
+    expected_specs = assay_arms("factorial" if is_factorial else "paired")
+    active_arms = tuple(a.name for a in expected_specs)
+    if run.get("arms") != list(active_arms):
         raise UnverifiablePolicyEvidence("incorrect intervention arms")
-    if len(summary) != 2 or {x.get("arm") for x in summary} != set(ARMS):
-        raise UnverifiablePolicyEvidence("must have exactly two complete trained arms")
+    if len(summary) != len(active_arms) or {
+        x.get("arm") for x in summary
+    } != set(active_arms):
+        raise UnverifiablePolicyEvidence("incomplete frozen intervention cell set")
     by_arm = {x["arm"]: x for x in summary}
-    for arm, commit, overlay in (
-        (ARMS[0], BASE, None),
-        (ARMS[1], CONVERSION, CONTROLLER),
-    ):
+    for spec in expected_specs:
+        arm, commit, overlay = spec.source_tuple
         item = by_arm[arm]
         if item.get("source_commit") != commit or item.get("controller_overlay_commit") != overlay:
             raise UnverifiablePolicyEvidence(f"source intervention identity wrong for {arm}")
         for required in ("source_tree", "runtime_compatibility_sha256", "demo_sha256"):
             if not isinstance(item.get(required), str) or not item[required]:
                 raise UnverifiablePolicyEvidence(f"missing {required} provenance for {arm}")
-    paired_count, pairing_sha = _verified_pairing(pairing, manifest, run, by_arm)
+    paired_count, pairing_sha = _verified_pairing(
+        pairing, manifest, run, by_arm, active_arms
+    )
 
     cfg = run.get("config", {})
     iters = _strict_int(cfg.get("total_iters"), "total_iters", 1)
@@ -175,7 +189,7 @@ def gate(root: Path) -> dict[str, Any]:
             step, value = item["step"], item["value"]
         except (ValueError, TypeError, KeyError) as exc:
             raise UnverifiablePolicyEvidence(f"invalid scalar row {index}") from exc
-        if arm not in ARMS or not isinstance(tag, str):
+        if arm not in active_arms or not isinstance(tag, str):
             raise UnverifiablePolicyEvidence("scalar row has unknown arm or tag")
         if type(step) is not int or step < 0 or step > iters:
             raise UnverifiablePolicyEvidence("scalar row has impossible optimizer step")
@@ -186,7 +200,7 @@ def gate(root: Path) -> dict[str, Any]:
             raise UnverifiablePolicyEvidence("duplicate scalar metric at evaluation step")
         entries[step] = float(value)
 
-    for arm in ARMS:
+    for arm in active_arms:
         losses = samples.get((arm, "losses/total_loss"), {})
         if not losses or max(losses) < iters:
             raise UnverifiablePolicyEvidence(f"missing complete optimizer loss trace for {arm}")
@@ -218,13 +232,35 @@ def gate(root: Path) -> dict[str, Any]:
                     }
                     for tag in EVAL_TAGS
                 }
-                for arm in ARMS
+                for arm in active_arms
             },
         }
         for step in expected_steps
     ]
+    contrasts = (
+        [
+            {
+                "optimizer_step": step,
+                "metric": tag,
+                "descriptive_contrasts": four_cell_differences({
+                    arm: samples[(arm, tag)][step] for arm in active_arms
+                }),
+            }
+            for step in expected_steps for tag in EVAL_TAGS
+        ]
+        if is_factorial else []
+    )
     return {
-        "status": "descriptive_single_seed_paired_training_only",
+        "status": (
+            "descriptive_single_seed_factorial_training_only"
+            if is_factorial
+            else "descriptive_single_seed_paired_training_only"
+        ),
+        "experimental_design": (
+            "frozen_2x2_converter_controller_factorial"
+            if is_factorial else "historical_combined_change_pair"
+        ),
+        "factorial_contrasts": contrasts,
         "source": "ManiSkill baseline 62ff3a5 / converter PR1495 + controller PR1472",
         "paired_source_demonstrations": paired_count,
         "source_seed_digest": pairing_sha,
@@ -234,7 +270,12 @@ def gate(root: Path) -> dict[str, Any]:
         "limitations": [
             "Authored run metadata and SHA-256 cannot establish independent execution authenticity.",
             "Single training seed and finite evaluation episodes: no statistical superiority claim.",
-            "This two-arm design measures combined #1495+#1472 changes, not isolated PR #1495 effect.",
+            (
+                "Four-arm contrasts separate source interventions algebraically but one "
+                "training seed does not support statistical significance or causal generalization."
+                if is_factorial
+                else "This two-arm design measures combined #1495+#1472 changes, not isolated PR #1495 effect."
+            ),
             "The reported success rate cannot prove real-robot deployment safety.",
             "This gate requires 100% completed paired training and complete TensorBoard metric steps.",
         ],
