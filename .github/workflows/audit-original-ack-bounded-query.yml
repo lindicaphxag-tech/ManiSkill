@@ -1,0 +1,88 @@
+name: Audit genuine unknown ACK bounded-query original source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/audit-original-ack-bounded-query.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  recover-and-replay-unchanged-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Confirm preregistration was already committed before runner
+        run: |
+          test "$(git hash-object research/UNKNOWN_ACK_BOUNDED_QUERY_FROZEN_V1.json)" = "36f01321c7f5502f3cc0b188d5201f1c2cedb131"
+      - name: Reject modified, missing or incomplete original producer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37828004254 --jq .head_sha)" = "7799ede89dc04c2db0ce1379ff4563d553e97a03"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37828004254 --jq .conclusion)" = success
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37828004254 --jq .run_attempt)" = 1
+      - name: Fetch five byte-for-byte original source files without resampling or edits
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ack-original/{pull,stack,agg,all}
+          gh run download 37828004254 --repo "$GITHUB_REPOSITORY" --name original-ack-bounded-query-pull_cube --dir /tmp/ack-original/pull
+          gh run download 37828004254 --repo "$GITHUB_REPOSITORY" --name original-ack-bounded-query-stack_cube --dir /tmp/ack-original/stack
+          gh run download 37828004254 --repo "$GITHUB_REPOSITORY" --name original-16state-seven-arm-fault-robust-query-complete-audit --dir /tmp/ack-original/agg
+          cp /tmp/ack-original/pull/unknown_ack_bounded_query_pull_cube_original8.json /tmp/ack-original/all/
+          cp /tmp/ack-original/stack/unknown_ack_bounded_query_stack_cube_original8.json /tmp/ack-original/all/
+          cp /tmp/ack-original/agg/original_ack_bounded_query_16_aggregate.json /tmp/ack-original/all/
+          cp /tmp/ack-original/pull/ack_bounded_query_pull_cube.log /tmp/ack-original/all/
+          cp /tmp/ack-original/stack/ack_bounded_query_stack_cube.log /tmp/ack-original/all/
+          test "$(find /tmp/ack-original/all -maxdepth 1 -type f | wc -l)" = 5
+      - name: Publish SHA-256 of all FIVE original files
+        run: |
+          cd /tmp/ack-original/all
+          sha256sum *.json *.log | sort | tee ORIGINAL_FIVE_SOURCE_SHA256SUMS
+      - name: Independently regenerate the complete 16-seed seven-arm audit
+        run: |
+          python -m research.ack_bounded_query_aggregate --input-dir /tmp/ack-original/all --output /tmp/ack-original/recomputed.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('/tmp/ack-original')
+          original=json.loads((root/'all/original_ack_bounded_query_16_aggregate.json').read_text())
+          recomputed=json.loads((root/'recomputed.json').read_text())
+          assert original==recomputed, 'Original aggregate differs from replay'
+          assert original['original_task_state_count']==16
+          for task,succ,queries,auth in [
+            ('pull_cube', (7,8,8,6,8,0,8),0,48),
+            ('stack_cube',(7,7,7,0,3,0,7),4,94)
+          ]:
+            x=original['results'][task]
+            counts=x['task_success_by_arm']
+            actual=(counts['source_no_fault'],
+                    counts['fault_oracle_private_target'],
+                    counts['fault_always_single_privileged_query'],
+                    counts['fault_optimistic_unverified_ack'],
+                    counts['fault_robust_two_history_without_query'],
+                    counts['fault_strict_common_exact'],
+                    counts['fault_robust_then_single_privileged_query'])
+            assert actual==succ,(task,actual)
+            assert x['selective_privileged_readback_total']==queries
+            assert x['no_query_robust_authorized_native_steps']==auth
+            assert x['mandatory_privileged_readback_total']==8
+          print('PASS: 16 source original episodes, 7 arms, all 112 paired arm episodes, matched full denominator and 4/16 selective queries')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: original-ack-query-five-source-checksum-verification
+          path: |
+            /tmp/ack-original/all/*.json
+            /tmp/ack-original/all/ORIGINAL_FIVE_SOURCE_SHA256SUMS
+            /tmp/ack-original/recomputed.json
