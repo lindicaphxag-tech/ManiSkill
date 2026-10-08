@@ -66,6 +66,56 @@ learned-policy successes in both arms**; four-way shared training data is
 not establish better task success, external maintenance/adoption, or a
 broad new robotics representation method.
 
+## Source-bound 2×2 official demonstration replay — two physical cohorts
+
+A matched **converter × controller** factorial replay has now completed
+against the official `PegInsertionSide-v1` motion-planning demonstration
+archive with the exact current #1495 converter head and #1472 controller
+source. Four arms were separately replayed using the same original source
+episodes and an official PhysX CPU environment.
+
+| Converter | Controller | Original episodes 0–99 | Physical heldout episodes 100–199 |
+|---|---|---:|---:|
+| unchanged | unchanged | 90 / 100 | 94 / 100 |
+| #1495 only | unchanged | 91 / 100 | 95 / 100 |
+| unchanged | #1472 only | 1 / 100 | 0 / 100 |
+| #1495 | #1472 | 91 / 100 | 95 / 100 |
+
+- [First cohort source-bound run #37719545972](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37719545972)
+  and [independent ledger integrity CI #37751515316](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37751515316)
+- [Corrected physical HDF5 sliced holdout #37752565886](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37752565886)
+  and [independent source-materialization audit #37807568126](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37807568126)
+- [Cross-cohort source-seed overlap audit #37807994333](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37807994333)
+- [Withdrawn originally mislabeled holdout](../kaggle_diffusion_policy_peg/HOLDOUT_SOURCE_VALIDITY_ERRATUM_2026_10_08.md);
+  the mistaken run replayed 0–99 again and is **not** used.
+
+The physical source **episode ranges do not overlap**. Crucially, however,
+**24 original `episode_seed` values occur in both cohorts**, so these are
+**not 200 mutually independent seeds**. A post-hoc sensitivity audit
+drops those 24 repeated seeds *solely on provenance identity, never on
+replay outcome*. The 76 remaining heldout episodes yield **71/76 baseline,
+71/76 converter-only, 0/76 controller-only, 71/76 combined**. This
+seed-disjoint subset is not a new preregistered replication.
+
+The original 100-source case has exactly **one four-way successfully
+replayed source**; the corrected heldout 100-source case has **none**.
+A four-way shared training dataset therefore cannot be constructed
+without post-treatment selection so severe it invalidates a fair
+four-arm learned-policy comparison. **No 2×2 policy-success effect is claimed**.
+Separately, the valid two-arm *short smoke* trained with six paired demos
+for two updates and reported 0% success in both arms; it only proves
+that the official learning pipeline runs.
+
+**Engineering implication:** changing the #1472 controller mapping without
+changing its associated converter collapses official demonstration replay
+in this environment, while the active-chart converter #1495 keeps the
+replay rate near the original level with either controller. The difference
+between converter-only and both is exactly **0 of 100** in each frozen
+cohort (including per-source result vectors). This supports a real
+interface contract-dependency decision for review; it is **not** proof
+that #1472 is universally wrong, that #1495 improves learned policies,
+or that SemRepair has been accepted into ManiSkill.
+
 ## New native task-level pipeline evidence (2026-10-08)
 
 A public CPU-only **official PegInsertionSide Diffusion Policy pipeline** has
