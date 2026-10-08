@@ -83,7 +83,11 @@ if SMOKE_MODE:
         batch_size=32,
         eval_freq=1,
         num_eval_episodes=2,
-        num_eval_envs=2,
+        # Force official Gymnasium SyncVectorEnv (1 worker) for the CPU smoke:
+        # the 2-worker AsyncVectorEnv path completed optimizer updates but the
+        # parent process terminated with SIGSEGV at evaluator teardown.
+        # This is a compatibility probe, not a performance-result change.
+        num_eval_envs=1,
         measurement_deviation=(
             "CPU-only pipeline smoke: eight source demos, source-seed pairing, "
             "two optimizer updates, two SAME_STEP eval workers, no rendering. "
