@@ -62,7 +62,7 @@ jobs:
             --obs-mode none --sim-backend physx_cpu \
             --use-first-env-state --save-traj --count 16 \
             2>&1 | tee untouched.log
-      - name: Fix only NumPy vs PyTorch type mismatch; preserve WRONG target action chart
+      - name: Fix only NumPy-Torch type and batch shape; preserve original target action chart
         shell: bash
         continue-on-error: true
         run: |
@@ -72,9 +72,21 @@ jobs:
           from pathlib import Path
           p=Path("mani_skill/trajectory/utils/actions/conversion.py")
           text=p.read_text()
-          old='delta_qpos = gym_utils.clip_and_scale_action(ori_action_dict["arm"], low, high)'
-          new='delta_qpos = gym_utils.clip_and_scale_action(torch.as_tensor(ori_action_dict["arm"], dtype=ori_arm_controller.qpos.dtype, device=ori_arm_controller.qpos.device), low, high)'
-          assert text.count(old)==1, "baseline did not match the intended one-line type fix"
+          old='''        prev_arm_qpos = ori_arm_controller.qpos
+        delta_qpos = gym_utils.clip_and_scale_action(ori_action_dict["arm"], low, high)
+        arm_action = prev_arm_qpos + delta_qpos'''
+          new='''        prev_arm_qpos = ori_arm_controller.qpos.detach().cpu().numpy()[0]
+        delta_qpos = gym_utils.clip_and_scale_action(
+            torch.as_tensor(
+                ori_action_dict["arm"],
+                dtype=ori_arm_controller.qpos.dtype,
+                device=ori_arm_controller.qpos.device,
+            ),
+            low,
+            high,
+        ).detach().cpu().numpy()
+        arm_action = prev_arm_qpos + delta_qpos'''
+          assert text.count(old)==1, "baseline did not match the intended type/shape-only fix"
           p.write_text(text.replace(old,new))
           print("TYPE_ONLY_PATCH",new)
           PY
@@ -108,7 +120,7 @@ jobs:
               "count_requested":16,
               "arm_definition":{
                   "untouched":"main: no modifications",
-                  "type_only":"main + one-line NumPy->Torch conversion ONLY",
+                  "type_only":"main + NumPy/Torch type and 1D shape normalization ONLY; original target action chart unchanged",
                   "semantic_fix":"submitted two-file production branch"
               },
           }
