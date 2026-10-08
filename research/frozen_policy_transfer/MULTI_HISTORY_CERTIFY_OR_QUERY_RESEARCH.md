@@ -12,40 +12,40 @@ Our narrower problem is the action authority of a **known, source-correct finite
 
 ### Exact positional minimax authority (arbitrary finite K)
 
-Let the previous commanded-position hypothesis set be (mathcal H_p={p_1,ldots,p_K}), source-implied desired target (d), and controller accepts a common physical native target-position delta (uin[ell,h]) with axiswise native bounds. Under the documented additive target controller (p_i'=p_i+u), minimize:
+Let the previous commanded-position hypothesis set be \(\mathcal H_p=\{p_1,\ldots,p_K\}\), source-implied desired target \(d\), and controller accept a common physical native target-position delta \(u\in[\ell,h]\) with axiswise action bounds. Under the documented additive target controller \(p_i'=p_i+u\), minimize
 
-[
-ho_p(u)=max_{i=1}^K|p_i+u-d|_infty.
-]
+\[
+\rho_p(u)=\max_{i=1}^K\|p_i+u-d\|_\infty.
+\]
 
-Writing (p_j^-=min_i(p_i)_j) and (p_j^+=max_i(p_i)_j), coordinatewise optimality gives the **exact** solution
+Writing \(p_j^-=\min_i(p_i)_j\) and \(p_j^+=\max_i(p_i)_j\), coordinatewise optimality gives the **exact** solution
 
-[
-u_j^star=operatorname{clip}!left(d_j-rac{p_j^-+p_j^+}{2},,ell_j,h_jight),
-quad
-ho_p^star=max_{i,j}|(p_i)_j+u_j^star-d_j|.
-]
+\[
+u_j^\star=\operatorname{clip}\left(d_j-\frac{p_j^-+p_j^+}{2},\,\ell_j,h_j\right),
+\quad
+\rho_p^\star=\max_{i,j}|(p_i)_j+u_j^\star-d_j|.
+\]
 
-This is a classical box-constrained Chebyshev-center calculation, **not a newly invented theorem**. Its important engineering consequence is that even (K=2^m) distinct histories do not require joint translation optimization: a **six-coordinate extremal witness** suffices to determine the exact worst-case positional radius. Computing the extremal witness still requires a trustworthy, complete representation or a separately proved envelope; merely claiming completion from a caller boolean is insufficient.
+This is a classical box-constrained Chebyshev-center calculation, **not a newly invented theorem**. Its engineering consequence is that even \(K=2^m\) distinct histories do not require joint translation optimization: a **six-coordinate extremal witness** suffices to determine the exact worst-case positional radius. Computing the extremal witness still requires a trustworthy complete representation or a separately proved envelope; merely claiming completion from a caller boolean is insufficient.
 
 ### SO(3) finite witness: sound but not globally optimal for K≥3
 
-For prior commanded orientations (mathcal H_R={R_1,dots,R_K}subset SO(3)), a verified controller uses the *same* root-left rotation (Delta R) on every hidden history, giving (R_i'=Delta R R_i). Let desired target orientation be (R_d) and (d_{mathrm{SO3}}) denote geodesic rotation angle. A common action has worst-case *commanded-orientation* error:
+For previous target orientations \(\mathcal H_R=\{R_1,\dots,R_K\}\subset SO(3)\), a verified controller uses the **same** root-left rotation \(\Delta R\) on every possible history, giving \(R_i'=\Delta R R_i\). Let desired target orientation be \(R_d\) and \(d_{\mathrm{SO3}}\) denote geodesic rotation angle. A common action has worst-case *commanded-orientation* error
 
-[
-ho_R(Delta R)=max_i d_{mathrm{SO3}}(Delta R R_i,R_d).
-]
+\[
+\rho_R(\Delta R)=\max_i d_{\mathrm{SO3}}(\Delta R R_i,R_d).
+\]
 
 The triangle inequality gives a **universal necessary lower bound**
 
-[
-L_R=rac12max_{i,j}d_{mathrm{SO3}}(R_i,R_j)
-le inf_{Delta R}ho_R(Delta R).
-]
+\[
+L_R=\frac12\max_{i,j}d_{\mathrm{SO3}}(R_i,R_j)
+\le \inf_{\Delta R}\rho_R(\Delta R).
+\]
 
-Our explicitly finite candidate set comprises each prior orientation, every two-pose geodesic midpoint, and the ordinary rotation chordal mean. For every candidate (C), choose (Delta R=R_d C^{-1}), discard native Euler XYZ commands if nonfinite, singular or outside the actual native L2 ball, then replay the verified controller chart for **all K states** to calculate the actual error upper bound (U_R). A candidate can be authorized only when (U_R+epsilonle b_R) and the **exact** position radius (\rho_p^*+epsilonle b_p).
+Our finite candidate set comprises each prior orientation, every two-pose geodesic midpoint, and an ordinary rotation chordal mean. For candidate center \(C\), choose \(\Delta R=R_d C^{-1}\), discard native Euler XYZ commands if nonfinite, singular or outside the actual native L2 ball, then replay the verified controller chart for **all K states** to calculate a sound achieved-orientation upper bound \(U_R\). A candidate can be authorized only when \(U_R+\epsilon\le b_R\) and the **exact** position radius \(\rho_p^\star+\epsilon\le b_p\).
 
-The method supplies conditional **feasible-command certificates**, not a globally minimized orientation radius (the true K-way SO(3) smallest-enclosing geodesic ball may have a different center). If (L_R>b_R), a command is unavoidably impossible without resolving hypotheses; if sampled finite centers fail but (L_Rle b_R), this implementation **has not established impossibility** and must refuse or use explicitly budgeted new evidence. This distinction matters to an original safety/authority methods paper.
+The method supplies conditional **feasible-command certificates**, not a globally minimized orientation radius (the K-way SO(3) smallest-enclosing geodesic ball may have another center). If \(L_R>b_R\), the target is impossible to certify without reducing the credible hypothesis set. If sampled finite centers fail but \(L_R\le b_R\), this implementation **has not established impossibility** and must refuse or use explicitly budgeted additional evidence.
 
 ### Observability and provable refusal
 
