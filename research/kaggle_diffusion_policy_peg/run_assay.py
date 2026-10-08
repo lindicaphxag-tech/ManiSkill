@@ -25,6 +25,9 @@ from pathlib import Path
 
 SMOKE_MODE = os.environ.get("SEMREPAIR_DP_SMOKE", "0") == "1"
 FACTORIAL_REPLAY_MODE = os.environ.get("SEMREPAIR_DP_FACTORIAL_REPLAY", "0") == "1"
+FACTORIAL_SAMPLE_SIZE = int(os.environ.get("SEMREPAIR_DP_FACTORIAL_SAMPLE_SIZE", "8"))
+if FACTORIAL_SAMPLE_SIZE not in (8, 100):
+    raise ValueError("Frozen factorial cohorts must be exactly 8 or 100 source demos")
 if FACTORIAL_REPLAY_MODE and not SMOKE_MODE:
     raise RuntimeError("Factorial replay is a CPU smoke-only research mode")
 WORK = (
@@ -78,9 +81,9 @@ CONFIG = {
 }
 if SMOKE_MODE:
     CONFIG.update(
-        requested_num_demos=8,
+        requested_num_demos=(FACTORIAL_SAMPLE_SIZE if FACTORIAL_REPLAY_MODE else 8),
         minimum_paired_demos=4,
-        replay_count=8,
+        replay_count=(FACTORIAL_SAMPLE_SIZE if FACTORIAL_REPLAY_MODE else 8),
         max_episode_steps=20,
         total_iters=2,
         batch_size=32,
