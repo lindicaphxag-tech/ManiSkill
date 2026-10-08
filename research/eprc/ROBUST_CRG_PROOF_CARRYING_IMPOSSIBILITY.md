@@ -45,3 +45,18 @@ Robust support-function separation is established convex analysis. It is not
 claimed as a new theorem. The research question is whether black-box
 intervention-identified repair sets are stable and predictive enough that these
 compact certificates remain useful on real frozen-policy deployment failures.
+
+## Verification trust boundary (2026-10-08)
+
+The verifier now **requires residual_tolerance from the independent caller**.
+It does not derive tau from a certificate's self-reported
+`witness.residual_tolerance`. This closes a forgery route in which a producer
+could replace a genuine application's tau=0.30 with tau=0.10, causing a
+non-impossibility to be accepted as a valid separation proof. The trusted tau
+must agree with the witness and the verifier independently recomputes the
+margin. Nonfinite physical map values are rejected.
+
+The theorem remains *conditional*: a correct scalar separation check does not
+prove that the provided operator-norm uncertainty bound, locality radius,
+state restoration, or experimental provenance are themselves valid. Those
+are distinct empirical/physical audit requirements.

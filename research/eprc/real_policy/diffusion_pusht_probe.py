@@ -275,6 +275,7 @@ def main(output: Path) -> int:
             heldout_first_action_response,
             certified_radius=robust_radius.certified_radius,
             epsilon_g=robust_envelope.epsilon_g,
+            residual_tolerance=ROBUST_ACTION_RESIDUAL_TOLERANCE,
             witness=robust_witness,
         )
         if not robust_witness_verified:

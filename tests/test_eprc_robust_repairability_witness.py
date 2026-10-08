@@ -47,6 +47,7 @@ def test_robust_dual_witness_proves_impossibility_for_entire_map_ball():
         d,
         certified_radius=radius,
         epsilon_g=eps,
+        residual_tolerance=tau,
         witness=witness,
     )
 
@@ -81,6 +82,7 @@ def test_uncertainty_can_destroy_nominal_impossibility_certificate():
         d,
         certified_radius=radius,
         epsilon_g=0.5,
+        residual_tolerance=tau,
         witness=uncertain,
     )
 
@@ -112,5 +114,45 @@ def test_forged_robust_margin_is_rejected():
         d,
         certified_radius=0.5,
         epsilon_g=0.1,
+        residual_tolerance=tau,
         witness=forged,
+    )
+
+
+def test_attacker_cannot_lower_tolerance_inside_witness():
+    """One signed normal cannot override the actual held-out decision tolerance."""
+    g = np.array([[1.0]])
+    d = np.array([0.8])
+    # With r=0.5 and eps=0.1, distance lower bound is 0.25.
+    # A claimed tau=0.1 would prove impossibility, but the *trusted*
+    # application allows tau=0.3, so impossibility must be rejected.
+    forged = build_robust_separation_witness(
+        g, d, certified_radius=0.5, epsilon_g=0.1,
+        residual_tolerance=0.1, normal=np.array([1.0]),
+    )
+    assert forged.margin_over_tolerance > 0
+    assert not verify_robust_separation_witness(
+        g, d, certified_radius=0.5, epsilon_g=0.1,
+        residual_tolerance=0.3, witness=forged,
+    )
+    assert verify_robust_separation_witness(
+        g, d, certified_radius=0.5, epsilon_g=0.1,
+        residual_tolerance=0.1, witness=forged,
+    )
+
+
+def test_nonfinite_physical_map_and_tolerance_fail_closed():
+    g = np.array([[1.0]])
+    d = np.array([0.8])
+    witness = build_robust_separation_witness(
+        g, d, certified_radius=0.5, epsilon_g=0.1,
+        residual_tolerance=0.1, normal=np.array([1.0]),
+    )
+    assert not verify_robust_separation_witness(
+        np.array([[np.nan]]), d, certified_radius=0.5, epsilon_g=0.1,
+        residual_tolerance=0.1, witness=witness,
+    )
+    assert not verify_robust_separation_witness(
+        g, d, certified_radius=0.5, epsilon_g=0.1,
+        residual_tolerance=float("nan"), witness=witness,
     )

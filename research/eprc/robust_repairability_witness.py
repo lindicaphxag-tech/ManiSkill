@@ -49,8 +49,13 @@ def build_robust_separation_witness(
         raise ValueError("map, target, and normal dimensions are invalid")
     if g.shape[0] != d.size or n.size != d.size:
         raise ValueError("physical dimensions do not match")
-    if certified_radius < 0 or epsilon_g < 0 or residual_tolerance < 0:
-        raise ValueError("radius, uncertainty, and tolerance must be nonnegative")
+    if (
+        not np.isfinite(g).all()
+        or not np.isfinite(d).all()
+        or not np.isfinite(n).all()
+        or not all(np.isfinite(x) and x >= 0 for x in (certified_radius, epsilon_g, residual_tolerance))
+    ):
+        raise ValueError("robust witness inputs must be finite and nonnegative where required")
 
     norm = float(np.linalg.norm(n))
     if norm <= atol:
@@ -84,14 +89,28 @@ def verify_robust_separation_witness(
     *,
     certified_radius: float,
     epsilon_g: float,
+    residual_tolerance: float,
     witness: RobustSeparationWitness,
     minimum_margin: float = 1e-10,
     atol: float = 1e-9,
 ) -> bool:
-    """Verify robust impossibility without running the repair optimizer."""
+    """Verify impossibility against *trusted* problem tolerance, not witness metadata.
 
-    if minimum_margin < 0:
-        raise ValueError("minimum_margin must be nonnegative")
+    The claimed uncertainty bound and repair radius are assumptions supplied
+    by the caller and must be justified separately by the physical protocol.
+    This verifier does not authenticate experimental evidence.
+    """
+
+    if not np.isfinite(minimum_margin) or minimum_margin < 0:
+        raise ValueError("minimum_margin must be finite and nonnegative")
+    if not np.isfinite(atol) or atol < 0:
+        raise ValueError("atol must be finite and nonnegative")
+    if not np.isfinite(residual_tolerance) or residual_tolerance < 0:
+        return False
+    if not np.isclose(
+        witness.residual_tolerance, residual_tolerance, atol=atol, rtol=0
+    ):
+        return False
 
     try:
         expected = build_robust_separation_witness(
@@ -99,7 +118,7 @@ def verify_robust_separation_witness(
             target_physical_correction,
             certified_radius=certified_radius,
             epsilon_g=epsilon_g,
-            residual_tolerance=witness.residual_tolerance,
+            residual_tolerance=residual_tolerance,
             normal=witness.normal,
         )
     except ValueError:
