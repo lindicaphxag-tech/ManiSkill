@@ -103,7 +103,7 @@ the existing robomimic delta->absolute script.
 
 Latest public run:
 
-`81 passed in 2.91s`
+`90 passed in 1.87s`
 
 ### ManiSkill contract matrix
 
@@ -231,3 +231,20 @@ merges, or otherwise retains the contribution.
 
 Neither candidate is upstream-reviewed or merged yet; GitHub App permissions
 block upstream PR/review writes and require manual UI submission.
+
+
+### Evidence added 2026-10-08
+
+- Implementation: [fail-closed OSC handshake](executable_osc_migration.py)
+  (`initial_joint` migration with explicit unsupported-mode refusals).
+- [90-test deterministic public suite](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37709468190).
+- [8-test real Panda/Lift, same-MJCF controller swap with full-scene numerical negative control](https://github.com/lindicaphxag-tech/robomimic/actions/runs/37706956215).
+- External replication thread #77 has a new, falsifiable experimental
+  update, including requests for *negative* reproductions.
+- Official ManiSkill #429 RL-demo base/fix test is **in progress** and must
+  not be counted as a successful policy demonstration without a completed
+  result.
+
+**Acceptance boundary:** No new external maintainer review/merge of this
+research line and no independent replay yet. This is not a certified
+hardware-safe policy migration.
