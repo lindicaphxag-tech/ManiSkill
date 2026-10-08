@@ -1,0 +1,55 @@
+name: CST Physics State Getter Causal Ablation
+
+on:
+  push:
+    branches:
+      - validation/cst-state-getter-intervention-20261009
+  workflow_dispatch:
+
+jobs:
+  observed-vs-unobserved:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        probe_mode: [none, qpos, tcp, both]
+    env:
+      PYTHONUNBUFFERED: "1"
+      CST_PROBE_MODE: ${{ matrix.probe_mode }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Print version and exact intervention
+        run: |
+          python - <<'PY'
+          import json,sys,importlib.metadata as m,os
+          print("PROVENANCE",json.dumps({
+            "sha":os.environ.get("GITHUB_SHA"),
+            "probe_mode":os.environ["CST_PROBE_MODE"],
+            "python":sys.version,
+            "torch":m.version("torch"),"sapien":m.version("sapien"),
+            "gymnasium":m.version("gymnasium"),"numpy":m.version("numpy"),
+          }))
+          PY
+      - name: Same seed same code except getter intervention
+        run: |
+          set -o pipefail
+          python research/frozen_ppo_ee_swap.py 2>&1 | tee getter_causal_ablation.log
+          test -s frozen_ppo_controller_swap.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: getter-ablation-${{ matrix.probe_mode }}
+          path: |
+            getter_causal_ablation.log
+            frozen_ppo_controller_swap.json
+          if-no-files-found: warn
