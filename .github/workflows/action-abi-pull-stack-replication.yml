@@ -44,8 +44,8 @@ jobs:
     timeout-minutes: 55
     env:
       PYTHONUNBUFFERED: '1'
-      ABI_TASK: ${{{ matrix.task }}
-      ABI_CHUNK: ${{{ matrix.chunk }}
+      ABI_TASK: ${{ matrix.task }}
+      ABI_CHUNK: ${{ matrix.chunk }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -65,7 +65,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: abi-original-${{{ matrix.task }}-${{{ matrix.chunk }}
+          name: abi-original-${{ matrix.task }}-${{ matrix.chunk }}
           path: |
             abi_independent_*.json
             abi_task_*.log
