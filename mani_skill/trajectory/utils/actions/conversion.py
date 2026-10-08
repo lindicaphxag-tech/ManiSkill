@@ -316,8 +316,18 @@ def from_pd_joint_delta_pos(
         ori_action_dict = ori_controller.to_action_dict(ori_action)
         output_action_dict = ori_action_dict.copy()  # do not in-place modify
 
-        prev_arm_qpos = ori_arm_controller.qpos
-        delta_qpos = gym_utils.clip_and_scale_action(ori_action_dict["arm"], low, high)
+        # Replay trajectories hold NumPy action rows, while the scaling
+        # helper requires tensors. Keep both operands as 1-D NumPy arrays.
+        prev_arm_qpos = ori_arm_controller.qpos.detach().cpu().numpy()[0]
+        delta_qpos = gym_utils.clip_and_scale_action(
+            torch.as_tensor(
+                ori_action_dict["arm"],
+                dtype=ori_arm_controller.qpos.dtype,
+                device=ori_arm_controller.qpos.device,
+            ),
+            low,
+            high,
+        ).detach().cpu().numpy()
         arm_action = prev_arm_qpos + delta_qpos
 
         ori_env.step(ori_action)
