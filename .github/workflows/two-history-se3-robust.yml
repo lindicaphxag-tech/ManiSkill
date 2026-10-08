@@ -1,0 +1,101 @@
+name: Two-history bounded SE3 commanded-target falsification
+
+on:
+  push:
+    branches:
+      - research/two-history-se3-robust-actuation-v1
+  pull_request:
+    paths:
+      - 'research/TWO_HISTORY_SE3_ROBUST_NATIVE_FROZEN_V1.json'
+      - 'research/two_history_se3_robust.py'
+      - 'research/verify_native_two_history_se3.py'
+      - 'tests/test_two_history_se3_robust.py'
+      - '.github/workflows/two-history-se3-robust.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mathematical-authorization-regressions:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ['3.11', '3.13']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 13
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install only numerical primitives, not robot simulator
+        run: python -m pip install numpy scipy
+      - name: Check 2-history mathematical witnesses and missing-evidence fail-closed
+        run: python -m unittest discover -s tests -p 'test_two_history_se3_robust.py' -v
+
+  original-four-task-native-physics:
+    needs: mathematical-authorization-regressions
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reject post-hoc edits to frozen original task/intervention protocol
+        run: |
+          test "$(git hash-object research/TWO_HISTORY_SE3_ROBUST_NATIVE_FROZEN_V1.json)" = "dbc71a130a336fe9c37e3fcb1ec2b263d4d6e0b1"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          q=json.loads(Path("research/TWO_HISTORY_SE3_ROBUST_NATIVE_FROZEN_V1.json").read_text())
+          assert q["task_and_seeds"]==[["PickCube-v1",13077],["PushCube-v1",14088],["PullCube-v1",15099],["StackCube-v1",16110]]
+          assert q["position_error_budget_m"]==.0105
+          assert q["orientation_error_budget_rad"]==.0155
+          PY
+      - name: Install genuine production ManiSkill and PhysX
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+      - name: Apply common normalized 6D robot controller action to distinct target-memory worlds
+        run: |
+          set -o pipefail
+          python research/verify_native_two_history_se3.py 2>&1 | tee two_history_se3_native.log
+          test -s two_history_se3_native_real_physx.json
+      - name: Audit all four original controller worlds, no false physical safety assertions
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          q=json.loads(Path("two_history_se3_native_real_physx.json").read_text())
+          assert q["real_native_physx_controlled_cases"]==4
+          assert q["two_worlds_per_case"]==2
+          assert q["robot_hardware_safety_certified"] is False
+          assert [(r["task"],r["seed"]) for r in q["results"]]==[
+            ("PickCube-v1",13077),("PushCube-v1",14088),
+            ("PullCube-v1",15099),("StackCube-v1",16110)]
+          for r in q["results"]:
+              assert r["pre_action_robot_states_identical"]
+              assert not r["unknown_ACK_in_actual_robot_emulated"]
+              assert not r["actual_policy_task_success_measured"]
+              assert abs(r["minimax_bound_position_inf_m"]-.01)<1e-6
+              assert abs(r["minimax_bound_rotation_geodesic_rad"]-.015)<1e-6
+              assert r["world_A_observed_errors_position_inf_m_and_rotation_rad"][0]<=.0101
+              assert r["world_B_observed_errors_position_inf_m_and_rotation_rad"][0]<=.0101
+              assert r["world_A_observed_errors_position_inf_m_and_rotation_rad"][1]<=.0151
+              assert r["world_B_observed_errors_position_inf_m_and_rotation_rad"][1]<=.0151
+          print("FULL DENOMINATOR: four real two-world native Panda target rotations and translations")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-two-history-SE3-four-native-task-counterfactuals
+          path: |
+            two_history_se3_native_real_physx.json
+            two_history_se3_native.log
