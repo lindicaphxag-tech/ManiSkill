@@ -1,0 +1,30 @@
+name: Disjoint source-cohort HDF5 provenance negative controls
+
+on:
+  push:
+    branches: [validation/heldout-source-bound-audit-v2]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  provenance-integrity:
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.13"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Compile independent execution auditor
+        run: |
+          python -m py_compile research/kaggle_diffusion_policy_peg/audit_factorial_replay.py
+          python -m py_compile research/kaggle_diffusion_policy_peg/test_source_bound_audit.py
+      - name: Reject corrupt seed matrices and HDF5 source-provenance claims
+        run: |
+          python research/kaggle_diffusion_policy_peg/audit_factorial_replay.py --self-test
+          python -m unittest -v research.kaggle_diffusion_policy_peg.test_source_bound_audit
