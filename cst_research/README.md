@@ -13,7 +13,7 @@
 - Maintainer-facing packets: [ManiSkill #429 comment](MANISKILL_429_ISSUE_FOLLOWUP_READY.md) · [robomimic #270 PR](UPSTREAM_ROBOMIMIC_270_SUBMISSION.md) · [LeRobot #3312 PR](UPSTREAM_LEROBOT_3312_SUBMISSION.md)
 - **Real paired Panda/Lift causal and full-scene replay:** [REAL_OSC_CAUSAL_HANDSHAKE_2026_10_08.md](REAL_OSC_CAUSAL_HANDSHAKE_2026_10_08.md) ([8/8 full public CI](https://github.com/lindicaphxag-tech/robomimic/actions/runs/37706956215))
 
-Latest full public suite: **90 passed in 1.87s**. External maintained adoption: **0**.
+Latest full public suite: **100 passed in 3.03s**. External maintained adoption: **0**.
 
 Question:
 
@@ -166,7 +166,7 @@ This is cross-stack validation, not external adoption.
 
 ### 5. Causal deployability of action chunks
 
-CST distinguishes a trace that can be converted after rollout from a controller migration that can be executed online. If a whole action chunk is emitted at query time but a target native action for future step t needs the future measured state or controller-owned target at t, exact conversion cannot be precomputed. CST therefore returns PRECOMPUTABLE, REQUIRES_STEP_HOOK, EXECUTABLE_WITH_STEP_HOOK, or REFUSE_MISSING_RUNTIME_STATE. The latest full public suite contains 90 passing tests.
+CST distinguishes a trace that can be converted after rollout from a controller migration that can be executed online. If a whole action chunk is emitted at query time but a target native action for future step t needs the future measured state or controller-owned target at t, exact conversion cannot be precomputed. CST therefore returns PRECOMPUTABLE, REQUIRES_STEP_HOOK, EXECUTABLE_WITH_STEP_HOOK, or REFUSE_MISSING_RUNTIME_STATE. The latest full public suite contains 100 passing tests.
 
 ## Bounded LeRobot -> current-state JIT migration
 
@@ -180,7 +180,7 @@ A pinned LeRobot source implementation is used as the source semantics. With rel
 
 The key point is causal: the target current-state reference for future steps does not exist when the source chunk is emitted, so exact migration must be performed at execution time rather than by copying or precomputing the whole target chunk.
 
-Latest complete public research suite: **90 tests passed**.
+Latest complete public research suite: **100 tests passed**.
 
 ## robomimic / robosuite second stack
 
@@ -234,3 +234,30 @@ the **posture-reference handshake only**, not universal policy safety.
 Public entire suite: [90 passed](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37709468190).
 Latest same-MJCF real OSC physics run:
 [8 tests passed](https://github.com/lindicaphxag-tech/robomimic/actions/runs/37706956215).
+
+
+## State-history-aware online execution (new research branch)
+
+- CPU contract/unit suite: **100 passed** ([public CI](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37714476522)).
+- Compiler source:
+  [`desired_osc_online_transport.py`](desired_osc_online_transport.py).
+- An OSC delta controller in `desired` update mode uses **its previous
+  desired target** rather than solely the currently achieved pose. The
+  compiler reads this runtime goal state at each step, emits an absolute
+  OSC target in the matched chart, and refuses missing memory or action
+  bounds violations. This runtime-dependent mapping cannot be precomputed
+  from arbitrary independent physical snapshots without target memory.
+- Real initial-Panda validation (17 tests):
+  https://github.com/lindicaphxag-tech/robomimic/actions/runs/37714363692
+  passed, but additional baseline-initialization/goal-memory controls are
+  being evaluated; do not claim a proven task-performance gain.
+- Earlier model-matched two-task reproduction:
+  https://github.com/lindicaphxag-tech/robomimic/actions/runs/37713698317
+  (15 passed, six 8-step Lift/Stack trials).
+- Reproducer:
+  [REAL_OSC_MULTITASK_EVIDENCE_2026_10_08.md](REAL_OSC_MULTITASK_EVIDENCE_2026_10_08.md).
+- Conservative originality audit:
+  [NOVELTY_BOUNDARY_AND_NEXT_GATES_2026_10_08.md](NOVELTY_BOUNDARY_AND_NEXT_GATES_2026_10_08.md).
+
+**Caveat:** the action streams are scripted, not a learned frozen policy
+checkpoint; accepted external upstream PRs on this flagship line remain 0.
