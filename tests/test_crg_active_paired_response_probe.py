@@ -1,116 +1,130 @@
-"""CPU-only synthetic mechanism tests; no measured real-policy improvement."""
+"""The adapter's regression tests are synthetic, NOT frozen policy validation."""
 import numpy as np
 import pytest
 
 from research.crg_core.active_paired_response_probe import (
-    ResponseProbeDecision,
-    probe_pairwise_mean_response,
+    ProbeExecutionStatus,
+    execute_directional_probe_budget,
 )
 
 
-def query(*, gap=0.0, noise=0.0):
-    def fn(seed, h):
-        # Same RNG noise in baseline and perturbed inputs, separately
-        # within each policy. Matched-noise finite contrast is known.
-        z = (seed % 101) / 100 * noise
+def sampler(*, contrast=0.0, common_random_amplitude=0.0):
+    def fn(seed, direction, fraction):
+        a_noise = ((seed*17)%23 / 23 - .5) * common_random_amplitude
+        b_noise = ((seed*13)%19 / 19 - .5) * common_random_amplitude
+        # Per-policy paired '+'/'-' action queries share the SAME noise.
+        # Contrast is the two POLICY central secants' difference.
         return {
-            "baseline_a": [z, -z],
-            "perturbed_a": [z + float(h[0]), -z],
-            "baseline_b": [3*z, 2*z],
-            "perturbed_b": [3*z + float(h[0]) - gap, 2*z],
+            "plus_a": [.02 + contrast/4 + a_noise],
+            "minus_a": [-.02 - contrast/4 + a_noise],
+            "plus_b": [.02 - contrast/4 + b_noise],
+            "minus_b": [-.02 + contrast/4 + b_noise],
         }
     return fn
 
 
-def run(f, *, max_queries=64, B=.04, tau=.20, aligned=True, attested=True):
-    return probe_pairwise_mean_response(
-        f, [1.0], prespecified_iid_seed_draws=list(range(1, max_queries//4+1)),
-        hard_coordinate_contrast_bound=B,
-        max_policy_queries=max_queries,
-        response_tolerance=tau,
-        alpha=0.1,
-        physical_charts_aligned=aligned,
-        controller_authority_valid=True,
-        population_bound_independently_justified=attested,
-        iid_seed_draw_design_attested=True,
+def run(f, *, total=128, tau=.30, remainder=.005, verified=True):
+    return execute_directional_probe_budget(
+        f,[1.0],
+        prespecified_iid_seeds=list(range(1, total//4+1)),
+        probe_fraction=1.0,
+        trusted_action_lows=[-.1],
+        trusted_action_highs=[.1],
+        locality_remainder_bound=remainder,
+        physical_response_tolerance=tau,
+        familywise_error_budget=.1,
+        max_policy_forward_queries=total,
+        independent_seeds_verified=verified,
+        controller_bounds_verified=True,
+        common_physical_chart_verified=True,
+        controller_authority_verified=True,
     )
 
 
-def test_paired_query_stops_early_for_compatible_mean_responses():
-    result = run(query(gap=0, noise=4), B=.04)
-    assert result.decision is ResponseProbeDecision.STATISTICAL_MEAN_SIMILAR
-    assert result.total_policy_queries < 64
-    assert result.total_policy_queries % 4 == 0
-    assert result.final_mean_gap_upper <= result.response_tolerance
-    assert len(result.rounds) == result.total_policy_queries//4
+def test_adapter_executes_four_queries_per_seed_and_stops_early():
+    result=run(sampler(common_random_amplitude=.01),tau=.30)
+    assert result.status is ProbeExecutionStatus.CONDITIONAL_MEAN_TRANSFER
+    assert result.allows_actual_policy_transfer
+    assert 0 < result.charged_policy_forward_queries < 128
+    assert result.charged_policy_forward_queries % 4 == 0
+    assert result.latest_diagnostic.upper_mean_response_gap <= .30
+    assert len(result.seeds_attempted) == result.charged_policy_forward_queries//4
+    assert not result.independently_validated
     assert not result.deterministic_safety_guarantee
-    assert not result.externally_validated
 
 
-def test_distinct_mean_responses_can_be_detected_with_enough_budget():
-    result = run(query(gap=.18), max_queries=512, B=.2, tau=.02)
-    assert result.decision is ResponseProbeDecision.STATISTICAL_MEAN_DISTINCT
-    assert result.final_mean_gap_lower > .02
-    assert result.total_policy_queries <= 512
+def test_confirming_distinct_means_prevents_transfer():
+    result=run(sampler(contrast=.16),total=1024,tau=.02,remainder=0)
+    assert result.status is ProbeExecutionStatus.DO_NOT_TRANSFER_DISTINCT
+    assert not result.allows_actual_policy_transfer
+    assert result.latest_diagnostic.lower_mean_response_gap > .02
+    assert result.charged_policy_forward_queries <= 1024
 
 
-def test_small_budget_abstains_without_relaxing_confidence():
-    result = run(query(gap=.18), max_queries=4, B=.2, tau=.02)
-    assert result.decision is ResponseProbeDecision.ABSTAIN_BUDGET_EXHAUSTED
-    assert result.total_policy_queries == 4
-    assert result.final_mean_gap_lower <= .02 <= result.final_mean_gap_upper
+def test_insufficient_query_budget_abstains():
+    result=run(sampler(contrast=.16),total=8,tau=.02,remainder=0)
+    assert result.status is ProbeExecutionStatus.ABSTAIN_QUERY_BUDGET
+    assert result.charged_policy_forward_queries == 8
+    assert not result.allows_actual_policy_transfer
 
 
-def test_no_independent_support_bound_or_controller_permission_means_zero_calls():
+def test_missing_provenance_and_locality_evidence_rejects_before_any_policy_call():
     calls = []
-    def traced(seed, h):
+    def tracked(seed,h,eps):
         calls.append(seed)
-        return query()(seed,h)
-    for kw in (dict(attested=False), dict(aligned=False), dict(B=None)):
-        out = run(traced, **kw)
-        assert out.decision is ResponseProbeDecision.REJECT_UNSUPPORTED_ASSUMPTIONS
-        assert out.total_policy_queries == 0
+        return sampler()(seed,h,eps)
+    assert run(tracked,verified=False).status is ProbeExecutionStatus.REJECT_UNSUPPORTED_ASSUMPTIONS
+    assert run(tracked,remainder=None).status is ProbeExecutionStatus.REJECT_UNSUPPORTED_ASSUMPTIONS
     assert calls == []
 
 
-def test_seed_precommitment_and_query_budget_are_enforced():
-    with pytest.raises(ValueError, match="multiple of four"):
-        run(query(),max_queries=5)
+def test_no_untrusted_action_clipping_and_conservative_budget_accounting():
+    def outside(seed,h,eps):
+        return {"plus_a":[.2],"minus_a":[-.02],
+                "plus_b":[0.],"minus_b":[0.]}
+    r=run(outside)
+    assert r.status is ProbeExecutionStatus.REJECT_UNSUPPORTED_ASSUMPTIONS
+    assert r.charged_policy_forward_queries == 4
+    assert r.seeds_attempted == (1,)
+    assert not r.allows_actual_policy_transfer
+
+
+def test_missing_fields_and_nan_never_authorize():
+    def incomplete(seed,h,eps):
+        return {"plus_a":[0.],"minus_a":[0.],"plus_b":[0.]}
+    assert run(incomplete).status is ProbeExecutionStatus.REJECT_UNSUPPORTED_ASSUMPTIONS
+    assert run(incomplete).charged_policy_forward_queries == 4
+    def invalid(seed,h,eps):
+        x=sampler()(seed,h,eps)
+        x["plus_a"]=[float("nan")]
+        return x
+    assert run(invalid).status is ProbeExecutionStatus.REJECT_UNSUPPORTED_ASSUMPTIONS
+
+
+def test_frozen_query_budget_and_unique_seed_schedule():
+    with pytest.raises(ValueError,match="multiple of four"):
+        run(sampler(),total=5)
     with pytest.raises(ValueError,match="distinct"):
-        probe_pairwise_mean_response(
-            query(),[1.],prespecified_iid_seed_draws=[1,1],
-            hard_coordinate_contrast_bound=.1,max_policy_queries=8,
-            response_tolerance=.2,alpha=.1,physical_charts_aligned=True,
-            controller_authority_valid=True,
-            population_bound_independently_justified=True,
-            iid_seed_draw_design_attested=True,
+        execute_directional_probe_budget(
+            sampler(),[1.0],
+            prespecified_iid_seeds=[1,1],
+            probe_fraction=1.0,
+            trusted_action_lows=[-.1], trusted_action_highs=[.1],
+            locality_remainder_bound=0.,
+            physical_response_tolerance=.2,
+            familywise_error_budget=.1,
+            max_policy_forward_queries=8,
+            independent_seeds_verified=True,
+            controller_bounds_verified=True,
+            common_physical_chart_verified=True,
+            controller_authority_verified=True,
         )
 
 
-def test_bound_violation_fails_closed_and_charges_attempted_query_cost():
-    bad = run(query(gap=.5), B=.1)
-    assert bad.decision is ResponseProbeDecision.REJECT_UNSUPPORTED_ASSUMPTIONS
-    assert bad.total_policy_queries == 4
-    assert bad.seeds_used == (1,)
-    assert len(bad.rounds) == 0
-    assert bad.confidence_level_if_assumptions_hold is None
-
-
-def test_invalid_action_shape_and_nan_fail_closed_without_forging_valid_rounds():
-    def wrong(seed,h):
-        return {"baseline_a":[0.,0.],"perturbed_a":[0.,0.],
-                "baseline_b":[0.],"perturbed_b":[0.]}
-    assert run(wrong).decision is ResponseProbeDecision.REJECT_UNSUPPORTED_ASSUMPTIONS
-    assert run(wrong).total_policy_queries == 4
-    def nan_probe(seed,h):
-        return {"baseline_a":[0.,0.],"perturbed_a":[float("nan"),0.],
-                "baseline_b":[0.,0.],"perturbed_b":[0.,0.]}
-    assert run(nan_probe).decision is ResponseProbeDecision.REJECT_UNSUPPORTED_ASSUMPTIONS
-
-
-def test_matched_randomness_removes_common_stochastic_component_in_constructed_example():
-    result1=run(query(gap=0, noise=100),B=.04)
-    result2=run(query(gap=0, noise=0),B=.04)
-    assert result1.decision is ResponseProbeDecision.STATISTICAL_MEAN_SIMILAR
-    assert result1.rounds[0].response_contrast == result2.rounds[0].response_contrast
-    # Demonstrates coupling in this *constructed toy*, not proven real-policy variance reduction.
+def test_matched_noise_cancels_only_in_the_synthetic_mechanism():
+    a=run(sampler(common_random_amplitude=.01),total=32,tau=.01)
+    b=run(sampler(common_random_amplitude=0),total=32,tau=.01)
+    assert a.latest_diagnostic.estimated_mean_directional_gap == (
+        b.latest_diagnostic.estimated_mean_directional_gap
+    )
+    assert not a.allows_actual_policy_transfer
