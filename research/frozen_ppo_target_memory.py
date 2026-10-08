@@ -35,7 +35,7 @@ def rot_from_wxyz(wxyz):
     return Rotation.from_quat([q[1],q[2],q[3],q[0]])
 
 
-def normalized_target_delta(source_arm,target_arm,policy_native):
+def normalized_target_delta(source_arm,target_arm,policy_native, *, approximate=False):
     """Inverts physical achieved-relative EE goal into target-relative ABI."""
     old=target_arm._target_pose
     if old is None:
@@ -64,10 +64,19 @@ def normalized_target_delta(source_arm,target_arm,policy_native):
     # vector by config.rot_lower, clipping its Euclidean norm to <=1.
     rot_native=physical_euler/rot_scale
     amp=float(max(np.max(np.abs(pos_native)),np.linalg.norm(rot_native)))
-    if amp>1+TOL:
-        return None,"required delta outside target native bounds",amp
     if not np.all(np.isfinite(pos_native)) or not np.all(np.isfinite(rot_native)):
         return None,"nonfinite target action",amp
+    if amp>1+TOL:
+        if not approximate:
+            return None,"required delta outside target native bounds",amp
+        # Experimental non-exact fallback: Euclidean closest normalized
+        # position command (box) and rotation command (unit ball).
+        pos_native=np.clip(pos_native,-1.0,1.0)
+        rot_len=float(np.linalg.norm(rot_native))
+        if rot_len>1.0:
+            rot_native=rot_native/rot_len
+        return torch.as_tensor(np.r_[pos_native,rot_native],
+                               dtype=policy_native.dtype).reshape(1,6),"APPROXIMATE_BOUNDED_PROJECTION",amp
     return torch.as_tensor(np.r_[pos_native,rot_native],
                            dtype=policy_native.dtype).reshape(1,6),None,amp
 
@@ -116,14 +125,15 @@ def trial(policy, seed):
     worlds={
         "source":env("pd_ee_delta_pose"),
         "memory":env("pd_ee_target_delta_pose"),
+        "projected":env("pd_ee_target_delta_pose"),
         "naive":env("pd_ee_target_delta_pose"),
     }
     outcome={"seed":seed,"initial_obs_diff":{},"success_once":{},
-             "steps":{},"refusals":{},"max_required_native_amp":0.0}
+             "steps":{},"refusals":{},"approximations":{},"max_required_native_amp":0.0}
     try:
         observations={k:w.reset(seed=seed)[0] for k,w in worlds.items()}
         canonical_start=_project_policy_observation(observations["source"],worlds["source"])
-        for key in ("memory","naive"):
+        for key in ("memory","projected","naive"):
             projected=_project_policy_observation(observations[key],worlds[key])
             diff=float(torch.max(torch.abs(canonical_start-projected)).item())
             outcome["initial_obs_diff"][key]=diff
@@ -137,10 +147,15 @@ def trial(policy, seed):
                 if done[name]:
                     continue
                 native=act(policy,_project_policy_observation(observations[name],w))
-                if name=="memory":
+                if name in ("memory","projected"):
                     arm=controller[name].controllers["arm"]
                     rewritten,reason,amplitude=normalized_target_delta(
-                        source_arm,arm,native)
+                        source_arm,arm,native,approximate=(name=="projected"))
+                    if reason == "APPROXIMATE_BOUNDED_PROJECTION":
+                        outcome["approximations"].setdefault(name,[]).append({
+                            "step":t,"required_native_amp":amplitude,
+                            "exactness":"NOT_EXACT",
+                        })
                     if amplitude is not None:
                         outcome["max_required_native_amp"]=max(
                             outcome["max_required_native_amp"],amplitude)
@@ -188,18 +203,21 @@ def main():
         env0.close()
     records=[trial(actor,seed) for seed in SEEDS]
     counts={key:sum(x["success_once"].get(key,False) for x in records)
-            for key in ("source","memory","naive")}
+            for key in ("source","memory","projected","naive")}
     refusals=sum("memory" in x["refusals"] for x in records)
     data={"checkpoint_sha256":sha,"public_pretrained":True,
           "training_performed":False,"backend":"physx_cpu",
           "controller_contracts":{
              "source":"pd_ee_delta_pose achieved-relative",
              "memory":"pd_ee_target_delta_pose with live previous-target inversion",
+             "projected":"pd_ee_target_delta_pose with bounded non-exact projection",
              "naive":"pd_ee_target_delta_pose direct-copy"},
           "success_count":counts,"refused_episodes":refusals,"episodes":records}
     Path("frozen_ppo_target_memory.json").write_text(json.dumps(data,indent=2))
     print("FROZEN_TARGET_MEMORY_SUMMARY",json.dumps({
-        "success":counts,"refused":refusals,"episodes":len(records)}))
+        "success":counts,"refused":refusals,
+        "approximate_steps":sum(len(x["approximations"].get("projected",[])) for x in records),
+        "episodes":len(records)}))
 
 
 if __name__=="__main__":
