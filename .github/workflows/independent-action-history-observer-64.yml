@@ -15,14 +15,11 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - name: Assert original observer/controller/policy method is untouched
         run: |
-          git diff --exit-code 0865e6d50ec30d6a069e2d7dfee1f9be834c2c21 HEAD -- \
-            research/action_abi_history_observer.py \
-            research/frozen_ppo_action_history_observer.py \
-            research/frozen_ppo_observer_policy.py
+          test "$(git hash-object research/action_abi_history_observer.py)" = "2aa52e477c202386fb6a7e43586d246026b6041d"
+          test "$(git hash-object research/frozen_ppo_action_history_observer.py)" = "c0999d7a1da8e370f635a0d7bb8378e4a93020dd"
+          test "$(git hash-object research/frozen_ppo_observer_policy.py)" = "0393fab23466b66508c4288722538c44103afc29"
           python -m py_compile \
             research/independent_action_history_64_run.py \
             research/independent_action_history_64_audit.py
