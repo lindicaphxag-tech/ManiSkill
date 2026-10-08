@@ -9,6 +9,63 @@
 
 This reproducibility package exercises the ManiSkill native PickCube environment and its production delta-pose controller. It compares legacy and repaired multi-axis rotation conversion against the same requested target, then measures controller-target error and closed-loop orientation error at 1, 16, and 64 steps.
 
+## Current maintainer-facing: 100-demo, four-cell exact-source replay (2026-10-08)
+
+**Public fixed-cohort official native PegInsertionSide replay**:
+[successful run #37719545972](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37719545972)
+· [full original replay logs and frozen 100-seed matrix](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37719545972/artifacts/11525697810)
+· [independent 100-row integrity audit #37751515316](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37751515316).
+
+The exact frozen source is the first **100** demonstrations from public
+`haosulab/ManiSkill_Demonstrations` revision
+`d674485bbffdd533914e52d272fdda34c0515608`, whose archive SHA-256 is
+`7d61e4319a0395b220574f1e26ea65bd4ad1406387fb3debfbea96a2ddbb6a9c`.
+Each arm independently replays **the same 100 source seeds** under its own
+pinned implementation. Runtime: Linux CPU-only, Python 3.11, PhysX CPU,
+state-only headless environment, smoke-only renderer compatibility shim.
+
+| Converter branch | Controller branch | Saved official demonstrations / 100 |
+|---|---|---:|
+| Original | Original | **90** |
+| #1495 only | Original | **91** |
+| Original | #1472 only | **1** |
+| #1495 + #1472 | #1472 | **91** |
+
+The separate [independent matrix integrity verifier](https://github.com/lindicaphxag-tech/ManiSkill/blob/validation/dp-peg-factorial-100-audit-v1/research/kaggle_diffusion_policy_peg/audit_factorial_replay.py)
+recomputed **all** 100 source-seed outcomes, six pairwise intersections and
+hashes, four-way intersection, and a six-mutation rejection self-test directly
+from the **unaltered #37719545972 Actions artifact**. The verification job is
+[green](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37751515316).
+
+The source-seed pairing gives a stronger and less ambiguous result than raw
+counts alone:
+
+- **Baseline vs converter-only:** original-only 0, converter-only 1.
+- **Baseline vs controller-only:** original-only **89**, controller-only 0.
+- **Controller-only vs combined:** controller-only 0, combined-only **90**.
+- **Converter-only vs combined:** zero discordant seeds; their 91-success
+  source-seed sets coincide exactly in this frozen cohort.
+- **All four cells share only ONE successful seed**, therefore a four-way
+  same-data learned-policy comparison would be **invalid / non-trainable**.
+- The descriptive 2×2 interaction in replay-success counts is **89 out of
+  100**; this is not a causal claim about trained policies, a general
+  success-rate gain, or maintainer adoption.
+
+**Reviewer decision requested:** assess whether #1495's converter action-chart
+contract matches the intended behavior of #1472's controller before merging
+either change. The 100-case witness shows that deploying #1472 in isolation
+can be dramatically incompatible with the still-unrepaired converter, whereas
+combining the two restores the same successful replay set as #1495 alone.
+If an isolated controller contract change is intentionally supported,
+document the expected conversion adaptation and its tested dependencies.
+
+**Negative findings are retained:** baseline 90/100 and combined 91/100 is
+only a one-episode difference; the paired 2-update DP smoke has **zero
+learned-policy successes in both arms**; four-way shared training data is
+1/100, so there is no valid four-arm learned-policy benchmark. This does
+not establish better task success, external maintenance/adoption, or a
+broad new robotics representation method.
+
 ## New native task-level pipeline evidence (2026-10-08)
 
 A public CPU-only **official PegInsertionSide Diffusion Policy pipeline** has
