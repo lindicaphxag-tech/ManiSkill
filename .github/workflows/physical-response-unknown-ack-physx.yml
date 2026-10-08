@@ -1,0 +1,98 @@
+name: Original preregistered achieved-response unknown ACK target disambiguation PhysX
+on:
+  push:
+    branches:
+      - research/physical-response-zero-readback-active-observer-20261009
+  pull_request:
+    paths:
+      - '.github/workflows/physical-response-unknown-ack-physx.yml'
+      - 'research/PHYSICAL_RESPONSE_ACK_PROSPECTIVE_V1.json'
+      - 'research/physical_response_classifier.py'
+      - 'research/frozen_ppo_physical_response_ack.py'
+      - 'research/audit_physical_response_32.py'
+      - 'tests/test_physical_response_32.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-protocol-and-adversarial-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Assert exactly pre-outcome original protocol; syntax checks
+        run: |
+          test "$(git hash-object research/PHYSICAL_RESPONSE_ACK_PROSPECTIVE_V1.json)" = "de2109c36cbb767ee1a4af11c981f1256ed60eac"
+          python -m py_compile research/physical_response_classifier.py research/frozen_ppo_physical_response_ack.py research/audit_physical_response_32.py
+      - name: Execute causal classifier and full-source negative controls
+        run: python -m unittest discover -s tests -p 'test_physical_response_32.py' -v
+
+  real-physx-task:
+    needs: frozen-protocol-and-adversarial-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        fault: [applied_no_ack, neutral_arm_delta_no_ack]
+        start: ['0','4']
+    env:
+      PYTHONUNBUFFERED: '1'
+      ABI_TASK: ${{ matrix.task }}
+      ABI_FAULT: ${{ matrix.fault }}
+      ABI_START: ${{ matrix.start }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install exact ManiSkill development source with native CPU PhysX
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Run four prespecified actual matched native task/controller PhysX worlds per four seeds
+        run: |
+          set -o pipefail
+          python research/frozen_ppo_physical_response_ack.py 2>&1 | tee "physical_response_${ABI_TASK}_${ABI_FAULT}_${ABI_START}.log"
+          test -s "physical_response_${ABI_TASK}_${ABI_FAULT}_${ABI_START}_fresh4.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: achieved-probe-${{ matrix.task }}-${{ matrix.fault }}-${{ matrix.start }}
+          path: |
+            physical_response_*.json
+            physical_response_*.log
+
+  full-32-state-readonly-source-audit:
+    needs: real-physx-task
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: achieved-probe-*
+          merge-multiple: true
+          path: /tmp/achieved-probe-original
+      - name: Independently audit all 32 complete true PhysX episodes
+        run: |
+          python -m research.audit_physical_response_32 \
+            --input-dir /tmp/achieved-probe-original \
+            --output /tmp/full-32-source-auditor.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: original-32-causal-physical-probe-full-audit
+          path: |
+            /tmp/achieved-probe-original/*.json
+            /tmp/full-32-source-auditor.json
