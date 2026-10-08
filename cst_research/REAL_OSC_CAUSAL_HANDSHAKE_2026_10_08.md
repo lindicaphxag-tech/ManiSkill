@@ -94,3 +94,32 @@ https://github.com/lindicaphxag-tech/robomimic/tree/fix/add-delta-actions-conver
 
 The causal experiment is kept in a validation branch; it is **not** bloating
 the small upstream patch. External maintained adoption remains **zero**.
+
+
+## Multi-intervention reproducibility (32 controlled offsets)
+
+Frozen-scene experiment run:
+https://github.com/lindicaphxag-tech/robomimic/actions/runs/37706017196
+
+The source physical state and source/target OSC goals were fixed. We
+replaced the target `initial_joint` with 32 deterministically sampled
+synthetic offsets (Gaussian standard deviation 0.03 rad per joint), then
+computed the target low-level torque without stepping the simulator.
+
+Absolute maximum source/target torque difference across each perturbation:
+- n = 32
+- p10 = `0.2739986`
+- median = `0.7785467`
+- p90 = `1.872390`
+- exact transferred reference: `8.518459e-7`
+
+The same workflow passed **3/3 tests**. Separate paired controller goals
+still matched at `5.148609e-9`; arm-joint qpos matched within
+`1.518279e-9` rad over 8 steps, while full-scene qpos mismatch
+remained `1.221201e-4`. The latter is not treated as controller-migration
+success/failure until simulation-model confounds are isolated by a
+same-controller negative control.
+
+These are **intervention sensitivity measurements**, not an estimated
+policy success-rate delta, not a statistical confidence interval over
+independent scenes, and not external adoption.
