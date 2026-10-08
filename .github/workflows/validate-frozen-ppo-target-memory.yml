@@ -3,13 +3,13 @@ name: Frozen PPO stateful target-memory controller-swap smoke
 on:
   push:
     branches:
-      - validation/frozen-ppo-memory-feasibility-fallback-20261008
+      - validation/frozen-ppo-target-memory-32-holdout-20261008
   workflow_dispatch:
 
 jobs:
   real-frozen-policy-target-memory:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     env:
       PYTHONUNBUFFERED: "1"
     steps:
