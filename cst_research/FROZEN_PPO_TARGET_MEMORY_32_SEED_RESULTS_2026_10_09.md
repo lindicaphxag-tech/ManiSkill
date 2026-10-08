@@ -1,15 +1,22 @@
-# Frozen-policy goal-memory compilation with bounded feasibility: 32-seed pilot
+# Frozen-policy goal-memory compilation with bounded feasibility: **same-cohort replication**
 
-**Pre-registered before experiment:** [protocol](FROZEN_PPO_TARGET_MEMORY_32_SEED_PROSPECTIVE_2026_10_09.md)
-(correct filename: [TARGET_MEMORY_32_SEED_PROSPECTIVE_2026_10_09.md](TARGET_MEMORY_32_SEED_PROSPECTIVE_2026_10_09.md))
+**Correction — no untouched prospective holdout:** this run repeats seeds
+20001–20032 **already used on October 8**, with a public original
+[32-seed CI](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37746168558).
+The [October 9 repeat protocol](TARGET_MEMORY_32_SEED_PROSPECTIVE_2026_10_09.md)
+was created before *this rerun* but after first-cohort outcomes were known.
+It is **not preregistration of new unseen seeds**. Another prior
+48-seed cohort overlaps 20001–20048; sample sizes must not be added.
 
 **Author-run public CI:** https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37814776505
 
 **Exact code:** https://github.com/lindicaphxag-tech/ManiSkill/blob/validation/frozen-ppo-memory-holdout-32-20261009/research/frozen_ppo_target_memory.py
 
-Date: 2026-10-09. The experiment uses new prespecified seeds
-`20001`–`20032`, disjoint from the development seeds `42/270/429/2026`
-and separate from the delta-to-absolute study `10001`–`10032`.
+Date: 2026-10-09. This is an independent **CI rerun** of the
+already observed `20001`–`20032` cohort. It is disjoint from
+earlier four development seeds `42/270/429/2026` and separate from
+the action-interface study `10001`–`10032`, but **NOT disjoint
+from previous target-memory cohorts**.
 32 out of 32 launched episode groups produced outcomes; initial
 source-vs-target observations after explicit 49D -> 42D source-ABI
 projection matched **exactly** (`initial_obs_diff=0.0`) on all groups.
@@ -31,7 +38,7 @@ observation, making it 49D vs the original 42D PPO input; the adapter
 validates and strips only the 7D controller-owned field for policy
 inference and separately reads that field for action compilation.
 
-## Unconditional results (every prespecified seed)
+## Unconditional results (all 32 previously observed seeds; repeat)
 
 | Mode | Task success | Interpretation |
 |---|---:|---|
@@ -40,7 +47,7 @@ inference and separately reads that field for action compilation.
 | Stateful translation + bounded *non-exact* native-action projection | **32 / 32** | 30 non-exact projected actions across 27 episodes |
 | Raw PPO actions on target-history mode | **3 / 32** | Semantically incompatible direct-copy baseline |
 
-The exact-stateful successful seeds: **20003, 20017, 20022, 20025,
+In this replication, the exact-stateful successful seeds: **20003, 20017, 20022, 20025,
 20026**. The naive successes: **20006, 20023, 20031**. The stateful
 bounded solution succeeds in all 32 during this one job, including seed
 20016 which the source failed; that is a **single-run observation**,
