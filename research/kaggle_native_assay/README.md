@@ -9,6 +9,32 @@
 
 This reproducibility package exercises the ManiSkill native PickCube environment and its production delta-pose controller. It compares legacy and repaired multi-axis rotation conversion against the same requested target, then measures controller-target error and closed-loop orientation error at 1, 16, and 64 steps.
 
+## New native task-level pipeline evidence (2026-10-08)
+
+A public CPU-only **official PegInsertionSide Diffusion Policy pipeline** has
+now completed end-to-end, separately replaying source trajectories under the
+frozen baseline and #1495 + #1472 composition, pairing on identical source
+episode seeds, completing actual gradient updates and episode evaluation, and
+closing cleanly on Python 3.11.
+
+- [Full green GitHub Actions run #37713921020](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37713921020)
+- [Public reproducibility evidence and source/dataset hashes](../kaggle_diffusion_policy_peg/README.md)
+- Baseline conversion **6/8**, composed conversion **6/8**,
+  shared **six** source seeds, **893 transitions per arm**;
+  approximately **4.40M parameters**, two optimizer steps per arm.
+- **Both arms: 0% success** in tiny two-episode, 20-step-horizon smoke
+  evaluations. This run confirms the pipeline, **not learned-policy
+  performance superiority** or a causal benefit attributable to #1495.
+- The reproduction shims address headless rendering, Gymnasium 1.2
+  terminal-info layout and process cleanup **only within the isolated
+  assay**; they are not part of the two-file upstream PR.
+- A four-cell converter × controller replay experiment is separately
+  being tested. Its empirical results must not be inferred from
+  this two-cell pipeline.
+
+This evidence is linked here because this README is already referenced by
+the upstream maintainer-facing discussion, avoiding repeated comment spam.
+
 ## Reproduction
 
 - Public Kaggle GPU kernel: <https://www.kaggle.com/code/oblivicore/maniskill-native-delta-pose-assay>
