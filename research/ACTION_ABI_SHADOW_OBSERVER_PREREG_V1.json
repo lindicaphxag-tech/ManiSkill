@@ -1,0 +1,69 @@
+{
+  "schema": "action_abi_shadow_target_observer_prospective_v1",
+  "date": "2026-10-09",
+  "status": "PREOUTCOME_FREEZE_BEFORE_RUNNER_EDIT",
+  "source_commit": "9ffa86c6d3a86d2cee44b6e13c560033a8b373cf",
+  "upstream_provenance": "lindicaphxag-tech/ManiSkill author-run public fork",
+  "original_checkpoint_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+  "hypothesis": "For a deterministic goal-integrating target controller with known reset and observed submitted commands, previous command target is recursively observable from initial target and action history; live per-step read of controller._target_pose is NOT necessary without hidden state intervention.",
+  "primary_falsifier": "Compare 'shadow' command-history reconstructed prior goal vs 'projected' direct prior-goal read under identical reset seeds, policy checkpoint, inverse chart and inexact bounding. Report all discordance and max runtime goal residual. Failure to match narrows observability conditions rather than deleting trials.",
+  "environments": {
+    "pull_cube": {
+      "env": "PullCube-v1",
+      "sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+      "seeds_inclusive": [
+        71001,
+        71032
+      ]
+    },
+    "stack_cube": {
+      "env": "StackCube-v1",
+      "sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c",
+      "seeds_inclusive": [
+        81001,
+        81032
+      ]
+    }
+  },
+  "design": {
+    "backend": "physx_cpu",
+    "horizon": 50,
+    "reset_reconfiguration_freq": 1,
+    "policy_frozen": true,
+    "source_action_abi": "pd_ee_delta_pose",
+    "target_action_abi": "pd_ee_target_delta_pose",
+    "arms": [
+      "source",
+      "memory",
+      "projected",
+      "stateless",
+      "naive",
+      "shadow"
+    ],
+    "seed_chunks": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "samples_per_chunk": 8,
+    "complete_denominator": 64
+  },
+  "shadow_contract": [
+    "At seed reset, save destination achieved EE pose X_0 as the initial commanded goal estimate without accessing _target_pose.",
+    "For every shadow controller step, compute its source physical desired target relative to achieved pose X_t, but solve the destination inverse using the locally reconstructed previous commanded goal instead of arm._target_pose.",
+    "Apply EXACTLY the same destination box/ball bounded projection as 'projected'; tag projections NOT_EXACT.",
+    "Update only the local goal estimate by applying the native controller public preprocess and target-pose transition to the command actually sent; never correct the estimate from a live _target_pose read.",
+    "Observational contract still projects and verifies the target-memory field for *policy input validation*, but the shadow *conversion* must be independent of the field.",
+    "Record goal-state reconstruction error for audit *only after the actual simulator action*; never feed audit errors or true target goal back into the shadow converter."
+  ],
+  "preregistered_gates": {
+    "source_competence_per_task_minimum": 24,
+    "shadow_vs_live_episode_success_agreement_out_of_32": 30,
+    "max_audit_goal_position_residual_m": 0.0001,
+    "no_posthoc_tuning": true,
+    "always_report_all_nulls_and_mismatches": true
+  },
+  "interpretation": "Equivalence supports a command-history observer as a strong baseline, refutes any unconditional necessity of live _target_pose access, and restricts the case for live access to unknown resets/lost actions/hidden actuator-state transitions. Even equivalence in this source controller is NOT equivalent to independent robot/controller-family generalization.",
+  "exclusions": "No new pretrained policy, real robot or VLA; no claim of safety; not an independent third-party execution. Do not treat initial-state common-seed exposure as independent physics trajectories."
+}
