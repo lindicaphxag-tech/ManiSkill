@@ -1,0 +1,126 @@
+{
+  "schema": "empirically_calibrated_ack_response_unseen32_v1",
+  "date": "2026-10-09",
+  "preoutcome_status": "PROTOCOL_FIRST_BEFORE_EXECUTABLE_RUNNER_AND_RESULTS",
+  "research_question": "Does an entirely separately sourced, fixed empirical public achieved-motion response envelope abstain instead of confidently misclassifying actual delivered unknown-ACK robot commands, and recover frozen PPO task successes under 32 new PhysX task-truth conditions?",
+  "calibration_source": {
+    "original_physx_run": "https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37829529190",
+    "source_dir": "research/frozen_policy_transfer/evidence/public_response_ack_probe_32_negative",
+    "training_only_reset_seeds": {
+      "pull_cube": [
+        140001,
+        140002,
+        140003,
+        140004
+      ],
+      "stack_cube": [
+        150001,
+        150002,
+        150003,
+        150004
+      ]
+    },
+    "training_conditions_per_task": 8,
+    "retrospective_validation_old_seeds_not_used_for_calibration_or_new_claims": {
+      "pull_cube": [
+        140005,
+        140006,
+        140007,
+        140008
+      ],
+      "stack_cube": [
+        150005,
+        150006,
+        150007,
+        150008
+      ]
+    },
+    "calibration_rule": "per-task maximum Euclidean distance of the true achieved-probe response to segment [achieved_before, true commanded target], alpha clamped to [0,1], plus fixed 0.001m; disjoint from new seeds",
+    "alpha_min": 0,
+    "alpha_max": 1,
+    "numerical_margin_m": 1e-12,
+    "fixed_empirical_error_envelopes_m": {
+      "pull_cube": 0.006944262561376447,
+      "stack_cube": 0.00719087965534261
+    },
+    "independent_physical_model_attested": false,
+    "certificate_claim": "NOT a safety/identifiability certificate; four training reset seeds per task do not prove transfer bound"
+  },
+  "new_frozen_physical_protocol": {
+    "task_reset_seeds": {
+      "pull_cube": [
+        160101,
+        160102,
+        160103,
+        160104,
+        160105,
+        160106,
+        160107,
+        160108
+      ],
+      "stack_cube": [
+        170101,
+        170102,
+        170103,
+        170104,
+        170105,
+        170106,
+        170107,
+        170108
+      ]
+    },
+    "fault_truths": [
+      "applied_no_ack",
+      "neutral_arm_delta_no_ack"
+    ],
+    "zero_based_fault_step": 2,
+    "zero_based_common_probe_step": 3,
+    "n_conditions": 32,
+    "task_frozen_checkpoints_sha256": {
+      "pull_cube": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+      "stack_cube": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+    },
+    "hf_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+    "official_physx_mode": "physx_cpu",
+    "native_dest_controller": "pd_ee_target_delta_pose",
+    "original_source_controller": "pd_ee_delta_pose",
+    "compared_arms": [
+      "source_pause_no_fault",
+      "blind_probe_optimistic",
+      "blind_probe_pessimistic",
+      "achieved_probe_classifier",
+      "privileged_once_after_probe"
+    ],
+    "locked_runner_reference": "original physical probe source research/frozen_ppo_physical_response_ack.py from main; replace ONLY cohort/protocol IDs and classification function, no PPO or controller changes",
+    "no_private_controller_target_readback_for_empirical_classifier": true,
+    "probe_physical_action": "common native 6D zero delta at t=3 following actual executed/neutral-replaced t=2 controller command, preserving previous policy gripper, same for all arms",
+    "model_decision": "Public achieved before/after probe XYZ, plus two action-history derived candidate target XYZ. Unique plausible physical response segment under training-only fixed per-task epsilon => choose that history. Both plausible or neither plausible => abstain and STOP before next policy action. No label-based retry.",
+    "privileged_ceiling": "Exactly one true target-state read after identical native probe (unequal-information control)",
+    "applied_and_held_ground_truth_known_only_to_audit": true,
+    "no_postoutcome_tuning_or_seed_exclusions": true
+  },
+  "primary_endpoints": [
+    "All 32 original task-truth conditions with fault and probe reached",
+    "Number of public-model decisions / abstentions / model-falsified cases",
+    "Number of FALSE confident history authorizations overall and by actual execution truth",
+    "Official PhysX task success for five matched arms by true task and fault",
+    "Privileged information reads for each arm",
+    "Public model response envelope exclusion of the true history, an explicit physical-model failure",
+    "Non-exact legal native projections retained"
+  ],
+  "gates_to_report_unchanged": {
+    "full_case_count": 32,
+    "bad_confident_authorizations_max": 0,
+    "minimum_confident_coverage": 16,
+    "classifier_must_not_claim_superior_success_unless_per_task_improvement_is_positive": true,
+    "record_all_failed_and_stopped_cases": true
+  },
+  "limitations": [
+    "Empirically trained controller response is not independently externally attested physical dynamics or a mathematical correctness certificate",
+    "Even 0 observed false decisions on finite episodes would not prove future or hardware safety",
+    "No camera, network packet delivery or real robot controller, only official ManiSkill PhysX source tasks",
+    "Same Panda target controller and 2 frozen independent external task checkpoints, not cross-robot policy transfer",
+    "Third-party independent team execution is outstanding",
+    "Not an invented POMDP, minimax or formal-set-membership theorem"
+  ]
+}

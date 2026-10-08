@@ -1,0 +1,132 @@
+name: Prospective frozen empirical-response new32 native PhysX falsification
+
+on:
+  push:
+    branches: [research/empirical-response-envelope-fresh32-20261009]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-frozen-protocol-and-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Assert immutable PRE-OUTCOME protocol and source calibration
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/EMPIRICAL_RESPONSE_NEW32_FROZEN_BEFORE_RUN_V1.json)" = "46ad9c556fd2c599e3fd968ff7920ef973c23469"
+          test "$(git hash-object research/frozen_ppo_physical_response_ack.py)" = "06a6cc465c4f0cd896ddc6e761f291c1e8287417"
+          python -m py_compile research/empirical_probe_response_classifier.py \
+            research/frozen_ppo_empirical_response_new32.py \
+            research/audit_empirical_response_new32.py
+          python - <<'PY'
+          from research.retrospective_probe_response_calibration import read_originals,evaluate,SOURCE,TASKS
+          from research.empirical_probe_response_classifier import EPSILON_BY_TASK,classify_empirical_public_response
+          import json
+          a=read_originals(SOURCE)
+          for task,first in TASKS.items():
+              v=evaluate(a[task],first)
+              assert abs(v['empirical_training_error_bound_m']-EPSILON_BY_TASK[task])<1e-12
+          # Same action-conditioned physical response cannot guarantee identification
+          # if zero controller response is permitted by alpha range [0,1].
+          x=classify_empirical_public_response((0,0,0),(0,0,0),(0,0,0),
+                  (0.1,0,0),task='pull_cube')
+          assert x['label'] is None and x['status']=='ABSTAIN_TWO_PLAUSIBLE_HISTORIES'
+          y=classify_empirical_public_response((0,0,0),(0.03,0,0),(0,0,0),
+                  (0.1,0,0),task='pull_cube')
+          assert y['label']=='applied'
+          z=classify_empirical_public_response((0,0,0),(0,0.05,0),(0,0,0),
+                  (0.1,0,0),task='pull_cube')
+          assert z['label'] is None and z['status']=='REFUSE_EMPIRICAL_MODEL_FALSIFIED'
+          print('FROZEN_HISTORY_ONLY_CALIBRATION_AND_NEGATIVE_SYNTHETIC_CONTROLS_PASS')
+          PY
+
+  source-pinned-actual-real-physx:
+    needs: source-frozen-protocol-and-preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        fault: [applied_no_ack, neutral_arm_delta_no_ack]
+        start: ['0', '4']
+    env:
+      PYTHONUNBUFFERED: '1'
+      ABI_TASK: ${{ matrix.task }}
+      ABI_FAULT: ${{ matrix.fault }}
+      ABI_START: ${{ matrix.start }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install real official CPU PhysX and released third-party policy runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Execute four original predeclared never-used reset seeds and five matched controllers
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/frozen_ppo_empirical_response_new32.py \
+            2>&1 | tee "empirical_response_${ABI_TASK}_${ABI_FAULT}_${ABI_START}.log"
+          test -s "empirical_response_${ABI_TASK}_${ABI_FAULT}_${ABI_START}_fresh4.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-fresh-empirical-${{ matrix.task }}-${{ matrix.fault }}-${{ matrix.start }}
+          path: |
+            empirical_response_*.json
+            empirical_response_*.log
+
+  full-original-fault-and-task-audit:
+    needs: source-pinned-actual-real-physx
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-fresh-empirical-*
+          path: /tmp/original-empirical-physx
+          merge-multiple: true
+      - name: Independently recompute all new 32 examples, outcome flags, false authorization, and empirical model falsifiers
+        run: |
+          set -euo pipefail
+          python -m research.audit_empirical_response_new32 \
+            --input-dir /tmp/original-empirical-physx \
+            --output /tmp/empirical_response_fresh32_complete_original_audit.json
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/empirical_response_fresh32_complete_original_audit.json'))
+          assert d['trial_conditions']==32 and len(d['results'])==8
+          assert all(q['paired_n']==4 and q['paired_fault_exposed']==4
+                     for q in d['results'].values())
+          print('NEW32_FULL_DENOMINATOR',
+              dict(wrong=sum(q['classifier_wrong_authorizations'] for q in d['results'].values()),
+                   coverage=sum(q['classifier_covered'] for q in d['results'].values()),
+                   model_falsified=sum(q['empirical_model_falsified'] for q in d['results'].values()),
+                   actual_model_true_state_exclusions=sum(q['true_history_incompatible_with_train_error_envelope'] for q in d['results'].values()),
+                   native_classifier_success=sum(q['success']['achieved_probe_classifier'] for q in d['results'].values()),
+                   optimistic_success=sum(q['success']['blind_probe_optimistic'] for q in d['results'].values()),
+                   privileged_success=sum(q['success']['privileged_once_after_probe'] for q in d['results'].values())))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-empirical-response-fresh32-complete-study
+          path: |
+            /tmp/original-empirical-physx/*.json
+            /tmp/original-empirical-physx/*.log
+            /tmp/empirical_response_fresh32_complete_original_audit.json
