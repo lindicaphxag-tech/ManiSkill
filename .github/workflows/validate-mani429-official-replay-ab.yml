@@ -35,10 +35,15 @@ jobs:
           python - <<'PY'
           import json, os, pathlib, shutil
           root=pathlib.Path.home()/".maniskill/demos/PickCube-v1"
-          candidates=[p for p in root.rglob("trajectory.h5") if "rl" in p.parts]
+          candidates=[
+              p for p in root.rglob("*.h5")
+              if "rl" in p.parts
+              and "pd_joint_delta_pos" in p.name
+              and p.with_suffix(".json").exists()
+          ]
           if not candidates:
-              raise RuntimeError("Official PickCube archive has no RL trajectory.h5; do not substitute synthetic data")
-          src=candidates[0]
+              raise RuntimeError("Official PickCube archive has no RL delta-joint trajectory; do not substitute synthetic data")
+          src=sorted(candidates)[0]
           meta=json.loads(src.with_suffix(".json").read_text())
           modes={}
           for episode in meta["episodes"]:
