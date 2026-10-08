@@ -22,7 +22,7 @@ from frozen_ppo_pickcube_gate import (
 )
 import hashlib
 
-SEEDS=(10014,)
+SEEDS=(10014, *range(10001,10014), 10014)
 MAX_STEPS=50
 
 
@@ -181,7 +181,19 @@ def main():
             "denominator":len(SEEDS),
             "interpretation":"exploratory; must require competent source before claiming a migration benefit"}
     Path("frozen_ppo_controller_swap.json").write_text(json.dumps(result,indent=2))
-    Path("seed10014_diagnostic.json").write_text(json.dumps(runs[0]["detailed_trace"],indent=2))
+    Path("seed10014_diagnostic.json").write_text(json.dumps({
+        "isolated_first":runs[0],
+        "after_13_seeds":runs[-1],
+        "all_warmups": [{"seed":r["seed"],"source":r["success_once"].get("source",False),
+                         "compiled":r["success_once"].get("compiled",False)}
+                        for r in runs[1:-1]],
+        "claim":"exploratory order-sensitivity diagnostic; no holdout redefinition"
+    },indent=2))
+    print("FROZEN_SEED10014_ORDER",json.dumps({
+      "first":runs[0]["success_once"],
+      "after_warmup":runs[-1]["success_once"],
+      "warmups":len(runs)-2
+    }))
     print("FROZEN_PPO_SWAP_SUMMARY",json.dumps({
         "source":outcomes["source"],"compiled":outcomes["compiled"],
         "naive":outcomes["naive"],"episodes":len(SEEDS)
