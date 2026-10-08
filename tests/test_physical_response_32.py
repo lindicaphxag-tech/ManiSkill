@@ -1,8 +1,7 @@
 """Independent deterministic falsifiers; no result fabrication or simulator required."""
 import unittest
-import numpy as np
 from research.audit_physical_response_32 import validate_data,ARMS
-from research.frozen_ppo_physical_response_ack import pure_classification
+from research.physical_response_classifier import pure_classification
 
 class TestPhysicalResponseContract(unittest.TestCase):
     def test_clear_applied_positional_response(self):
