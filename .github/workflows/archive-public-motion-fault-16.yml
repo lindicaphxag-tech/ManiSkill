@@ -1,0 +1,102 @@
+name: Source-pin original public-motion fault separability 16 real PhysX states
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-public-motion-fault-16.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  preserve-original-public-motion-records:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pin original successful two-task actual PhysX experiment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37826808073 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37826808073 --jq .head_sha)" = "4b0128e37b04332464d79d320f23a12697ea9932"
+      - name: Acquire original, not rerun or modified, source JSON data
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/visible-fault-source
+          for task in pull_cube stack_cube; do
+            gh run download 37826808073 --repo "$GITHUB_REPOSITORY" \
+              --name "original-public-motion-fault-$task" --dir "/tmp/visible-fault-source/$task"
+            item=$(find "/tmp/visible-fault-source/$task" -name "public_motion_fault_${task}_8.json" -type f)
+            test "$(find "/tmp/visible-fault-source/$task" -name "public_motion_fault_${task}_8.json" -type f | wc -l)" -eq 1
+            cp "$item" "/tmp/visible-fault-source/public_motion_fault_${task}_8.json"
+          done
+      - name: Verify all original bytes and full case denominators without new scientific inference
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, math, hashlib
+          root=Path('/tmp/visible-fault-source')
+          specs=[
+            ('pull_cube','PullCube-v1',98001,'74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7'),
+            ('stack_cube','StackCube-v1',99001,'e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c'),
+          ]
+          for name,task,first,sha in specs:
+            f=root/f'public_motion_fault_{name}_8.json'
+            d=json.loads(f.read_text())
+            assert d['experiment']=='public-motion-fault-identifiability-v1'
+            assert d['protocol']=='research/PUBLIC_MOTION_FAULT_IDENTIFIABILITY_PRECOMMIT_V1.json'
+            assert d['model_sha256']==sha and d['model_revision']=='6bdeb28810330ab5425ccd629bb561c58a56ff85'
+            assert d['real_physx_cpu'] is True and d['training_performed'] is False
+            assert d['task']==task and d['seeds']==list(range(first,first+8))
+            assert len(d['rows'])==d['n']==8
+            assert [x['seed'] for x in d['rows']]==d['seeds']
+            for row in d['rows']:
+              assert row['fault_step']==2
+              assert row['public_observation_7d_target_slice_excluded'] is True
+              assert row['different_actual_native_arm_action'] is True
+              assert len(row['comparisons'])==5
+              assert row['public_initial_state']['max_abs_qpos_gap_rad']<=1e-6
+              for i,x in enumerate(row['comparisons']):
+                assert x['diagnostic_step_since_fault']==i
+                assert all(math.isfinite(x[k]) and x[k]>=0 for k in (
+                   'max_abs_qpos_gap_rad','max_abs_qvel_gap_rad_s','qpos_gap_l2_rad','qvel_gap_l2_rad_s'))
+            for stage in ('0','4'):
+              entry=d['summary_by_diagnostic_step'][stage]
+              assert entry['threshold_exceedance']['0.001']==8
+              assert entry['min_qpos_gap_rad']>0.001
+            print('ORIGINAL_PUBLIC_MOTION_AUDITED',name,'8 source rows',hashlib.sha256(f.read_bytes()).hexdigest())
+          PY
+      - name: Preserve originals and explain what the contrast actually establishes
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/public_motion_fault_separation_16
+          mkdir -p "$dest"
+          cp /tmp/visible-fault-source/public_motion_fault_*_8.json "$dest/"
+          (cd "$dest" && sha256sum ./*.json > SOURCE_SHA256SUMS)
+          cat > "$dest/README.md" <<'EOF'
+          # Original, owner-operated frozen-PPO PhysX two-world public-motion evidence
+          Source actual PhysX run: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37826808073
+          Exact head: 4b0128e37b04332464d79d320f23a12697ea9932
+          Pre-outcome protocol: research/PUBLIC_MOTION_FAULT_IDENTIFIABILITY_PRECOMMIT_V1.json
+          Both original full-denominator source JSONs are copied unchanged, SHA256 manifest included.
+          PullCube: 8 untouched states, minimum maximum-joint-qpos separation at fault 0.025806 rad; after four identical commands >=0.065704 rad.
+          StackCube: 8 untouched states, minimum maximum-joint-qpos separation at fault 0.021964 rad; after four identical commands >=0.062899 rad.
+          Important: identical simulator initial conditions, known controller model, and counterfactual paired worlds.
+          The publicly permitted qpos and qvel differ; the hidden commanded-target field was excluded from measurements.
+          These results demonstrate DESCRIPTIVE physical-state distinguishability between executed and neutral-held paths.
+          They DO NOT demonstrate a valid causal online fault classifier from one noisy real trajectory, an adaptive probe policy,
+          a learned correction, reliable ROS packet timing, hardware safety, or independent third-party execution.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dest"
+          if git diff --cached --quiet; then echo "Already archived"; exit 0; fi
+          git commit -m 'evidence: preserve original 16 source-pinned public-motion PhysX fault worlds'
+          git push origin HEAD:main
