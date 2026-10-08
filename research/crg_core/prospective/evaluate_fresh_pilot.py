@@ -28,7 +28,7 @@ PROTOCOL_FROZEN_BLOB_SHA1 = "b3ec5e5f4b6226c03d169ff857a97efe2a71d5c8"
 
 def _read_protocol(path: Path) -> tuple[dict, str]:
     source = path.read_bytes()
-    git_blob = sha1(b"blob " + str(len(source)).encode() + b"\\x00" + source).hexdigest()
+    git_blob = sha1(b"blob " + str(len(source)).encode() + bytes([0]) + source).hexdigest()
     if git_blob != PROTOCOL_FROZEN_BLOB_SHA1:
         raise ValueError("frozen preregistration blob changed after commitment")
     data = json.loads(source)
