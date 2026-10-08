@@ -22,7 +22,7 @@ from frozen_ppo_pickcube_gate import (
 )
 import hashlib
 
-SEEDS=(10014,)
+SEEDS=tuple(range(10001,10015))
 MAX_STEPS=50
 
 
