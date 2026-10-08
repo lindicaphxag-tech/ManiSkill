@@ -1,0 +1,42 @@
+name: Retry original frozen shadow observer PullCube block 1
+on:
+  push:
+    branches: [validation/action-abi-shadow-pull1-retry-20261009]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  retry-original-eight-source-seeds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    env:
+      ABI_TASK: pull_cube
+      ABI_CHUNK: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify immutable preregistered original source provenance
+        run: |
+          test "$(git hash-object research/ACTION_ABI_SHADOW_OBSERVER_PREREG_V1.json)" = "285a7457e4aa05240b970e5550bcf06942535ceb"
+          python -m py_compile research/frozen_ppo_target_memory.py
+      - name: Install identical ManiSkill official CPU runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Retry unchanged six-arm real PhysX original 71009-71016
+        run: |
+          set -o pipefail
+          python research/frozen_ppo_target_memory.py 2>&1 | tee abi_shadow_pull_cube_chunk_1.log
+          test -s abi_shadow_pull_cube_chunk_1.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: abi-shadow-pull_cube-1-independent-ops-retry
+          path: |
+            abi_shadow_pull_cube_chunk_1.json
+            abi_shadow_pull_cube_chunk_1.log
