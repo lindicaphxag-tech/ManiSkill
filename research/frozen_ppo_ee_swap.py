@@ -22,7 +22,8 @@ from frozen_ppo_pickcube_gate import (
 )
 import hashlib
 
-SEEDS=tuple(range(10001,10033))
+SEEDS=(10013,10014)
+REPEATS=6
 MAX_STEPS=50
 
 
@@ -77,6 +78,12 @@ def rollout_one(actor,seed):
         observations={}
         for key,env in envs.items():
             observations[key],_=env.reset(seed=seed)
+        initial_data={k:observations[k].detach().cpu().numpy().astype(np.float32).reshape(-1)
+                      for k in observations}
+        report["initial_observation_hashes"]={
+            k:hashlib.sha256(np.ascontiguousarray(v).tobytes()).hexdigest()
+            for k,v in initial_data.items()}
+        report["initial_observation_source_vector"]=initial_data["source"].tolist()
         shape={k:tuple(v.shape) for k,v in observations.items()}
         if len(set(shape.values()))!=1:
             raise RuntimeError("Mismatch observation ABI: "+str(shape))
@@ -142,10 +149,23 @@ def main():
     finally:
         env.close()
 
-    runs=[rollout_one(net,s) for s in SEEDS]
+    runs=[]
+    for repeat_index in range(REPEATS):
+        for seed in SEEDS:
+            result=rollout_one(net,seed)
+            result["repeat_index"]=repeat_index
+            runs.append(result)
+    print("REPEATABILITY_EVIDENCE",
+          json.dumps([{"seed":r["seed"],"repeat":r["repeat_index"],
+                       "initial_hash":r["initial_observation_hashes"]["source"],
+                       "outcomes":r["success_once"],"steps":r["episode_steps"]}
+                      for r in runs],sort_keys=True))
     outcomes={name:sum(r["success_once"].get(name,False) for r in runs)
               for name in ("source","compiled","naive")}
-    result={"checkpoint_repo":REPO,"checkpoint":FILENAME,
+    result={"purpose":"repeatability diagnostic, NOT held-out success estimate",
+            "repeats_per_seed":REPEATS,
+            "unique_initial_seeds":list(SEEDS),
+            "checkpoint_repo":REPO,"checkpoint":FILENAME,
             "checkpoint_sha256":digest,"policy_frozen":True,
             "controller_modes":{"source":"pd_ee_delta_pose",
                                  "compiled":"pd_ee_pose",
