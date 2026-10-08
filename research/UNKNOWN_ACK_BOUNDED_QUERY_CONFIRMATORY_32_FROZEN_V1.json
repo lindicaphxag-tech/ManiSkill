@@ -1,0 +1,70 @@
+{
+  "schema": "ack_bounded_query_frozen_confirmatory_32_v1",
+  "precommit_date": "2026-10-09",
+  "relationship": "NEW confirmatory cohort after 16-state original effects were observed; method and margins frozen again before this new seed population or code edit. NOT first discovery holdout.",
+  "source_frozen_method": "research/frozen_ppo_ack_bounded_query.py on main after PR #78 merge",
+  "source_frozen_mathematical_method": "research/two_history_se3_robust.py as merged in PR #77",
+  "explicit_prior_observed_summary": "earlier original 16-state owner-operated PullCube and StackCube achieved 15/16 selective success with 4 decision readbacks; mandatory readback 15/16 with 16 reads, and one exclusive success each way in StackCube. This is prior *development* evidence and does not count toward new denominator.",
+  "new_studies": {
+    "pull_cube": {
+      "environment": "PullCube-v1",
+      "seed_range_inclusive": [
+        142001,
+        142016
+      ],
+      "checkpoint": "ppo/pull_cube_final_ckpt.pt",
+      "checkpoint_sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7"
+    },
+    "stack_cube": {
+      "environment": "StackCube-v1",
+      "seed_range_inclusive": [
+        152001,
+        152016
+      ],
+      "checkpoint": "ppo/stack_cube_final_ckpt.pt",
+      "checkpoint_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+    }
+  },
+  "frozen_policy_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+  "n_new_task_state_episodes": 32,
+  "arms": [
+    "source_no_fault",
+    "fault_oracle_private_target",
+    "fault_optimistic_unverified_ack",
+    "fault_strict_common_exact",
+    "fault_robust_two_history_without_query",
+    "fault_robust_then_single_privileged_query",
+    "fault_always_single_privileged_query"
+  ],
+  "fault": "The same actual zero native arm-target delta at t=2, original gripper preserved, real PhysX step advanced, ACK unknown. Not actual wireless packet loss.",
+  "fixed_controller": "Panda achieved-relative source pd_ee_delta_pose; target memory accumulated pd_ee_target_delta_pose root frame",
+  "fixed_budgets": {
+    "position_inf_m": 0.05,
+    "rotation_geodesic_rad": 0.05,
+    "maximum_one_decision_privileged_readback": 1
+  },
+  "precommitted_gates": {
+    "full_32_original_task_reset_seeds_and_all_7_arms": true,
+    "per_task_original_source_success_min_10_of_16": true,
+    "all_declared_faults_reached_or_explicit_failure": true,
+    "no_parameter_or_posterior_rule_tuning_based_on_new_seed_outcomes": true,
+    "independent_success_and_readback_denominators": true,
+    "selective_query_success_must_be_at_least_mandatory_minus_2_in_total_32": true,
+    "selective_readback_savings_must_be_at_least_8_out_of_32_compared_with_mandatory": true,
+    "robust_noquery_vs_optimistic_paired_net_minimum_5_of_32_for_mechanism_support": true,
+    "audit_all_robust_authorized_setpoints_against_real_original_target": true,
+    "always_report_task_stratification_and_every_pair_discordance": true,
+    "false_geometry_certification_is_experiment_failure": true,
+    "all_null_negative_incomplete_and_aborted_original_rows_retained": true
+  },
+  "statistical_unit": "one preselected task+seed physical reset, all seven treatments paired; policies are two checkpoints not 32 independent trained policies",
+  "no_claims": [
+    "independent third-party reproduction",
+    "real hardware or safety certification",
+    "new robust optimization theorem",
+    "real network ACK failure",
+    "cross-robot policy task success",
+    "arXiv or conference acceptance"
+  ],
+  "first_exploratory_cohort_excluded": true
+}
