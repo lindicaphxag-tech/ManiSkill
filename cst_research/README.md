@@ -9,6 +9,7 @@
 - Novelty boundary: [NOVELTY_BOUNDARY_2026_10_06.md](NOVELTY_BOUNDARY_2026_10_06.md)
 - Competitive boundary update: [COMPETITIVE_BOUNDARY_2026_10_08.md](COMPETITIVE_BOUNDARY_2026_10_08.md)
 - External trigger queue: [EXTERNAL_TRIGGER_QUEUE_2026_10_06.md](EXTERNAL_TRIGGER_QUEUE_2026_10_06.md)
+- **Real paired Panda/Lift causal and full-scene replay:** [REAL_OSC_CAUSAL_HANDSHAKE_2026_10_08.md](REAL_OSC_CAUSAL_HANDSHAKE_2026_10_08.md) ([8/8 full public CI](https://github.com/lindicaphxag-tech/robomimic/actions/runs/37706956215))
 
 Latest full public suite: **81 passed in 2.91s**. External maintained adoption: **0**.
 
