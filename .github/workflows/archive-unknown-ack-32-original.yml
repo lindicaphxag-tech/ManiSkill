@@ -37,7 +37,7 @@ jobs:
           test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37824078238 --jq .head_sha)" = "2ea6fabbd4e15ddd5623d51acd9f8874206fc003"
           test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37824078238 --jq .conclusion)" = "success"
           test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11570941907 --jq .digest)" = "sha256:96fb570effcff0296df47676edfe78174c3e9c9cd09614b93c084b5fa9a1e3f3"
-          mkdir -p /tmp/unknown-ack-original
+          mkdir -p /tmp/unknown-ack-original /tmp/unknown-ack-exact
           gh run download 37824078238 --repo "$GITHUB_REPOSITORY" --name prospective-32-unknown-ack-full-source-audit --dir /tmp/unknown-ack-original
           for name in \
             ack_loss_pull_cube_applied_no_ack_fresh8.json \
@@ -76,7 +76,7 @@ jobs:
           test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37824078238 --jq .head_sha)" = "2ea6fabbd4e15ddd5623d51acd9f8874206fc003"
           test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37824078238 --jq .conclusion)" = "success"
           test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11570941907 --jq .digest)" = "sha256:96fb570effcff0296df47676edfe78174c3e9c9cd09614b93c084b5fa9a1e3f3"
-          mkdir -p /tmp/unknown-ack-original
+          mkdir -p /tmp/unknown-ack-original /tmp/unknown-ack-exact
           gh run download 37824078238 --repo "$GITHUB_REPOSITORY" --name prospective-32-unknown-ack-full-source-audit --dir /tmp/unknown-ack-original
           for name in \
             ack_loss_pull_cube_applied_no_ack_fresh8.json \
@@ -97,7 +97,7 @@ jobs:
           set -euo pipefail
           dest=research/frozen_policy_transfer/evidence/unknown_ack_prospective_32_94001_95008
           mkdir -p "$dest"
-          cp /tmp/unknown-ack-original/*.json "$dest/"
+          cp /tmp/unknown-ack-exact/*.json "$dest/"
           (cd "$dest" && sha256sum *.json > SHA256SUMS && sha256sum -c SHA256SUMS)
           printf '%s\n' \
             '# Original 32-state prospective lost-ACK controller experiment' \
