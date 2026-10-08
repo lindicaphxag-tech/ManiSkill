@@ -36,7 +36,7 @@ def hash_seed_order(seeds: list[int]) -> str:
     ).hexdigest()
 
 
-def verify(doc: dict, *, expected_size: int) -> dict:
+def verify(doc: dict, *, expected_size: int, source_offset: int = 0, origin_run_id: int = FROZEN_ARTIFACT_RUN) -> dict:
     if doc.get("schema_version") != 1:
         raise ValueError("unexpected factorial evidence schema")
     for field, expected in (
@@ -48,6 +48,11 @@ def verify(doc: dict, *, expected_size: int) -> dict:
     ):
         if doc.get(field) != expected:
             raise ValueError(f"frozen identity mismatch: {field}")
+    if source_offset != 0:
+        if doc.get("original_source_episode_offset") != source_offset:
+            raise ValueError("wrong precommitted source episode offset")
+        if doc.get("original_source_episode_indices") != list(range(source_offset,source_offset+expected_size)):
+            raise ValueError("post-hoc source episode substitution detected")
     rows = doc.get("source_seed_matrix")
     if not isinstance(rows, list) or len(rows) != expected_size:
         raise ValueError("missing or incomplete source-seed matrix")
@@ -110,7 +115,8 @@ def verify(doc: dict, *, expected_size: int) -> dict:
     return {
         "audit_status":"passed",
         "replay_not_policy_success":True,
-        "origin_run_id":FROZEN_ARTIFACT_RUN,
+        "origin_run_id":origin_run_id,
+        "independent_source_offset":source_offset,
         "source_seeds_audited":n,
         "per_arm_success_count":observed,
         "pairwise_discordance":discordance,
@@ -170,6 +176,8 @@ def main():
     p=argparse.ArgumentParser()
     p.add_argument("--search",type=Path,help="Root extracted from the exact Actions artifact")
     p.add_argument("--expected-size",type=int,default=100)
+    p.add_argument("--source-offset",type=int,default=0)
+    p.add_argument("--origin-run-id",type=int,default=FROZEN_ARTIFACT_RUN)
     p.add_argument("--self-test",action="store_true")
     p.add_argument("--output",type=Path,help="Write independently derived JSON report")
     args=p.parse_args()
@@ -181,7 +189,12 @@ def main():
     matches=list(args.search.rglob("factorial_replay.json"))
     if len(matches)!=1:
         raise ValueError(f"exactly one factorial_replay.json expected, got {matches}")
-    result=verify(json.loads(matches[0].read_text(encoding="utf-8")),expected_size=args.expected_size)
+    result=verify(
+        json.loads(matches[0].read_text(encoding="utf-8")),
+        expected_size=args.expected_size,
+        source_offset=args.source_offset,
+        origin_run_id=args.origin_run_id,
+    )
     out=json.dumps(result,sort_keys=True,indent=2)+"\n"
     if args.output:
         args.output.write_text(out,encoding="utf-8")
