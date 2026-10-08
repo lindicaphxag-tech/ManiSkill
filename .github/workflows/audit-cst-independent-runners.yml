@@ -1,0 +1,57 @@
+name: CST Independent Runner Determinism Audit
+
+on:
+  push:
+    branches:
+      - validation/frozen-ppo-10014-order-audit-20261009
+  workflow_dispatch:
+
+jobs:
+  source-fingerprint-across-runners:
+    strategy:
+      fail-fast: false
+      matrix:
+        independent_runner: [1, 2, 3]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      PYTHONUNBUFFERED: "1"
+      CST_SINGLE_SEED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install exact same public code and CPU simulator environment
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Produce dependency and environment provenance
+        run: |
+          python - <<'PY' | tee provenance.json
+          import json, platform, importlib.metadata as m, os
+          names=["torch","mani_skill","sapien","gymnasium","numpy","scipy","huggingface_hub","mujoco"]
+          deps={}
+          for n in names:
+            try: deps[n]=m.version(n)
+            except m.PackageNotFoundError: deps[n]=None
+          print(json.dumps({"python":platform.python_version(),"system":platform.platform(),"deps":deps,"git_sha":os.environ.get("GITHUB_SHA"),"matrix_runner":os.environ.get("MATRIX_RUNNER")},sort_keys=True))
+          PY
+        env:
+          MATRIX_RUNNER: ${{ matrix.independent_runner }}
+      - name: Run same source, same SHA, one seed per independent runner
+        run: |
+          set -o pipefail
+          python research/frozen_ppo_ee_swap.py 2>&1 | tee frozen_seed10014.log
+          test -s frozen_ppo_controller_swap.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: seed10014-runner-${{ matrix.independent_runner }}
+          path: |
+            provenance.json
+            frozen_seed10014.log
+            frozen_ppo_controller_swap.json
+          if-no-files-found: warn
