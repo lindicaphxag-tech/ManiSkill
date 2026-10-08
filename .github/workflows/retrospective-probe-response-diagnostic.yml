@@ -1,0 +1,66 @@
+name: Retrospective source-pinned public-probe physics model falsification
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'research/retrospective_probe_response_calibration.py'
+      - '.github/workflows/retrospective-probe-response-diagnostic.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  train-only-error-envelope-and-disjoint-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Recompute original source SHA256 and the calibration/test split without simulator
+        run: |
+          set -euo pipefail
+          python -m py_compile research/retrospective_probe_response_calibration.py
+          python research/retrospective_probe_response_calibration.py \
+            --output /tmp/retrospective_public_response_model.json
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/retrospective_public_response_model.json'))
+          assert d['physical_validation_PROSPECTIVE'] is False
+          r=d['descriptive_heldout']
+          assert r['task_truth_conditions']==16 and r['unique_reset_seeds']==8
+          assert r['confident_decisions']+r['abstentions_or_invalid']==16
+          assert 0<=r['wrong_confident']<=r['confident_decisions']
+          assert 0<=r['false_exclusions']<=16
+          for task,s in d['task_groups'].items():
+              assert s['calibration_truth_conditions']==8 and s['validation_truth_conditions']==8
+              assert len(set(x['seed'] for x in s['training_rows']))==4
+              assert len(set(x['seed'] for x in s['validation_rows']))==4
+              assert set(x['seed'] for x in s['training_rows']).isdisjoint(
+                  set(x['seed'] for x in s['validation_rows']))
+          print('SOURCE_PINNED_RETROSPECTIVE_PROBE_SCORE_VERIFIED',r)
+          PY
+      - name: Require tampered original bytes to fail closed
+        run: |
+          python - <<'PY'
+          import tempfile,shutil,subprocess,sys
+          from pathlib import Path
+          orig=Path('research/frozen_policy_transfer/evidence/public_response_ack_probe_32_negative')
+          with tempfile.TemporaryDirectory() as p:
+              tmp=Path(p)/'source';shutil.copytree(orig,tmp)
+              bad=next(tmp.glob('physical_response_*_fresh4.json'))
+              bad.write_bytes(bad.read_bytes()+b' ')
+              result=subprocess.run([sys.executable,
+                'research/retrospective_probe_response_calibration.py',
+                '--input-dir',str(tmp),'--output',str(Path(p)/'out.json')],
+                capture_output=True,text=True)
+              assert result.returncode!=0 and 'digest altered' in result.stderr
+              print('TAMPERED_ORIGINAL_HASH_REJECTED')
+          PY
