@@ -7,6 +7,8 @@ their OWN current observations (closed-loop). No training or updates.
 This is an exploratory CI, not a pre-declared clinical safety guarantee.
 """
 import json
+import os
+import hashlib
 from pathlib import Path
 
 import gymnasium as gym
@@ -22,7 +24,8 @@ from frozen_ppo_pickcube_gate import (
 )
 import hashlib
 
-SEEDS=tuple(range(10001,10033))
+SEEDS=(10014,)
+PROBE_MODE=os.environ.get('CST_PROBE_MODE','none')
 MAX_STEPS=50
 
 
@@ -77,6 +80,9 @@ def rollout_one(actor,seed):
         observations={}
         for key,env in envs.items():
             observations[key],_=env.reset(seed=seed)
+        stamp=observations["source"].detach().cpu().numpy().tobytes()
+        report["initial_obs_sha256"]=hashlib.sha256(stamp).hexdigest()
+        report["probe_mode"]=PROBE_MODE
         shape={k:tuple(v.shape) for k,v in observations.items()}
         if len(set(shape.values()))!=1:
             raise RuntimeError("Mismatch observation ABI: "+str(shape))
@@ -117,6 +123,16 @@ def rollout_one(actor,seed):
                 report["success_once"][name]=report["success_once"].get(name,False) or _bool_value(success)
                 report["episode_steps"][name]=t+1
                 completed[name] = _bool_value(terminated) or _bool_value(truncated)
+            # Causal *single change* to uninstrumented original script:
+            # only these post-step read-only-looking accessors vary.  No
+            # policy training, reward logic, policy action or env reset
+            # changes by mode.
+            if PROBE_MODE in ("qpos","both"):
+                for k in ("source","compiled"):
+                    _=envs[k].unwrapped.agent.robot.get_qpos()
+            if PROBE_MODE in ("tcp","both"):
+                for k in ("source","compiled"):
+                    _=envs[k].unwrapped.agent.tcp.pose.p
             if all(completed.values()):
                 break
         print("FROZEN_PPO_SWAP_EPISODE",json.dumps(report,sort_keys=True))
