@@ -31,6 +31,18 @@ def _github_blob_sha1(path: Path) -> str:
 
 
 def _assert_equal(actual, expected, key):
+    # JSON can serialize mathematically equivalent exact zeros as 0 or
+    # 0.0 across NumPy/Python versions. Accept numeric equality within a
+    # fixed absolute tolerance, but do NOT allow bool to alias 0 or 1.
+    if (
+        isinstance(actual, (int, float)) and not isinstance(actual, bool)
+        and isinstance(expected, (int, float)) and not isinstance(expected, bool)
+    ):
+        if not np.isclose(float(actual), float(expected), atol=1e-10, rtol=0):
+            raise AssertionError(
+                f"{key}: replay {actual!r} differs from original {expected!r}"
+            )
+        return
     if type(actual) is not type(expected):
         raise AssertionError(f"{key}: original type mismatch")
     if isinstance(actual, dict):
