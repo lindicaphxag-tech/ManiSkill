@@ -76,3 +76,39 @@ family, explicit memory-state transfer, long-term closed-loop robustness,
 nonrepresentability diagnostics, independently run reproduction, and
 an upstream maintainer review/merge. This is not hardware-safety evidence,
 not a formal guarantee, and not a top-conference paper acceptance.
+
+
+## Replication warning added after independent diagnostic replay
+
+**Important newly observed negative result about reproducibility:**
+a separate full source/compiled/naive reenactment of *integer seed 10014*
+on a fresh CI runner **did not reproduce the initial failure**.
+
+- Original preregistered 32-trial workflow:
+  https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37716840505
+  — for integer seed 10014, source succeeded at 31 steps and compiled
+  failed by the 50-step horizon.
+- Later independent per-step diagnostic:
+  https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37717458927
+  — for **the same integer seed 10014**, source succeeded at 19 steps and
+  compiled succeeded at 25 steps. Initial *within-run* source/compiled
+  observations still matched to machine precision.
+
+**Correction:** the phrase "seed 10014 is a reproducible migration failure"
+is not supported. The initial 31/32 vs 32/32 vs 0/32 counts are true
+for their *exact public CI trial* and must remain as originally observed,
+but integer seeds alone did not yet certify identical scene initialization
+across separate workflow runs. The simulator may have other uncontrolled
+randomization/runtime variability, which requires diagnosis.
+
+The original experiment was **paired within run**, but it should not be
+called a fully reproducible *scene-level seeded holdout* until a scene state
+fingerprint and randomization reproducibility are demonstrated.
+
+A repeated-initialization audit (same integer seed repeated four times
+with hashed first observations and outcomes) is now in a separate
+validation branch, not altering the original frozen result:
+https://github.com/lindicaphxag-tech/ManiSkill/tree/validation/frozen-ppo-seed10014-repeatability-20261008
+
+No change to the original outcomes, outcome denominator, seed set or
+success counting was made to manufacture a stronger result.
