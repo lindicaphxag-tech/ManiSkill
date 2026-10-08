@@ -1,0 +1,113 @@
+name: Archive original new32 false-label response PhysX science evidence
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/archive-empirical-response-new32-original.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  source-pin-and-archive-complete:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require original completed genuine PhysX run and fixed protocol source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37832214332 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37832214332 --jq .head_sha)" = "a68f5d8ae73ebf6ef59bd94fa949cc3fd7f8f018"
+          test "$(git hash-object research/EMPIRICAL_RESPONSE_NEW32_FROZEN_BEFORE_RUN_V1.json)" = "46ad9c556fd2c599e3fd968ff7920ef973c23469"
+      - name: Download unmodified eight original 4-case PhysX source records
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/fresh32-src /tmp/fresh32-flat
+          gh run download 37832214332 --repo "$GITHUB_REPOSITORY" \
+            --name original-empirical-response-fresh32-complete-study \
+            --dir /tmp/fresh32-src
+          for task in pull_cube stack_cube; do
+            for truth in applied_no_ack neutral_arm_delta_no_ack; do
+              for start in 0 4; do
+                f="empirical_response_${task}_${truth}_${start}_fresh4.json"
+                test "$(find /tmp/fresh32-src -name "$f" -type f | wc -l)" -eq 1
+                cp "$(find /tmp/fresh32-src -name "$f" -type f)" /tmp/fresh32-flat/
+              done
+            done
+          done
+          name=empirical_response_fresh32_complete_original_audit.json
+          test "$(find /tmp/fresh32-src -name "$name" -type f | wc -l)" -eq 1
+          cp "$(find /tmp/fresh32-src -name "$name" -type f)" /tmp/fresh32-flat/
+      - name: Re-run audit from original raw inputs and verify original complete audit identical
+        run: |
+          set -euo pipefail
+          python -m research.audit_empirical_response_new32 \
+            --input-dir /tmp/fresh32-flat \
+            --output /tmp/recomputed_fresh32.json
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          stored=json.loads(Path('/tmp/fresh32-flat/empirical_response_fresh32_complete_original_audit.json').read_text())
+          recomputed=json.loads(Path('/tmp/recomputed_fresh32.json').read_text())
+          assert stored==recomputed
+          assert stored['trial_conditions']==32
+          rows=list(stored['results'].values())
+          assert sum(x['classifier_covered'] for x in rows)==24
+          assert sum(x['classifier_wrong_authorizations'] for x in rows)==0
+          assert sum(x['empirical_model_falsified'] for x in rows)==1
+          assert sum(x['true_history_incompatible_with_train_error_envelope'] for x in rows)==1
+          assert sum(x['success']['achieved_probe_classifier'] for x in rows)==22
+          assert sum(x['success']['blind_probe_optimistic'] for x in rows)==24
+          assert sum(x['success']['privileged_once_after_probe'] for x in rows)==30
+          assert all(x['paired_n']==4 and x['paired_fault_exposed']==4 for x in rows)
+          print('ORIGINAL_FRESH32_NEGATIVE_AND_POSITIVE_SOURCE_AUDIT_CONFIRMED')
+          PY
+      - name: Preserve evidence and limits in publicly discoverable main
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/empirical_public_response_new32
+          mkdir -p "$dest"
+          cp /tmp/fresh32-flat/*.json "$dest/"
+          (cd "$dest" && sha256sum ./*.json > SOURCE_SHA256SUMS)
+          cat > "$dest/README.md" <<'EOF'
+          # Fresh prospective PhysX achieved-response history identification: BOTH bounds and counterexample
+
+          Original true native PhysX source: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37832214332
+          Exact running source head: a68f5d8ae73ebf6ef59bd94fa949cc3fd7f8f018
+          Frozen BEFORE implementation: research/EMPIRICAL_RESPONSE_NEW32_FROZEN_BEFORE_RUN_V1.json
+          Historical per-task training-only error envelope frozen from original first four reset seeds in
+          earlier source run 37829529190; no new reset seed was used to calibrate.
+          Original 8 four-state JSON shards plus full original source audit copied BYTE UNCHANGED.
+          SHA256 manifest covers every original source JSON. Original failures are preserved.
+
+          Genuine official ManiSkill PhysX across 32 new task/fault truth states, two frozen
+          externally published PPO policies, source goals vs target-command-memory controller.
+          Public achieved-EE pre/post native zero-delta step plus action-history target candidates:
+          24/32 uniquely assigned hidden execution history, 0 observed wrong confident guesses.
+          8 could not be uniquely authorized, including 1 genuinely observed model-falsification
+          where the true history was inconsistent with its historical learned error envelope.
+          Native task success only 22/32 vs identical-probe optimistic 24/32 and one privileged
+          controller-target read 30/32. Correct abstention may reduce task completion.
+          These finite-sample observations DO NOT prove zero false labels on future environments,
+          real-robot/contact/force safety, independently attested dynamics, or external adoption.
+          The research contribution is evidence-conditional inference and explicit refusal,
+          not a new generic set-membership theorem or a novel PPO architecture.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dest"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'evidence: freeze 32 truly new robot ACK-response trials and model falsifier'
+          for i in 1 2 3 4 5; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then exit 0; fi
+          done
+          echo 'Concurrent upstream updates blocked archiving; do not claim success'
+          exit 1
