@@ -1,0 +1,184 @@
+name: Permanent frozen unknown-ACK bounded/query original audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-ack-bounded-query-originals.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  immutable-fault-trial-source-and-metrics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify exact source-run head, CI success and unchanged protocol
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37826881229 --jq .head_sha)" = "db4fe4dd9d09aaff67c5dcf12213ad737162282d"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37826881229 --jq .conclusion)" = success
+          test "$(git hash-object research/UNKNOWN_ACK_BOUNDED_QUERY_FROZEN_V1.json)" = "36f01321c7f5502f3cc0b188d5201f1c2cedb131"
+      - name: Retrieve ALL five original JSON/log source documents by artifact ID
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ack_replay_full
+          gh run download 37826881229 --repo "$GITHUB_REPOSITORY" --name original-16state-seven-arm-fault-robust-query-complete-audit --dir /tmp/ack_original_aggregate
+          gh run download 37826881229 --repo "$GITHUB_REPOSITORY" --name original-ack-bounded-query-pull_cube --dir /tmp/ack_original_pull
+          gh run download 37826881229 --repo "$GITHUB_REPOSITORY" --name original-ack-bounded-query-stack_cube --dir /tmp/ack_original_stack
+          for n in unknown_ack_bounded_query_pull_cube_original8.json unknown_ack_bounded_query_stack_cube_original8.json original_ack_bounded_query_16_aggregate.json; do
+            src=$(find /tmp/ack_original_aggregate -type f -name "$n")
+            test "$(printf '%s\n' "$src" | wc -l)" -eq 1
+            cp "$src" "/tmp/ack_replay_full/$n"
+          done
+          for t in pull_cube stack_cube; do
+            directory="/tmp/ack_original_pull"
+            if [ "$t" = stack_cube ]; then directory="/tmp/ack_original_stack"; fi
+            log=$(find "$directory" -type f -name "ack_bounded_query_${t}.log")
+            test "$(printf '%s\n' "$log" | wc -l)" -eq 1
+            cp "$log" "/tmp/ack_replay_full/ack_bounded_query_${t}.log"
+          done
+      - name: All original bytes SHA-256 match, no re-export or selective overwrite
+        run: |
+          cd /tmp/ack_replay_full
+          printf '%s\n' \
+            'bcbdcf8eea1f214dd4e6106402f45eaf19bcfe46fbff3edf9b74cad0e31da4cc  unknown_ack_bounded_query_pull_cube_original8.json' \
+            '8c0ff8cd0096562622c515619853c1939ac073d5c77a9deba597921c05d486ac  unknown_ack_bounded_query_stack_cube_original8.json' \
+            '1246afcd6a1b88922a5d1e9f0c73ebb858179a09770d5c2d46032763591955c8  original_ack_bounded_query_16_aggregate.json' \
+            '33871dd3448c762744e2deb3ddc3031bb9880a48a1b6f6d51028ff8b9fe09859  ack_bounded_query_pull_cube.log' \
+            '177fb318f73142870d1f88b19d2c1fc278ff08d8fb14dbe7f6d32bfb602f99c7  ack_bounded_query_stack_cube.log' | sha256sum -c -
+      - name: Independently reaggregate all 16 source states and verify paired query costs
+        run: |
+          python -m research.ack_bounded_query_aggregate --input-dir /tmp/ack_replay_full --output /tmp/ack_recomputed.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from hashlib import sha256
+          original=json.loads(Path('/tmp/ack_replay_full/original_ack_bounded_query_16_aggregate.json').read_text())
+          recomputed=json.loads(Path('/tmp/ack_recomputed.json').read_text())
+          assert original==recomputed,"Original full outcomes do not independently replay"
+          assert original['original_task_state_count']==16
+          assert original['independent_external_reproduction'] is False
+          pull=original['results']['pull_cube']
+          stack=original['results']['stack_cube']
+          assert pull['task_success_by_arm']['fault_robust_then_single_privileged_query']==8
+          assert stack['task_success_by_arm']['fault_robust_then_single_privileged_query']==7
+          assert pull['task_success_by_arm']['fault_robust_two_history_without_query']==8
+          assert stack['task_success_by_arm']['fault_robust_two_history_without_query']==3
+          assert pull['selective_privileged_readback_total']==0
+          assert stack['selective_privileged_readback_total']==4
+          assert pull['mandatory_privileged_readback_total']==8
+          assert stack['mandatory_privileged_readback_total']==8
+          assert all(v['source_competent_min_5'] for v in original['results'].values())
+          print("Exact source 16 episodes, 7 arms, 4 vs 16 decision target readbacks, 15/16 task success verified")
+          PY
+  trusted-main-archive-5-originals:
+    needs: immutable-fault-trial-source-and-metrics
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify exact source-run head, CI success and unchanged protocol
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37826881229 --jq .head_sha)" = "db4fe4dd9d09aaff67c5dcf12213ad737162282d"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37826881229 --jq .conclusion)" = success
+          test "$(git hash-object research/UNKNOWN_ACK_BOUNDED_QUERY_FROZEN_V1.json)" = "36f01321c7f5502f3cc0b188d5201f1c2cedb131"
+      - name: Retrieve ALL five original JSON/log source documents by artifact ID
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ack_replay_full
+          gh run download 37826881229 --repo "$GITHUB_REPOSITORY" --name original-16state-seven-arm-fault-robust-query-complete-audit --dir /tmp/ack_original_aggregate
+          gh run download 37826881229 --repo "$GITHUB_REPOSITORY" --name original-ack-bounded-query-pull_cube --dir /tmp/ack_original_pull
+          gh run download 37826881229 --repo "$GITHUB_REPOSITORY" --name original-ack-bounded-query-stack_cube --dir /tmp/ack_original_stack
+          for n in unknown_ack_bounded_query_pull_cube_original8.json unknown_ack_bounded_query_stack_cube_original8.json original_ack_bounded_query_16_aggregate.json; do
+            src=$(find /tmp/ack_original_aggregate -type f -name "$n")
+            test "$(printf '%s\n' "$src" | wc -l)" -eq 1
+            cp "$src" "/tmp/ack_replay_full/$n"
+          done
+          for t in pull_cube stack_cube; do
+            directory="/tmp/ack_original_pull"
+            if [ "$t" = stack_cube ]; then directory="/tmp/ack_original_stack"; fi
+            log=$(find "$directory" -type f -name "ack_bounded_query_${t}.log")
+            test "$(printf '%s\n' "$log" | wc -l)" -eq 1
+            cp "$log" "/tmp/ack_replay_full/ack_bounded_query_${t}.log"
+          done
+      - name: All original bytes SHA-256 match, no re-export or selective overwrite
+        run: |
+          cd /tmp/ack_replay_full
+          printf '%s\n' \
+            'bcbdcf8eea1f214dd4e6106402f45eaf19bcfe46fbff3edf9b74cad0e31da4cc  unknown_ack_bounded_query_pull_cube_original8.json' \
+            '8c0ff8cd0096562622c515619853c1939ac073d5c77a9deba597921c05d486ac  unknown_ack_bounded_query_stack_cube_original8.json' \
+            '1246afcd6a1b88922a5d1e9f0c73ebb858179a09770d5c2d46032763591955c8  original_ack_bounded_query_16_aggregate.json' \
+            '33871dd3448c762744e2deb3ddc3031bb9880a48a1b6f6d51028ff8b9fe09859  ack_bounded_query_pull_cube.log' \
+            '177fb318f73142870d1f88b19d2c1fc278ff08d8fb14dbe7f6d32bfb602f99c7  ack_bounded_query_stack_cube.log' | sha256sum -c -
+      - name: Independently reaggregate all 16 source states and verify paired query costs
+        run: |
+          python -m research.ack_bounded_query_aggregate --input-dir /tmp/ack_replay_full --output /tmp/ack_recomputed.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from hashlib import sha256
+          original=json.loads(Path('/tmp/ack_replay_full/original_ack_bounded_query_16_aggregate.json').read_text())
+          recomputed=json.loads(Path('/tmp/ack_recomputed.json').read_text())
+          assert original==recomputed,"Original full outcomes do not independently replay"
+          assert original['original_task_state_count']==16
+          assert original['independent_external_reproduction'] is False
+          pull=original['results']['pull_cube']
+          stack=original['results']['stack_cube']
+          assert pull['task_success_by_arm']['fault_robust_then_single_privileged_query']==8
+          assert stack['task_success_by_arm']['fault_robust_then_single_privileged_query']==7
+          assert pull['task_success_by_arm']['fault_robust_two_history_without_query']==8
+          assert stack['task_success_by_arm']['fault_robust_two_history_without_query']==3
+          assert pull['selective_privileged_readback_total']==0
+          assert stack['selective_privileged_readback_total']==4
+          assert pull['mandatory_privileged_readback_total']==8
+          assert stack['mandatory_privileged_readback_total']==8
+          assert all(v['source_competent_min_5'] for v in original['results'].values())
+          print("Exact source 16 episodes, 7 arms, 4 vs 16 decision target readbacks, 15/16 task success verified")
+          PY
+      - name: Commit five exact original files and precommitted protocol scope
+        run: |
+          set -euo pipefail
+          dst=research/frozen_policy_transfer/evidence/unknown_ack_bounded_query_16
+          mkdir -p "$dst"
+          cp /tmp/ack_replay_full/*.json "$dst/"
+          cp /tmp/ack_replay_full/*.log "$dst/"
+          cat > "$dst/README.md" <<'EOF'
+          # Original unknown-ACK bounded-or-query seven-arm frozen-PPO experiment
+          Both frozen third-party PPOs; 8 PullCube + 8 StackCube new source state resets.
+          Protocol b2cc9942daa6bb2edb10797fad91f48554a3a6ce, frozen BEFORE physical source experiments; git blob 36f01321c7f5502f3cc0b188d5201f1c2cedb131.
+          Source run 37826881229 on db4fe4dd9d09aaff67c5dcf12213ad737162282d: both genuine real-PhysX jobs and 16-state independent aggregate passed.
+          Full source logs, original per-task JSONs and original aggregate copied byte-identically; SHA-256 pinned in archive-ack-bounded-query-originals.yml, independently recomputed complete denominator before committing.
+          Original no-fault PPO success 14/16; optimistic ACK 6/16; strict exact-only refusal 0/16; robust two-history no query 11/16; selective bounded-then-one-readback 15/16; mandatory single readback 15/16; continually privileged oracle 15/16.
+          Selective **4 privileged decision reads** vs mandatory **16**, 75% fewer with the same POOLED 15/16 success. On StackCube, outcomes are not identical per seed: 1 selective-only and 1 mandatory-only success.
+          Unknown ACK is generated by an explicit native arm target-HOLD while retaining real gripper step, NOT physical network packet loss. Privileged oracle uses ongoing target access sentinel -1 and cannot be misreported as zero reads.
+          All new scenarios, bounds and interventions are ONE author's public simulation, not independent external validation or proof of robot collision/force/contact/hardware safety. Standard bounded-belief and selective-sensing concepts have prior literature.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dst"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'evidence: permanently preserve complete five-file frozen ACK bounded/query PhysX sources'
+          git push origin HEAD:main
