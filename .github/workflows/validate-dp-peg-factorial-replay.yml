@@ -1,0 +1,61 @@
+name: PegInsertion converter-controller 2x2 replay
+
+on:
+  push:
+    branches: [validation/dp-peg-factorial-replay-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: peg-factorial-replay-v1
+  cancel-in-progress: true
+
+jobs:
+  four-cell-replay:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    env:
+      SEMREPAIR_DP_SMOKE: "1"
+      SEMREPAIR_DP_FACTORIAL_REPLAY: "1"
+      PYTHONFAULTHANDLER: "1"
+      LIBGL_ALWAYS_SOFTWARE: "1"
+      MESA_LOADER_DRIVER_OVERRIDE: "llvmpipe"
+      VK_ICD_FILENAMES: "/usr/share/vulkan/icd.d/lvp_icd.x86_64.json"
+      VK_DRIVER_FILES: "/usr/share/vulkan/icd.d/lvp_icd.x86_64.json"
+      MESA_VK_DEVICE_SELECT: "10005:0000"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install headless software Vulkan and record physical rendering driver
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends             libvulkan1 mesa-vulkan-drivers vulkan-tools libegl1 libgl1
+          test -f "$VK_ICD_FILENAMES"
+          vulkaninfo --summary 2>&1 | tee /tmp/semrepair-vulkaninfo.txt
+          grep -E -i 'llvmpipe|lavapipe|software' /tmp/semrepair-vulkaninfo.txt
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install CPU-only Torch
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Replay all four exact-code factor cells and freeze source-seed matrix
+        shell: bash
+        run: |
+          set -o pipefail
+          python research/kaggle_diffusion_policy_peg/run_assay.py 2>&1 | tee /tmp/semrepair-dp-lavapipe.log
+      - name: Upload complete factorial outcome and raw logs even if a cell fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dp-peg-factorial-2x2-replay
+          path: |
+            ${{ runner.temp }}/semrepair_dp_smoke/assay_output/
+            /tmp/semrepair-vulkaninfo.txt
+            /tmp/semrepair-dp-lavapipe.log
+          if-no-files-found: warn
