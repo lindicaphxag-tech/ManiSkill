@@ -180,3 +180,44 @@ Therefore the current evidence boundary is:
 A future renderer-free dataset-to-optimizer smoke may validate only the
 training/evaluator compatibility layer. It must not be substituted for the
 real paired source-demo replay protocol.
+
+
+## Attribution-grade follow-up (2026-10-08)
+
+The original paired assay contrasts the frozen baseline with #1495 + #1472
+simultaneously, so it cannot isolate either PR. To directly address the
+maintainer's PegInsertionSide policy-level evidence request, a separate
+**four-cell executable runner** has been added without altering the historical
+two-cell runner:
+
+- [Source-pinned factorial runner](run_assay_factorial.py), four independent
+  demo replays and training runs: baseline / converter only / controller only /
+  both changes
+- [Exact intervention design](assay_design.py), plus an AST-based test that
+  checks the real Kaggle runner uses exactly the frozen four source assignments
+- [GPU kernel metadata template](kernel-metadata-factorial.json), private and
+  **not submitted or executed** by this GitHub change
+- [Protocol and critical post-treatment-selection caveat](FACTORIAL_REVIEWER_PROTOCOL.md)
+- [Fail-closed policy-results auditor](policy_evidence_gate.py): requires a
+  complete source-seed intersection, arm-specific replay attrition, all four
+  TensorBoard success/loss curves, matching evaluation denominators and
+  source-tree assignments before reporting **descriptive** differences and
+  their interaction
+- [Adversarial acceptance unit tests](tests/test_policy_evidence_gate.py)
+  and [public three-Python evidence-gate CI](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37716008640),
+  all successful. The archived failed v3 result is explicitly refused.
+
+**Important:** There is no successful or failed *four-cell GPU experiment*
+to interpret yet. The synthetic fixture metrics exist exclusively to test the
+auditor. The four-arm runner uses a post-treatment intersection of successful
+demo replays; it does not estimate an unbiased effect over the original
+100-episode population. A single training seed and 20-episode evaluations
+cannot establish a performance improvement or statistical significance.
+Any real experiment must retain all four replay success counts, every
+source-seed exclusion and all negative/null policy outcomes.
+
+The converter file checked out by the runner at source commit
+`875ae4d8777678119b2f192ee186c6c15e6894d5` is byte-identical (Git blob
+`438c4c41c7fe067194d8e090b9114ad0b5251128`) to the current public
+#1495 head `69facfaafaa0ef233d36ef19e6cd9a0f03532ee0`, but the commits
+are not described as identical.
