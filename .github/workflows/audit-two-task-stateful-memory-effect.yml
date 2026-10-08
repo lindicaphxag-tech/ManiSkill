@@ -1,4 +1,4 @@
-name: Independent two-task stateful-target-memory effect audit
+name: Public source-pinned two-task stateful-target-memory audit
 
 on:
   push:
@@ -16,18 +16,18 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
-        with:
-          repository: lindicaphxag-tech/lindicaphxag-tech
-          ref: d69627a01c97505d27376ba288f107d4cd753ab0
-          path: frozen-profile-evidence
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Confirm pinned public evidence bytes, not mutable declarations
+        run: |
+          test "$(git hash-object research/frozen_policy_transfer/state_memory_mechanism.py)" = "9afc1f2f1fc5679d8f08f2704fb99f27a7a19964"
+          test "$(git hash-object research/frozen_policy_transfer/evidence/pickcube_memory_blind_ablation_22001_22032.json)" = "8afa8ea47ebc52313493899f0f18de7272b0feae"
+          test "$(git hash-object research/frozen_policy_transfer/evidence/pushcube_holdout_41001_41032.json)" = "37f2f0e1f03153b634a78a4f06e843a768e848f4"
       - name: Independently reconstruct all original 64 PhysX episode pairs
         run: |
           set -o pipefail
-          python frozen-profile-evidence/research/frozen_policy_transfer/state_memory_mechanism.py | tee audited_two_task_memory_ablation.json
+          python research/frozen_policy_transfer/state_memory_mechanism.py | tee audited_two_task_memory_ablation.json
       - name: "Red-team evidence: deny seed loss, changed controller identity and forged task count"
         run: |
           python - <<'PY'
