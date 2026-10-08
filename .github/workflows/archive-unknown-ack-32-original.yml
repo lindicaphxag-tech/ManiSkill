@@ -45,12 +45,15 @@ jobs:
             ack_loss_stack_cube_applied_no_ack_fresh8.json \
             ack_loss_stack_cube_neutral_arm_delta_no_ack_fresh8.json \
             unknown-ack-full-auditor.json; do
-            test -s "/tmp/unknown-ack-original/$name"
+            mapfile -t matches < <(find /tmp/unknown-ack-original -type f -name "$name")
+            test "${#matches[@]}" -eq 1
+            test -s "${matches[0]}"
+            cp "${matches[0]}" "/tmp/unknown-ack-exact/$name"
           done
           python -m research.audit_unknown_ack_physx \
-            --input-dir /tmp/unknown-ack-original \
+            --input-dir /tmp/unknown-ack-exact \
             --output /tmp/unknown-ack-independent-recomputed.json
-          cmp /tmp/unknown-ack-independent-recomputed.json /tmp/unknown-ack-original/unknown-ack-full-auditor.json
+          cmp /tmp/unknown-ack-independent-recomputed.json /tmp/unknown-ack-exact/unknown-ack-full-auditor.json
           python -m unittest discover -s tests -p 'test_unknown_ack_original_auditor.py' -v
           
 
@@ -84,12 +87,15 @@ jobs:
             ack_loss_stack_cube_applied_no_ack_fresh8.json \
             ack_loss_stack_cube_neutral_arm_delta_no_ack_fresh8.json \
             unknown-ack-full-auditor.json; do
-            test -s "/tmp/unknown-ack-original/$name"
+            mapfile -t matches < <(find /tmp/unknown-ack-original -type f -name "$name")
+            test "${#matches[@]}" -eq 1
+            test -s "${matches[0]}"
+            cp "${matches[0]}" "/tmp/unknown-ack-exact/$name"
           done
           python -m research.audit_unknown_ack_physx \
-            --input-dir /tmp/unknown-ack-original \
+            --input-dir /tmp/unknown-ack-exact \
             --output /tmp/unknown-ack-independent-recomputed.json
-          cmp /tmp/unknown-ack-independent-recomputed.json /tmp/unknown-ack-original/unknown-ack-full-auditor.json
+          cmp /tmp/unknown-ack-independent-recomputed.json /tmp/unknown-ack-exact/unknown-ack-full-auditor.json
           python -m unittest discover -s tests -p 'test_unknown_ack_original_auditor.py' -v
           
       - name: Persist exact 5 original JSON bytes, per-file checksums and scope
