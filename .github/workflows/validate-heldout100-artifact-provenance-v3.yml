@@ -1,0 +1,52 @@
+name: Independently audit real HDF5-bound 100-199 holdout
+
+on:
+  push:
+    branches:
+      - validation/heldout100-artifact-provenance-v3
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit-disjoint-hdf5-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile exact-source cohort auditor
+        run: |
+          python -m py_compile research/kaggle_diffusion_policy_peg/audit_factorial_replay.py
+      - name: Self-test adversarially corrupted source-seed evidence
+        run: |
+          python research/kaggle_diffusion_policy_peg/audit_factorial_replay.py --self-test
+          python -m unittest -v research.kaggle_diffusion_policy_peg.test_source_bound_audit
+      - name: Download CORRECTED physical HDF5 sliced official replay
+        uses: actions/download-artifact@v4
+        with:
+          repository: lindicaphxag-tech/ManiSkill
+          run-id: 37752565886
+          name: dp-peg-heldout-fixed-v2
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: frozen_heldout_artifact
+      - name: Audit actual original 100-199 HDF5 source groups and seeds
+        run: |
+          python research/kaggle_diffusion_policy_peg/audit_factorial_replay.py \
+            --search frozen_heldout_artifact \
+            --expected-size 100 \
+            --source-offset 100 \
+            --origin-run-id 37752565886 \
+            --verify-physical-slices \
+            --output audited_true_heldout_100_199.json
+      - name: Archive independent audited holdout report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verified-real-hdf5-holdout-100-199
+          path: audited_true_heldout_100_199.json
+          if-no-files-found: warn
