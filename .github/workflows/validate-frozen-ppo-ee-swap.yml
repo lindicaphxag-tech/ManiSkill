@@ -25,7 +25,9 @@ jobs:
           python -m pip install -e . huggingface_hub
       - name: Frozen PPO source/adapter/direct-copy comparison
         run: |
+          set -o pipefail
           python research/frozen_ppo_ee_swap.py 2>&1 | tee frozen_policy_controller_swap.log
+          test -s frozen_ppo_controller_swap.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
