@@ -19,7 +19,7 @@ from frozen_ppo_pickcube_gate import (
     _actor, _bool_value, REPO, FILENAME, EXPECTED,
 )
 
-SEEDS=(42,270,429,2026)
+SEEDS=tuple(range(20001,20033))
 STEPS=50
 TOL=1e-5
 
@@ -205,6 +205,24 @@ def main():
     counts={key:sum(x["success_once"].get(key,False) for x in records)
             for key in ("source","memory","projected","naive")}
     refusals=sum("memory" in x["refusals"] for x in records)
+    projected_episode_count=sum(bool(x["approximations"].get("projected"))
+                                for x in records)
+    projection_steps=sum(len(x["approximations"].get("projected",[]))
+                         for x in records)
+    discordant={
+       "projected_beats_naive":sum(x["success_once"].get("projected",False)
+                                   and not x["success_once"].get("naive",False)
+                                   for x in records),
+       "naive_beats_projected":sum(x["success_once"].get("naive",False)
+                                   and not x["success_once"].get("projected",False)
+                                   for x in records),
+       "source_beats_projected":sum(x["success_once"].get("source",False)
+                                   and not x["success_once"].get("projected",False)
+                                   for x in records),
+       "projected_beats_source":sum(x["success_once"].get("projected",False)
+                                   and not x["success_once"].get("source",False)
+                                   for x in records)
+    }
     data={"checkpoint_sha256":sha,"public_pretrained":True,
           "training_performed":False,"backend":"physx_cpu",
           "controller_contracts":{
@@ -212,11 +230,16 @@ def main():
              "memory":"pd_ee_target_delta_pose with live previous-target inversion",
              "projected":"pd_ee_target_delta_pose with bounded non-exact projection",
              "naive":"pd_ee_target_delta_pose direct-copy"},
-          "success_count":counts,"refused_episodes":refusals,"episodes":records}
+          "success_count":counts,"refused_episodes":refusals,
+          "projected_approximation_episodes":projected_episode_count,
+          "projected_approximation_steps":projection_steps,
+          "paired_discordances":discordant,
+          "registered_seed_range":[20001,20032],"episodes":records}
     Path("frozen_ppo_target_memory.json").write_text(json.dumps(data,indent=2))
     print("FROZEN_TARGET_MEMORY_SUMMARY",json.dumps({
         "success":counts,"refused":refusals,
-        "approximate_steps":sum(len(x["approximations"].get("projected",[])) for x in records),
+        "approximate_episodes":projected_episode_count,
+        "approximate_steps":projection_steps,
         "episodes":len(records)}))
 
 
