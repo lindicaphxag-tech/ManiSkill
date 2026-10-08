@@ -19,6 +19,10 @@ def _copy_archive(tmp_path):
 def test_exact_original_pilot_replay_and_corrected_transfer_authorization():
     out = replay_archive()
     assert out["original_source_replayed"]
+    assert out["every_non_digest_original_field_numerically_checked"]
+    assert out["original_calibration_digest_preserved"] == "0af1b474c7a2c457c2b9496cc46e74b7294e15673b5134ecca1aa1715162437e"
+    assert len(out["recomputed_calibration_digest"]) == 64
+    assert isinstance(out["calibration_digest_byte_exact"], bool)
     assert out["research_verdict"] == "ZERO_UTILITY_NO_TRANSFER"
     assert out["n_calibration_state_clusters"] == 9
     assert out["n_test_state_clusters"] == 4
