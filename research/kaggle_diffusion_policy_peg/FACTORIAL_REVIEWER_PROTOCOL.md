@@ -192,3 +192,57 @@ test as an executable simulator result. Subsequent actual simulation
 requires a supported Vulkan rendering implementation, a special renderer
 workaround independently validated against production semantics, or
 Kaggle/another available graphics-capable environment.
+
+
+## Native trajectory *bytes* audit (not merely SHA-256-shaped manifest strings)
+
+The earlier `audit_replay_journal.py` checked that each declared HDF5 and
+metadata digest was 64 hexadecimal characters, but it **did not open
+those two files**. That made a manifest-only consistency check insufficient
+to claim actual native replay proof. The experimental runner had already
+verified its saved `RecordEpisode` HDF5 terminal-success steps against
+the JSON labels before saving each arm. A *separate reopener*, independent
+of that runner, is now provided.
+
+The second-level verifier needs **actual generated native files**, not a
+prewritten JSON output or author-provided file hashes:
+
+```bash
+python -m research.kaggle_diffusion_policy_peg.verify_native_replay_outputs \
+  /path/to/assay_output_factorial \
+  /path/to/demos/converted \
+  --output /path/to/native_source_audit.json
+```
+
+The `demos/converted` directory must contain each of the four independently
+replayed ManiSkill output pairs at
+`<arm>/PegInsertionSide-v1/motionplanning/trajectory.state.pd_ee_delta_pose.physx_cpu.h5`
+and same-named `.json` metadata. This exact layout is what the frozen
+Kaggle runner writes under `/kaggle/working/demos/converted`.
+The verifier independently SHA-256-hashes **the actual two files per arm**,
+crosschecks all original source episode IDs/seeds and their selected order,
+validates every HDF5 per-timestep boolean success vector against saved actions,
+and confirms the terminal flag agrees with JSON and the original population
+replay journal.
+
+Unverifiable file absence, a symlink substitution, a hash mismatch, a missing
+HDF5 group, a changed terminal outcome, a missing source episode, or
+inconsistency between arm journal and the separate intention-to-replay record
+causes **rejection**. A manifest containing plausible 64-character hashes
+**without the corresponding native data bytes is not sufficient**.
+
+The 2026-10-08 public
+[three-Python CI](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37751401827)
+includes 63 adversarial/unit tests in each environment, of which 9 new tests
+exercise actual small HDF5 fixtures through the independent verifier.
+These fixtures are *synthetic*; no four-arm GPU replay or policy training
+is claimed. An author's complete native-file audit still does **not**
+prove third-party execution, independent attestation, statistical significance
+or improved learned-policy task recovery.
+
+**Remaining blocker for official #1495 merge evidence:** upload and
+independently audit authentic four-arm PegInsertionSide replay artifacts,
+run the official Diffusion Policy training/evaluation protocols with
+multiple seeds, and supply source-pinned training-loss/success curves to the
+ManiSkill maintainer. No such completed four-arm performance artifact exists
+in this repository at the time of this protocol update.
