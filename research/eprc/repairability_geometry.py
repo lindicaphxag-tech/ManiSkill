@@ -1,0 +1,338 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from math import inf
+
+import numpy as np
+
+
+@dataclass(frozen=True)
+class RepairabilityRadius:
+    trust_radius: float
+    authority_radius: float
+    certified_radius: float
+    limiting_action_dim: int | None
+
+
+@dataclass(frozen=True)
+class RepairSynthesis:
+    latent_repair: np.ndarray
+    physical_repair: np.ndarray
+    residual: np.ndarray
+    residual_norm: float
+    certified_radius: float
+    repairable: bool
+    separation_normal: np.ndarray
+    separation_margin: float
+    reason: str
+
+
+def _support_metric_inverse_sqrt(
+    support_metric: np.ndarray | None,
+    support_dim: int,
+    *,
+    atol: float = 1e-12,
+) -> np.ndarray:
+    """Return M^{-1/2} for the physical support metric xi^T M xi.
+
+    Identity is used only when the support coordinates are already declared
+    dimensionless/canonical. Mixed physical units (for example pixels and
+    radians) should provide an explicit positive-definite metric.
+    """
+
+    if support_metric is None:
+        return np.eye(support_dim, dtype=float)
+    metric = np.asarray(support_metric, dtype=float)
+    if metric.shape != (support_dim, support_dim):
+        raise ValueError("support_metric shape must match support dimension")
+    if not np.allclose(metric, metric.T, atol=atol, rtol=0.0):
+        raise ValueError("support_metric must be symmetric")
+    eigenvalues, eigenvectors = np.linalg.eigh(metric)
+    if np.any(eigenvalues <= atol):
+        raise ValueError("support_metric must be positive definite")
+    return (eigenvectors * (1.0 / np.sqrt(eigenvalues))) @ eigenvectors.T
+
+
+def metric_whitened_support_jacobian(
+    action_support_jacobian: np.ndarray,
+    support_metric: np.ndarray | None,
+) -> np.ndarray:
+    """Express d(action)/d(support) in unit-ball metric coordinates."""
+
+    j = np.asarray(action_support_jacobian, dtype=float)
+    if j.ndim != 2:
+        raise ValueError("action_support_jacobian must be 2D")
+    return j @ _support_metric_inverse_sqrt(support_metric, j.shape[1])
+
+
+def certified_support_radius(
+    nominal_action: np.ndarray,
+    action_support_jacobian: np.ndarray,
+    action_low: np.ndarray,
+    action_high: np.ndarray,
+    *,
+    trust_radius: float,
+    support_metric: np.ndarray | None = None,
+    atol: float = 1e-12,
+) -> RepairabilityRadius:
+    """Largest L2 support-space ball guaranteed to remain inside action authority.
+
+    For ||xi||_2 <= r, row-wise Cauchy-Schwarz gives
+        |J_i xi| <= ||J_i||_2 r.
+    Therefore r <= margin_i / ||J_i||_2 is sufficient for every action bound.
+    """
+
+    a = np.asarray(nominal_action, dtype=float)
+    j = np.asarray(action_support_jacobian, dtype=float)
+    lo = np.asarray(action_low, dtype=float)
+    hi = np.asarray(action_high, dtype=float)
+
+    if j.ndim != 2:
+        raise ValueError("action_support_jacobian must be 2D")
+    if a.ndim != 1 or lo.shape != a.shape or hi.shape != a.shape:
+        raise ValueError("action vectors must be 1D and shape-aligned")
+    if j.shape[0] != a.size:
+        raise ValueError("Jacobian action dimension does not match nominal action")
+    if np.any(lo > hi):
+        raise ValueError("action_low must not exceed action_high")
+    if np.any(a < lo - atol) or np.any(a > hi + atol):
+        return RepairabilityRadius(
+            trust_radius=float(trust_radius),
+            authority_radius=-inf,
+            certified_radius=-inf,
+            limiting_action_dim=None,
+        )
+    if trust_radius < 0:
+        raise ValueError("trust_radius must be non-negative")
+
+    margins = np.minimum(a - lo, hi - a)
+    # The trust region is xi^T M xi <= r^2. In whitened coordinates
+    # xi=M^{-1/2}u, ||u||<=r and the action response is J M^{-1/2}u.
+    j_ball = metric_whitened_support_jacobian(j, support_metric)
+    row_norms = np.linalg.norm(j_ball, axis=1)
+
+    ratios = np.full_like(margins, np.inf, dtype=float)
+    active = row_norms > atol
+    ratios[active] = margins[active] / row_norms[active]
+
+    limiting = int(np.argmin(ratios)) if np.any(np.isfinite(ratios)) else None
+    authority_radius = float(np.min(ratios)) if ratios.size else inf
+    certified = float(min(trust_radius, authority_radius))
+
+    return RepairabilityRadius(
+        trust_radius=float(trust_radius),
+        authority_radius=authority_radius,
+        certified_radius=certified,
+        limiting_action_dim=limiting,
+    )
+
+
+def _bounded_least_squares_l2_ball(
+    g: np.ndarray,
+    target: np.ndarray,
+    radius: float,
+    *,
+    atol: float = 1e-12,
+) -> np.ndarray:
+    """Solve min ||G xi - target||_2 subject to ||xi||_2 <= radius."""
+
+    if radius < 0:
+        raise ValueError("radius must be non-negative")
+    if radius == 0 or g.shape[1] == 0:
+        return np.zeros(g.shape[1], dtype=float)
+
+    u, s, vt = np.linalg.svd(g, full_matrices=False)
+    coeff = u.T @ target
+
+    inv = np.zeros_like(s)
+    nz = s > atol
+    inv[nz] = 1.0 / s[nz]
+    xi_ls = vt.T @ (inv * coeff)
+    if np.linalg.norm(xi_ls) <= radius + atol:
+        return xi_ls
+
+    # Trust-region KKT solution:
+    # xi(lambda) = V diag(s/(s^2+lambda)) U^T target,
+    # choose lambda >= 0 such that ||xi|| = radius.
+    def xi_for(lam: float) -> np.ndarray:
+        weights = np.zeros_like(s)
+        weights[nz] = s[nz] / (s[nz] ** 2 + lam)
+        return vt.T @ (weights * coeff)
+
+    lo, hi = 0.0, 1.0
+    while np.linalg.norm(xi_for(hi)) > radius:
+        hi *= 2.0
+        if hi > 1e18:
+            raise RuntimeError("failed to bracket trust-region multiplier")
+
+    for _ in range(120):
+        mid = 0.5 * (lo + hi)
+        if np.linalg.norm(xi_for(mid)) > radius:
+            lo = mid
+        else:
+            hi = mid
+
+    return xi_for(hi)
+
+
+def synthesize_repair(
+    action_support_jacobian: np.ndarray,
+    action_to_physical_jacobian: np.ndarray,
+    target_physical_correction: np.ndarray,
+    *,
+    nominal_action: np.ndarray,
+    action_low: np.ndarray,
+    action_high: np.ndarray,
+    trust_radius: float,
+    support_metric: np.ndarray | None = None,
+    residual_tolerance: float = 1e-8,
+) -> RepairSynthesis:
+    """Construct the nearest certified repair and an outside-set certificate.
+
+    Certified repair set:
+        K = { C J xi : ||xi||_2 <= r_cert }
+
+    where r_cert is the largest support-space ball guaranteed to satisfy both
+    the local trust region and the controller's action box.
+    """
+
+    j = np.asarray(action_support_jacobian, dtype=float)
+    c = np.asarray(action_to_physical_jacobian, dtype=float)
+    d = np.asarray(target_physical_correction, dtype=float)
+
+    if c.ndim != 2 or j.ndim != 2:
+        raise ValueError("Jacobians must be 2D")
+    if c.shape[1] != j.shape[0]:
+        raise ValueError("semantic lift and action-support Jacobian are incompatible")
+    if d.ndim != 1 or d.size != c.shape[0]:
+        raise ValueError("target physical correction dimension mismatch")
+
+    radius = certified_support_radius(
+        nominal_action,
+        j,
+        action_low,
+        action_high,
+        trust_radius=trust_radius,
+        support_metric=support_metric,
+    )
+    if radius.certified_radius < 0:
+        zero = np.zeros(j.shape[1], dtype=float)
+        return RepairSynthesis(
+            latent_repair=zero,
+            physical_repair=np.zeros_like(d),
+            residual=d.copy(),
+            residual_norm=float(np.linalg.norm(d)),
+            certified_radius=radius.certified_radius,
+            repairable=False,
+            separation_normal=d.copy(),
+            separation_margin=float("inf"),
+            reason="nominal action already violates controller authority",
+        )
+
+    metric_inv_sqrt = _support_metric_inverse_sqrt(
+        support_metric, j.shape[1]
+    )
+    g_ball = c @ j @ metric_inv_sqrt
+    u = _bounded_least_squares_l2_ball(
+        g_ball, d, radius.certified_radius
+    )
+    xi = metric_inv_sqrt @ u
+    repaired = c @ j @ xi
+    residual = d - repaired
+    residual_norm = float(np.linalg.norm(residual))
+
+    # K is a centered ellipsoid image. Its support function is
+    # h_K(v) = r ||G^T v||. For projection residual n=d-p, a positive
+    # n^T d - h_K(n) separates d from K.
+    n = residual
+    support_bound = radius.certified_radius * float(
+        np.linalg.norm(g_ball.T @ n)
+    )
+    separation_margin = float(n @ d - support_bound)
+
+    repairable = residual_norm <= residual_tolerance
+    if repairable:
+        reason = "target correction lies inside the certified repairability set"
+    elif separation_margin > residual_tolerance:
+        reason = "target correction is outside the certified repairability set"
+    else:
+        reason = "nearest certified repair leaves non-zero residual"
+
+    return RepairSynthesis(
+        latent_repair=xi,
+        physical_repair=repaired,
+        residual=residual,
+        residual_norm=residual_norm,
+        certified_radius=radius.certified_radius,
+        repairable=repairable,
+        separation_normal=n,
+        separation_margin=separation_margin,
+        reason=reason,
+    )
+
+
+@dataclass(frozen=True)
+class RepairabilityDiagnostics:
+    image_residual_norm: float
+    minimum_required_radius: float
+    certified_radius: float
+    radius_margin: float
+    signed_margin: float
+
+
+def diagnose_repairability(
+    physical_repair_map: np.ndarray,
+    target_physical_correction: np.ndarray,
+    *,
+    certified_radius: float,
+    support_metric: np.ndarray | None = None,
+    atol: float = 1e-10,
+) -> RepairabilityDiagnostics:
+    """Return a zero-threshold, geometry-defined repairability margin.
+
+    Positive signed_margin iff the target lies in the physical response image
+    and its minimum-norm latent repair fits inside the certified radius.
+
+    For out-of-image targets, signed_margin is the negative *relative* physical
+    image residual. For in-image targets, it is normalized latent radius slack.
+    """
+
+    g_support = np.asarray(physical_repair_map, dtype=float)
+    d = np.asarray(target_physical_correction, dtype=float)
+    if g_support.ndim != 2 or d.ndim != 1 or g_support.shape[0] != d.size:
+        raise ValueError("repair map / target shape mismatch")
+    g = g_support @ _support_metric_inverse_sqrt(
+        support_metric, g_support.shape[1]
+    )
+    if certified_radius < 0:
+        return RepairabilityDiagnostics(
+            image_residual_norm=float("inf"),
+            minimum_required_radius=float("inf"),
+            certified_radius=float(certified_radius),
+            radius_margin=float("-inf"),
+            signed_margin=float("-inf"),
+        )
+
+    xi_min = np.linalg.pinv(g, rcond=atol) @ d
+    projection = g @ xi_min
+    image_residual = float(np.linalg.norm(d - projection))
+    required = float(np.linalg.norm(xi_min))
+    radius_margin = float(certified_radius - required)
+
+    target_norm = float(np.linalg.norm(d))
+    relative_image_residual = image_residual / max(target_norm, atol)
+
+    if image_residual > atol * max(1.0, target_norm):
+        signed = -relative_image_residual
+    elif certified_radius <= atol:
+        signed = 1.0 if required <= atol else float("-inf")
+    else:
+        signed = radius_margin / certified_radius
+
+    return RepairabilityDiagnostics(
+        image_residual_norm=image_residual,
+        minimum_required_radius=required,
+        certified_radius=float(certified_radius),
+        radius_margin=radius_margin,
+        signed_margin=float(signed),
+    )

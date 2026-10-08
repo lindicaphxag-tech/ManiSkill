@@ -1,0 +1,60 @@
+name: EPRC LeRobot ACT Relative Actions Handoff
+
+on:
+  pull_request:
+    paths:
+      - "research/eprc/upstream/apply_lerobot_act_relative_actions.py"
+      - "research/eprc/upstream/LEROBOT_ACT_RELATIVE_ACTIONS_HANDOFF.md"
+      - ".github/workflows/eprc-lerobot-act-relative-actions.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eprc-lerobot-act-relative-actions-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Checkout exact LeRobot base
+        run: |
+          git clone -q https://github.com/huggingface/lerobot.git /tmp/lerobot
+          git -C /tmp/lerobot checkout -q ca69a2068462a37f7cdcb74180927a2f863d2bf7
+          test "$(git -C /tmp/lerobot rev-parse HEAD)" = "ca69a2068462a37f7cdcb74180927a2f863d2bf7"
+      - name: Apply exact-source transformation
+        run: |
+          python research/eprc/upstream/apply_lerobot_act_relative_actions.py /tmp/lerobot
+          git -C /tmp/lerobot diff --check
+          changed="$(git -C /tmp/lerobot diff --name-only)"
+          printf '%s\n' "$changed"
+          test "$(printf '%s\n' "$changed" | sed '/^$/d' | wc -l)" -eq 3
+          printf '%s\n' "$changed" | grep -qx 'src/lerobot/policies/act/configuration_act.py'
+          printf '%s\n' "$changed" | grep -qx 'src/lerobot/policies/act/processor_act.py'
+          printf '%s\n' "$changed" | grep -qx 'tests/processor/test_act_processor.py'
+          mkdir -p /tmp/eprc-act-handoff
+          git -C /tmp/lerobot diff --binary > /tmp/eprc-act-handoff/lerobot_act_relative_actions.patch
+      - name: Install LeRobot test runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -q -e /tmp/lerobot
+          python -m pip install -q pytest
+      - name: Run ACT processor regression
+        run: |
+          cd /tmp/lerobot
+          python -m pytest -q tests/processor/test_act_processor.py --tb=short
+      - name: Upload generated upstream patch
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lerobot-act-relative-actions-patch
+          path: /tmp/eprc-act-handoff/lerobot_act_relative_actions.patch
+          if-no-files-found: warn
+          retention-days: 30

@@ -1,0 +1,84 @@
+name: EPRC VQ-BeT Locality Refinement
+
+on:
+  pull_request:
+    paths:
+      - "research/eprc/real_policy/vqbet_pusht_probe.py"
+      - "research/eprc/locality_refinement.py"
+      - "research/eprc/VQBET_LOCALITY_REFINEMENT_PROTOCOL.md"
+      - ".github/workflows/eprc-vqbet-locality-refinement.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eprc-vqbet-locality-refinement-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  locality-refinement:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install frozen LeRobot PushT runtime
+        run: |
+          git clone -q https://github.com/huggingface/lerobot.git /tmp/lerobot
+          git -C /tmp/lerobot checkout -q 3c0a209f9fac4d2a57617e686a7f2a2309144ba2
+          sed -i 's/^pyav = ">=12.0.5"/av = ">=12.0.5"/' /tmp/lerobot/pyproject.toml
+          grep -q '^av = ">=12.0.5"' /tmp/lerobot/pyproject.toml
+          python -m pip install -q -e '/tmp/lerobot[pusht]'
+          python -m pip install -q --force-reinstall --no-deps 'pymunk==6.11.1'
+          python -c 'import pymunk; assert hasattr(pymunk.Space, "add_collision_handler")'
+      - name: Execute frozen locality-refinement protocol
+        run: |
+          python research/eprc/real_policy/vqbet_pusht_probe.py \
+            --locality-refinement \
+            --output /tmp/eprc-locality/vqbet_locality_refinement.json
+      - name: Validate pre-registered gates
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          d = json.loads(Path("/tmp/eprc-locality/vqbet_locality_refinement.json").read_text())
+          r = d["locality_refinement"]
+          assert r is not None
+          assert r["status"] == "executed_prospective_protocol"
+          assert r["refinement_seeds"] == [20261001, 20261002, 20261003, 20261004, 20261005]
+          assert r["same_scale_additional_queries"] == 35
+          assert r["finer_scale_additional_queries"] == 35
+          assert r["frozen_contraction_threshold"] == 0.75
+          assert r["recommended_trust_radius"] == 0.125
+          assert r["coarse_fine_drift"] >= 0.0
+          assert r["fine_finer_drift"] >= 0.0
+          assert r["same_scale_stochastic_radius"] >= 0.0
+          assert r["finer_stochastic_radius"] >= 0.0
+          if r["contracting"]:
+              assert r["routing_decision"] == "REFINED_FIRST_ORDER_CERTIFICATE"
+              assert r["contraction_ratio"] <= 0.75
+              assert r["refined_robust_crg"] is not None
+              assert r["refined_robust_crg"]["decision"] in {
+                  "CERTIFIED_REPAIR", "CERTIFIED_IMPOSSIBLE", "INCONCLUSIVE"
+              }
+              if r["refined_robust_crg"]["decision"] == "CERTIFIED_IMPOSSIBLE":
+                  w = r["refined_robust_crg"]["proof_carrying_impossibility_witness"]
+                  assert w is not None and w["verified"] is True
+          else:
+              assert r["routing_decision"] == "REJECT_FIRST_ORDER_LOCAL_MODEL"
+              assert r["contraction_ratio"] > 0.75
+              assert r["refined_robust_crg"] is None
+          print(json.dumps(r, indent=2, sort_keys=True))
+          PY
+      - name: Upload prospective locality evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eprc-vqbet-locality-refinement
+          path: /tmp/eprc-locality
+          if-no-files-found: warn
+          retention-days: 30

@@ -1,0 +1,59 @@
+{
+  "schema": "eprc-real-policy-evidence-summary-v1",
+  "frozen_at": "2026-10-06",
+  "claim_boundary": "real frozen-policy black-box support-response and robust repairability evidence; not external adoption and not an L8 event",
+  "current_runtime": {
+    "workflow_run": 37456801175,
+    "artifact_id": 11410675017,
+    "artifact_zip_sha256": "56c367a0c7564a11f6347bd0eebe996555d62d7a8f7d9fded1e6aa6f13c182de",
+    "branch_head": "49f7bae973f50f8f166076430017f7857d3f778e",
+    "model_id": "lerobot/vqbet_pusht",
+    "model_revision": "390e5e4c079c880b22e873dad53ecfac706bc78a",
+    "lerobot_commit": "3c0a209f9fac4d2a57617e686a7f2a2309144ba2",
+    "paired_policy_repeat_max_error": 0,
+    "preprocess_repeat_max_error": 0,
+    "logical_policy_queries": 45,
+    "dec_q95_seed_radius": 0,
+    "dec_replicate_stability_certified": true,
+    "rng_stochastic_radius": 0,
+    "finite_difference_scale_drift_radius": 3.0126126299191625,
+    "combined_empirical_locality_radius": 3.0126126299191625,
+    "max_scale_curvature": 0.9645005488400455,
+    "max_symmetry_residual": 12.001928329467773,
+    "robust_crg_decision": "INCONCLUSIVE",
+    "robust_certified_radius": 0.5,
+    "residual_tolerance": 4,
+    "nominal_residual_norm": 4.422654181300321,
+    "best_case_residual_lower": 2.9163478663407396,
+    "worst_case_residual_upper": 5.9289604962599025,
+    "amrc_planned_probe_count": 6,
+    "amrc_planned_symmetric_policy_evaluations": 12,
+    "amrc_final_planned_decision": "INCONCLUSIVE",
+    "amrc_budget_exhausted": true
+  },
+  "historical_runtime": {
+    "workflow_run": 37456801100,
+    "artifact_id": 11410085345,
+    "artifact_zip_sha256": "745e21a4e6e75556b19c93922f34b1914b4a08ea009ad2abd9c3727bb9d02a60",
+    "model_id": "lerobot/vqbet_pusht",
+    "model_revision": "bff7190",
+    "lerobot_commit": "2cb0bf5d4154c8fefe03d1dca394fc5e1d778a97",
+    "paired_repeat_max_abs_error": 0,
+    "dec_q95_radius": 0,
+    "replicate_stability_certified": true,
+    "max_symmetry_residual": 2.0680220127105713
+  },
+  "interpretation": {
+    "supported": [
+      "exact-state frozen VQ-BeT intervention protocol executes end-to-end on CPU",
+      "paired replay and five RNG-seed DEC signatures are deterministic under the frozen protocol",
+      "DEC repeatability alone is insufficient to authorize repair"
+    ],
+    "blocked": [
+      "robust repairability of the frozen held-out correction",
+      "AMRC query-efficiency claim on this locality-limited case"
+    ],
+    "observed_bottleneck": "finite-difference scale drift/locality mismatch, not RNG repeatability",
+    "next_falsifiable_step": "prospectively compare smaller-scale or higher-order local models against extra same-scale probing at matched policy-query budget"
+  }
+}

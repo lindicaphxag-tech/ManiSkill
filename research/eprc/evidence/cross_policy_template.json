@@ -1,0 +1,145 @@
+{
+  "gate": {
+    "min_pairs": 20,
+    "min_dec_auc": 0.7,
+    "required_auc_margin": 0.05
+  },
+  "note": "Intentionally underpowered two-pair template. The primary gate uses fresh held-out physical responses not used to identify DEC; the secondary decision-agreement gate is retained only for systems analysis.",
+  "pairs": [
+    {
+      "a": {
+        "raw_action_jacobian": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "action_to_physical_jacobian": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "support_ids": [
+          "cube_a",
+          "cube_b"
+        ],
+        "static_representation": "absolute",
+        "coarse_contract_class": "RELATIONAL_INVARIANT",
+        "runtime_decision": "REPAIR",
+        "heldout_physical_response": [
+          0.2,
+          -0.1
+        ]
+      },
+      "b": {
+        "raw_action_jacobian": [
+          [
+            2,
+            0
+          ],
+          [
+            0,
+            0.5
+          ]
+        ],
+        "action_to_physical_jacobian": [
+          [
+            0.5,
+            0
+          ],
+          [
+            0,
+            2
+          ]
+        ],
+        "support_ids": [
+          "cube_a",
+          "cube_b"
+        ],
+        "static_representation": "relative",
+        "coarse_contract_class": "RELATIONAL_INVARIANT",
+        "runtime_decision": "REPAIR",
+        "heldout_physical_response": [
+          0.21,
+          -0.11
+        ]
+      }
+    },
+    {
+      "a": {
+        "raw_action_jacobian": [
+          [
+            1
+          ],
+          [
+            0
+          ]
+        ],
+        "action_to_physical_jacobian": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "support_ids": [
+          "cube_a"
+        ],
+        "static_representation": "absolute",
+        "coarse_contract_class": "COMMON_EQUIVARIANT",
+        "runtime_decision": "TRANSPORT",
+        "heldout_physical_response": [
+          0.3,
+          0
+        ]
+      },
+      "b": {
+        "raw_action_jacobian": [
+          [
+            0
+          ],
+          [
+            1
+          ]
+        ],
+        "action_to_physical_jacobian": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "support_ids": [
+          "cube_a"
+        ],
+        "static_representation": "absolute",
+        "coarse_contract_class": "COMMON_EQUIVARIANT",
+        "runtime_decision": "REJECT",
+        "heldout_physical_response": [
+          0,
+          0.4
+        ]
+      }
+    }
+  ],
+  "response_gate": {
+    "min_pairs": 20,
+    "min_dec_spearman": 0.5,
+    "required_spearman_margin": 0.1
+  }
+}

@@ -1,0 +1,67 @@
+name: EPRC independent replication
+description: Submit an independent EPRC reproduction, including positive or negative results.
+title: "[EPRC replication] "
+labels: ["eprc-replication"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Independent negative results are explicitly welcome. Please do not omit failed gates.
+  - type: input
+    id: repo
+    attributes:
+      label: Reproduction repository / commit
+      placeholder: https://github.com/... @ commit
+    validations:
+      required: true
+  - type: input
+    id: policy
+    attributes:
+      label: Policy family and checkpoint
+      placeholder: ACT / Diffusion / VQ-BeT / VLA + immutable checkpoint
+    validations:
+      required: true
+  - type: input
+    id: controller
+    attributes:
+      label: Controller representation
+      placeholder: joint position / delta joint / EE delta pose / ...
+    validations:
+      required: true
+  - type: textarea
+    id: protocol
+    attributes:
+      label: Physical support intervention protocol
+      description: Include perturbation magnitude, support identities, seeds, and whether simulator privileged state was used.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence bundle
+      description: Paste the JSON accepted by research/eprc/reproduce.py or link an immutable artifact.
+    validations:
+      required: true
+  - type: input
+    id: decision
+    attributes:
+      label: EPRC decision
+      placeholder: PASS / TRANSPORT / REPAIR / REJECT
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Actual execution outcome
+      description: State whether the decision matched execution, including failures or false accepts/rejects.
+    validations:
+      required: true
+  - type: checkboxes
+    id: independence
+    attributes:
+      label: Independence
+      options:
+        - label: I am not the repository owner and this run was performed independently.
+          required: true
+        - label: I will keep negative or null outcomes visible.
+          required: true
