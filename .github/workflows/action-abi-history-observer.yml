@@ -1,0 +1,71 @@
+name: Action-history ABI observer -- frozen PPO prospective falsification
+
+on:
+  pull_request:
+    paths:
+      - 'research/action_abi_history_observer.py'
+      - 'research/frozen_ppo_action_history_observer.py'
+      - 'research/frozen_ppo_observer_policy.py'
+      - 'research/ACTION_ABI_HISTORY_OBSERVER_PREDECLARED_V1.json'
+      - 'tests/test_action_abi_history_observer.py'
+      - '.github/workflows/action-abi-history-observer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  independent-observer-contract:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.12', '3.13']
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install numpy scipy
+      - name: Compile source and run observer adversarial CPU contract tests
+        run: |
+          python -m py_compile research/action_abi_history_observer.py research/frozen_ppo_action_history_observer.py
+          python -m unittest discover -s tests -p 'test_action_abi_history_observer.py' -v
+
+  real-frozen-ppo-observer:
+    needs: independent-observer-contract
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      PYTHONUNBUFFERED: '1'
+      ABI_TASK: ${{ matrix.task }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install PhysX CPU and original third-party checkpoint dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+          python -m pip freeze > abi_observer_pip_freeze.txt
+      - name: Run full six-arm frozen PPO with eight previously untested task states
+        run: |
+          set -o pipefail
+          python research/frozen_ppo_action_history_observer.py 2>&1 | tee "abi_observer_${ABI_TASK}.log"
+          test -s "abi_observer_${ABI_TASK}_fresh8.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-observer-${{ matrix.task }}-eight-task-states
+          path: |
+            abi_observer_*.json
+            abi_observer_*.log
+            abi_observer_pip_freeze.txt
