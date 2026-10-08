@@ -135,6 +135,33 @@ Indeed **actual source-backed path dependence invalidates a naïve arm-switch ex
 
 [Read full original-source mathematical/empirical audit, uncertainty boundaries, all negative cases and reproduction commands](EXACT_QUERY_ALLOCATION_64_PHYSX_RESULT.md).
 
+### 4.3b Empirical public-response-or-trusted-readback: reducing *privileged* sensing on a different prospective fault cohort
+
+The previous simple **nearest previous target** heuristic inferred executed versus held ACK from the achieved-EE position after a common physically stepped zero-target probe, yet reported **15 wrong confident labels in 32 original PhysX task×truth conditions**. This exposes the important difference between task completion and latent controller-memory correctness. A subsequent disjoint study calibrated a task-specific segment response residual envelope on **only four historical reset states per task**, and fixed the response model and epsilon *before* the fresh evaluation. This empirical envelope is **NOT** an independently attested physical error bound.
+
+Our new, separately preregistered hybrid tests a **different information channel**: the public before/after-probe *achieved* EE XYZ position, combined with both commanded-target hypotheses reconstructed from the action history. At the registered probe timestep (t=3), after a possibly applied/held arm command at (t=2) with unknown acknowledgement, fit each candidate to the fixed closed-loop segment response family
+[
+ y=x+alpha(M-x)+e,qquad alphain[0,1],quad Vert eVert_2leepsilon_{m task}.
+]
+If exactly one candidate target is compatible, resume the frozen original policy with that hypothetical previous target **without querying hidden target memory**. If both or neither are compatible, refuse to guess and perform exactly **one explicitly budgeted privileged target-state readback**, then continue. We compare physically separate matched actual source/no-fault, optimistic, pessimistic, *public-only then abstain*, *public-or-read*, and *mandatory one private target read* control worlds. The same neutral-action probe is applied to all arms.
+
+The frozen pre-result protocol [fa173507](https://github.com/lindicaphxag-tech/ManiSkill/commit/fa17350711f6c2c7cffb4cfa2bb7f8289f3ee0c4) registered PullCube seed IDs **180101–180108** and StackCube IDs **190101–190108**, each under BOTH actual command-executed/missing-ACK and physically held-command/missing-ACK: **16 distinct robot reset states × 2 fault truths = 32 paired task×truth conditions**. The external-model revision and checkpoint SHA-256, response epsilons (Pull **0.006944262561376447 m**, Stack **0.00719087965534261 m**) and public inference algorithm were not changed after the new data.
+
+| Same-seed six-controller original PhysX arm | Official native task successes /32 | Privileged target-state decision readbacks |
+|---|---:|---:|
+| Original frozen policy, no fault with common physical probe | 26 | 0 |
+| Same-probe optimistic history assumption | 23 | 0 |
+| Same-probe pessimistic history assumption | 20 | 0 |
+| Public empirical response ONLY; reject ambiguous history | 19 | 0 |
+| **Public empirical unique-fit OR one explicit trusted readback** | **27** | **11** |
+| Always one privileged target readback after the same probe | **27** | **32** |
+
+The new hybrid accepted **21/32** public motion-based ACK-history decisions with **zero observed wrong confident labels among those 21**. It refused to infer on the other **11/32** and read actual privileged controller target memory **once each**. Unlike merely matching aggregate task success, the hybrid and always-read strategies had **identical task-success/failure flags for all 32 paired task×truth conditions** (zero exclusive successes in either direction). These results **do not prove** a small physical error bound or zero future misidentification probability. The original fitted envelope has only four historical robot reset states per task and must be recalibrated for shifts in the controller dynamics, process disturbance, joint motion, or contact.
+
+[Full original eight-green-job PhysX run](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37834088246) · [all 32 unfiltered per-trial inferred-history labels, wrong-label flags, task successes, every target read and six matched arms](PUBLIC_RESPONSE_OR_READ32_ORIGINAL_RESULTS.md) · [per-file SHA-256 permanent author-operated source archive](evidence/public_or_read_new32_180101_190108/) · [successful independent-of-simulator original-data and five deliberately corrupted-source audit](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37835727029). They are **not** third-party lab reproduction.
+
+**Important: our public-physical-response hybrid and our bounded-or-query controller have NOT yet been evaluated as a single, fully integrated method.** Their 27/32 task and 58/64 task outcomes are different prospective populations with different probes, information access and physical steps, and cannot be summed to claim combined policy performance. A credible integration would authorize common bounded target commands under all possible histories first, query public plant response only upon failed action certification, and then spend a trusted target read only when its calibrated admissible response set is ambiguous or invalid. That integration remains an experiment to be performed, and a proper full-information-cost comparison must equalize probe actuation and observer readings with control baselines.
+
 ### 4.4 Pre-outcome multi-ACK extension (NOT a completed performance result)
 
 Two missed command acknowledgements can leave as many as four plausible previous commanded controller targets. A [separate, pre-result original PhysX protocol](../MULTI_ACK_K_HISTORY_PREOUTCOME_V1.json) reserves 16 new PullCube/StackCube reset seeds and two actual native target-hold faults at steps 2 and 4. The new [K-history bounded-action module](../multi_history_authority.py) computes the exact position \(L_\infty\) minimax for any finite target set and supplies an explicit, conditional SO(3) upper/lower covering-radius witness for native-representable common rotations. It does **not** solve the K≥3 global geodesic covering-ball optimization or independently validate the completeness of the source belief set. A doubly ambiguous controller can refuse, or spend up to two explicitly counted trusted target reads. **No new closed-loop benefit is claimed until the actual 16-state simulator experiment, all fault exposures and an independent full-denominator audit finish.**
