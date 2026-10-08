@@ -1,0 +1,182 @@
+name: Source-pin prospective 32-case public-motion hypothesis verification
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-prospective-public-response-new32.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify-original-source-readonly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require the exact first preregistered successful original run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37832214332 --jq .head_sha)" = "a68f5d8ae73ebf6ef59bd94fa949cc3fd7f8f018"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37832214332 --jq .conclusion)" = success
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37832214332 --jq .run_attempt)" = 1
+      - name: Recover all immutable originals and independently verify SHA-256
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/empirical_src /tmp/empirical_flat
+          gh run download 37832214332 --repo "$GITHUB_REPOSITORY" --name original-empirical-response-fresh32-complete-study --dir /tmp/empirical_src
+          find /tmp/empirical_src -type f -name '*.json' -exec cp {} /tmp/empirical_flat/ \;
+          find /tmp/empirical_src -type f -name '*.log' -exec cp {} /tmp/empirical_flat/ \;
+          test "$(find /tmp/empirical_flat -maxdepth 1 -type f | wc -l)" -eq 17
+          cat > /tmp/empirical_flat/ORIGINAL_SHA256SUMS <<'SHA256_EOF'
+          2e2ef527eb7d874e37e6db7cabb6c4ee1347f88ef512ad2749a30c556afc52b8  empirical_response_fresh32_complete_original_audit.json
+          9deb09def784f035bfd507d6d1da17be87e5ac54294302b302332254f46299ae  empirical_response_pull_cube_applied_no_ack_0_fresh4.json
+          77defcf471c3d3d3c8efd05f45a1f40a83f49e944490c114a0e5f9b3b523745e  empirical_response_pull_cube_applied_no_ack_4_fresh4.json
+          592f512e3517b652b9c41d3962d5ee1be0ca3e5e2601f816a2260fd02ab2e9c1  empirical_response_pull_cube_neutral_arm_delta_no_ack_0_fresh4.json
+          94de5b798a85bbebd9ceedd4540d70329a102b5db844855ca1e22ba03160edd9  empirical_response_pull_cube_neutral_arm_delta_no_ack_4_fresh4.json
+          dcae1eb2fc06d5a7c1af80135538f113a863e5db22d7cdd059940298e8643686  empirical_response_stack_cube_applied_no_ack_0_fresh4.json
+          6e5acca7bc478f5d00c9601dcf32ae90138b2c8226d2c66dcc1643f8ea56cd36  empirical_response_stack_cube_applied_no_ack_4_fresh4.json
+          7431447007944e93e8f6e2b420665a8cd3c91613bc4011f8925fb9e5ec9931c3  empirical_response_stack_cube_neutral_arm_delta_no_ack_0_fresh4.json
+          7a175b0c745e4138e74c114c8e2ece292923b4159bc527f97e1aa555c3809bd7  empirical_response_stack_cube_neutral_arm_delta_no_ack_4_fresh4.json
+          5502fa0980c7f63ad9fa03ff77bd5db2c0b395362e628675c8c586879de53cb5  empirical_response_pull_cube_applied_no_ack_0.log
+          067de2899bfedac653392207758cae66dbf4a1b207ad29f26a144aa04af2b460  empirical_response_pull_cube_applied_no_ack_4.log
+          123c5efca4e8ccd355551d51fe2dae6dd56bf24f3cacc578a03a3a8b7236d05c  empirical_response_pull_cube_neutral_arm_delta_no_ack_0.log
+          926158322be22f86526ac3bec43eaa3f1ba424a1fb5dfcace342f3c950590445  empirical_response_pull_cube_neutral_arm_delta_no_ack_4.log
+          726d603e0d225758bf09703cd0b8344a15633ff9ce73918fe6bf9d1a495f049f  empirical_response_stack_cube_applied_no_ack_0.log
+          be62bd6e7c85662bbd392ca45c6aa7c8ab12b81cb891c4a18648e067f6f7b001  empirical_response_stack_cube_applied_no_ack_4.log
+          7242ae3420d955fe97d028333a8e41d741783c5c3bc5f1477e083e5c2809e1ab  empirical_response_stack_cube_neutral_arm_delta_no_ack_0.log
+          24b621d665917096ed9e51536ca4b156ce3ac0883e71dca9888f497422aac500  empirical_response_stack_cube_neutral_arm_delta_no_ack_4.log
+          SHA256_EOF
+          cd /tmp/empirical_flat
+          sha256sum -c ORIGINAL_SHA256SUMS
+      - name: Rerun independent full 32-condition original-source audit
+        run: |
+          python -m research.audit_empirical_response_new32 --input-dir /tmp/empirical_flat --output /tmp/recomputed_fresh32.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path('/tmp/empirical_flat/empirical_response_fresh32_complete_original_audit.json').read_text())
+          b=json.loads(Path('/tmp/recomputed_fresh32.json').read_text())
+          assert a==b, 'Pre-existing audit differs from fully recomputed original 32-condition ledger'
+          assert b['trial_conditions']==32 and b['independent_policy_checkpoints']==2
+          rows=list(b['results'].values())
+          assert sum(x['classifier_covered'] for x in rows)==24
+          assert sum(x['classifier_wrong_authorizations'] for x in rows)==0
+          assert sum(x['classifier_abstentions'] for x in rows)==8
+          assert sum(x['empirical_model_falsified'] for x in rows)==1
+          def successes(arm): return sum(x['success'][arm] for x in rows)
+          assert successes('achieved_probe_classifier')==22
+          assert successes('privileged_once_after_probe')==30
+          assert successes('blind_probe_optimistic')==24
+          assert successes('blind_probe_pessimistic')==25
+          assert successes('source_pause_no_fault')==28
+          print('PASS: 17 SHA256-pinned untouched PhysX source files, 32 full conditions, 24/32 confident 0/24 wrong, 22/32 task successes and 1 model falsification')
+          PY
+  archive-on-trusted-main-only:
+    needs: verify-original-source-readonly
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require the exact first preregistered successful original run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37832214332 --jq .head_sha)" = "a68f5d8ae73ebf6ef59bd94fa949cc3fd7f8f018"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37832214332 --jq .conclusion)" = success
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37832214332 --jq .run_attempt)" = 1
+      - name: Recover all immutable originals and independently verify SHA-256
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/empirical_src /tmp/empirical_flat
+          gh run download 37832214332 --repo "$GITHUB_REPOSITORY" --name original-empirical-response-fresh32-complete-study --dir /tmp/empirical_src
+          find /tmp/empirical_src -type f -name '*.json' -exec cp {} /tmp/empirical_flat/ \;
+          find /tmp/empirical_src -type f -name '*.log' -exec cp {} /tmp/empirical_flat/ \;
+          test "$(find /tmp/empirical_flat -maxdepth 1 -type f | wc -l)" -eq 17
+          cat > /tmp/empirical_flat/ORIGINAL_SHA256SUMS <<'SHA256_EOF'
+          2e2ef527eb7d874e37e6db7cabb6c4ee1347f88ef512ad2749a30c556afc52b8  empirical_response_fresh32_complete_original_audit.json
+          9deb09def784f035bfd507d6d1da17be87e5ac54294302b302332254f46299ae  empirical_response_pull_cube_applied_no_ack_0_fresh4.json
+          77defcf471c3d3d3c8efd05f45a1f40a83f49e944490c114a0e5f9b3b523745e  empirical_response_pull_cube_applied_no_ack_4_fresh4.json
+          592f512e3517b652b9c41d3962d5ee1be0ca3e5e2601f816a2260fd02ab2e9c1  empirical_response_pull_cube_neutral_arm_delta_no_ack_0_fresh4.json
+          94de5b798a85bbebd9ceedd4540d70329a102b5db844855ca1e22ba03160edd9  empirical_response_pull_cube_neutral_arm_delta_no_ack_4_fresh4.json
+          dcae1eb2fc06d5a7c1af80135538f113a863e5db22d7cdd059940298e8643686  empirical_response_stack_cube_applied_no_ack_0_fresh4.json
+          6e5acca7bc478f5d00c9601dcf32ae90138b2c8226d2c66dcc1643f8ea56cd36  empirical_response_stack_cube_applied_no_ack_4_fresh4.json
+          7431447007944e93e8f6e2b420665a8cd3c91613bc4011f8925fb9e5ec9931c3  empirical_response_stack_cube_neutral_arm_delta_no_ack_0_fresh4.json
+          7a175b0c745e4138e74c114c8e2ece292923b4159bc527f97e1aa555c3809bd7  empirical_response_stack_cube_neutral_arm_delta_no_ack_4_fresh4.json
+          5502fa0980c7f63ad9fa03ff77bd5db2c0b395362e628675c8c586879de53cb5  empirical_response_pull_cube_applied_no_ack_0.log
+          067de2899bfedac653392207758cae66dbf4a1b207ad29f26a144aa04af2b460  empirical_response_pull_cube_applied_no_ack_4.log
+          123c5efca4e8ccd355551d51fe2dae6dd56bf24f3cacc578a03a3a8b7236d05c  empirical_response_pull_cube_neutral_arm_delta_no_ack_0.log
+          926158322be22f86526ac3bec43eaa3f1ba424a1fb5dfcace342f3c950590445  empirical_response_pull_cube_neutral_arm_delta_no_ack_4.log
+          726d603e0d225758bf09703cd0b8344a15633ff9ce73918fe6bf9d1a495f049f  empirical_response_stack_cube_applied_no_ack_0.log
+          be62bd6e7c85662bbd392ca45c6aa7c8ab12b81cb891c4a18648e067f6f7b001  empirical_response_stack_cube_applied_no_ack_4.log
+          7242ae3420d955fe97d028333a8e41d741783c5c3bc5f1477e083e5c2809e1ab  empirical_response_stack_cube_neutral_arm_delta_no_ack_0.log
+          24b621d665917096ed9e51536ca4b156ce3ac0883e71dca9888f497422aac500  empirical_response_stack_cube_neutral_arm_delta_no_ack_4.log
+          SHA256_EOF
+          cd /tmp/empirical_flat
+          sha256sum -c ORIGINAL_SHA256SUMS
+      - name: Rerun independent full 32-condition original-source audit
+        run: |
+          python -m research.audit_empirical_response_new32 --input-dir /tmp/empirical_flat --output /tmp/recomputed_fresh32.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path('/tmp/empirical_flat/empirical_response_fresh32_complete_original_audit.json').read_text())
+          b=json.loads(Path('/tmp/recomputed_fresh32.json').read_text())
+          assert a==b, 'Pre-existing audit differs from fully recomputed original 32-condition ledger'
+          assert b['trial_conditions']==32 and b['independent_policy_checkpoints']==2
+          rows=list(b['results'].values())
+          assert sum(x['classifier_covered'] for x in rows)==24
+          assert sum(x['classifier_wrong_authorizations'] for x in rows)==0
+          assert sum(x['classifier_abstentions'] for x in rows)==8
+          assert sum(x['empirical_model_falsified'] for x in rows)==1
+          def successes(arm): return sum(x['success'][arm] for x in rows)
+          assert successes('achieved_probe_classifier')==22
+          assert successes('privileged_once_after_probe')==30
+          assert successes('blind_probe_optimistic')==24
+          assert successes('blind_probe_pessimistic')==25
+          assert successes('source_pause_no_fault')==28
+          print('PASS: 17 SHA256-pinned untouched PhysX source files, 32 full conditions, 24/32 confident 0/24 wrong, 22/32 task successes and 1 model falsification')
+          PY
+      - name: Preserve all original per-condition simulator JSONs and logs
+        run: |
+          set -euo pipefail
+          dst=research/frozen_policy_transfer/evidence/public_response_empirical_prospective_new32
+          mkdir -p "$dst"
+          cp /tmp/empirical_flat/*.json /tmp/empirical_flat/*.log /tmp/empirical_flat/ORIGINAL_SHA256SUMS "$dst/"
+          cat > "$dst/README.md" <<'EOF'
+          # Fixed prospective 32-condition empirical response experiment
+          Public official original PhysX run: 37832214332, source sha a68f5d8ae73ebf6ef59bd94fa949cc3fd7f8f018.
+          Protocol and empirical response-error thresholds: research/EMPIRICAL_RESPONSE_NEW32_FROZEN_BEFORE_RUN_V1.json, frozen BEFORE new runner.
+          16 PullCube and 16 StackCube task-truth combinations (8 new reset seeds each x applied/held actual execution), all original 8 JSONs + 8 raw logs + aggregate source.
+          Confident public-motion label 24/32, observed false confident labels 0/24, eight abstentions (including one false empirical-model envelope), task success 22/32 vs one private target read 30/32, optimistic no-read 24/32, pessimistic no-read 25/32.
+          **No strong safety conclusion:** controller-response enclosure is estimated from only 4 historical training seeds per task; 0 observed errors does NOT certify future action delivery. The zero-privileged-read method FAILED to match oracle task success. One new original condition falsified the empirical response envelope itself.
+          Original JSON and log bytes retain exact SHA-256 as pinned by trusted-main CI; no repeated same-seed model tuning or cherry-picking.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dst"
+          if git diff --cached --quiet; then
+            echo 'Evidence already preserved byte-identically'
+            exit 0
+          fi
+          git commit -m 'evidence: permanently preserve original 32 prospective achieved-response hypotheses, logs and negative results'
+          git push origin HEAD:main
