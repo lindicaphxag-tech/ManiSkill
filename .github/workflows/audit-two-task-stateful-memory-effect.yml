@@ -28,7 +28,7 @@ jobs:
         run: |
           set -o pipefail
           python frozen-profile-evidence/research/frozen_policy_transfer/state_memory_mechanism.py | tee audited_two_task_memory_ablation.json
-      - name: Red-team evidence: deny seed loss, changed controller identity and forged task count
+      - name: "Red-team evidence: deny seed loss, changed controller identity and forged task count"
         run: |
           python - <<'PY'
           import importlib.util
