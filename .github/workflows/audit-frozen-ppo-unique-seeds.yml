@@ -1,0 +1,46 @@
+name: Independently audit frozen PPO unique-seed evidence
+
+on:
+  push:
+    branches: [evidence/frozen-ppo-unique-seed-audit-v1]
+  pull_request:
+    paths:
+      - research/kaggle_diffusion_policy_peg/audit_frozen_ppo_unique_seeds.py
+      - .github/workflows/audit-frozen-ppo-unique-seeds.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit-immutable-author-operated-ppo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile independent audit
+        run: python -m py_compile research/kaggle_diffusion_policy_peg/audit_frozen_ppo_unique_seeds.py
+      - name: Reject fabricated and pseudoreplicated evidence
+        run: python research/kaggle_diffusion_policy_peg/audit_frozen_ppo_unique_seeds.py --self-test
+      - name: Read exact existing published frozen PPO run artifact
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 37808182157
+          repository: lindicaphxag-tech/ManiSkill
+          name: frozen-ppo-three-arm-controller-swap
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: historical-evidence
+      - name: Independent original raw-outcome audit
+        run: |
+          python research/kaggle_diffusion_policy_peg/audit_frozen_ppo_unique_seeds.py \
+            --artifact-dir historical-evidence \
+            | tee frozen_ppo_unique_seed_audit.json
+      - name: Upload derived audit without changing original evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: frozen-ppo-unique-seed-audit
+          path: frozen_ppo_unique_seed_audit.json
+          if-no-files-found: error
