@@ -15,6 +15,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Assert original observer/controller/policy method is untouched
         run: |
           git diff --exit-code 0865e6d50ec30d6a069e2d7dfee1f9be834c2c21 HEAD -- \
