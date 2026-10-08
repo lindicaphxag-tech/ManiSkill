@@ -1,0 +1,94 @@
+name: Preregistered frozen PPO unknown-ACK real PhysX fault-recovery comparison
+on:
+  push:
+    branches: [research/ack-loss-frozen-ppo-physx-20261009]
+  pull_request:
+    paths:
+      - '.github/workflows/unknown-ack-frozen-ppo-physx.yml'
+      - 'research/ACTION_ABI_UNKNOWN_ACK_PHYSX_PREREG_V1.json'
+      - 'research/frozen_ppo_unknown_ack_recovery.py'
+      - 'research/audit_unknown_ack_physx.py'
+      - 'tests/test_unknown_ack_original_auditor.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  immutable-preregistered-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Assert preregistration blob unchanged before simulator
+        run: |
+          test "$(git hash-object research/ACTION_ABI_UNKNOWN_ACK_PHYSX_PREREG_V1.json)" = "3a7273c1a02d13c19e93e618c74fc7068938c7e9"
+          python -m py_compile research/frozen_ppo_unknown_ack_recovery.py research/audit_unknown_ack_physx.py
+      - name: Adversarial source-loss and negative result retention tests
+        run: python -m unittest discover -s tests -p test_unknown_ack_original_auditor.py -v
+
+  native-physx-loss:
+    needs: immutable-preregistered-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        fault: [applied_no_ack, neutral_arm_delta_no_ack]
+    env:
+      PYTHONUNBUFFERED: '1'
+      ABI_TASK: ${{ matrix.task }}
+      ABI_FAULT: ${{ matrix.fault }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install published official ManiSkill PhysX CPU runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Run all eight fresh original PPO task-state seeds with six real controllers
+        run: |
+          set -o pipefail
+          python research/frozen_ppo_unknown_ack_recovery.py 2>&1 | tee "ack_loss_${ABI_TASK}_${ABI_FAULT}.log"
+          test -s "ack_loss_${ABI_TASK}_${ABI_FAULT}_fresh8.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ack-loss-${{ matrix.task }}-${{ matrix.fault }}
+          path: |
+            ack_loss_*.log
+            ack_loss_*.json
+
+  original-32-condition-source-audit:
+    needs: native-physx-loss
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ack-loss-*
+          path: /tmp/unknown-ack-original
+          merge-multiple: true
+      - name: Independently audit complete original 32-state × six-controller original results
+        run: |
+          python -m research.audit_unknown_ack_physx \
+            --input-dir /tmp/unknown-ack-original \
+            --output /tmp/unknown-ack-full-auditor.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prospective-32-unknown-ack-full-source-audit
+          path: |
+            /tmp/unknown-ack-original/*.json
+            /tmp/unknown-ack-full-auditor.json
