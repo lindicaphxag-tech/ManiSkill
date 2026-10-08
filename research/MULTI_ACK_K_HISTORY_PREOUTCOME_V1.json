@@ -1,0 +1,63 @@
+{
+  "schema": "frozen_two_unknown_ack_multi_history_physx_v1",
+  "date_pre_outcome": "2026-10-09",
+  "research_question": "Can an existing frozen PPO under TWO unknown native target holds use an exact K-state translation minimax and verified SO3 finite covering-radius action with <=2 privileged readbacks? Negative or null results retained.",
+  "novelty_caveat": "Multi-hypothesis minimax position is elementary Chebyshev geometry; SO3 finite candidate selection is a conservative certificate, not global optimal novel theorem.",
+  "source": "research/frozen_ppo_ack_bounded_query.py",
+  "source_models": {
+    "revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+    "pull_cube": {
+      "seed_first": 230001,
+      "seed_last": 230008,
+      "weights_sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7"
+    },
+    "stack_cube": {
+      "seed_first": 240001,
+      "seed_last": 240008,
+      "weights_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+    }
+  },
+  "cohort_independent_seed_states": 16,
+  "two_fault_steps_zero_indexed": [
+    2,
+    4
+  ],
+  "actual_fault": "PhysX native zero arm target delta + original gripper; regardless of actual physical motor dynamics, ACK reported unknown",
+  "original_policy_retraining": false,
+  "step_horizon": 50,
+  "certified_command_only_position_inf_m": 0.05,
+  "certified_command_only_rotation_geodesic_rad": 0.05,
+  "trust_hypotheses_requires_applied_history_from_known_initial_target": true,
+  "hypotheses_budget": 16,
+  "selective_max_privileged_reads": 2,
+  "mandatory_after_fault_reads_max": 2,
+  "same_native_seven_arm_names": [
+    "source_no_fault",
+    "fault_oracle_private_target",
+    "fault_optimistic_unverified_ack",
+    "fault_strict_common_exact",
+    "fault_robust_two_history_without_query",
+    "fault_robust_then_single_privileged_query",
+    "fault_always_single_privileged_query"
+  ],
+  "primary_endpoints": [
+    "all enrolled seeds",
+    "per-arm actual first+second fault reached counts",
+    "candidate history counts at each authorization or refusal",
+    "per-arm native task success, even if fault not reached",
+    "per-arm privileged target readback counts",
+    "conservative command-target error bounds and audit after execution only",
+    "early refusal and code/runtime errors"
+  ],
+  "strongest_baselines": [
+    "same actual physical two-fault native target hold optimistic no-read",
+    "zero-read multi-K finite-state bounded",
+    "mandatory trusted read after each uncertain ACK",
+    "privileged continuous state oracle"
+  ],
+  "registered_decision": "Report method as successful only if all 16 source seeds execute in genuine official PhysX, all outcomes retained, all missed fault exposures disclosed; do not remove unfavorable cases or tune thresholds to improve success.",
+  "information_boundary": "different arms have different privileged target read budgets; strong task reward does not prove equal information, hardware collision or safety",
+  "validation": "physical successor target memory read only after dispatch to audit certified bound; additional read is NOT permitted to inform next action except explicitly budgeted trusted query",
+  "software_runtime": "ManiSkill upstream fork physx_cpu; HuggingFace original frozen ActionShift checkpoints",
+  "not_independent_external_reproduction": true
+}
