@@ -34,6 +34,11 @@ jobs:
           gh run download 37829529190 --repo "$GITHUB_REPOSITORY" \
             --name original-32-causal-physical-probe-full-audit \
             --dir /tmp/probe-original
+          # Source audit artifact contains a nested 'achieved-probe-original' dir.
+          # Preserve original bytes, normalize only directory nesting.
+          test "$(find /tmp/probe-original -name 'physical_response_*_fresh4.json' -type f | wc -l)" -eq 8
+          mv /tmp/probe-original/achieved-probe-original/physical_response_*_fresh4.json /tmp/probe-original/
+          rmdir /tmp/probe-original/achieved-probe-original
           ls -lh /tmp/probe-original
       - name: Recompute all false confident authorizations before archival
         run: |
