@@ -116,6 +116,52 @@ current #1495.
 Current #1495 addresses the review concern by asking the active production
 mapper which signed chart it actually implements rather than assuming one.
 
+## Newly completed official trajectory-replay 2×2 intervention (2026-10-08)
+
+**This is task-context evidence, distinct from the earlier SO(3) unit
+test and from learned-policy task success.**
+
+- [Native official 8-demo four-cell replay run #37715587885](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37715587885): **SUCCESS**
+- [Raw run log and SHA-bound `factorial_replay.json`](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37715587885/artifacts/11523253779)
+- [Independent audit on the actual frozen per-source-seed matrix: CI #37719750458](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37719750458): **SUCCESS**, includes real GitHub artifact download, independent recomputation of counts and paired SHA-256, plus tamper-rejection tests on Python 3.10 / 3.11 / 3.13.
+
+| Converter #1495 | Controller #1472 | Official replay success, same eight source demos |
+|---|---|---:|
+| off | off | 6/8 |
+| on | off | 6/8 |
+| off | on | 0/8 |
+| on | on | 6/8 |
+
+**Important interpretation:** the controller-only change is *incompatible
+with successful replay for this small frozen cohort*, while the composed
+change restores replay to the baseline count. But converter-only also
+matches the baseline 6/8, so there is **no demonstrated converter-only
+replay improvement or learned-policy benefit** on this cohort.
+
+The independently audited, original-source-seed-denominator
+converter×controller interaction is **3/4**. This is a descriptive
+eight-demonstration replay interaction, not a randomized-population causal
+effect, confidence-supported policy benefit, or maintainer endorsement.
+The controller-only arm has zero surviving demonstrations; do **not**
+assign invented post-selection model performance to that cell.
+
+A frozen **100-source-demo** four-cell replication has been initiated:
+[CI #37719545972](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37719545972).
+It must finish before its observations can be promoted to results. The
+published 8-demo result is fully archived independent of its outcome.
+
+## Official CPU policy-training pipeline is now runnable end-to-end
+
+[Successful paired Diffusion Policy smoke CI #37713921020](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37713921020)
+trained both original and composed environments on six matching original
+source seeds, each with **893 transitions** and the native ~4.40M-parameter
+policy. Both executed two optimizer updates, six tiny evaluation checkpoints
+across the two runs, then closed normally.
+
+**Both showed 0% success** under two-episode, 20-step short-horizon
+evaluations. This is an infrastructure/experiment-readiness result, **not
+positive trained-policy evidence**.
+
 ## Single maintainer question
 
 **Is deriving the converter's signed per-axis rotation action scale from the
