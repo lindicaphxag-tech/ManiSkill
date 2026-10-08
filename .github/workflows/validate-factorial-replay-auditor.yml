@@ -1,0 +1,30 @@
+name: Paired 2x2 replay evidence integrity
+
+on:
+  push:
+    branches:
+      - research/native-delta-pose-assay
+    paths:
+      - "research/kaggle_diffusion_policy_peg/audit_factorial_replay.py"
+      - ".github/workflows/validate-factorial-replay-auditor.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-seed-ledger:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Compile independent factorial replay auditor
+        run: python -m py_compile research/kaggle_diffusion_policy_peg/audit_factorial_replay.py
+      - name: Validate synthetic 2x2 replay fixture and tamper refusal
+        run: python research/kaggle_diffusion_policy_peg/audit_factorial_replay.py --self-test
