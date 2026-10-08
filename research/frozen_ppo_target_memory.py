@@ -23,9 +23,9 @@ from frozen_ppo_pickcube_gate import (
 PUBLISHED_MODEL_REVISION="6bdeb28810330ab5425ccd629bb561c58a56ff85"
 TASKS={
     "pull_cube":("PullCube-v1","ppo/pull_cube_final_ckpt.pt",
-                 "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",51001),
+                 "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",71001),
     "stack_cube":("StackCube-v1","ppo/stack_cube_final_ckpt.pt",
-                  "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c",61001)
+                  "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c",81001)
 }
 TASK=os.environ.get("ABI_TASK")
 if TASK not in TASKS:
@@ -40,8 +40,8 @@ else:
         raise ValueError("ABI_CHUNK must be 0,1,2,3 or unset")
     block=8*int(CHUNK)
     SEEDS=ALL_SEEDS[block:block+8]
-OUTPUT_NAME=(f"abi_independent_{TASK}_chunk_{CHUNK}.json"
-             if CHUNK is not None else f"abi_independent_{TASK}_all.json")
+OUTPUT_NAME=(f"abi_shadow_{TASK}_chunk_{CHUNK}.json"
+             if CHUNK is not None else f"abi_shadow_{TASK}_all.json")
 POLICY_OBS_DIM=0
 STEPS=50
 TOL=1e-5
@@ -58,12 +58,15 @@ def rot_from_wxyz(wxyz):
     return Rotation.from_quat([q[1],q[2],q[3],q[0]])
 
 
-def normalized_target_delta(source_arm,target_arm,policy_native, *, approximate=False, use_history=True):
+def normalized_target_delta(source_arm,target_arm,policy_native, *, approximate=False, use_history=True, reconstructed_old=None):
     """Inverts physical achieved-relative EE goal into target-relative ABI."""
     # Main intervention: identical conversion and projection; only the
     # reference pose changes. In the stateless negative control, the
     # achieved pose is (incorrectly) substituted for the last target.
-    old=target_arm._target_pose if use_history else target_arm.ee_pose_at_base
+    # reconstructed_old is the *command-history observer*, with no live
+    # goal read. The original live-memory and stateless arms are unchanged.
+    old=(reconstructed_old if reconstructed_old is not None else
+         target_arm._target_pose if use_history else target_arm.ee_pose_at_base)
     if old is None:
         return None,"controller runtime previous target memory missing",None
 
@@ -156,13 +159,16 @@ def trial(policy, seed):
         "projected":env("pd_ee_target_delta_pose"),
         "stateless":env("pd_ee_target_delta_pose"),
         "naive":env("pd_ee_target_delta_pose"),
+        "shadow":env("pd_ee_target_delta_pose"),
     }
     outcome={"seed":seed,"initial_obs_diff":{},"success_once":{},
-             "steps":{},"refusals":{},"approximations":{},"max_required_native_amp":0.0}
+             "steps":{},"refusals":{},"approximations":{},"max_required_native_amp":0.0,
+             "shadow_max_position_goal_residual_m":0.0,
+             "shadow_max_rotation_goal_residual_rad":0.0}
     try:
         observations={k:w.reset(seed=seed)[0] for k,w in worlds.items()}
         canonical_start=_project_policy_observation(observations["source"],worlds["source"])
-        for key in ("memory","projected","stateless","naive"):
+        for key in ("memory","projected","stateless","naive","shadow"):
             projected=_project_policy_observation(observations[key],worlds[key])
             diff=float(torch.max(torch.abs(canonical_start-projected)).item())
             outcome["initial_obs_diff"][key]=diff
@@ -170,18 +176,24 @@ def trial(policy, seed):
                 raise RuntimeError(f"Nonidentical physical/task initial state {key}: {diff}")
         controller={k:w.unwrapped.agent.controller for k,w in worlds.items()}
         source_arm=controller["source"].controllers["arm"]
+        # ONLY the achieved pose at reset is used to initialize the
+        # command-history observer. It never reads a live _target_pose
+        # during inverse conversion or to correct its own state.
+        shadow_arm=controller["shadow"].controllers["arm"]
+        shadow_estimated_goal=shadow_arm.ee_pose_at_base
         done={k:False for k in worlds}
         for t in range(STEPS):
             for name,w in worlds.items():
                 if done[name]:
                     continue
                 native=act(policy,_project_policy_observation(observations[name],w))
-                if name in ("memory","projected","stateless"):
+                if name in ("memory","projected","stateless","shadow"):
                     arm=controller[name].controllers["arm"]
                     rewritten,reason,amplitude=normalized_target_delta(
                         source_arm,arm,native,
                         approximate=(name!="memory"),
-                        use_history=(name!="stateless"))
+                        use_history=(name!="stateless"),
+                        reconstructed_old=(shadow_estimated_goal if name=="shadow" else None))
                     if reason == "APPROXIMATE_BOUNDED_PROJECTION":
                         outcome["approximations"].setdefault(name,[]).append({
                             "step":t,"required_native_amp":amplitude,
@@ -202,7 +214,32 @@ def trial(policy, seed):
                     }).reshape(1,-1)
                 else:
                     action=native
+                if name=="shadow":
+                    # Predict the next target from the *last submitted native
+                    # action*, not from controller._target_pose. This is the
+                    # strongest zero-learning deterministic history baseline.
+                    shadow_real_action=arm._preprocess_action(rewritten)
+                    shadow_estimated_goal=arm.compute_target_pose(
+                        shadow_estimated_goal,shadow_real_action)
                 observations[name],_,term,trunc,info=w.step(action)
+                if name=="shadow":
+                    # Audit-only ground truth AFTER the step. Never feed the
+                    # measured residual or goal into the shadow estimator.
+                    true_goal=arm._target_pose
+                    if true_goal is None:
+                        raise RuntimeError("Shadow target state lost")
+                    est_p=np.asarray(shadow_estimated_goal.p.detach().cpu(),
+                                     dtype=float).reshape(-1,3)[0]
+                    true_p=np.asarray(true_goal.p.detach().cpu(),
+                                      dtype=float).reshape(-1,3)[0]
+                    pos_err=float(np.linalg.norm(est_p-true_p))
+                    rot_err=float(
+                        (rot_from_wxyz(shadow_estimated_goal.q) *
+                         rot_from_wxyz(true_goal.q).inv()).magnitude())
+                    outcome["shadow_max_position_goal_residual_m"]=max(
+                        outcome["shadow_max_position_goal_residual_m"],pos_err)
+                    outcome["shadow_max_rotation_goal_residual_rad"]=max(
+                        outcome["shadow_max_rotation_goal_residual_rad"],rot_err)
                 val=info.get("success")
                 if val is None:
                     raise RuntimeError(f"Missing actual {TASK_NAME} success flag")
@@ -237,7 +274,7 @@ def main():
         env0.close()
     records=[trial(actor,seed) for seed in SEEDS]
     counts={key:sum(x["success_once"].get(key,False) for x in records)
-            for key in ("source","memory","projected","stateless","naive")}
+            for key in ("source","memory","projected","stateless","naive","shadow")}
     refusals=sum("memory" in x["refusals"] for x in records)
     data={"checkpoint_sha256":sha,"public_pretrained":True,
           "training_performed":False,"backend":"physx_cpu",
@@ -246,19 +283,21 @@ def main():
              "memory":"pd_ee_target_delta_pose with live previous-target inversion",
              "projected":"pd_ee_target_delta_pose with live goal memory + bounded projection",
              "stateless":"pd_ee_target_delta_pose with achieved-pose substitute + same bounded projection",
-             "naive":"pd_ee_target_delta_pose direct-copy"},
+             "naive":"pd_ee_target_delta_pose direct-copy",
+             "shadow":"pd_ee_target_delta_pose with action-history recursively reconstructed previous target (no per-step goal read for conversion)"},
           "success_count":counts,"refused_episodes":refusals,"episodes":records}
     data["task"]=TASK_NAME
-    data["protocol"]="research/ACTION_ABI_PULL_STACK_PREREGISTERED_V1.json"
+    data["protocol"]="research/ACTION_ABI_SHADOW_OBSERVER_PREREG_V1.json"
     data["hf_revision"]=PUBLISHED_MODEL_REVISION
     data["seed_chunk"]=CHUNK
     data["seed_list"]=list(SEEDS)
     data["all_preregistered_seeds"]=[FIRST_SEED,FIRST_SEED+31]
+    data["source_runner_parent_commit"]="9ffa86c6d3a86d2cee44b6e13c560033a8b373cf"
     Path(OUTPUT_NAME).write_text(json.dumps(data,indent=2))
     print("FROZEN_TARGET_MEMORY_SUMMARY",json.dumps({
         "success":counts,"refused":refusals,
         "approximate_steps":{k:sum(len(x["approximations"].get(k,[])) for x in records)
-                             for k in ("projected","stateless")},
+                             for k in ("projected","stateless","shadow")},
         "episodes":len(records)}))
 
 
