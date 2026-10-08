@@ -183,26 +183,79 @@ def sha256(path: Path) -> str:
     return h.hexdigest()
 
 def index_converted_episodes(demo_path: Path) -> dict[int, dict]:
-    """Index successful converted trajectories by their propagated source seed."""
+    """Cross-check metadata success against the *saved native HDF5 terminal success*.
+
+    ManiSkill replay_trajectory --allow-failure saves successful AND failed
+    trajectories; its saved count is not a count of task successes. The
+    upstream RecordEpisode wrapper writes the stepwise success dataset and
+    copies the last entry into the JSON metadata. Both must agree, and
+    every listed episode must actually exist in HDF5, BEFORE a treatment is
+    counted as completed or any successful training subset is selected.
+    """
     import h5py
 
     metadata = json.loads(demo_path.with_suffix(".json").read_text(encoding="utf-8"))
+    episodes = metadata.get("episodes")
+    if not isinstance(episodes, list):
+        raise RuntimeError("converted replay metadata has no episode list")
     result = {}
+    seen_seeds: set[int] = set()
+    seen_trajectory_keys: set[str] = set()
     with h5py.File(demo_path, "r") as h5_file:
-        for episode in metadata.get("episodes", []):
-            if episode.get("success") is not True:
-                continue
-            if "episode_seed" not in episode:
-                raise RuntimeError(f"Converted episode is missing episode_seed: {episode}")
-            seed = int(episode["episode_seed"])
-            if seed in result:
-                raise RuntimeError(f"Converted replay has duplicate episode seed {seed}")
-            source_key = f"traj_{int(episode['episode_id'])}"
+        for episode in episodes:
+            if (
+                not isinstance(episode, dict)
+                or type(episode.get("episode_seed")) is not int
+                or type(episode.get("episode_id")) is not int
+                or type(episode.get("success")) is not bool
+            ):
+                raise RuntimeError("converted replay has missing source seed/id/success")
+            seed = episode["episode_seed"]
+            if seed in seen_seeds:
+                raise RuntimeError(f"duplicate converted episode seed {seed}")
+            seen_seeds.add(seed)
+            source_key = f"traj_{episode['episode_id']}"
+            if source_key in seen_trajectory_keys:
+                raise RuntimeError(f"duplicate converted episode ID {source_key}")
+            seen_trajectory_keys.add(source_key)
             if source_key not in h5_file:
-                raise RuntimeError(f"Converted metadata points to missing HDF5 key {source_key}")
-            result[seed] = {"source_key": source_key, "metadata": episode}
-    # Zero successful conversions are meaningful intervention outcomes;
-    # preserve the 0/N full-source record even if no model can be trained.
+                raise RuntimeError(
+                    f"converted metadata refers to missing HDF5 {source_key}"
+                )
+            trajectory = h5_file[source_key]
+            if "success" not in trajectory or "actions" not in trajectory:
+                raise RuntimeError(
+                    f"{source_key} missing native per-step success/actions"
+                )
+            success_steps = trajectory["success"]
+            actions = trajectory["actions"]
+            if (
+                not isinstance(success_steps, h5py.Dataset)
+                or success_steps.dtype.kind != "b"
+                or not isinstance(actions, h5py.Dataset)
+                or success_steps.ndim != 1
+                or actions.ndim < 1
+                or len(success_steps) == 0
+                or len(actions) != len(success_steps)
+                or type(episode.get("elapsed_steps")) is not int
+                or episode["elapsed_steps"] != len(success_steps)
+            ):
+                raise RuntimeError(
+                    f"{source_key} has corrupt/misaligned native outcome timeline"
+                )
+            terminal_success = bool(success_steps[-1])
+            if terminal_success != episode["success"]:
+                raise RuntimeError(
+                    f"{source_key} JSON success conflicts with HDF5 terminal outcome"
+                )
+            if terminal_success:
+                result[seed] = {
+                    "source_key": source_key,
+                    "metadata": episode,
+                    "native_terminal_success": True,
+                }
+    # Zero successful conversions is a measured 0/N only if all metadata
+    # rows and their native HDF5 trajectories passed the above checks.
     return result
 
 def write_paired_dataset(demo_path: Path, indexed_episodes: dict[int, dict], seeds: list[int]) -> Path:
