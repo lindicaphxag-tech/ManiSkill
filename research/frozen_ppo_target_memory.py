@@ -18,6 +18,9 @@ import mani_skill.envs  # noqa F401
 from frozen_ppo_pickcube_gate import (
     _actor, _bool_value, REPO, FILENAME, EXPECTED,
 )
+from target_memory_action_feasibility import (
+    ExecutionStatus, compile_target_goal
+)
 
 SEEDS=(42,270,429,2026)
 STEPS=50
@@ -39,47 +42,31 @@ def normalized_target_delta(source_arm,target_arm,policy_native, *, approximate=
     """Inverts physical achieved-relative EE goal into target-relative ABI."""
     old=target_arm._target_pose
     if old is None:
-        return None,"controller runtime previous target memory missing",None
+        return None,"controller runtime previous target memory missing",None,None
 
     # Decode policy's original normalized achieved-relative command.
     delta=source_arm._preprocess_action(policy_native[:,:6])
     desired=source_arm.compute_target_pose(target_arm.ee_pose_at_base,delta)
     desired_pos=np.asarray(desired.p.detach().cpu(),dtype=float).reshape(-1,3)[0]
     old_pos=np.asarray(old.p.detach().cpu(),dtype=float).reshape(-1,3)[0]
-    desired_R=rot_from_wxyz(desired.q)
-    old_R=rot_from_wxyz(old.q)
+    desired_R=rot_from_wxyz(desired.q).as_matrix()
+    old_R=rot_from_wxyz(old.q).as_matrix()
 
-    physical_pos=desired_pos-old_pos
-    physical_euler=(desired_R*old_R.inv()).as_euler("XYZ")
-    lower=float(source_arm.config.pos_lower)
-    upper=float(source_arm.config.pos_upper)
-    rot_scale=float(source_arm.config.rot_lower)
-    if abs(rot_scale)<1e-8 or upper <= lower:
-        return None,"ill-defined controller action limits",None
-
-    # Inverse of ManiSkill's native bounded pos affine scaling:
-    # physical delta = (u+1)/2*(upper-lower)+lower.
-    pos_native=2*(physical_pos-lower)/(upper-lower)-1
-    # PDEEPoseController._clip_and_scale_action multiplies native Euler
-    # vector by config.rot_lower, clipping its Euclidean norm to <=1.
-    rot_native=physical_euler/rot_scale
-    amp=float(max(np.max(np.abs(pos_native)),np.linalg.norm(rot_native)))
-    if not np.all(np.isfinite(pos_native)) or not np.all(np.isfinite(rot_native)):
-        return None,"nonfinite target action",amp
-    if amp>1+TOL:
-        if not approximate:
-            return None,"required delta outside target native bounds",amp
-        # Experimental non-exact fallback: Euclidean closest normalized
-        # position command (box) and rotation command (unit ball).
-        pos_native=np.clip(pos_native,-1.0,1.0)
-        rot_len=float(np.linalg.norm(rot_native))
-        if rot_len>1.0:
-            rot_native=rot_native/rot_len
-        return torch.as_tensor(np.r_[pos_native,rot_native],
-                               dtype=policy_native.dtype).reshape(1,6),"APPROXIMATE_BOUNDED_PROJECTION",amp
-    return torch.as_tensor(np.r_[pos_native,rot_native],
-                           dtype=policy_native.dtype).reshape(1,6),None,amp
-
+    # Use the DESTINATION controller's native action contract, not the
+    # source's bounds (which need not be the same across controllers).
+    cfg=target_arm.config
+    witness=compile_target_goal(
+        desired_pos,desired_R,old_pos,old_R,
+        pos_lower=float(cfg.pos_lower),
+        pos_upper=float(cfg.pos_upper),
+        rot_lower=float(cfg.rot_lower),
+        allow_approximation=approximate
+    )
+    if witness.status is ExecutionStatus.REFUSED:
+        return None,witness.reason,witness.required_native_amplitude,witness
+    action=torch.tensor(witness.native_action,dtype=policy_native.dtype).reshape(1,6)
+    reason="APPROXIMATE_BOUNDED_PROJECTION" if witness.status is ExecutionStatus.APPROXIMATE else None
+    return action,reason,witness.required_native_amplitude,witness
 
 def _project_policy_observation(flat_observation, environment):
     """Project target controller observations back into the source ABI.
@@ -149,8 +136,14 @@ def trial(policy, seed):
                 native=act(policy,_project_policy_observation(observations[name],w))
                 if name in ("memory","projected"):
                     arm=controller[name].controllers["arm"]
-                    rewritten,reason,amplitude=normalized_target_delta(
+                    rewritten,reason,amplitude,witness=normalized_target_delta(
                         source_arm,arm,native,approximate=(name=="projected"))
+                    outcome.setdefault("geometric_witnesses",{}).setdefault(name,[]).append({
+                        "step":t,"status":witness.status.value,
+                        "required_native_amplitude":amplitude,
+                        "position_goal_residual_m":witness.position_goal_residual_m,
+                        "orientation_goal_residual_rad":witness.orientation_goal_residual_rad,
+                    })
                     if reason == "APPROXIMATE_BOUNDED_PROJECTION":
                         outcome["approximations"].setdefault(name,[]).append({
                             "step":t,"required_native_amp":amplitude,
