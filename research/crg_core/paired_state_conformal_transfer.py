@@ -85,6 +85,14 @@ def _validate_group(group: dict) -> None:
         raise ValueError("each state cluster needs exactly A and B held-outs")
     if [pair.get("heldout_id") for pair in records] != ["A", "B"]:
         raise ValueError("paired held-outs must be A then B (no filtering)")
+    # The two held-out probes must be evaluated against the SAME identified
+    # local policy maps. Different maps within one state silently create a
+    # pseudoreplicated test of two fitted models rather than two requests.
+    for field in ("map_a", "map_b"):
+        a = np.asarray(records[0][field], dtype=float)
+        b = np.asarray(records[1][field], dtype=float)
+        if a.shape != b.shape or not np.array_equal(a, b):
+            raise ValueError("A/B within one restored state must share identified policy maps")
 
 
 def fit_state_block_envelope(
