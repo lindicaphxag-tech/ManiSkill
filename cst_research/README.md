@@ -9,6 +9,8 @@
 - Novelty boundary: [NOVELTY_BOUNDARY_2026_10_06.md](NOVELTY_BOUNDARY_2026_10_06.md)
 - Competitive boundary update: [COMPETITIVE_BOUNDARY_2026_10_08.md](COMPETITIVE_BOUNDARY_2026_10_08.md)
 - External trigger queue: [EXTERNAL_TRIGGER_QUEUE_2026_10_06.md](EXTERNAL_TRIGGER_QUEUE_2026_10_06.md)
+- Official ManiSkill RL A/B reproduction: [MANISKILL_429_OFFICIAL_RL_REPLAY_2026_10_08.md](MANISKILL_429_OFFICIAL_RL_REPLAY_2026_10_08.md) ([source-vs-fix run](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37709660093))
+- Maintainer-facing packets: [ManiSkill #429 comment](MANISKILL_429_ISSUE_FOLLOWUP_READY.md) · [robomimic #270 PR](UPSTREAM_ROBOMIMIC_270_SUBMISSION.md) · [LeRobot #3312 PR](UPSTREAM_LEROBOT_3312_SUBMISSION.md)
 - **Real paired Panda/Lift causal and full-scene replay:** [REAL_OSC_CAUSAL_HANDSHAKE_2026_10_08.md](REAL_OSC_CAUSAL_HANDSHAKE_2026_10_08.md) ([8/8 full public CI](https://github.com/lindicaphxag-tech/robomimic/actions/runs/37706956215))
 
 Latest full public suite: **90 passed in 1.87s**. External maintained adoption: **0**.
