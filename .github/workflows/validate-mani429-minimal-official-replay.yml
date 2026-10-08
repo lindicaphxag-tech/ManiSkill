@@ -1,0 +1,75 @@
+name: Official ManiSkill 429 minimal replay fix validation
+
+on:
+  push:
+    branches:
+      - validation/mani429-minimal-official-replay-20261008
+  workflow_dispatch:
+
+jobs:
+  real-rl-minimal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU simulator
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+      - name: Run minimal regression
+        run: python -m pytest -q tests/test_pd_joint_delta_to_pos_regression.py
+      - name: Download official original RL demo and verify dataset identity
+        run: |
+          python -m mani_skill.utils.download_demo PickCube-v1 --quiet
+          python - <<'PY'
+          import hashlib, pathlib, json, shutil
+          root=pathlib.Path.home()/".maniskill/demos/PickCube-v1"
+          hits=sorted(p for p in root.rglob("*.h5") if "rl" in p.parts and "pd_joint_delta_pos" in p.name and p.with_suffix(".json").is_file())
+          assert hits, "No official RL delta-joint demo available"
+          src=hits[0]
+          digest=hashlib.sha256(src.read_bytes()).hexdigest()
+          assert digest=="b05851319021c290ed5e5055c03c776b434af5c9af98e13db2ab9159752b89c8",digest
+          metadata=json.loads(src.with_suffix(".json").read_text())
+          assert len(metadata["episodes"])==997
+          target=pathlib.Path("review_replay")
+          target.mkdir()
+          shutil.copy2(src,target/"trajectory.h5")
+          shutil.copy2(src.with_suffix(".json"),target/"trajectory.json")
+          print("REVIEW_INPUT",src,digest)
+          PY
+      - name: Replay 16 official episodes with exactly submitted converter
+        run: |
+          set -o pipefail
+          python -m mani_skill.trajectory.replay_trajectory \
+            --traj-path review_replay/trajectory.h5 \
+            --target-control-mode pd_joint_pos \
+            --obs-mode none --sim-backend physx_cpu \
+            --use-first-env-state --save-traj --count 16 \
+            2>&1 | tee minimal_replay.log
+          grep -E 'Replayed 16 episodes, [0-9]+/16=' minimal_replay.log
+      - name: Export exact result
+        if: always()
+        run: |
+          python - <<'PY'
+          import json, pathlib, re
+          path=pathlib.Path("minimal_replay.log")
+          txt=path.read_text(errors="replace") if path.exists() else ""
+          m=re.search(r"Replayed\s+(\d+)\s+episodes,\s+(\d+)/(\d+)=",txt)
+          data={"result_finished":bool(m),"episodes":int(m.group(1)) if m else None,"success":int(m.group(2)) if m else None,"denominator":int(m.group(3)) if m else None}
+          pathlib.Path("minimal_replay_result.json").write_text(json.dumps(data,indent=2))
+          print("MINIMAL_OFFICIAL_RESULT",json.dumps(data))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: maniskill-429-minimal-patch-official-rl
+          path: |
+            minimal_replay.log
+            minimal_replay_result.json
