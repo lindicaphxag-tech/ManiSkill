@@ -15,7 +15,7 @@ import numpy as np
 import torch
 
 import mani_skill.envs  # noqa: F401 -- register official simulator tasks
-from research.latent_target_memory_cert import (
+from latent_target_memory_cert import (
     TransportRequest, Verdict, certify_box_memory_transport,
 )
 
