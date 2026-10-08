@@ -3,7 +3,9 @@ name: Archive original new32 false-label response PhysX science evidence
 on:
   push:
     branches: [main]
-    paths: ['.github/workflows/archive-empirical-response-new32-original.yml']
+    paths:
+      - '.github/workflows/archive-empirical-response-new32-original.yml'
+      - 'research/audit_empirical_response_new32.py'
   workflow_dispatch:
 
 permissions:
@@ -16,6 +18,9 @@ jobs:
     timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: Require original completed genuine PhysX run and fixed protocol source
         env:
           GH_TOKEN: ${{ github.token }}
