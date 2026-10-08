@@ -66,7 +66,7 @@ jobs:
       - name: Apply common normalized 6D robot controller action to distinct target-memory worlds
         run: |
           set -o pipefail
-          python research/verify_native_two_history_se3.py 2>&1 | tee two_history_se3_native.log
+          PYTHONPATH="$PWD" python research/verify_native_two_history_se3.py 2>&1 | tee two_history_se3_native.log
           test -s two_history_se3_native_real_physx.json
       - name: Audit all four original controller worlds, no false physical safety assertions
         run: |
