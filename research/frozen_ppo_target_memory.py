@@ -72,6 +72,41 @@ def normalized_target_delta(source_arm,target_arm,policy_native):
                            dtype=policy_native.dtype).reshape(1,6),None,amp
 
 
+def _project_policy_observation(flat_observation, environment):
+    """Project target controller observations back into the source ABI.
+
+    ManiSkill's state observation order is: agent.qpos, agent.qvel,
+    agent.controller.target_pose (7D when use_target=True), task.extra.
+    The frozen PPO was trained without the controller target-pose field.
+    Do not merely truncate: preserve all task.extra coordinates.
+    """
+    obs=torch.as_tensor(flat_observation)
+    if obs.ndim != 2 or obs.shape[0] != 1:
+        raise RuntimeError("Unexpected state observation batch shape")
+    agent=environment.unwrapped.agent
+    arm=agent.controller.controllers["arm"]
+    nq=int(agent.robot.get_qpos().shape[-1])
+    nv=int(agent.robot.get_qvel().shape[-1])
+    if agent.controller.controllers["arm"].config.use_target:
+        memory=arm.get_state().get("target_pose")
+        if memory is None:
+            raise RuntimeError("Controller target memory missing: refuse projection")
+        memory=torch.as_tensor(memory,device=obs.device,dtype=obs.dtype)
+        if memory.shape[-1]!=7 or obs.shape[-1]!=49:
+            raise RuntimeError("Target observation ABI changed; cannot project")
+        offset=nq+nv
+        actual=obs[:,offset:offset+7]
+        if not torch.allclose(actual,memory,atol=1e-5,rtol=0):
+            raise RuntimeError("Observation controller-state slice mismatches live target memory")
+        converted=torch.cat([obs[:,:offset],obs[:,offset+7:]],dim=1)
+        if converted.shape[-1]!=42:
+            raise RuntimeError("Projected observation ABI is not source policy's 42D input")
+        return converted
+    if obs.shape[-1]!=42:
+        raise RuntimeError("Source observation ABI is not 42D")
+    return obs
+
+
 def act(policy,observation):
     with torch.no_grad():
         return policy(observation.detach().cpu().float()).clip(-1,1)
@@ -87,11 +122,13 @@ def trial(policy, seed):
              "steps":{},"refusals":{},"max_required_native_amp":0.0}
     try:
         observations={k:w.reset(seed=seed)[0] for k,w in worlds.items()}
+        canonical_start=_project_policy_observation(observations["source"],worlds["source"])
         for key in ("memory","naive"):
-            diff=float(torch.max(torch.abs(observations["source"]-observations[key])).item())
+            projected=_project_policy_observation(observations[key],worlds[key])
+            diff=float(torch.max(torch.abs(canonical_start-projected)).item())
             outcome["initial_obs_diff"][key]=diff
             if diff>5e-4:
-                raise RuntimeError(f"Nonidentical physical initial state {key}: {diff}")
+                raise RuntimeError(f"Nonidentical physical/task initial state {key}: {diff}")
         controller={k:w.unwrapped.agent.controller for k,w in worlds.items()}
         source_arm=controller["source"].controllers["arm"]
         done={k:False for k in worlds}
@@ -99,7 +136,7 @@ def trial(policy, seed):
             for name,w in worlds.items():
                 if done[name]:
                     continue
-                native=act(policy,observations[name])
+                native=act(policy,_project_policy_observation(observations[name],w))
                 if name=="memory":
                     arm=controller[name].controllers["arm"]
                     rewritten,reason,amplitude=normalized_target_delta(
