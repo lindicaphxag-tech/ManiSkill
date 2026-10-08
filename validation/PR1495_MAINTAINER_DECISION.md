@@ -14,6 +14,24 @@ that active action chart.
 
 Unsupported mappings fail explicitly rather than silently guessing.
 
+## 2026-10-08 research-integrity correction
+
+**Please do not cite the apparent 100–199 heldout replay as replication.**
+The nominally green [holdout run #37745942944](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37745942944)
+actually re-used the first 100 HDF5 source groups despite recording
+episode-index metadata 100–199. The independent original-artifact
+[audit #37752017483](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37752017483)
+failed on the source-seed count mismatch. The result is **invalid for
+disjoint cohort inference**, not evidence of a second success.
+
+[Root cause, withdrawal and corrected physical-HDF5 slicing status](https://github.com/lindicaphxag-tech/ManiSkill/blob/research/native-delta-pose-assay/research/kaggle_diffusion_policy_peg/HOLDOUT_SOURCE_VALIDITY_ERRATUM_2026_10_08.md).
+
+The **first** 100-demo cohort result below remains valid: independently
+audited 90/91/1/91 successful conversions on source indices 0–99. We have
+not changed the preregistered 100–199 target, and no corrected holdout
+outcome is claimed until actual sliced inputs and original seed identities
+pass the same audit.
+
 ## Frozen current identities
 
 - upstream #1495 head:
@@ -174,10 +192,11 @@ A **disjoint, explicitly precommitted** source cohort indexed 100–199 was
 locked before inspection of the 0–99 result, with falsifiable rate-margin
 predictions and a fail-closed 'insufficient source' rule:
 [FROZEN_NEXT_COHORT_100_199.md](https://github.com/lindicaphxag-tech/ManiSkill/blob/research/native-delta-pose-assay/research/kaggle_diffusion_policy_peg/FROZEN_NEXT_COHORT_100_199.md).
-[Actual holdout execution #37745942944](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37745942944)
-was launched with identical interventions and source SHA. No holdout
-outcome is asserted here until the actual workflow and evidence have been
-checked.
+[Original holdout execution #37745942944](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37745942944)
+was found **invalid as a heldout test** by the independently run source-seed
+integrity audit #37752017483: the CLI consumed the first 100 physical HDF5
+groups despite metadata declaring indices 100–199. This result is expressly
+withdrawn. See the linked source-validity erratum near the top of this packet.
 
 ## Official CPU policy-training pipeline is now runnable end-to-end
 
