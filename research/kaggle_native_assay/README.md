@@ -32,11 +32,30 @@ closing cleanly on Python 3.11.
   [public SUCCESS run 37715587885](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37715587885).
   Of eight fixed source demos per arm, **baseline 6/8; current #1495 alone
   6/8; exact #1472 alone 0/8; combined #1495 + #1472 6/8**. Full four-way
-  successful-seed intersection is **zero**. Thus the combined repair
-  restores compatibility with #1472 in this small cohort, but cannot be
-  called a statistically replicated learned-policy improvement.
-  See [the archived 2×2 results](../kaggle_diffusion_policy_peg/README.md).
-  The converter-only arm is no better than baseline on this outcome.
+  successful-seed intersection is **zero**. The converter-only arm is no
+  better than baseline on this outcome.
+
+- **NEW: 100 original fixed demonstrations — exact source-identity audit passed.**
+  [Original physical four-arm replay #37719545972](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37719545972)
+  produced **90/100 baseline, 91/100 converter-only, 1/100 controller-only,
+  91/100 combined**.
+  [Independent source-seed audit #37746202004](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37746202004)
+  downloaded the original ZIP artifact and recomputed all 100 binary rows,
+  pairwise source-seed intersections, hashes and summary counts.
+  The descriptive original-denominator interaction is **89/100**, with only
+  **one** four-way shared successful source demo. This supports a strong
+  **converter/controller compatibility interaction** in the frozen
+  demonstration conversion task; it does **not** show #1495-alone task
+  improvement or usable four-arm Diffusion Policy training evidence.
+  [Reviewer-ready decision packet](https://github.com/lindicaphxag-tech/ManiSkill/blob/handoff/pr1495-maintainer-decision/validation/PR1495_MAINTAINER_DECISION.md)
+  now reflects these raw-data-audited results.
+
+- A separate **original indices 100–199** cohort was precommitted before
+  inspecting the 0–99 outcome, with thresholds that can be falsified:
+  [frozen heldout protocol](../kaggle_diffusion_policy_peg/FROZEN_NEXT_COHORT_100_199.md).
+  [Holdout CI #37745942944](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37745942944)
+  was started and requires an actual completed outcome before any heldout
+  benefit is claimed.
 
 This evidence is linked here because this README is already referenced by
 the upstream maintainer-facing discussion, avoiding repeated comment spam.
