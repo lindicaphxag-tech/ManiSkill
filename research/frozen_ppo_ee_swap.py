@@ -7,6 +7,7 @@ their OWN current observations (closed-loop). No training or updates.
 This is an exploratory CI, not a pre-declared clinical safety guarantee.
 """
 import json
+import hashlib
 from pathlib import Path
 
 import gymnasium as gym
@@ -86,6 +87,22 @@ def rollout_one(actor,seed):
             if diff>5e-4:
                 raise RuntimeError("Different initial physics/goal observation; result invalid "+str(diff))
 
+        # Audit only: SHA of the ACTUAL initialized observation and
+        # physical state, not just the caller-supplied integer seed.
+        def raw_digest(value):
+            if torch.is_tensor(value):
+                value=value.detach().cpu().numpy()
+            return hashlib.sha256(
+                np.asarray(value,dtype=np.float64).reshape(-1).tobytes()
+            ).hexdigest()
+
+        report["initial_observation_sha256"]=raw_digest(observations["source"])
+        report["initial_physics_state_sha256"]=raw_digest(
+            envs["source"].unwrapped.get_state()
+        )
+        report["initial_obs_first8"]=[
+            float(v) for v in observations["source"].detach().cpu().reshape(-1)[:8]
+        ]
         controllers={name:env.unwrapped.agent.controller for name,env in envs.items()}
         source_arm=current_arm(controllers["source"])
         completed={k:False for k in envs}
