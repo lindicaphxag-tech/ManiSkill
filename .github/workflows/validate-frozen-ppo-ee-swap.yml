@@ -3,7 +3,7 @@ name: Frozen PPO controller swap source-vs-compiled-vs-naive
 on:
   push:
     branches:
-      - validation/frozen-ppo-10014-reproducibility-20261008
+      - validation/frozen-ppo-10014-prefix-order-20261008
   workflow_dispatch:
 
 jobs:
@@ -26,30 +26,9 @@ jobs:
       - name: Frozen PPO source/adapter/direct-copy comparison
         run: |
           set -o pipefail
-          mkdir -p repeated_seed10014
-          for attempt in $(seq 1 12); do
-            echo "INDEPENDENT_PROCESS_ATTEMPT=$attempt" | tee "repeated_seed10014/run_${attempt}.log"
-            python research/frozen_ppo_ee_swap.py 2>&1 | tee -a "repeated_seed10014/run_${attempt}.log"
-            test -s frozen_ppo_controller_swap.json
-            cp frozen_ppo_controller_swap.json "repeated_seed10014/run_${attempt}.json"
-          done
-          python - <<'PY'
-          import json,pathlib
-          paths=sorted(pathlib.Path("repeated_seed10014").glob("*.json"))
-          assert len(paths)==12, len(paths)
-          outcome=[]
-          for p in paths:
-              d=json.loads(p.read_text())
-              ep=d["episodes"][0]
-              outcome.append({
-                  "file":p.name,"source":ep["success_once"].get("source",False),
-                  "compiled":ep["success_once"].get("compiled",False),
-                  "naive":ep["success_once"].get("naive",False),
-                  "reset_fingerprints":ep["reset_fingerprints"],
-              })
-          pathlib.Path("repeated_seed10014/summary.json").write_text(json.dumps(outcome,indent=2))
-          print("FROZEN_10014_REPEATED_PROCESS_SUMMARY",json.dumps(outcome))
-          PY
+          python research/frozen_ppo_ee_swap.py 2>&1 | tee frozen_policy_controller_swap.log
+          test -s frozen_ppo_controller_swap.json
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
