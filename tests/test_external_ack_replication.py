@@ -59,6 +59,17 @@ class ExternalReplayGuardTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_output(r,"pull_cube","applied_no_ack",[120001])
 
+    def test_real_injection_failure_kept_in_denominator(self):
+        r=record()
+        case=r["rows"][0]
+        case["fault_reached"]={k:False for k in ARMS[1:]}
+        case["readback_queries"]={k:(-1 if k=="oracle_live_memory" else 0) for k in ARMS[1:]}
+        case["resync_position_error_m"]=None
+        case["steps"]["fail_closed_stop"]=1
+        case["refusals"]={}
+        self.assertEqual(validate_output(r,"pull_cube","applied_no_ack",[120001])
+                         ["source"],1)
+
     def test_negative_outcome_retained(self):
         r=record()
         r["rows"][0]["success_once"]["recovered_one_readback"]=False
