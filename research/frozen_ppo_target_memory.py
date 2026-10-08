@@ -24,7 +24,7 @@ REPO="kattri15/actionshift-baselines"
 FILENAME="ppo/push_cube_final_ckpt.pt"
 EXPECTED="a4a02198b309e73cb877959079023d967d5f63ec78380de9703a10c9efafc0cf"
 TASK="PushCube-v1"
-SEEDS=(42,270,429,2026)
+SEEDS=tuple(range(31001,31033))
 STEPS=50
 TOL=1e-5
 
