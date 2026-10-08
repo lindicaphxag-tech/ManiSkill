@@ -164,6 +164,18 @@ class ReplayJournalTests(unittest.TestCase):
         self.assertNotIn('if not result:', body)
         self.assertIn('return result', body)
 
+    def test_source_runner_saves_native_failed_replays_not_just_successes(self):
+        # ManiSkill's --allow-failure retains failure trajectories; our
+        # method counts success labels, not the replay CLI's saved count.
+        script = (
+            Path(__file__).resolve().parents[1] / "run_assay_factorial.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn('"--allow-failure",', script)
+        self.assertIn('type(row.get("success")) is not bool', script)
+        self.assertIn('"full_original_source_population_returned": True', script)
+        self.assertIn('"full_source_census": True', script)
+        self.assertIn('f"replay_{arm}.log"', script)
+
     def test_full_four_arm_replay_no_filtering_of_failure_denominator(self):
         self.all_arms()
         result = audit_replay_journal(self.root)
