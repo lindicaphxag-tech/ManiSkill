@@ -2,6 +2,9 @@
 
 **This folder is maintained by the fork author and is NOT a ManiSkill upstream release or maintainer endorsement.**
 
+**For external reviewers, start with the concise [Evidence-Gated Stateful Action Transport research brief](./EVIDENCE_GATED_STATEFUL_ACTION_TRANSPORT_REVIEWER_BRIEF.md).** It links the permanent original evidence, an actual one-click fresh-seed PhysX replication runner, the negative 64-condition midpoint study, and the positive 16-condition selective-readback experiment (15/16 task outcomes using 4 controller-state queries rather than 16 mandatory queries). All robot experiments are author-operated; **no new robotics upstream acceptance or outside-lab replication is claimed.**
+
+
 [**Four-task flagship research / complete methods / limitations**](./STATEFUL_ACTION_ABI_FLAGSHIP.md) · [Public external replication challenge](https://github.com/lindicaphxag-tech/kaggle/issues/67) · [All nine permanent original PullCube+StackCube task JSONs](./evidence/pull_stack_new_task_64/) · [Original genuine 64-task-state CPU PhysX Actions](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37815152548)
 
 ## New observer extension: no per-action private target getter
