@@ -1,0 +1,68 @@
+{
+  "schema": "abi_public_motion_fault_identifiability_v1",
+  "frozen_date": "2026-10-09",
+  "status": "PREOUTCOME_COMMIT_BEFORE_CODE",
+  "question": "Given ambiguous native command execution, does the observed qpos/qvel sequence after the fault distinguish delivered vs held in paired real PhysX, without accessing goal-memory fields?",
+  "evidence_not_the_method": "One-step counterfactual physical indistinguishability/observable separation assay, not autonomous recovery or a learned observer",
+  "frozen_release": {
+    "repo": "kattri15/actionshift-baselines",
+    "revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85"
+  },
+  "tasks": {
+    "pull_cube": {
+      "id": "PullCube-v1",
+      "seeds": [
+        98001,
+        98002,
+        98003,
+        98004,
+        98005,
+        98006,
+        98007,
+        98008
+      ],
+      "sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7"
+    },
+    "stack_cube": {
+      "id": "StackCube-v1",
+      "seeds": [
+        99001,
+        99002,
+        99003,
+        99004,
+        99005,
+        99006,
+        99007,
+        99008
+      ],
+      "sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+    }
+  },
+  "backend": "physx_cpu",
+  "control_mode": "pd_ee_target_delta_pose",
+  "source_mode": "pd_ee_delta_pose",
+  "fault_step_zero_indexed": 2,
+  "identical_pre_fault_decisions": true,
+  "contrast": "At third step issue fully converted bounded source PPO arm action to world A; issue native zero arm translation/rotation to world B; deliver identical gripper command. This is simulated actuator command divergence, not network ACK failure.",
+  "followup_diagnostic": "After fault, apply identical neutral native arm and gripper actions for four further steps in both worlds; take publicly observable joint qpos and qvel at fault and after each diagnostic step.",
+  "measurement_visibility": "Exclude entire 7D target_pose memory field from flat state; qpos/qvel are permitted. Native true target memory may be audited after outcomes but never enters observability measurements.",
+  "primary_stats": [
+    "max_abs_qpos_gap_rad for each of 0..4 postfault steps",
+    "max_abs_qvel_gap_rad_s for each of 0..4 postfault steps",
+    "whether original source action was nonzero and bounded",
+    "native target-position and rotation divergence audit only",
+    "all original seeds, including differences equal to zero"
+  ],
+  "thresholds_for_descriptive_sensitivity": [
+    0.000001,
+    0.0001,
+    0.001
+  ],
+  "cannot_claim": [
+    "Independent-state identifiability under noisy, uncalibrated hardware sensors",
+    "sensor-model observability from a single real trajectory without an accurate counterfactual simulator",
+    "automatic recovery, motion safety, or task success gains",
+    "a new theorem or general hidden-state identifiability result"
+  ],
+  "future_gate": "Only if motion differences routinely exceed predeclared descriptive thresholds, implement a separately preregistered model-based classifier under controlled model mismatch and report no-readback task recovery vs optimistic/pessimistic baselines."
+}
