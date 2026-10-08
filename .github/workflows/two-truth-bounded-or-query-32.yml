@@ -1,0 +1,90 @@
+name: Frozen two-truth 32-state selective-readback PhysX falsification
+
+on:
+  push:
+    branches: [research/robust-or-query-two-truth-32-20261009]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify pre-outcome protocol and byte-identical original robust law
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/ACK_BOUNDED_QUERY_TWO_TRUTH_32_PRECOMMIT_V1.json)" = "d440fb3bcd4072ad9fa2122ba055657f7c95171d"
+          test "$(git hash-object research/frozen_ppo_ack_bounded_query.py)" = "1dc653cdc44e422c8340475ad00f828b3a41eb4f"
+          test "$(git hash-object research/UNKNOWN_ACK_BOUNDED_QUERY_FROZEN_V1.json)" = "36f01321c7f5502f3cc0b188d5201f1c2cedb131"
+          python -m py_compile research/frozen_ppo_ack_bounded_two_truth.py research/audit_ack_bounded_two_truth_32.py
+
+  real-physx:
+    needs: freeze
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        fault: [applied_no_ack, neutral_arm_delta_no_ack]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PYTHONUNBUFFERED: '1'
+      ABI_TASK: ${{ matrix.task }}
+      ABI_FAULT: ${{ matrix.fault }}
+      PYTHONPATH: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install genuine CPU PhysX and original published frozen PPO dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Execute 8 prespecified states and ALL seven matched arms without changing controller law
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/frozen_ppo_ack_bounded_two_truth.py \
+            2>&1 | tee "two_truth_${ABI_TASK}_${ABI_FAULT}.log"
+          test -s "two_truth_bounded_query_${ABI_TASK}_${ABI_FAULT}_original8.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: two-truth-original-${{ matrix.task }}-${{ matrix.fault }}
+          path: |
+            two_truth_*.log
+            two_truth_bounded_query_*_original8.json
+
+  complete-source-audit:
+    needs: real-physx
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: two-truth-original-*
+          path: /tmp/physx-originals
+          merge-multiple: true
+      - name: Verify all 32 original task-truth conditions and full information-budget provenance
+        run: |
+          python research/audit_ack_bounded_two_truth_32.py \
+            --input-dir /tmp/physx-originals \
+            --output full_original_two_truth_32_audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: two-truth-32-complete-original-physx-audit
+          path: |
+            /tmp/physx-originals/*.json
+            /tmp/physx-originals/*.log
+            full_original_two_truth_32_audit.json
