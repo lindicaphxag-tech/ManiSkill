@@ -50,7 +50,7 @@ jobs:
               assert sha256((folder/name).read_bytes()).hexdigest()==sha, name
           original=json.loads((folder/'direct_counterfactual_result.json').read_text())
           replayed=json.loads(Path('/tmp/crg_replay.json').read_text())
-          assert original == replayed
+          def equal_frozen(a,b,path='
           assert original['state_clusters_total']==5
           assert original['dependent_requests_total']==10
           assert original['official_policy_forward_calls']==240
@@ -100,6 +100,161 @@ jobs:
           original=json.loads((folder/'direct_counterfactual_result.json').read_text())
           replayed=json.loads(Path('/tmp/crg_replay.json').read_text())
           assert original == replayed
+          assert original['state_clusters_total']==5
+          assert original['dependent_requests_total']==10
+          assert original['official_policy_forward_calls']==240
+          assert original['certified_transfer_authorizations']==0
+          assert original['missing_controller_hard_bound'] is True
+          print('Exact hash, original JSON, denominator, frozen replay: PASS')
+          PY
+      - name: Commit immutable evidence without modifying original files
+        run: |
+          dst=research/crg_core/evidence/direct_counterfactual_five_state_v1
+          mkdir -p "$dst"
+          cp /tmp/crg_originals/*.json "$dst/"
+          cat > "$dst/README.md" <<'EOF'
+          # Frozen five-state counterfactual response evidence
+
+          Source: public workflow 37808323459, head 2c1b910153450a156f83aa84d2eb52417b33086e, protocol preregistration 5333216603586adfc6e4831df3c17ead48581a48.
+          These six JSONs are copied byte-for-byte from the CI artifact and compared against an independent pinned SHA-256 manifest before being committed.
+
+          - Five restored PushT states, ten A/B requests, 240 frozen Diffusion/VQ-BeT first-action queries.
+          - Zero certified actual transfer authorizations because controller output hard bounds are not independently proven.
+          - No verified real-world safety, downstream rollout outcomes, third-party adoption, or independent replication.
+          - Three screening seeds and three independent audit seeds are small, descriptive samples, not ground truth.
+          - State 337 / request A has untrusted point-estimate norm 0.681 versus audit-sample norm 1.008 at tolerance 1.0.
+          - The frozen state-level result and all original per-seed actions can be independently replayed.
+
+          This owner-side evidence does not prove a cross-policy transfer advantage.
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$dst"
+          if git diff --cached --quiet; then
+            echo 'Exact archived evidence is already present'
+            exit 0
+          fi
+          git commit -m 'evidence: permanently archive five-state direct policy response negative bank'
+          git push origin HEAD:main
+):
+              assert type(a) is type(b), (path, 'type changed')
+              if isinstance(a,dict):
+                  assert a.keys()==b.keys(), (path, 'keys changed')
+                  for k in a: equal_frozen(a[k],b[k],path+'.'+k)
+              elif isinstance(a,list):
+                  assert len(a)==len(b), (path, 'length changed')
+                  for i,(x,y) in enumerate(zip(a,b)):
+                      equal_frozen(x,y,path+'['+str(i)+']')
+              elif isinstance(a,float):
+                  from math import isclose,isfinite
+                  assert isfinite(a) and isfinite(b) and isclose(
+                      a,b,rel_tol=1e-10,abs_tol=1e-10
+                  ), (path, 'numeric replay mismatch',a,b)
+              else:
+                  assert a==b, (path, 'semantic replay mismatch',a,b)
+          equal_frozen(original,replayed)
+          assert original['state_clusters_total']==5
+          assert original['dependent_requests_total']==10
+          assert original['official_policy_forward_calls']==240
+          assert original['certified_transfer_authorizations']==0
+          assert original['missing_controller_hard_bound'] is True
+          print('Exact hash, original JSON, denominator, frozen replay: PASS')
+          PY
+
+  archive-on-trusted-main:
+    if: github.event_name != 'pull_request'
+    needs: verify-evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Match original immutable CI producer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/37808323459" --jq .head_sha)" = 2c1b910153450a156f83aa84d2eb52417b33086e
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/37808323459" --jq .conclusion)" = success
+      - name: Retrieve all unmodified original records
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/crg_originals
+          gh run download 37808323459 --repo "$GITHUB_REPOSITORY" --name crg-direct-counterfactual-5state-original-evidence --dir /tmp/crg_originals
+      - name: Recompute frozen aggregate and enforce SHA-256 manifest
+        run: |
+          python -m pip install -q numpy
+          python -m research.crg_core.prospective.aggregate_direct_counterfactual --input-dir /tmp/crg_originals --output /tmp/crg_replay.json
+          python - <<'PY'
+          from pathlib import Path
+          from hashlib import sha256
+          import json
+          folder=Path('/tmp/crg_originals')
+          expected={"direct_counterfactual_result.json":"57ccb088e82a1bee48b132bf3a8ffe97dcae818e02cf2f133dbd2dd8eddae22e","state-311.json":"928a57807960a49e10968d6ca65dc1d991cef3b3ad1538c977d734922460421d","state-313.json":"54df98e940fe1718e8b2ff3c3135dbb485b87a18060d23753d73f014c99a1b0b","state-317.json":"f7cdeb18271a38ea9df0d41c636eb655fa909fd9832b527763380d0f036c06e2","state-331.json":"346956381c80eda455a65f275c26ead26c9cdc4a5dfc1af05439a4002c0931a5","state-337.json":"fad347bf46a0f2da5bf7010c460c1155377b1fa0f43896e98922f3903f69d047"}
+          assert {p.name for p in folder.iterdir() if p.is_file()} == set(expected)
+          for name, sha in expected.items():
+              assert sha256((folder/name).read_bytes()).hexdigest()==sha, name
+          original=json.loads((folder/'direct_counterfactual_result.json').read_text())
+          replayed=json.loads(Path('/tmp/crg_replay.json').read_text())
+          def equal_frozen(a,b,path='
+          assert original['state_clusters_total']==5
+          assert original['dependent_requests_total']==10
+          assert original['official_policy_forward_calls']==240
+          assert original['certified_transfer_authorizations']==0
+          assert original['missing_controller_hard_bound'] is True
+          print('Exact hash, original JSON, denominator, frozen replay: PASS')
+          PY
+      - name: Commit immutable evidence without modifying original files
+        run: |
+          dst=research/crg_core/evidence/direct_counterfactual_five_state_v1
+          mkdir -p "$dst"
+          cp /tmp/crg_originals/*.json "$dst/"
+          cat > "$dst/README.md" <<'EOF'
+          # Frozen five-state counterfactual response evidence
+
+          Source: public workflow 37808323459, head 2c1b910153450a156f83aa84d2eb52417b33086e, protocol preregistration 5333216603586adfc6e4831df3c17ead48581a48.
+          These six JSONs are copied byte-for-byte from the CI artifact and compared against an independent pinned SHA-256 manifest before being committed.
+
+          - Five restored PushT states, ten A/B requests, 240 frozen Diffusion/VQ-BeT first-action queries.
+          - Zero certified actual transfer authorizations because controller output hard bounds are not independently proven.
+          - No verified real-world safety, downstream rollout outcomes, third-party adoption, or independent replication.
+          - Three screening seeds and three independent audit seeds are small, descriptive samples, not ground truth.
+          - State 337 / request A has untrusted point-estimate norm 0.681 versus audit-sample norm 1.008 at tolerance 1.0.
+          - The frozen state-level result and all original per-seed actions can be independently replayed.
+
+          This owner-side evidence does not prove a cross-policy transfer advantage.
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$dst"
+          if git diff --cached --quiet; then
+            echo 'Exact archived evidence is already present'
+            exit 0
+          fi
+          git commit -m 'evidence: permanently archive five-state direct policy response negative bank'
+          git push origin HEAD:main
+):
+              assert type(a) is type(b), (path, 'type changed')
+              if isinstance(a,dict):
+                  assert a.keys()==b.keys(), (path, 'keys changed')
+                  for k in a: equal_frozen(a[k],b[k],path+'.'+k)
+              elif isinstance(a,list):
+                  assert len(a)==len(b), (path, 'length changed')
+                  for i,(x,y) in enumerate(zip(a,b)):
+                      equal_frozen(x,y,path+'['+str(i)+']')
+              elif isinstance(a,float):
+                  from math import isclose,isfinite
+                  assert isfinite(a) and isfinite(b) and isclose(
+                      a,b,rel_tol=1e-10,abs_tol=1e-10
+                  ), (path, 'numeric replay mismatch',a,b)
+              else:
+                  assert a==b, (path, 'semantic replay mismatch',a,b)
+          equal_frozen(original,replayed)
           assert original['state_clusters_total']==5
           assert original['dependent_requests_total']==10
           assert original['official_policy_forward_calls']==240
