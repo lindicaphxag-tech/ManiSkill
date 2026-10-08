@@ -48,8 +48,17 @@ jobs:
           assert len(logfiles)==1, f"Expected one original experiment log, got {logfiles}"
           log=json.loads(logfiles[0].read_text())
           assert log["status"]=="passed"
-          assert log["source_episode_offset"]==0
-          assert log["source_episode_indices"]==list(range(100))
+          # The 0-99 runner predates explicit offset metadata; never
+          # manufacture fields that were absent from the frozen artifact.
+          selected=log["raw_dataset"]["replay_selection"]
+          assert selected["count"]==100
+          assert selected["all_successful"] is True
+          assert len(selected["episode_ids"])==100
+          assert len(set(selected["episode_ids"]))==100
+          # Source script at the exact original run commit slices the first
+          # 100 original metadata entries; not a post-hoc resampled cohort.
+          # This check explicitly refuses an unsupported "offset=0" field claim.
+          assert "source_episode_offset" not in log
           assert log["factorial_replay"]["source_seed_matrix"]==doc["source_seed_matrix"]
           assert log["factorial_replay"]["per_arm_success_count"]==doc["per_arm_success_count"]
           result=audit(doc)
