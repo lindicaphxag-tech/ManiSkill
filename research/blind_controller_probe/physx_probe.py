@@ -18,7 +18,7 @@ import numpy as np
 import torch
 
 import mani_skill.envs  # noqa: F401  (registers tasks)
-from research.blind_controller_probe.infer import (
+from infer import (
     ACHIEVED, TARGET, ABSTAIN, REFUSE, infer_zero_delta_reference,
 )
 
