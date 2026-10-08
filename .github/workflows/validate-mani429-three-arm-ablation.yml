@@ -72,20 +72,8 @@ jobs:
           from pathlib import Path
           p=Path("mani_skill/trajectory/utils/actions/conversion.py")
           text=p.read_text()
-          old='''        prev_arm_qpos = ori_arm_controller.qpos
-        delta_qpos = gym_utils.clip_and_scale_action(ori_action_dict["arm"], low, high)
-        arm_action = prev_arm_qpos + delta_qpos'''
-          new='''        prev_arm_qpos = ori_arm_controller.qpos.detach().cpu().numpy()[0]
-        delta_qpos = gym_utils.clip_and_scale_action(
-            torch.as_tensor(
-                ori_action_dict["arm"],
-                dtype=ori_arm_controller.qpos.dtype,
-                device=ori_arm_controller.qpos.device,
-            ),
-            low,
-            high,
-        ).detach().cpu().numpy()
-        arm_action = prev_arm_qpos + delta_qpos'''
+          old="        prev_arm_qpos = ori_arm_controller.qpos\n        delta_qpos = gym_utils.clip_and_scale_action(ori_action_dict[\"arm\"], low, high)\n        arm_action = prev_arm_qpos + delta_qpos"
+          new="        prev_arm_qpos = ori_arm_controller.qpos.detach().cpu().numpy()[0]\n        delta_qpos = gym_utils.clip_and_scale_action(\n            torch.as_tensor(\n                ori_action_dict[\"arm\"],\n                dtype=ori_arm_controller.qpos.dtype,\n                device=ori_arm_controller.qpos.device,\n            ),\n            low,\n            high,\n        ).detach().cpu().numpy()\n        arm_action = prev_arm_qpos + delta_qpos"
           assert text.count(old)==1, "baseline did not match the intended type/shape-only fix"
           p.write_text(text.replace(old,new))
           print("TYPE_ONLY_PATCH",new)
