@@ -1,3 +1,22 @@
+> **REPRODUCIBILITY UPDATE, 2026-10-08:** The original prospective
+> batch below is a true record of that specific run, but its seed
+> 10014 failed compiled-controller outcome **was not stable across
+> independent executions**. A standalone rerun, and 8 repeated
+> single-seed episodes, each succeeded (source step 19, compiled step 25).
+> Two separate **full 32-seed** reruns then produced
+> **32/32 source, 32/32 compiled, 0/32 naive**:
+> [original-order rerun](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37746035726),
+> [per-episode Python/NumPy/Torch reseeded rerun](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37746063527).
+> Seed 10014's initial **observation** SHA matched across those two
+> instrumented reruns and 8 standalone repeats, but the original 31/32
+> batch did not log its exact initial-state fingerprint. Version lists
+> of the core simulator/PyTorch dependencies appeared identical across
+> initial and repeated runs. Root cause remains **unproven**: this may
+> be unrecorded full physical state, simulator numerical effects, or
+> runtime details. Do not call seed 10014 a reproducible failure or
+> quote 31/32 as a stable deterministic rate. Both 31/32 and 32/32 are
+> genuine observed batches.
+
 # Prospective disjoint 32-seed frozen PPO controller-swap holdout — final results
 
 **Canonical successful CI:** https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37716840505
