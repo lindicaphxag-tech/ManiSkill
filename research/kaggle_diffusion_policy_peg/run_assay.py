@@ -224,6 +224,26 @@ def apply_kaggle_worker_compatibility() -> str:
         scalar_metric,
         "eval_metrics[k].append(torch.as_tensor(v).float().cpu().numpy())\n",
     )
+    if SMOKE_MODE:
+        # Gymnasium SyncVectorEnv with one CPU worker may return metrics in
+        # info["episode"] rather than the AsyncVectorEnv "final_info" slot.
+        # Fail closed if that direct episode is missing or has no success metric.
+        # The existing final_info path remains unchanged for non-smoke runs.
+        sync_marker = '                if isinstance(info["final_info"], dict):'
+        if eval_source.count(sync_marker) != 1:
+            raise RuntimeError("Unexpected evaluation terminal-info branch")
+        sync_handler = (
+            '                if "final_info" not in info:\n'
+            '                    if eval_envs.num_envs != 1 or "episode" not in info:\n'
+            '                        raise RuntimeError("Missing terminal episode metrics")\n'
+            '                    final_episode = info["episode"]\n'
+            '                    if "success_at_end" not in final_episode:\n'
+            '                        raise RuntimeError("Terminal episode lacks success_at_end")\n'
+            '                    for k, v in final_episode.items():\n'
+            '                        eval_metrics[k].append(torch.as_tensor(v).float().cpu().numpy())\n'
+            '                elif isinstance(info["final_info"], dict):'
+        )
+        eval_source = eval_source.replace(sync_marker, sync_handler)
     eval_path.write_text(eval_source, encoding="utf-8")
 
     compatibility_paths = [env_path, eval_path]
