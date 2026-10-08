@@ -1,0 +1,70 @@
+name: Prospectively locked NEW 64-state equal-budget query timing placebo PhysX
+
+on:
+  pull_request:
+    paths:
+      - 'research/CERTIFY_QUERY_PERIODIC_PLACEBO_64_PREDECLARED_V1.json'
+      - 'research/frozen_ppo_certify_query_periodic_placebo.py'
+      - '.github/workflows/certify-query-periodic-placebo64-physx.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-genuine-8-arm-physx:
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      ABI_CHUNK: ${{ matrix.chunk }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Prove preregistration, original method and robust-certifier were frozen before added placebo
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/CERTIFY_QUERY_PERIODIC_PLACEBO_64_PREDECLARED_V1.json)" = "fc6c52c227f68c351b4f5637069672eae62a2e62"
+          test "$(git hash-object research/frozen_ppo_ack_bounded_query.py)" = "1dc653cdc44e422c8340475ad00f828b3a41eb4f"
+          test "$(git hash-object research/two_history_se3_robust.py)" = "bb5fd155b7291fb127f94138fca321201c8271c3"
+          python -m py_compile research/frozen_ppo_certify_query_periodic_placebo.py
+          python - <<'PY'
+          import json
+          p=json.load(open('research/CERTIFY_QUERY_PERIODIC_PLACEBO_64_PREDECLARED_V1.json'))
+          assert p['source_original_runner_blob']=='1dc653cdc44e422c8340475ad00f828b3a41eb4f'
+          assert p['unique_state_count']==64
+          assert p['precommitted_nonadaptive_query_placebo']['scheduled_queried_seed_count']==16
+          assert p['tasks']['pull_cube']['new_unique_seeds']==[260001,260032]
+          assert p['tasks']['stack_cube']['new_unique_seeds']==[270001,270032]
+          assert p['precommitted_nonadaptive_query_placebo']['mechanism'].startswith('At the FIRST')
+          PY
+      - name: Install original official ManiSkill PhysX CPU backend and frozen model downloader
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+          python -m pip freeze --all > placebo_original_environment.freeze.txt
+      - name: Execute EIGHT native PhysX controller worlds on exactly eight truly new seeded resets
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/frozen_ppo_certify_query_periodic_placebo.py \
+             2>&1 | tee original_placebo8_native_physx.log
+          test -s "query_placebo_${ABI_TASK}_chunk${ABI_CHUNK}_original8.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: query-placebo-original-${{ matrix.task }}-chunk-${{ matrix.chunk }}
+          path: |
+            query_placebo_*.json
+            original_placebo8_native_physx.log
+            placebo_original_environment.freeze.txt
+          retention-days: 90
