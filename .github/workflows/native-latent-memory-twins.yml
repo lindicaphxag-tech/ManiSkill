@@ -1,0 +1,75 @@
+name: Native hidden target-memory indistinguishable twin witness
+
+on:
+  push:
+    branches:
+      - research/native-indistinguishable-memory-twin-v1
+  pull_request:
+    paths:
+      - 'research/verify_native_indistinguishable_memory_twins.py'
+      - 'research/LATENT_MEMORY_NATIVE_TWINS_PRECOMMIT_V1.json'
+      - '.github/workflows/native-latent-memory-twins.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-counterfactual-three-world-witness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify frozen task/seed/memory intervention before running
+        run: |
+          test "$(git hash-object research/LATENT_MEMORY_NATIVE_TWINS_PRECOMMIT_V1.json)" = "64ba5e8336d75297fa7f8aa02cda066b125be559"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          q=json.loads(Path("research/LATENT_MEMORY_NATIVE_TWINS_PRECOMMIT_V1.json").read_text())
+          assert q["tasks"]==[["PickCube-v1",773],["PushCube-v1",884],["PullCube-v1",995],["StackCube-v1",1106]]
+          assert q["physical_target_shift_m"]==[.02,0,0]
+          PY
+      - name: Install official Panda controller / PhysX CPU
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+      - name: Execute four genuine native controller state-replay counterfactuals
+        run: |
+          set -o pipefail
+          python research/verify_native_indistinguishable_memory_twins.py 2>&1 | tee latent_memory_indistinguishable_twins.log
+          test -s latent_memory_indistinguishable_twins.json
+      - name: Fail closed on any incomplete or physically mismatched witness
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          q=json.loads(Path("latent_memory_indistinguishable_twins.json").read_text())
+          assert q["n_genuine_physics_controller_cases"]==4
+          assert [(x["task"],x["seed"]) for x in q["all_cases"]]==[
+            ("PickCube-v1",773),("PushCube-v1",884),
+            ("PullCube-v1",995),("StackCube-v1",1106)]
+          assert q["only_controlled_state_replay"] is True
+          assert all(x["physical_qpos_unchanged_before_action"] and
+                     x["physical_achieved_ee_unchanged_before_action"] for x in q["all_cases"])
+          assert all(x["full_info_world_A_error_m"] < .0001 and
+                     x["full_info_world_B_error_m"] < .0001 and
+                     .0199 <= x["blind_copy_error_m"] <= .0201 and
+                     abs(x["information_lower_bound_m"]-.01)<.000001 for x in q["all_cases"])
+          assert all(not x["task_success_claim"] and not x["robot_safety_claim"] for x in q["all_cases"])
+          print("PASS: 4 source-frozen native distinct-memory identical-state causal witnesses")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: four-task-native-latent-memory-causal-twins
+          path: |
+            latent_memory_indistinguishable_twins.json
+            latent_memory_indistinguishable_twins.log
