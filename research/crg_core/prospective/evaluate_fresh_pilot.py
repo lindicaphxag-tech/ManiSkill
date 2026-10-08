@@ -6,7 +6,7 @@ its seeds, tolerance or assumptions using results from this or older banks.
 from __future__ import annotations
 
 import argparse
-from hashlib import sha256
+from hashlib import sha1, sha256
 import json
 from pathlib import Path
 
@@ -21,10 +21,16 @@ from research.crg_core.paired_state_conformal_transfer import (
 
 HERE = Path(__file__).resolve().parent
 PROTOCOL = HERE / "conformal_transfer_fresh_pilot_v1.json"
+# Git blob from the FIRST preregistration commit 82e41074729d7651113f709d8e061eee480a9dd1.
+# A post-outcome protocol edit must not silently pass as the original freeze.
+PROTOCOL_FROZEN_BLOB_SHA1 = "b3ec5e5f4b6226c03d169ff857a97efe2a71d5c8"
 
 
 def _read_protocol(path: Path) -> tuple[dict, str]:
     source = path.read_bytes()
+    git_blob = sha1(b"blob " + str(len(source)).encode() + b"\\x00" + source).hexdigest()
+    if git_blob != PROTOCOL_FROZEN_BLOB_SHA1:
+        raise ValueError("frozen preregistration blob changed after commitment")
     data = json.loads(source)
     if data.get("schema") != "crg-transfer-conformal-fresh-state-pilot-v1":
         raise ValueError("wrong frozen protocol schema")
