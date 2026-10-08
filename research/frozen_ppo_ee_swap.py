@@ -22,7 +22,7 @@ from frozen_ppo_pickcube_gate import (
 )
 import hashlib
 
-SEEDS=tuple(range(10001,10033))
+SEEDS=(10014,)*12
 MAX_STEPS=50
 
 
@@ -80,6 +80,10 @@ def rollout_one(actor,seed):
         shape={k:tuple(v.shape) for k,v in observations.items()}
         if len(set(shape.values()))!=1:
             raise RuntimeError("Mismatch observation ABI: "+str(shape))
+        import hashlib
+        report["initial_source_obs_sha256"]=hashlib.sha256(
+            observations["source"].detach().cpu().numpy().tobytes()
+        ).hexdigest()
         for target in ("compiled","naive"):
             diff=float(torch.max(torch.abs(observations["source"]-observations[target])).item())
             report["initial_obs_maxdiff"][target]=diff
