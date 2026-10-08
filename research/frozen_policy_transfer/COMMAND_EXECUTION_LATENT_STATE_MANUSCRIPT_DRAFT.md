@@ -71,7 +71,7 @@ The selective policy succeeds at the clean-source total in this cohort, **but th
 
 ### 4.1 Fully reproducible exact paired-state evidence and information frontier
 
-The raw-source analysis code has now been accepted into the default branch in [research PR #85](https://github.com/lindicaphxag-tech/ManiSkill/pull/85), with original SHA-256 checks for all eight physical-simulator output JSONs and an independent exact-source audit. The standalone verifier is in [the original 64-state reviewer capsule](review/PAIRED_AUTHORITY_FRONTIER_64.md); its [public Python 3.11/3.13 CI](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37831666978) reports **8/8 destructive and statistical tests passed** in both environments. This is source-authentic **retrospective analysis** of the registered new-seed execution, not a second independent simulator-run cohort.
+The raw-source analysis code has now been accepted into the default branch in [research PR #85](https://github.com/lindicaphxag-tech/ManiSkill/pull/85), with original SHA-256 checks for all eight physical-simulator output JSONs and an independent exact-source audit. The standalone verifier is in [the original 64-state reviewer capsule](review/PAIRED_AUTHORITY_FRONTIER_64.md); its [public Python 3.11/3.13 CI](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37831666978) reports **9/9 source and destructive statistical tests passed** in both environments. This is source-authentic **retrospective analysis** of the registered new-seed execution, not a second independent simulator-run cohort.
 
 The adaptive and mandatory policies share the identical actual PhysX reset seed and original PPO at each task state. Their exact **2 × 2 matched-outcome** contingency is:
 
