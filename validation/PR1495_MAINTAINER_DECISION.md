@@ -145,10 +145,39 @@ effect, confidence-supported policy benefit, or maintainer endorsement.
 The controller-only arm has zero surviving demonstrations; do **not**
 assign invented post-selection model performance to that cell.
 
-A frozen **100-source-demo** four-cell replication has been initiated:
-[CI #37719545972](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37719545972).
-It must finish before its observations can be promoted to results. The
-published 8-demo result is fully archived independent of its outcome.
+The enlarged **100-source-demo** four-cell replay has now completed:
+[original CI #37719545972](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37719545972)
+(SUCCESS). Crucially, a **separate original-artifact audit** independently
+downloaded its frozen per-seed matrix:
+[CI #37746202004](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37746202004)
+(SUCCESS; [audited JSON](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37746202004/artifacts/11536185564)).
+
+| Converter #1495 | Controller #1472 | Official replay, original 100 source seeds |
+|---|---|---:|
+| off | off | **90/100** |
+| on | off | **91/100** |
+| off | on | **1/100** |
+| on | on | **91/100** |
+
+The independent audit verified original dataset identity, four code source
+commit identities, all 100 per-source-seed binary records, pairwise source
+intersections/digests, summary consistency and the exact four-arm
+intersection **1/100**. The original-source-denominator factorial
+interaction `CK-C-K+B` is **89/100**. It also reports a *descriptive
+resampling sensitivity band* [0.83, 0.95]; because these are a fixed prefix
+of official demos, do **not** call this a population confidence interval.
+No claim of general learned-policy improvement or #1495-only replay gain is
+supported: converter-only differs by only +1/100, while the severe
+controller-only incompatibility is what is rescued by combining the fixes.
+
+A **disjoint, explicitly precommitted** source cohort indexed 100–199 was
+locked before inspection of the 0–99 result, with falsifiable rate-margin
+predictions and a fail-closed 'insufficient source' rule:
+[FROZEN_NEXT_COHORT_100_199.md](https://github.com/lindicaphxag-tech/ManiSkill/blob/research/native-delta-pose-assay/research/kaggle_diffusion_policy_peg/FROZEN_NEXT_COHORT_100_199.md).
+[Actual holdout execution #37745942944](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37745942944)
+was launched with identical interventions and source SHA. No holdout
+outcome is asserted here until the actual workflow and evidence have been
+checked.
 
 ## Official CPU policy-training pipeline is now runnable end-to-end
 
