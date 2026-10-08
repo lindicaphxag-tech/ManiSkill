@@ -27,11 +27,11 @@ is claimed to be invented here**.
 | Comparison (all real CPU sim) | Source | State-aware transfer | More direct negative control |
 |---|---:|---:|---:|
 | Frozen PPO / PickCube, one mode delta -> physical absolute, 32 prespecified initial seeds | 32/32 | 31/32 | Raw action copy 0/32 |
-| Frozen PPO / PickCube, *previous-target memory* + bounded feasibility, **new 32 prespecified seeds 20001–20032** | 31/32 | **32/32** | Strict exact-or-refuse 5/32; raw copy 3/32 |
+| Frozen PPO / PickCube, *previous-target memory* + bounded feasibility, **repeated 32-seed cohort 20001–20032 (originally observed October 8)** | 31/32 | **32/32** | Strict exact-or-refuse 5/32; raw copy 3/32 |
 | Frozen PPO / PickCube, matched bounded projection but **previous goal replaced with achieved pose**, independent cohort | 31/32 | **32/32 memory-aware** | 2/32 memory-blind |
 | Frozen PPO / PushCube, different public trained PPO, previous-target memory | 30/32 | **30/32 memory-aware** | 20/32 achieved-only |
 
-All are **single-batch author-run**, closed-loop (policy acts on the
+The original and repeated seed cohorts are **author-run**, closed-loop (policy acts on the
 environment's own observations), physically stepped simulations with
 public external pretrained checkpoints. Not hardware transfer and not
 a multi-robot-family validation. The 32-seed pilot that returns
@@ -40,7 +40,7 @@ actions**, so this is *not* a claim of exact trajectory reproduction.
 
 **Evidence / scripts / raw CI:**
 - [Frozen policy PickCube 32-seed delta->absolute CI](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37716840505) and [failed seed 10014 preserved](FROZEN_PPO_32_SEED_HOLDOUT_RESULT_2026_10_08.md)
-- [Stateful bounded feasibility 32-seed CI](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37814776505), [preregistration](TARGET_MEMORY_32_SEED_PROSPECTIVE_2026_10_09.md), [complete account of failures](FROZEN_PPO_TARGET_MEMORY_32_SEED_RESULTS_2026_10_09.md)
+- [Original stateful bounded 32-seed CI (October 8)](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37746168558), [October 9 same-seed replication CI](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37814776505), [replication protocol](TARGET_MEMORY_32_SEED_PROSPECTIVE_2026_10_09.md), [corrected report](FROZEN_PPO_TARGET_MEMORY_32_SEED_RESULTS_2026_10_09.md). **These 64 episode-group executions are only 32 distinct tested seed values, not 64 novel independent seeds.**
 - [Previous-goal memory-only causal ablation CI](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37751599480) and [results](FROZEN_STATE_MEMORY_ONLY_ABLATION_RESULT_2026_10_08.md)
 - [Independent frozen PushCube PPO task CI](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37752524225) and [results](FROZEN_PUSH_CUBE_MEMORY_CROSS_TASK_RESULTS_2026_10_08.md)
 - [Prior 48-seed stateful cohort CI](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37809684134) and [complete report](FROZEN_PPO_48_SEED_MEMORY_HOLDOUT_RESULT_2026_10_09.md)
