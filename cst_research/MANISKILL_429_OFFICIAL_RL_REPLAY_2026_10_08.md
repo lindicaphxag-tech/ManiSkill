@@ -123,3 +123,51 @@ Until a valid type/shape-only baseline finishes, we may claim that the
 full semantic patch removes real execution errors and completes 7/16
 official-data CPU replays, **not** that semantic re-encoding causally
 raises task success by 43.75 percentage points.
+
+
+## DECISIVE three-arm 16-episode ablation (valid control)
+
+Canonical publicly successful workflow:
+https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37713849790
+
+All three arms use **identical** official RL source file hash
+`b05851319021c290ed5e5055c03c776b434af5c9af98e13db2ab9159752b89c8`.
+
+| Arm | Status | Successfully saved |
+|---|---|---|
+| Untouched upstream `main` | Runtime `TypeError` on episode 1 | Not a valid task-success denominator |
+| Minimal type+shape correction only | Full replay | **7/16 (43.75%)** |
+| Expanded target-controller semantics patch | Full replay | **7/16 (43.75%)** |
+
+**The two runnable arms fail on exactly the same 9 episodes.**
+No task-success improvement from expanded target-chart encoding was detected
+in this fixed configuration.
+
+Direct source check of `mani_skill/agents/robots/panda/panda.py` on
+upstream main confirms Panda's destination `arm_pd_joint_pos` has
+`normalize_action=False` (physical joint-position targets), whereas the
+source `arm_pd_joint_delta_pos` uses normalized bounded delta actions.
+Consequently, the target does **not** double-normalize physical positions
+under the default Panda configuration, contrary to the earlier hypothesis.
+
+### Correction to initial project hypothesis
+
+The **real demonstrated upstream bug** in #429 is the NumPy/Torch type and
+1-D-vs-batched shape mismatch; the 2024 issue author already described
+a NumPy/Torch typing problem. This work provides a clean minimal patch,
+CPU regression and now controlled end-to-end public RL reproduction.
+
+Do **not** claim that the type/shape bug was newly discovered, or that
+the expanded semantic encoder raised success from 0% to 43.75%.
+
+An honest, smaller recommended upstream PR candidate is therefore:
+https://github.com/lindicaphxag-tech/ManiSkill/tree/fix/429-numpy-tensor-replay-minimal
+(single conversion function edit + focused regression).
+
+The original expanded research patch is retained for API-level action
+chart investigations, but should **not** be promoted as a task-success
+improvement without a target controller that really uses a different chart.
+
+A separate exact-minimal-blob official replay is being validated on
+https://github.com/lindicaphxag-tech/ManiSkill/tree/validation/mani429-minimal-official-replay-20261008
+before asking an upstream maintainer for PR approval.
