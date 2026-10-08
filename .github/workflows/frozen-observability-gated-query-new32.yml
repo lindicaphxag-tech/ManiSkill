@@ -1,0 +1,127 @@
+name: Frozen public-response-or-selective-readback native PhysX new32
+
+on:
+  push:
+    branches: [research/observability-gated-query-fresh32-20261009]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-protocol-and-response-model-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Confirm pre-outcome model/seed/protocol and syntactic integrity, no retuning
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/OBSERVABILITY_GATED_QUERY_NEW32_PRECOMMIT_V1.json)" = "eb263bf2e5c95d5b13d54f972f215c63fceb220f"
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = "064bb46831b61af73ad445bc836326837ec5468f"
+          python -m py_compile research/frozen_ppo_observability_gated_query_fresh32.py \
+            research/audit_observability_query_new32.py \
+            research/empirical_probe_response_classifier.py
+          python - <<'PY'
+          import json
+          from research.retrospective_probe_response_calibration import read_originals,evaluate,SOURCE,TASKS
+          from research.empirical_probe_response_classifier import EPSILON_BY_TASK
+          p=json.load(open('research/OBSERVABILITY_GATED_QUERY_NEW32_PRECOMMIT_V1.json'))
+          assert p['n_total_task_fault_conditions']==32
+          assert p['new_original_task_reset_states']['pull_cube']==list(range(180101,180109))
+          assert p['new_original_task_reset_states']['stack_cube']==list(range(190101,190109))
+          data=read_originals(SOURCE)
+          for task,first in TASKS.items():
+            assert abs(evaluate(data[task],first)['empirical_training_error_bound_m']-EPSILON_BY_TASK[task])<1e-12
+          print('UNTOUCHED_HISTORICAL_CALIBRATION_AND_NEW_SOURCE_DENOMINATORS_PINNED')
+          PY
+
+  actual-official-physx-six-arms:
+    needs: frozen-protocol-and-response-model-integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        fault: [applied_no_ack, neutral_arm_delta_no_ack]
+        start: ['0','4']
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      ABI_FAULT: ${{ matrix.fault }}
+      ABI_START: ${{ matrix.start }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install actual native physics and frozen published PPO dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Execute all six controller trials and fresh four-state shard, preserve failures
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/frozen_ppo_observability_gated_query_fresh32.py \
+            2>&1 | tee "hybrid_observability_query_${ABI_TASK}_${ABI_FAULT}_${ABI_START}.log"
+          test -s "hybrid_observability_query_${ABI_TASK}_${ABI_FAULT}_${ABI_START}_fresh4.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frozen-observability-hybrid-source-${{ matrix.task }}-${{ matrix.fault }}-${{ matrix.start }}
+          path: |
+            hybrid_observability_query_*.json
+            hybrid_observability_query_*.log
+
+  full-original-physical-and-authority-cost-audit:
+    needs: actual-official-physx-six-arms
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: frozen-observability-hybrid-source-*
+          path: /tmp/hybrid-new32-source
+          merge-multiple: true
+      - name: Independently recompute all false confident claims and actual privileged target reads
+        run: |
+          set -euo pipefail
+          python -m research.audit_observability_query_new32 \
+            --input-dir /tmp/hybrid-new32-source \
+            --output /tmp/observability_gated_query_new32_complete_source_audit.json
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/observability_gated_query_new32_complete_source_audit.json'))
+          assert d['trial_conditions']==32 and len(d['results'])==8
+          assert all(q['paired_n']==4 and q['paired_fault_exposed']==4 for q in d['results'].values())
+          def count(k):return sum(q[k] for q in d['results'].values())
+          def score(arm):return sum(q['success'][arm] for q in d['results'].values())
+          print('HYBRID_FROZEN_NEW32_REAL_PHYSX_COMPLETE',{
+            'conditions':32,
+            'public_unique_history_labels':count('hybrid_classification_covered'),
+            'wrong_confident_history_labels':count('hybrid_wrong_authorizations'),
+            'selective_privileged_reads':count('hybrid_selective_privileged_reads'),
+            'mandatory_privileged_reads':32,
+            'hybrid_native_task_successes':score('achieved_probe_then_query'),
+            'zero_privileged_task_successes':score('achieved_probe_classifier'),
+            'mandatory_native_task_successes':score('privileged_once_after_probe'),
+            'optimistic_native_task_successes':score('blind_probe_optimistic')})
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-hybrid-observability-32-complete-full-audit
+          path: |
+            /tmp/hybrid-new32-source/*.json
+            /tmp/hybrid-new32-source/*.log
+            /tmp/observability_gated_query_new32_complete_source_audit.json
