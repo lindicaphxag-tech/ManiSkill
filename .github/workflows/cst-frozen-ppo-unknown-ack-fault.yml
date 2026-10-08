@@ -42,7 +42,7 @@ jobs:
       - name: Execute full six-arm real PhysX fault experiment (8 fresh seeds)
         run: |
           set -o pipefail
-          python research/frozen_ppo_unknown_ack_fault.py 2>&1 | tee "cst_fault_ack_${ABI_TASK}.log"
+          PYTHONPATH="$PWD:$PWD/research" python research/frozen_ppo_unknown_ack_fault.py 2>&1 | tee "cst_fault_ack_${ABI_TASK}.log"
           test -s "cst_fault_ack_${ABI_TASK}_8.json"
       - uses: actions/upload-artifact@v4
         if: always()
