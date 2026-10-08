@@ -1,0 +1,74 @@
+name: Independent original-source PhysX controller probe audit
+
+on:
+  push:
+    branches: [research/blind-controller-state-probe-v1]
+    paths:
+      - "research/blind_controller_probe/audit_genuine_probe.py"
+      - ".github/workflows/audit-original-physx-controller-probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  independent-source-reconstruction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Download genuine 32-row original PhysX artifact from frozen source workflow
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 37817533332
+          name: real-physx-unknown-controller-reference-32-episode-results
+          path: /tmp/original-physx-probe
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Reconstruct all original controller-mode decisions without physics
+        run: |
+          set -o pipefail
+          test -s /tmp/original-physx-probe/blind_controller_probe_physx_24001_24008.json
+          python research/blind_controller_probe/audit_genuine_probe.py \
+            /tmp/original-physx-probe/blind_controller_probe_physx_24001_24008.json | tee audited_probe.log
+          grep -q 'ALL_32_ORIGINAL_SOURCE_ROWS_RECONSTRUCTED' audited_probe.log
+      - name: Reject source loss, forged labels, invented success and unsafe omitted gates
+        run: |
+          python - <<'PY'
+          import copy
+          import json
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, "research/blind_controller_probe")
+          from audit_genuine_probe import audit
+          original=json.loads(Path("/tmp/original-physx-probe/blind_controller_probe_physx_24001_24008.json").read_text())
+          assert audit(original)["summary"]==original["summary"]
+          attacks=[
+              ("delete-one-source-row",lambda x:x["rows"].pop()),
+              ("duplicate-seed",lambda x:x["rows"][1].update(seed=x["rows"][0]["seed"])),
+              ("forged-inferred-mode",lambda x:x["rows"][0].update(inferred_mode="PREVIOUS_TARGET_RELATIVE")),
+              ("forge-warmup-magnitude",lambda x:x["rows"][0].update(measured_native_warmup_translation_m=0.5)),
+              ("forge-aggregate",lambda x:x["summary"]["PickCube-v1:ACHIEVED_RELATIVE"].update(correct=0)),
+              ("claim-no-execution",lambda x:x["rows"][0].update(zero_delta_executed=False)),
+          ]
+          for label,attack in attacks:
+              changed=copy.deepcopy(original)
+              attack(changed)
+              try:
+                  audit(changed)
+              except ValueError:
+                  pass
+              else:
+                  raise AssertionError(f"failed to reject {label}")
+          print("6 independent PhysX evidence forgeries rejected")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: independent-public-audit-of-frozen-32-physx-controller-probes
+          path: |
+            audited_probe.log
+            /tmp/original-physx-probe/blind_controller_probe_physx_24001_24008.json
+          if-no-files-found: error
