@@ -76,8 +76,11 @@ def audit(folder: Path)->dict:
             q=row.get("readback_queries",{})
             if set(q)!=set(ARMS[1:]) or q["recovered_one_readback"]!=1:
                 raise ValueError("Exactly one recovery readback and explicitly zero other decision-time readbacks required")
-            if any(q[a]!=0 for a in ARMS[1:] if a!="recovered_one_readback"):
-                raise ValueError("Unauthorized target-memory access budget")
+            if q["oracle_live_memory"] != -1:
+                raise ValueError("Oracle must disclose repeated privileged memory access")
+            if any(q[a]!=0 for a in ARMS[1:]
+                   if a not in ("recovered_one_readback","oracle_live_memory")):
+                raise ValueError("Nonoracle observer accessed target-memory at action selection")
             readbacks+=1
             e=row.get("resync_position_error_m")
             if not isinstance(e,(int,float)) or not math.isfinite(e) or e>3e-5 or e<0:
