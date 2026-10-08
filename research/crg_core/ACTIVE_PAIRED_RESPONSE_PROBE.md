@@ -1,131 +1,129 @@
-# Budgeted request-directed counterfactual response probing
+# Live query-budgeted directional policy-response probing
 
-**Status: implemented CPU-testable runtime mechanism; no positive official
-Diffusion/VQ-BeT prospective performance evidence; no external replication.**
+**Status: a small runtime adapter, not yet real-policy-validated.**
 
-## Why this is a different intervention
+## What actually changed
 
-Two completed frozen-policy studies are permanently archived:
-[20-observation DEC transfer falsification](evidence/pusht_cross_policy_20case_v2/)
-and [13-state calibrated transfer ZERO_UTILITY](evidence/conformal_fresh_13state_v1/).
-The latter used **702 frozen policy calls**, yet permitted **0/8** real
-transfers. Every Diffusion state failed the three-seed whole-Jacobian
-q95<0.15 gate, and the calibrated response radius (2.404) was greater
-than the fixed action tolerance (1.0). Neither outcome is disguised
-as a success.
+The public CRG main already implements and tests
+[`directional_anytime_probes.py`](directional_anytime_probes.py):
+four-response paired random-seed central secants, time-uniform confidence
+bounds, and an obligatory trusted local secant-to-full-request remainder.
+No new concentration theorem or entirely new certifier is claimed.
 
-The first testable *mechanistic alternative* is to drop the requirement
-to identify all physical support directions for one concrete action.
-For a particular request h and one shared RNG seed z, measure four
-policy outputs:
+This contribution fills a *missing runtime pathway*:
+[`active_paired_response_probe.py`](active_paired_response_probe.py)
+takes an actual policy-query callback, a physical direction, a fixed random
+seed list, a fixed budget, verified physical action bounds, fixed
+response tolerance, and a previously justified local nonlinearity
+remainder. For each seed, it **actually invokes four policy first-action
+forward passes** at +/- the chosen physical direction and delegates all
+arithmetic to the existing audited functions:
 
-    X(z) = [policy_A(h,z) - policy_A(0,z)]
-         - [policy_B(h,z) - policy_B(0,z)].
+1. `paired_directional_secant()` validates all four output actions and
+   rejects values outside the precommitted controller bounds; it does
+   not silently clip.
+2. `inspect_directional_samples()` computes the original time-uniform
+   confidence bound over paired seed secants, adding the externally
+   justified full-request locality remainder.
+3. Continue only while the evidence is inconclusive and unused policy
+   query budget remains. Stop early on conditionally similar/distinct
+   means, or conservatively abstain when exhausted.
 
-The desired random variable is the **mean contrast vector**
-E_z[X(z)], and the actual decision criterion is ||E_z[X(z)]|| <= tau,
-not E_z[||X(z)||]. The per-policy counterfactual observations must
-be at exactly the same source state and physical chart; the same RNG
-seed is paired across each policy's baseline/intervention pair.
-This is common-random-number pairing, not a novel variance-reduction
-theorem. Independent state resets, held-out disturbances and
-independently drawn RNG seeds remain necessary for a genuine new test.
+The result labels explicitly distinguish **conditional mean response
+similarity permitting policy transfer**, **distinct means prohibiting
+transfer**, query-budget abstention, and untrusted assumptions.
 
-A runtime controller **makes real probe requests** through a callback,
-counts four official policy first-action evaluations per RNG seed, and
-stops once a precommitted anytime-valid bound allows one of:
+Each seed costs **four frozen-policy first-action evaluations**. Even
+when an attempted four-call round returns invalid values, four calls
+are charged to the budget conservatively. A real wrapper must still
+record its true forward-pass count when an exception interrupts a round.
 
-- STATISTICAL_MEAN_SIMILAR: upper bound <= tau, *mean* response transfer
-  may be statistically licensed, if all physical assumptions hold;
-- STATISTICAL_MEAN_DISTINCT: lower bound > tau, **do not transfer**;
-- ABSTAIN_BUDGET_EXHAUSTED: spend no more queries, do not transfer;
-- REJECT_UNSUPPORTED_ASSUMPTIONS: never authorize when missing physical
-  chart/authority, independently justified bounded contrast or IID draw
-  assumptions, or when any observed contrast violates the asserted bound.
+## Why this matters after two genuine negative studies
 
-## Finite-horizon confidence sequence (conditional, not absolute safety)
+The [original frozen 20-pair study](evidence/pusht_cross_policy_20case_v2/)
+**failed** DEC-distance transfer (rho 0.145 vs raw Jacobian 0.347).
+The [fresh 13-state conformal pilot](evidence/conformal_fresh_13state_v1/)
+spent 702 queries and authorized **0/8** transfers; Diffusion's
+three-seed full-Jacobian stability gate failed **13/13** times, and the
+calibrated interval radius **2.404** exceeded response tolerance 1.0.
+All these records remain permanently public.
 
-Assume d response coordinates, N=floor(max_policy_queries/4) planned
-unique IID seed draws, and an independently verified, **almost-sure**
-population bound X_j(z) in [-B,B] for *every possible seed*. For each
-t=1,...,N the union-bound radius is
+The alternative is a *concrete action-specific query process*, rather
+than spending samples estimating an entire stochastic Jacobian even if
+the user only requests one physical response direction.
 
-    radius_t = sqrt(d) B sqrt(2 log(2 d N / alpha)/t)
+A successful future result must show **nonzero** correct transfer
+authorization at matched observation error and policy-query cost on
+new, precommitted states. Existing failed states are development data,
+not an independent confirmatory holdout. More policy queries may
+still end in abstention: this would be an honest negative result.
 
-and with probability at least 1-alpha across all t<=N,
+## Important theoretical and deployment boundaries
 
-    max(0, ||mean_t|| - radius_t)
-        <= ||E[X]|| <= ||mean_t|| + radius_t.
+The inherited central secant is **not** identical to the full-response
+difference at a requested physical intervention. The existing math
+therefore **requires an independently justified secant-to-full-request
+nonlinearity remainder**. Without it, the adapter rejects before
+making any policy queries; more stochastic seed samples cannot replace
+proof of physical locality.
 
-The fixed budget is **four policy queries per random seed**. Because
-the finite-horizon confidence sequence is simultaneously valid at
-each t<=N, early stopping based on the current interval does not
-invalidate the mean-coverage claim.
+Time-uniform Hoeffding control requires IID paired seed draws and
+a-priori trusted hard controller-action ranges for **all possible**
+stochastic outputs, not empirical ranges from previously sampled draws.
+An action outside those bounds is a **failed validity condition**, not
+something the proof may silently clip away.
 
-**Non-negotiable caveats:**
+The output only bounds a **stochastic mean first-action response**
+under these stated assumptions. It does not ensure any individual
+random rollout is safe, validate actual camera calibration, guarantee
+task success, or certify collisions cannot happen. Conditional transfer
+is not an unconditional safety certificate.
 
-- Passing a range check on previously observed samples does **not**
-  validate B as an almost-sure bound for all RNG seeds.
-- Running these fixed numerical seed integers is not automatically
-  equivalent to independently random draws; the caller explicitly
-  attests the seed-draw design. A hidden model distribution shift
-  invalidates the claimed coverage.
-- The result only covers a **stochastic mean first action** in the
-  same frozen state, not any one random rollout or actual robot
-  collision or task success.
-- The method still needs calibrated comparison at equal **nonzero
-  transfer coverage** and query cost. Always-abstain obtains zero
-  wrong transfers but also zero utility.
-- Existing 13 archived states were viewed *before* designing this
-  method. They are not independent confirmatory test data.
-- Correct contrast bound B may be so large that the controller
-  always abstains. That would be a valuable **negative outcome**.
-- A single four-action callback may fail partway through: no
-  decision is issued. The test harness charges a full attempted
-  round to avoid understating the budget; the live policy wrapper
-  must also record actual model call counts.
+**Prior-art honesty:** common random numbers are standard
+variance-reduction methodology (see
+[robot learning simulation review](https://pmc.ncbi.nlm.nih.gov/articles/PMC9038844/));
+variance control for noisy robotics policy gradients is studied in
+[ICLR 2026](https://proceedings.iclr.cc/paper_files/paper/2026/hash/4f0a2a0b2ca6ffd5c8d5de26d3e8d54d-Abstract-Conference.html).
+The expected contribution, if prospectively validated, is a useful
+*query-budgeted policy response decision interface* after real
+identifiability failure—not a new general concentration theorem.
 
-## Research novelty boundary and neighboring prior art
-
-Common random numbers and statistical anytime bounds are established.
-Policy variance control has direct preceding work: e.g.
-[Robot Learning From Randomized Simulations: A Review](https://pmc.ncbi.nlm.nih.gov/articles/PMC9038844/)
-and the ICLR 2026 paper
-[Does “Do Differentiable Simulators Give Better Policy Gradients?” Give Better Policy Gradients?](https://proceedings.iclr.cc/paper_files/paper/2026/hash/4f0a2a0b2ca6ffd5c8d5de26d3e8d54d-Abstract-Conference.html).
-No first-ever CRN or confidence-bound theory claim is made.
-The research hypothesis is **policy-query selection for a concrete
-physical action after an observed full-Jacobian identifiability failure**.
-
-A useful prospective result would need to show real Diffusion/VQ-BeT
-paired response sensitivity variance reduction and nonzero mean-transfer
-authorization **within fixed action error and query budgets**, versus
-independent-random-seed difference probes and local-Jacobian baseline.
-If such a result does not exist, the hypothesis is rejected.
-
-## API
+## Usage and minimal independent tests
 
 ```python
-result = probe_pairwise_mean_response(
-    sample_four_actions=callback,  # policy A/B, base and intervention
-    physical_request=[1.0, 0.0, 0.0],
-    prespecified_iid_seed_draws=[...],
-    hard_coordinate_contrast_bound=B,  # must be justified independently
-    max_policy_queries=64,
-    response_tolerance=tau,
-    alpha=0.10,
-    physical_charts_aligned=True,
-    controller_authority_valid=True,
-    population_bound_independently_justified=True,
-    iid_seed_draw_design_attested=True,
+from research.crg_core.active_paired_response_probe import (
+    execute_directional_probe_budget,
+)
+
+result = execute_directional_probe_budget(
+    query_paired_plus_minus_actions=policy_callback,
+    physical_direction=[0.1, 0.0, 0.0],
+    prespecified_iid_seeds=[...],
+    probe_fraction=0.5,
+    trusted_action_lows=[...],
+    trusted_action_highs=[...],
+    locality_remainder_bound=...,  # not obtained from the test outcome
+    physical_response_tolerance=...,
+    familywise_error_budget=0.1,
+    max_policy_forward_queries=64,
+    independent_seeds_verified=True,
+    controller_bounds_verified=True,
+    common_physical_chart_verified=True,
+    controller_authority_verified=True,
 )
 ```
+
+The callback must return `plus_a`, `minus_a`, `plus_b`, and
+`minus_b` actions. It must record exact frozen checkpoint/source
+identity and ensure both +/- observations use the same frozen
+physical state and matched per-policy random seed.
 
 ```bash
 python -m pip install numpy pytest
 python -m pytest -q tests/test_crg_active_paired_response_probe.py
 ```
 
-The included synthetic counterfactual examples verify the controller's
-decision, early stop, input failures and query accounting. They do
-**not** count as success on real frozen policies. No L8/L9
-research achievement or external adoption is claimed.
+The tests use **constructed, synthetic outputs only**; they do not
+demonstrate variance reduction or authorization benefits on real
+Diffusion/VQ-BeT. No external maintainer adoption or L8/L9 paper
+performance is claimed.
