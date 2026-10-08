@@ -264,3 +264,56 @@ hardware-safe policy migration.
   subject to initial-goal-alignment follow-up.
 - We do not claim frozen learned policy parity or independent
   maintainer adoption from these author-run experiments.
+
+
+## Reviewed evidence as of 2026-10-08: frozen trained policies, not scripted actions
+
+**Distinct from earlier scripted-controller tests**, a third-party
+ActionShift-pretrained PPO (full SHA256
+`3e6c95d63a2132843323e24cf7ba962b8cf2610f04b2a5a43f3efb6fef8497a8`)
+was loaded with **no training/fine-tuning** into official ManiSkill Panda
+PickCube PhysX CPU. Every paired arm uses its own runtime observations.
+The parent model is credited to ActionShift, not to us.
+
+| Frozen-PPO experiment | Src | Adapter | Negative control |
+|---|---:|---:|---:|
+| Delta -> physical absolute EE controller; preregistered 32 seeds `10001..10032` | 32/32 | 31/32 | raw copy 0/32 |
+| Achieved-delta -> target-history-relative delta; preregistered **different** 32 seeds `18001..18032` | 31/32 | **32/32** with bounded *non-exact* projection | raw copy 3/32 |
+| Same target-history experiment: strict exact/refuse | 31/32 | **3/32** | 29/32 episodes refused |
+
+- [Frozen delta->absolute CI](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37716840505);
+  [preregistered holdout, including failure seed 10014](FROZEN_PPO_32_SEED_HOLDOUT_RESULT_2026_10_08.md).
+- [Frozen target-memory and feasibility CI](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37749474021);
+  [frozen report with all negative cases](FROZEN_PPO_STATEFUL_FEASIBILITY_32_SEED_RESULT_2026_10_08.md).
+  The target controller augments the observation from **42D to 49D**;
+  the unchanged PPO receives its original 42D ABI while the runtime
+  adapter reads the extra 7D memory. Hard action limits make one-step
+  exact target transfer impossible in 29/32 episodes; the bounded
+  adapter executed 31 `NOT_EXACT` action projections across those
+  29 episodes. No task success implies precise trajectory equivalence.
+- [Original-code reproducibility audit](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37749366189):
+  seed 10014 original holdout failed compiled **12/12** isolated processes
+  (source 12/12 at step 31). Instrumented diagnostic code previously
+  changed both policy and controller episode trajectories, so we are
+  examining state-getter side effects; mechanism not yet established.
+- [External upstream-ready narrow patch for ManiSkill #429](https://github.com/lindicaphxag-tech/ManiSkill/tree/fix/429-numpy-tensor-replay-minimal):
+  type/shape bug, not claimed as semantic-normalization novelty.
+  [Exact patch confirmed on 16 official RL demos](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37715715576).
+  This upstream fix is **not merged** and requires maintainer approval.
+
+### Reviewer-critical missing evidence
+
+A second competent frozen policy/task, controller-family generalization,
+exact observation/controller ABI extraction independent of manual code
+inspection, physical feasibility residual metrics, release-quality
+standalone CPU reproduction, independent reproduction or code adoption.
+Robot or patient safety and L8/L9 ranking have **not** been demonstrated.
+
+**Closest research**: [ActionShift](https://github.com/Archerkattri/actionshift)
+already addresses frozen policy action-interface adaptation including
+target/frame/lag semantics; [RACE at ICLR 2026](https://proceedings.iclr.cc/paper_files/paper/2026/hash/fab80bb9d97e9b9ff5c19f91f72838c6-Abstract-Conference.html)
+already handles robot action execution time and physical reachability
+constraints. Our more precise hypothesis is **runtime controller-owned
+state + observation ABI preservation + infeasibility-aware action
+execution**, but any broad originality claim requires independent
+review against these and related works.
