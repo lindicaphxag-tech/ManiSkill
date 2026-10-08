@@ -5,6 +5,7 @@ translations rather than silently clipping and claiming exact transfer.
 """
 import hashlib
 import json
+import os
 from pathlib import Path
 
 import gymnasium as gym
@@ -19,7 +20,16 @@ from frozen_ppo_pickcube_gate import (
     _actor, _bool_value, REPO, FILENAME, EXPECTED,
 )
 
-SEEDS=tuple(range(21001,21033))
+ALL_SEEDS=tuple(range(22001,22033))
+CHUNK=os.environ.get('ABI_CHUNK')
+if CHUNK is None:
+    SEEDS=ALL_SEEDS
+else:
+    if CHUNK not in ('0','1','2','3'):
+        raise ValueError('ABI_CHUNK must be 0,1,2,3 or unset (all seeds)')
+    start=8*int(CHUNK)
+    SEEDS=ALL_SEEDS[start:start+8]
+OUTPUT_NAME=f'stateful_abi_memory_ablation_chunk_{CHUNK}.json' if CHUNK is not None else 'stateful_abi_memory_ablation_full.json'
 STEPS=50
 TOL=1e-5
 
@@ -35,9 +45,15 @@ def rot_from_wxyz(wxyz):
     return Rotation.from_quat([q[1],q[2],q[3],q[0]])
 
 
-def normalized_target_delta(source_arm,target_arm,policy_native, *, approximate=False):
-    """Inverts physical achieved-relative EE goal into target-relative ABI."""
-    old=target_arm._target_pose
+def normalized_target_delta(source_arm,target_arm,policy_native, *, approximate=False,
+                            memory_blind=False):
+    """Invert physical goal. The memory-blind arm is a *frozen negative control*.
+
+    Every equation and native-bounds projection is identical except the
+    previous-target reference. In the negative control, the *achieved EE*
+    is incorrectly used as if it were the prior commanded target.
+    """
+    old=target_arm.ee_pose_at_base if memory_blind else target_arm._target_pose
     if old is None:
         return None,"controller runtime previous target memory missing",None
 
@@ -126,6 +142,7 @@ def trial(policy, seed):
         "source":env("pd_ee_delta_pose"),
         "memory":env("pd_ee_target_delta_pose"),
         "projected":env("pd_ee_target_delta_pose"),
+        "memory_blind_projected":env("pd_ee_target_delta_pose"),
         "naive":env("pd_ee_target_delta_pose"),
     }
     outcome={"seed":seed,"initial_obs_diff":{},"success_once":{},
@@ -133,7 +150,7 @@ def trial(policy, seed):
     try:
         observations={k:w.reset(seed=seed)[0] for k,w in worlds.items()}
         canonical_start=_project_policy_observation(observations["source"],worlds["source"])
-        for key in ("memory","projected","naive"):
+        for key in ("memory","projected","memory_blind_projected","naive"):
             projected=_project_policy_observation(observations[key],worlds[key])
             diff=float(torch.max(torch.abs(canonical_start-projected)).item())
             outcome["initial_obs_diff"][key]=diff
@@ -147,10 +164,12 @@ def trial(policy, seed):
                 if done[name]:
                     continue
                 native=act(policy,_project_policy_observation(observations[name],w))
-                if name in ("memory","projected"):
+                if name in ("memory","projected","memory_blind_projected"):
                     arm=controller[name].controllers["arm"]
                     rewritten,reason,amplitude=normalized_target_delta(
-                        source_arm,arm,native,approximate=(name=="projected"))
+                        source_arm,arm,native,
+                        approximate=(name in ("projected","memory_blind_projected")),
+                        memory_blind=(name=="memory_blind_projected"))
                     if reason == "APPROXIMATE_BOUNDED_PROJECTION":
                         outcome["approximations"].setdefault(name,[]).append({
                             "step":t,"required_native_amp":amplitude,
@@ -203,7 +222,7 @@ def main():
         env0.close()
     records=[trial(actor,seed) for seed in SEEDS]
     counts={key:sum(x["success_once"].get(key,False) for x in records)
-            for key in ("source","memory","projected","naive")}
+            for key in ("source","memory","projected","memory_blind_projected","naive")}
     refusals=sum("memory" in x["refusals"] for x in records)
     data={"checkpoint_sha256":sha,"public_pretrained":True,
           "training_performed":False,"backend":"physx_cpu",
@@ -213,10 +232,19 @@ def main():
              "projected":"pd_ee_target_delta_pose with bounded non-exact projection",
              "naive":"pd_ee_target_delta_pose direct-copy"},
           "success_count":counts,"refused_episodes":refusals,"episodes":records}
-    Path("frozen_ppo_target_memory.json").write_text(json.dumps(data,indent=2))
+    data['seed_chunk']=CHUNK
+    data['all_preregistered_seeds']=[22001,22032]
+    data['seed_list']=list(SEEDS)
+    data['protocol']='research/STATEFUL_ABI_MEMORY_ABLATION_FROZEN_V1.json'
+    data['controller_contracts']['memory_blind_projected']=(
+        'target-delta action uses achieved EE instead of previous target; '
+        'identical physical source goal and bounded projection as projected arm'
+    )
+    Path(OUTPUT_NAME).write_text(json.dumps(data,indent=2))
     print("FROZEN_TARGET_MEMORY_SUMMARY",json.dumps({
         "success":counts,"refused":refusals,
         "approximate_steps":sum(len(x["approximations"].get("projected",[])) for x in records),
+        "stateblind_approximate_steps":sum(len(x["approximations"].get("memory_blind_projected",[])) for x in records),
         "episodes":len(records)}))
 
 
