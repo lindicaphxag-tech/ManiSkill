@@ -100,3 +100,29 @@ Adjacent examples that narrow broad novelty claims:
 - ActionShift: https://github.com/Archerkattri/actionshift
 - TAM (CoRL 2026): https://dongwon-son.github.io/tam-project-page/
 - Tune to Learn: https://arxiv.org/abs/2604.02523
+
+
+## Fresh CI replication, not a new independent holdout
+
+A second GitHub Actions workflow executed the **identical Python source
+blob** `c1b1b2dcd39e549a91f99540ba9cd05bc7bae51e`
+against **the same predefined 32 seeds**:
+https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37809034284
+
+Original:
+https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37808039983
+
+All **128 per-seed binary method outcomes** (32 seeds × four methods)
+were identical across both runs. Both summaries are exactly:
+- source 31/32, exact/refuse 5/32,
+  target-memory bounded projection 32/32, naive 3/32;
+- refusals in 27/32, 30 projected actions;
+- source-alone unsuccessful seed **20016**;
+- no seed had a materially changed maximum required native amplitude
+  (tolerance 1e-4 in our comparison).
+
+This is a useful **repeatability check** under matched environment/setup,
+not 64 independent holdout seeds. Do not double the sample size or report
+a tighter independent-trial confidence interval. It does not resolve
+different earlier seed-10014 behavior across modified diagnostic and
+batch-run protocols; that issue remains separately recorded.
