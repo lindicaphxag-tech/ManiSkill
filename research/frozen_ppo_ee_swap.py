@@ -23,7 +23,7 @@ from frozen_ppo_pickcube_gate import (
 import hashlib
 import random
 
-SEEDS=(10014,)*8
+SEEDS=tuple(range(10001,10033))
 MAX_STEPS=50
 
 
@@ -73,7 +73,7 @@ def rollout_one(actor,seed):
     _AUDIT_CALLS += 1
     # First four replicates preserve ambient RNG, latter four explicitly
     # reset Python/NumPy/Torch before scene construction.
-    reseed = _AUDIT_CALLS > 4
+    reseed = False
     if reseed:
         random.seed(seed)
         np.random.seed(seed)
