@@ -1,0 +1,66 @@
+name: Native robust joint-controller target memory audit
+
+on:
+  push:
+    branches:
+      - research/native-joint-target-robust-certificate-v1
+  pull_request:
+    paths:
+      - 'research/verify_native_joint_memory_certificate.py'
+      - 'research/LATENT_MEMORY_NATIVE_JOINT_PRECOMMIT_V1.json'
+      - '.github/workflows/native-joint-target-memory-cert.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  independent-native-joint-position-controller:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Match pre-treatment physical task and source specification
+        run: |
+          test "$(git hash-object research/LATENT_MEMORY_NATIVE_JOINT_PRECOMMIT_V1.json)" = "4876a76fe0fdc544d25b40206c8aa87540984d05"
+      - name: Install production Panda joint controllers in PhysX
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+      - name: Verify genuine official target-qpos accumulators, no hidden synthetic controller
+        run: |
+          set -o pipefail
+          python research/verify_native_joint_memory_certificate.py 2>&1 | tee latent_memory_joint_target_native.log
+          test -s latent_memory_joint_target_native_v1.json
+      - name: Check all original task rows and fail-closed negative controls
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('latent_memory_joint_target_native_v1.json').read_text())
+          assert r['precommitted_count']==4
+          assert r['hardware_robot_safety_claim'] is False
+          assert r['actual_separate_controller_implementation']=='PDJointPosController'
+          assert [(x['task'],x['seed']) for x in r['records']]==[
+            ('PickCube-v1',1477),('PushCube-v1',2488),
+            ('PullCube-v1',3499),('StackCube-v1',4510)]
+          assert all(x['native_commanded_joint_target_prediction_error_rad'] < .0001
+                     and not x['task_success_measured'] for x in r['records'])
+          assert all(x['minimax_interval_setpoint_error_rad'] >= 0
+                     for x in r['records'])
+          print('PASS: 4 source-frozen real joint target-memory commands, not task success')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-4task-joint-position-memory-certificate-evidence
+          path: |
+            latent_memory_joint_target_native_v1.json
+            latent_memory_joint_target_native.log
