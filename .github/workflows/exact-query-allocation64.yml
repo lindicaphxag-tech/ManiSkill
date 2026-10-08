@@ -1,0 +1,52 @@
+name: Original PhysX exact 17-read fixed-query allocation counterfactual
+
+on:
+  pull_request:
+    paths:
+      - "research/frozen_policy_transfer/review/exact_query_allocation64.py"
+      - "tests/test_exact_query_allocation64.py"
+      - ".github/workflows/exact-query-allocation64.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-locked-exact-finite-random-allocation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Verify source-manifest/Git identity, all 64 actual records and conditional finite-budget combinatorics
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_exact_query_allocation64.py -v
+          python -m research.frozen_policy_transfer.review.exact_query_allocation64 \
+            --input-dir research/frozen_policy_transfer/evidence/certify_query_periodic_placebo_new64_260001_270032 \
+            --output "exact_allocation64_python_${{ matrix.python-version }}.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("exact_allocation64_python_${{ matrix.python-version }}.json")
+          x=json.loads(p.read_text())
+          assert x["original_2026_run_id"]==37833053629
+          assert x["n_independent_reset_states"]==64
+          assert x["uniform_random_fixed_schedule_expected_successes"]==46.046875
+          assert x["uniform_random_success_at_least_adaptive"]["numerator"]=="171"
+          assert x["uniform_random_success_at_least_adaptive"]["denominator"]=="1379370175283520"
+          assert len(x["adaptive_outcome_not_recoverable_by_fixed_query_or_never_query"])==2
+          assert not x["independent_external_reproduction"]
+          print("PASS original 64-state PhysX source-hash and exact conditional random scheduling envelope; no p-value or hardware safety overclaim")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: full-source-exact-64-fixed17-allocation-python-${{ matrix.python-version }}
+          path: exact_allocation64_python_${{ matrix.python-version }}.json
+          if-no-files-found: error
+          retention-days: 60
