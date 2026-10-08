@@ -34,7 +34,7 @@ EXPECTED_FILES = tuple(
 def verify_original_sha256(directory: Path) -> dict[str, str]:
     manifest = (directory / EXPECTED_SHA_FILE).read_bytes()
     original_blob = hashlib.sha1(
-        b"blob " + str(len(manifest)).encode("ascii") + b"\\0" + manifest
+        b"blob " + str(len(manifest)).encode("ascii") + bytes([0]) + manifest
     ).hexdigest()
     if original_blob != ORIGINAL_SOURCE_MANIFEST_GIT_BLOB:
         raise ValueError("Pinned original experiment SHA256SUMS manifest changed")
