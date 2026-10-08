@@ -35,7 +35,7 @@ jobs:
           import json
           from pathlib import Path
 
-          root=Path("frozen-profile-evidence/research/frozen_policy_transfer")
+          root=Path("research/frozen_policy_transfer")
           spec=importlib.util.spec_from_file_location("state_memory_mechanism", root/"state_memory_mechanism.py")
           m=importlib.util.module_from_spec(spec)
           spec.loader.exec_module(m)
