@@ -1,0 +1,37 @@
+name: Frozen PPO physical-state identity vs execution order
+
+on:
+  push:
+    branches:
+      - validation/frozen-ppo-initial-state-order-20261009
+  workflow_dispatch:
+
+jobs:
+  schedule-state-provenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install official ManiSkill PhysX CPU
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Compare seed-10014 initial simulator identities across two schedules
+        run: |
+          set -o pipefail
+          python research/frozen_ppo_seed_order_diagnostic.py 2>&1 | tee state_order.log
+          test -s state_order_effects.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frozen-ppo-seed10014-state-order-diagnostic
+          path: |
+            state_order_effects.json
+            state_order.log
