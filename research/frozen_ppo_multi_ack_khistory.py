@@ -279,9 +279,20 @@ def trial(policy,seed):
                     ack=None if (step in FAULT_STEPS and
                         n=="fault_always_single_privileged_query") else True
                     observers[n].acknowledge(ticket,applied=ack)
-                if certificate is not None and certificate.authorized:
-                    # AUDIT-ONLY get_state AFTER env.step. Never inserted into
-                    # next policy/observer command. Counts separated from queries.
+                if certificate is not None and certificate.authorized and step in FAULT_STEPS:
+                    # Crucial intervention-accounting distinction: the certified
+                    # native action was explicitly NOT executed in this world.
+                    # It is invalid to audit the unexecuted target setpoint
+                    # against its hypothetical dispatched-action certificate.
+                    result.setdefault("certified_intent_suppressed_by_actual_fault",{}).setdefault(n,[]).append({
+                        "step":step,
+                        "certificate_was_for_requested_not_delivered_action":True,
+                        "physical_native_held_action":"all_zero_hold",
+                        "must_not_claim_bound_was_physically_executed":True,
+                    })
+                if certificate is not None and certificate.authorized and step not in FAULT_STEPS:
+                    # AUDIT-ONLY get_state AFTER a CERTIFIED action was actually
+                    # executed; never use it to make the next policy decision.
                     actual=privileged_target(arm)
                     pa,ra=audit_pose_error(actual,desired)
                     accepted=(pa<=certificate.exact_position_radius_m+1e-4 and
