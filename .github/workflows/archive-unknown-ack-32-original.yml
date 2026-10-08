@@ -1,0 +1,130 @@
+name: Archive verified original 32-state unknown-ACK PhysX fault evidence
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/archive-unknown-ack-32-original.yml'
+      - 'research/ACTION_ABI_UNKNOWN_ACK_PHYSX_PREREG_V1.json'
+      - 'research/audit_unknown_ack_physx.py'
+      - 'tests/test_unknown_ack_original_auditor.py'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-unknown-ack-32-original.yml'
+      - 'research/ACTION_ABI_UNKNOWN_ACK_PHYSX_PREREG_V1.json'
+      - 'research/audit_unknown_ack_physx.py'
+      - 'tests/test_unknown_ack_original_auditor.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  immutable-original-source-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify exact source run, artifact digest and ALL raw task-fault rows
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          test "$(git hash-object research/ACTION_ABI_UNKNOWN_ACK_PHYSX_PREREG_V1.json)" = "3a7273c1a02d13c19e93e618c74fc7068938c7e9"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37824078238 --jq .head_sha)" = "2ea6fabbd4e15ddd5623d51acd9f8874206fc003"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37824078238 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11570941907 --jq .digest)" = "sha256:96fb570effcff0296df47676edfe78174c3e9c9cd09614b93c084b5fa9a1e3f3"
+          mkdir -p /tmp/unknown-ack-original /tmp/unknown-ack-exact
+          gh run download 37824078238 --repo "$GITHUB_REPOSITORY" --name prospective-32-unknown-ack-full-source-audit --dir /tmp/unknown-ack-original
+          for name in \
+            ack_loss_pull_cube_applied_no_ack_fresh8.json \
+            ack_loss_pull_cube_neutral_arm_delta_no_ack_fresh8.json \
+            ack_loss_stack_cube_applied_no_ack_fresh8.json \
+            ack_loss_stack_cube_neutral_arm_delta_no_ack_fresh8.json \
+            unknown-ack-full-auditor.json; do
+            mapfile -t matches < <(find /tmp/unknown-ack-original -type f -name "$name")
+            test "${#matches[@]}" -eq 1
+            test -s "${matches[0]}"
+            cp "${matches[0]}" "/tmp/unknown-ack-exact/$name"
+          done
+          python -m research.audit_unknown_ack_physx \
+            --input-dir /tmp/unknown-ack-exact \
+            --output /tmp/unknown-ack-independent-recomputed.json
+          cmp /tmp/unknown-ack-independent-recomputed.json /tmp/unknown-ack-exact/unknown-ack-full-auditor.json
+          python -m unittest discover -s tests -p 'test_unknown_ack_original_auditor.py' -v
+          
+
+  trusted-main-permanent-original-archive:
+    if: github.event_name != 'pull_request'
+    needs: immutable-original-source-verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Trust-bound independent original source hash and source trial audit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          test "$(git hash-object research/ACTION_ABI_UNKNOWN_ACK_PHYSX_PREREG_V1.json)" = "3a7273c1a02d13c19e93e618c74fc7068938c7e9"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37824078238 --jq .head_sha)" = "2ea6fabbd4e15ddd5623d51acd9f8874206fc003"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37824078238 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11570941907 --jq .digest)" = "sha256:96fb570effcff0296df47676edfe78174c3e9c9cd09614b93c084b5fa9a1e3f3"
+          mkdir -p /tmp/unknown-ack-original /tmp/unknown-ack-exact
+          gh run download 37824078238 --repo "$GITHUB_REPOSITORY" --name prospective-32-unknown-ack-full-source-audit --dir /tmp/unknown-ack-original
+          for name in \
+            ack_loss_pull_cube_applied_no_ack_fresh8.json \
+            ack_loss_pull_cube_neutral_arm_delta_no_ack_fresh8.json \
+            ack_loss_stack_cube_applied_no_ack_fresh8.json \
+            ack_loss_stack_cube_neutral_arm_delta_no_ack_fresh8.json \
+            unknown-ack-full-auditor.json; do
+            mapfile -t matches < <(find /tmp/unknown-ack-original -type f -name "$name")
+            test "${#matches[@]}" -eq 1
+            test -s "${matches[0]}"
+            cp "${matches[0]}" "/tmp/unknown-ack-exact/$name"
+          done
+          python -m research.audit_unknown_ack_physx \
+            --input-dir /tmp/unknown-ack-exact \
+            --output /tmp/unknown-ack-independent-recomputed.json
+          cmp /tmp/unknown-ack-independent-recomputed.json /tmp/unknown-ack-exact/unknown-ack-full-auditor.json
+          python -m unittest discover -s tests -p 'test_unknown_ack_original_auditor.py' -v
+          
+      - name: Persist exact 5 original JSON bytes, per-file checksums and scope
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/unknown_ack_prospective_32_94001_95008
+          mkdir -p "$dest"
+          cp /tmp/unknown-ack-exact/*.json "$dest/"
+          (cd "$dest" && sha256sum *.json > SHA256SUMS && sha256sum -c SHA256SUMS)
+          printf '%s\n' \
+            '# Original 32-state prospective lost-ACK controller experiment' \
+            '' \
+            'Owner-operated ManiSkill PhysX native simulator outcomes, not an independent external replication or physical robot safety proof.' \
+            'Original prereg protocol: 3ead83ecbb68eb6a405cdf768a42c617f649ddc4; Git blob 3a7273c1a02d13c19e93e618c74fc7068938c7e9.' \
+            'Original exact-head run: 37824078238, commit 2ea6fabbd4e15ddd5623d51acd9f8874206fc003; archived 5-JSON source ZIP artifact 11570941907 with GitHub digest sha256:96fb570effcff0296df47676edfe78174c3e9c9cd09614b93c084b5fa9a1e3f3.' \
+            'Four original eight-state task/fault cohorts; same frozen pretrained third-party PPOs; per-seed physical matched baselines in raw JSON.' \
+            'PullCube ACK unknown but applied: optimistic 6/8, pessimistic 5/8, one trusted private target readback recovery 6/8, repeated privileged memory 6/8, fail-stop 0/8.' \
+            'PullCube ACK unknown and intended arm command replaced by zero: optimistic 7/8, pessimistic 8/8, recovered 8/8, repeated privileged 8/8, fail-stop 0/8.' \
+            'StackCube ACK unknown but applied: optimistic 8/8, pessimistic 0/8, recovered 8/8, privileged 8/8, stop 0/8.' \
+            'StackCube ACK unknown and intended arm command replaced by zero: optimistic 2/8, pessimistic 8/8, recovered 8/8, privileged 8/8, stop 0/8.' \
+            'Recovery is achieved via ONE PRIVILEGED target-state readback after ambiguous ACK, NOT via inference from achieved pose alone. The continuously privileged oracle is not equal-information control.' \
+            'Each failed message was modeled by issuing a neutral target-native arm delta in an actual env.step; gripper still received its command. No real network loss or physical safety testing.' \
+            'Bounded projection steps are NOT_EXACT; task flags do not measure collision or actuator safety.' \
+            'All four original JSONs and original full audit are byte-for-byte copies, verified against the source Actions archive. Full source, failures and alternate baselines preserved. sha256sum -c SHA256SUMS; python -m research.audit_unknown_ack_physx --input-dir PATH --output /tmp/ack-audit.json.' \
+            > "$dest/README.md"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dest"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'evidence: preserve exact original 32-state unknown ACK fault-trial JSONs and SHA256SUMS'
+          git pull --rebase origin main
+          git push origin HEAD:main
