@@ -1,0 +1,100 @@
+name: External one-click genuine PhysX ACK-fault frozen PPO replication
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Released third-party PPO / ManiSkill task"
+        required: true
+        type: choice
+        default: pull_cube
+        options:
+          - pull_cube
+          - stack_cube
+      fault:
+        description: "ACK-ambiguous actual arm-command truth"
+        required: true
+        type: choice
+        default: neutral_arm_delta_no_ack
+        options:
+          - neutral_arm_delta_no_ack
+          - applied_no_ack
+      first_seed:
+        description: "First of eight NEW random seeds (>=120001)"
+        required: true
+        type: number
+        default: 130001
+  push:
+    branches: [feature/outsider-click-to-replicate-ack-physx-20261009]
+    paths:
+      - '.github/workflows/external-ack-frozen-ppo-replication.yml'
+      - 'research/external_ack_replication.py'
+      - 'tests/test_external_ack_replication.py'
+
+permissions:
+  contents: read
+
+jobs:
+  external-contract-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Assert honest seed/protocol and failure preservation
+        run: |
+          python -m py_compile research/external_ack_replication.py research/frozen_ppo_unknown_ack_recovery.py
+          python -m unittest discover -s tests -p 'test_external_ack_replication.py' -v
+
+  actual-physical-simulator:
+    needs: external-contract-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    env:
+      PYTHONUNBUFFERED: '1'
+      ACK_TASK: ${{ github.event_name == 'workflow_dispatch' && inputs.task || 'pull_cube' }}
+      ACK_FAULT: ${{ github.event_name == 'workflow_dispatch' && inputs.fault || 'neutral_arm_delta_no_ack' }}
+      ACK_FIRST_SEED: ${{ github.event_name == 'workflow_dispatch' && inputs.first_seed || 120001 }}
+      ACK_COUNT: ${{ github.event_name == 'workflow_dispatch' && '8' || '1' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install native ManiSkill PhysX CPU and published frozen PPO dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Record exact source and actual environment before any outcome
+        run: |
+          mkdir -p replication_artifacts
+          git rev-parse HEAD > replication_artifacts/source_git_commit.txt
+          git hash-object research/frozen_ppo_unknown_ack_recovery.py > replication_artifacts/original_method_git_blob.txt
+          git hash-object research/external_ack_replication.py > replication_artifacts/external_runner_git_blob.txt
+          python -m pip freeze --all > replication_artifacts/python_environment.freeze.txt
+          echo "task=$ACK_TASK fault=$ACK_FAULT first_seed=$ACK_FIRST_SEED n=$ACK_COUNT originally_preregistered=false" > replication_artifacts/inputs.txt
+      - name: Actually execute six native closed-loop PhysX controller arms
+        run: |
+          set -o pipefail
+          python research/external_ack_replication.py \
+            --task "$ACK_TASK" \
+            --fault "$ACK_FAULT" \
+            --first-seed "$ACK_FIRST_SEED" \
+            --count "$ACK_COUNT" \
+            --output-dir replication_artifacts \
+            2>&1 | tee replication_artifacts/original_simulator_stdout.log
+          test "$(find replication_artifacts -maxdepth 1 -name 'external_ack_*.json' | wc -l)" = "1"
+      - name: Hash original result and all provenance before upload
+        if: always()
+        run: |
+          (cd replication_artifacts && sha256sum *.json *.txt *.log > SHA256SUMS) || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: outsider-selectable-seeds-native-physx-original-result
+          path: replication_artifacts/
+          retention-days: 90
