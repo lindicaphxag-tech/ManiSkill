@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from math import ceil, isfinite, log, sqrt
+from math import isfinite, log, sqrt
 from typing import Callable, Mapping, Sequence
 
 import numpy as np
@@ -59,10 +59,15 @@ def _unsupported(
     budget: int,
     reason: str,
     rounds: Sequence[PairedProbeRound] = (),
+    attempted_seed: int | None = None,
 ) -> PairedProbeResult:
+    # A malformed sampled round may already have consumed the full four
+    # query calls. Charge it against the budget rather than undercounting.
+    attempted = () if attempted_seed is None else (attempted_seed,)
     return PairedProbeResult(
         ResponseProbeDecision.REJECT_UNSUPPORTED_ASSUMPTIONS,
-        tuple(r.seed for r in rounds), 4 * len(rounds), budget, None,
+        tuple(r.seed for r in rounds) + attempted,
+        4 * (len(rounds) + len(attempted)), budget, None,
         float(tolerance), None, None, tuple(rounds), False, False, reason,
     )
 
@@ -147,6 +152,7 @@ def probe_pairwise_mean_response(
                 tolerance=response_tolerance, budget=budget,
                 reason="four paired actions or provenance keys missing",
                 rounds=rounds,
+                attempted_seed=seed,
             )
         arrays = [np.asarray(raw[key], dtype=float) for key in (
             "baseline_a", "perturbed_a", "baseline_b", "perturbed_b"
@@ -154,18 +160,18 @@ def probe_pairwise_mean_response(
         if any(a.ndim != 1 or a.size == 0 for a in arrays):
             return _unsupported(tolerance=response_tolerance, budget=budget,
                                 reason="actions must be finite one-dimensional vectors",
-                                rounds=rounds)
+                                rounds=rounds, attempted_seed=seed)
         if len({a.shape for a in arrays}) != 1 or any(not np.isfinite(a).all() for a in arrays):
             return _unsupported(tolerance=response_tolerance, budget=budget,
                                 reason="action dimensions differ or contain nonfinite values",
-                                rounds=rounds)
+                                rounds=rounds, attempted_seed=seed)
         if dimension is None:
             dimension = arrays[0].size
             center = np.zeros(dimension, dtype=float)
         elif arrays[0].size != dimension:
             return _unsupported(tolerance=response_tolerance, budget=budget,
                                 reason="physical action chart dimension changed",
-                                rounds=rounds)
+                                rounds=rounds, attempted_seed=seed)
         contrast = (arrays[1] - arrays[0]) - (arrays[3] - arrays[2])
         # Observed violations invalidate any claimed population support,
         # but no amount of observed compliance *proves* a population bound.
@@ -174,12 +180,13 @@ def probe_pairwise_mean_response(
                 tolerance=response_tolerance, budget=budget,
                 reason="observed contrast exceeds attested population hard bound",
                 rounds=rounds,
+                attempted_seed=seed,
             )
         center += (contrast - center) / t
         if not np.isfinite(center).all():
             return _unsupported(tolerance=response_tolerance, budget=budget,
                                 reason="floating overflow in mean contrast",
-                                rounds=rounds)
+                                rounds=rounds, attempted_seed=seed)
         radius = sqrt(dimension) * B * sqrt(2 * log(2 * dimension * N / alpha) / t)
         norm = float(np.linalg.norm(center))
         low, high = max(0.0, norm-radius), norm+radius
