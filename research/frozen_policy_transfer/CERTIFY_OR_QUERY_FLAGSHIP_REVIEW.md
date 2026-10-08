@@ -30,6 +30,25 @@ The key question is **execution-evidence availability and the correct use of the
 
 [**Before-outcome seed/query allocation frozen in commit ee209f6**](https://github.com/lindicaphxag-tech/ManiSkill/commit/ee209f6bc80e2bb280f9b00e6a9bafc330bdc799) · [**eight successfully run genuine PhysX CI jobs**](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37833053629) · [**every original state and paired outcome with errors/limits**](CERTIFY_QUERY_PERIODIC_PLACEBO_64_ORIGINAL_RESULTS.md) · [**original full eight-file SHA audit and archive workflow**](../../.github/workflows/archive-query-periodic-placebo64.yml). **All contributor-operated, not endorsed by official ManiSkill/ActionShift.**
 
+## New REAL native public-response-or-one-authority-read experiment
+
+**Second complementary research track, not yet integrated into the above bounded-or-query controller.** The command execution ACK can remain ambiguous because *public achieved pose is not previous commanded controller target*. A simple nearest-target public-probe heuristic produced **15 confident WRONG execution-history labels in 32 native PhysX conditions**; task-success alone did not expose those hidden-history mistakes. We then froze a disjoint tiny **historical-only** empirical segment-response error envelope per task (four historical states per task); we did NOT retrospectively fit on that failed test cohort.
+
+Before implementing the hybrid runner, precommitted [original protocol commit fa173507](https://github.com/lindicaphxag-tech/ManiSkill/commit/fa17350711f6c2c7cffb4cfa2bb7f8289f3ee0c4) with NEW PullCube seeds 180101–180108, NEW StackCube seeds 190101–190108, each under **both physically executed target/no ACK** and **physically held native target/no ACK**: **16 unique robot reset states ×2 fault truths = 32 task×truth conditions**. All six arms made the same neutral action probe before decision, with frozen third-party PPOs and true ManiSkill PhysX.
+
+| Frozen same-probe controller | Native completed tasks /32 | Real privileged target read calls |
+|---|---:|---:|
+| **Empirical public achieved-response fit; if unique infer history, otherwise ONE explicit target read** | **27/32** | **11** |
+| Mandatory one target read after every uncertain execution | **27/32** | 32 |
+| Public-only inference, abstain when not unique | 19/32 | 0 |
+| Optimistic guess after identical probe | 23/32 | 0 |
+
+**21/32** response histories could be labelled from *public achieved position alone* without a controller-target getter; zero confident wrong history labels were observed among those 21. For the other **11/32**, the hybrid used one explicitly accounted privileged target getter, rather than pretending it was a public measurement. **32/32 per-condition native task-success flags agree** with mandatory readback. This observed false-authorization count **is NOT a future false-error guarantee**: the empirical response envelope is derived from tiny historical data, lacks externally attested coverage, and this study uses ONE Panda controller family, two tasks, controlled PhysX target holds rather than real network loss. A hidden-state label has different semantics from task success, and only the actually measured label correctness was audited.
+
+[All eight successful six-controller native PhysX shards](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37834088246) · [**all 32 original per-case successes, wrong-label evidence, read counts and ZIPs**](PUBLIC_RESPONSE_OR_READ32_ORIGINAL_RESULTS.md) · [pre-experiment protocol](../../research/PHYSICAL_RESPONSE_OR_READ32_PREDECLARED_V1.json) · [full destructive original source audit workflow](../../.github/workflows/archive-public-or-read-new32-original.yml).
+
+**Research synthesis (NOT yet executed as one unified policy):** the next controller could first authorize a bounded common action for all credible commanded-target memories; otherwise try a publicly observed, independently calibrated physical response to rule out histories; only if ambiguity remains, use a trustworthy authority target getter or refuse. This three-stage composition is a proposed next experiment, **not** an established 27/32 + 58/64 combined performance claim. Qualifying as a top-tier method requires actual full integration, cross-controller task experiments, real latency/drop/reorder faults and external independent reproduction.
+
 ## Locked, state-disjoint physical-simulator outcomes
 
 | Original fixed protocol | PullCube | StackCube | Pooled tasks | Privileged target decision reads |
