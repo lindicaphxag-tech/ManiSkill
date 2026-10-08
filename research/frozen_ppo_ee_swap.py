@@ -22,7 +22,7 @@ from frozen_ppo_pickcube_gate import (
 )
 import hashlib
 
-SEEDS=tuple(range(10001,10033))
+SEEDS=(10014,)
 MAX_STEPS=50
 
 
@@ -77,6 +77,17 @@ def rollout_one(actor,seed):
         observations={}
         for key,env in envs.items():
             observations[key],_=env.reset(seed=seed)
+        # Diagnostic-only, BEFORE any policy action: distinguish incomplete
+        # reset determinism from controller/action conversion effects.
+        report["reset_fingerprints"]={}
+        for name,env in envs.items():
+            observation_bytes=observations[name].detach().cpu().contiguous().numpy().tobytes()
+            physics_bytes=env.unwrapped.get_state().detach().cpu().contiguous().numpy().tobytes()
+            report["reset_fingerprints"][name]={
+                "observation_sha256":hashlib.sha256(observation_bytes).hexdigest(),
+                "environment_state_sha256":hashlib.sha256(physics_bytes).hexdigest(),
+            }
+        print("FROZEN_10014_RESET_FINGERPRINT",json.dumps(report["reset_fingerprints"],sort_keys=True))
         shape={k:tuple(v.shape) for k,v in observations.items()}
         if len(set(shape.values()))!=1:
             raise RuntimeError("Mismatch observation ABI: "+str(shape))
