@@ -261,8 +261,19 @@ def apply_kaggle_worker_compatibility() -> str:
         )
         if train_source.count(old_env_line) != 1:
             raise RuntimeError("Unexpected state-policy render configuration")
+        train_source = train_source.replace(old_env_line, new_env_line)
+        close_marker = "    envs.close()\n    writer.close()"
+        if train_source.count(close_marker) != 1:
+            raise RuntimeError("Unexpected DP environment/writer cleanup boundary")
+        close_probe = (
+            '    print("SMOKE_LIFECYCLE: before envs.close", flush=True)\n'
+            '    envs.close()\n'
+            '    print("SMOKE_LIFECYCLE: after envs.close", flush=True)\n'
+            '    writer.close()\n'
+            '    print("SMOKE_LIFECYCLE: after writer.close", flush=True)'
+        )
         train_path.write_text(
-            train_source.replace(old_env_line, new_env_line), encoding="utf-8"
+            train_source.replace(close_marker, close_probe), encoding="utf-8"
         )
         compatibility_paths.append(train_path)
 
