@@ -1,0 +1,131 @@
+name: Archive original native 7-DoF joint target certificate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-native-joint-memory-cert.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify-original-controller-evidence-readonly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify exact successful native 7-joint controller experiment source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37820753181 --jq .head_sha)" = "53039142618bdeab2eb54a17fd064c9ff092c3fe"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37820753181 --jq .conclusion)" = success
+      - name: Retrieve two original immutable source artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/native_joint
+          gh run download 37820753181 --repo "$GITHUB_REPOSITORY" --name native-4task-joint-position-memory-certificate-evidence --dir /tmp/native_joint
+          test "$(find /tmp/native_joint -maxdepth 1 -type f | wc -l)" -eq 2
+      - name: Byte hash and all source-record validity verification
+        run: |
+          cd /tmp/native_joint
+          printf '%s\n'             'c8051a866cc7dac3798a111366190882b6d820ef7131d5784eb07ca2d0ec465b  latent_memory_joint_target_native_v1.json'             '44c93849ae11d057895e98b0544aa9da69772020ee3ed0d948e6d5d7c6426a14  latent_memory_joint_target_native.log' | sha256sum -c -
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('/tmp/native_joint/latent_memory_joint_target_native_v1.json').read_text())
+          assert d['precommitted_count']==4
+          assert d['hardware_robot_safety_claim'] is False
+          assert d['independent_third_party_replication'] is False
+          assert d['actual_separate_controller_implementation']=='PDJointPosController'
+          assert [(r['task'],r['seed']) for r in d['records']]==[
+              ('PickCube-v1',1477),('PushCube-v1',2488),
+              ('PullCube-v1',3499),('StackCube-v1',4510)]
+          for r in d['records']:
+              assert len(r['physical_joint_action_rad'])==7
+              assert r['native_commanded_joint_target_prediction_error_rad']<.0001
+              assert abs(r['minimax_interval_setpoint_error_rad']-.001)<1e-8
+              assert r['task_success_measured'] is False
+          print('Immutable real seven-DOF target-position audit: 4/4 PASS')
+          PY
+
+  persist-after-main-only:
+    needs: verify-original-controller-evidence-readonly
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify exact successful native 7-joint controller experiment source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37820753181 --jq .head_sha)" = "53039142618bdeab2eb54a17fd064c9ff092c3fe"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37820753181 --jq .conclusion)" = success
+      - name: Retrieve two original immutable source artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/native_joint
+          gh run download 37820753181 --repo "$GITHUB_REPOSITORY" --name native-4task-joint-position-memory-certificate-evidence --dir /tmp/native_joint
+          test "$(find /tmp/native_joint -maxdepth 1 -type f | wc -l)" -eq 2
+      - name: Byte hash and all source-record validity verification
+        run: |
+          cd /tmp/native_joint
+          printf '%s\n'             'c8051a866cc7dac3798a111366190882b6d820ef7131d5784eb07ca2d0ec465b  latent_memory_joint_target_native_v1.json'             '44c93849ae11d057895e98b0544aa9da69772020ee3ed0d948e6d5d7c6426a14  latent_memory_joint_target_native.log' | sha256sum -c -
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('/tmp/native_joint/latent_memory_joint_target_native_v1.json').read_text())
+          assert d['precommitted_count']==4
+          assert d['hardware_robot_safety_claim'] is False
+          assert d['independent_third_party_replication'] is False
+          assert d['actual_separate_controller_implementation']=='PDJointPosController'
+          assert [(r['task'],r['seed']) for r in d['records']]==[
+              ('PickCube-v1',1477),('PushCube-v1',2488),
+              ('PullCube-v1',3499),('StackCube-v1',4510)]
+          for r in d['records']:
+              assert len(r['physical_joint_action_rad'])==7
+              assert r['native_commanded_joint_target_prediction_error_rad']<.0001
+              assert abs(r['minimax_interval_setpoint_error_rad']-.001)<1e-8
+              assert r['task_success_measured'] is False
+          print('Immutable real seven-DOF target-position audit: 4/4 PASS')
+          PY
+      - name: Commit two byte-identical original experiment files
+        run: |
+          set -euo pipefail
+          dst=research/latent_memory_native_evidence/joint_v1
+          mkdir -p "$dst"
+          cp /tmp/native_joint/latent_memory_joint_target_native_v1.json "$dst/"
+          cp /tmp/native_joint/latent_memory_joint_target_native.log "$dst/"
+          cat > "$dst/README.md" <<'EOF'
+          # Original real Panda joint-target memory controller test
+          Verified successful PhysX run 37820753181 at source 53039142618bdeab2eb54a17fd064c9ff092c3fe.
+          Frozen before source implementation: research/LATENT_MEMORY_NATIVE_JOINT_PRECOMMIT_V1.json, commit 6fc05a1821607980e71037c20ac0a2b13eaf3ee8.
+          All original JSON and terminal output bytes retain pinned SHA-256 hashes from this workflow.
+          Four task cases verify the separate 7-DOF PDJointPosController's commanded joint target memory.
+          Native model target-position discrepancy ~5.15e-8 rad; artificially preconfigured robust bound .001 rad.
+          This does not prove real-world sensor attestation, controller-actuator tracking, safety, collision avoidance, task success, cross-robot generalization or external independent replication.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dst"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'evidence: preserve native seven-DoF joint target memory proof records'
+          git push origin HEAD:main
