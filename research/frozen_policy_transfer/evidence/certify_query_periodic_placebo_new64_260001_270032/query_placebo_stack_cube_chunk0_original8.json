@@ -1,0 +1,2676 @@
+{
+  "all_eight_actual_control_arms": [
+    "source_no_fault",
+    "fault_oracle_private_target",
+    "fault_optimistic_unverified_ack",
+    "fault_strict_common_exact",
+    "fault_robust_two_history_without_query",
+    "fault_robust_then_single_privileged_query",
+    "fault_precommitted_seed_schedule_query",
+    "fault_always_single_privileged_query"
+  ],
+  "episodes": [
+    {
+      "failure_causes": {},
+      "faults": {
+        "fault_always_single_privileged_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.7330902218818665,
+          "step": 2
+        },
+        "fault_optimistic_unverified_ack": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.7330902218818665,
+          "step": 2
+        },
+        "fault_oracle_private_target": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.7330897450447083,
+          "step": 2
+        },
+        "fault_precommitted_seed_schedule_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.7330902218818665,
+          "step": 2
+        },
+        "fault_robust_then_single_privileged_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.7330902218818665,
+          "step": 2
+        },
+        "fault_robust_two_history_without_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.7330902218818665,
+          "step": 2
+        },
+        "fault_strict_common_exact": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.7330902218818665,
+          "step": 2
+        }
+      },
+      "initial_obs_diff": {
+        "fault_always_single_privileged_query": 0.0,
+        "fault_optimistic_unverified_ack": 0.0,
+        "fault_oracle_private_target": 0.0,
+        "fault_precommitted_seed_schedule_query": 0.0,
+        "fault_robust_then_single_privileged_query": 0.0,
+        "fault_robust_two_history_without_query": 0.0,
+        "fault_strict_common_exact": 0.0
+      },
+      "initial_source_physical_obs_sha256": "36d5b708613f0957f0b7d49f0ea1280b19be1186e7f6dc654613fca8713b9f07",
+      "native_projection_NOT_EXACT": {
+        "fault_always_single_privileged_query": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.228587031364441,
+            "step": 4
+          }
+        ],
+        "fault_optimistic_unverified_ack": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.3037048822578041,
+            "step": 6
+          }
+        ],
+        "fault_oracle_private_target": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.2285855412483215,
+            "step": 4
+          }
+        ],
+        "fault_robust_then_single_privileged_query": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.041904499850192,
+            "step": 6
+          }
+        ]
+      },
+      "privileged_target_readback_decision_count": {
+        "fault_always_single_privileged_query": 1,
+        "fault_optimistic_unverified_ack": 0,
+        "fault_oracle_private_target": -1,
+        "fault_precommitted_seed_schedule_query": 0,
+        "fault_robust_then_single_privileged_query": 1,
+        "fault_robust_two_history_without_query": 0,
+        "fault_strict_common_exact": 0,
+        "source_no_fault": 0
+      },
+      "refusals": {
+        "fault_precommitted_seed_schedule_query": {
+          "certificate": "REFUSE_UNREPRESENTABLE_ROTATION",
+          "possible_targets": 2,
+          "reason": "ROBUST_BOUND_OR_REPRESENTABILITY_REJECTED",
+          "step": 6,
+          "worst_position_m": 0.01960797309875488,
+          "worst_rotation_rad": 0.02631640955268986
+        },
+        "fault_robust_two_history_without_query": {
+          "certificate": "REFUSE_UNREPRESENTABLE_ROTATION",
+          "possible_targets": 2,
+          "reason": "ROBUST_BOUND_OR_REPRESENTABILITY_REJECTED",
+          "step": 6,
+          "worst_position_m": 0.01960797309875488,
+          "worst_rotation_rad": 0.02631640955268986
+        },
+        "fault_strict_common_exact": {
+          "hypotheses": 2,
+          "reason": "AMBIGUOUS_PREVIOUS_TARGET",
+          "step": 3
+        }
+      },
+      "robust_common_action_authorizations": {
+        "fault_precommitted_seed_schedule_query": 3,
+        "fault_robust_then_single_privileged_query": 3,
+        "fault_robust_two_history_without_query": 3
+      },
+      "robust_common_action_refusals": {
+        "fault_robust_then_single_privileged_query": [
+          {
+            "reason": "REFUSE_UNREPRESENTABLE_ROTATION",
+            "step": 6
+          }
+        ]
+      },
+      "robust_native_target_bound_checks": {
+        "fault_precommitted_seed_schedule_query": [
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019607972353696823,
+            "rot_error_rad": 0.026316460433017635,
+            "step": 3,
+            "worst_case_position_limit_m": 0.019607973098754887,
+            "worst_case_rot_limit_rad": 0.026316409552689792
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.01960797980427742,
+            "rot_error_rad": 0.026316443021476513,
+            "step": 4,
+            "worst_case_position_limit_m": 0.019607973098754894,
+            "worst_case_rot_limit_rad": 0.026316409552689834
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.01960798352956772,
+            "rot_error_rad": 0.026316399836214997,
+            "step": 5,
+            "worst_case_position_limit_m": 0.019607973098754894,
+            "worst_case_rot_limit_rad": 0.02631640955268973
+          }
+        ],
+        "fault_robust_then_single_privileged_query": [
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019607972353696823,
+            "rot_error_rad": 0.026316460433017635,
+            "step": 3,
+            "worst_case_position_limit_m": 0.019607973098754887,
+            "worst_case_rot_limit_rad": 0.026316409552689792
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.01960797980427742,
+            "rot_error_rad": 0.026316443021476513,
+            "step": 4,
+            "worst_case_position_limit_m": 0.019607973098754894,
+            "worst_case_rot_limit_rad": 0.026316409552689834
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.01960798352956772,
+            "rot_error_rad": 0.026316399836214997,
+            "step": 5,
+            "worst_case_position_limit_m": 0.019607973098754894,
+            "worst_case_rot_limit_rad": 0.02631640955268973
+          }
+        ],
+        "fault_robust_two_history_without_query": [
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019607972353696823,
+            "rot_error_rad": 0.026316460433017635,
+            "step": 3,
+            "worst_case_position_limit_m": 0.019607973098754887,
+            "worst_case_rot_limit_rad": 0.026316409552689792
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.01960797980427742,
+            "rot_error_rad": 0.026316443021476513,
+            "step": 4,
+            "worst_case_position_limit_m": 0.019607973098754894,
+            "worst_case_rot_limit_rad": 0.026316409552689834
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.01960798352956772,
+            "rot_error_rad": 0.026316399836214997,
+            "step": 5,
+            "worst_case_position_limit_m": 0.019607973098754894,
+            "worst_case_rot_limit_rad": 0.02631640955268973
+          }
+        ]
+      },
+      "seed": 270001,
+      "steps": {
+        "fault_always_single_privileged_query": 10,
+        "fault_optimistic_unverified_ack": 22,
+        "fault_oracle_private_target": 10,
+        "fault_precommitted_seed_schedule_query": 6,
+        "fault_robust_then_single_privileged_query": 11,
+        "fault_robust_two_history_without_query": 6,
+        "fault_strict_common_exact": 3,
+        "source_no_fault": 10
+      },
+      "success_once": {
+        "fault_always_single_privileged_query": true,
+        "fault_optimistic_unverified_ack": true,
+        "fault_oracle_private_target": true,
+        "fault_precommitted_seed_schedule_query": false,
+        "fault_robust_then_single_privileged_query": true,
+        "fault_robust_two_history_without_query": false,
+        "fault_strict_common_exact": false,
+        "source_no_fault": true
+      },
+      "success_step": {
+        "fault_always_single_privileged_query": 10,
+        "fault_optimistic_unverified_ack": 22,
+        "fault_oracle_private_target": 10,
+        "fault_precommitted_seed_schedule_query": null,
+        "fault_robust_then_single_privileged_query": 11,
+        "fault_robust_two_history_without_query": null,
+        "fault_strict_common_exact": null,
+        "source_no_fault": 10
+      },
+      "task": "StackCube-v1"
+    },
+    {
+      "failure_causes": {},
+      "faults": {
+        "fault_always_single_privileged_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.8288174867630005,
+          "step": 2
+        },
+        "fault_optimistic_unverified_ack": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.8288174867630005,
+          "step": 2
+        },
+        "fault_oracle_private_target": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.8288169503211975,
+          "step": 2
+        },
+        "fault_precommitted_seed_schedule_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.8288174867630005,
+          "step": 2
+        },
+        "fault_robust_then_single_privileged_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.8288174867630005,
+          "step": 2
+        },
+        "fault_robust_two_history_without_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.8288174867630005,
+          "step": 2
+        },
+        "fault_strict_common_exact": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.8288174867630005,
+          "step": 2
+        }
+      },
+      "initial_obs_diff": {
+        "fault_always_single_privileged_query": 0.0,
+        "fault_optimistic_unverified_ack": 0.0,
+        "fault_oracle_private_target": 0.0,
+        "fault_precommitted_seed_schedule_query": 0.0,
+        "fault_robust_then_single_privileged_query": 0.0,
+        "fault_robust_two_history_without_query": 0.0,
+        "fault_strict_common_exact": 0.0
+      },
+      "initial_source_physical_obs_sha256": "99e87c042871a798abfc1c15d90867b1429d0813d5beb8b0f10f44df78fddb60",
+      "native_projection_NOT_EXACT": {
+        "fault_always_single_privileged_query": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.2733566318638623,
+            "step": 5
+          },
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.196144543524232,
+            "step": 7
+          }
+        ],
+        "fault_oracle_private_target": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.27335824072361,
+            "step": 5
+          },
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.1961781903303725,
+            "step": 7
+          }
+        ],
+        "fault_robust_then_single_privileged_query": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.272557922899024,
+            "step": 7
+          }
+        ]
+      },
+      "privileged_target_readback_decision_count": {
+        "fault_always_single_privileged_query": 1,
+        "fault_optimistic_unverified_ack": 0,
+        "fault_oracle_private_target": -1,
+        "fault_precommitted_seed_schedule_query": 0,
+        "fault_robust_then_single_privileged_query": 1,
+        "fault_robust_two_history_without_query": 0,
+        "fault_strict_common_exact": 0,
+        "source_no_fault": 0
+      },
+      "refusals": {
+        "fault_precommitted_seed_schedule_query": {
+          "certificate": "REFUSE_UNREPRESENTABLE_ROTATION",
+          "possible_targets": 2,
+          "reason": "ROBUST_BOUND_OR_REPRESENTABILITY_REJECTED",
+          "step": 7,
+          "worst_position_m": 0.0237688884139061,
+          "worst_rotation_rad": 0.028039773015897915
+        },
+        "fault_robust_two_history_without_query": {
+          "certificate": "REFUSE_UNREPRESENTABLE_ROTATION",
+          "possible_targets": 2,
+          "reason": "ROBUST_BOUND_OR_REPRESENTABILITY_REJECTED",
+          "step": 7,
+          "worst_position_m": 0.0237688884139061,
+          "worst_rotation_rad": 0.028039773015897915
+        },
+        "fault_strict_common_exact": {
+          "hypotheses": 2,
+          "reason": "AMBIGUOUS_PREVIOUS_TARGET",
+          "step": 3
+        }
+      },
+      "robust_common_action_authorizations": {
+        "fault_precommitted_seed_schedule_query": 4,
+        "fault_robust_then_single_privileged_query": 4,
+        "fault_robust_two_history_without_query": 4
+      },
+      "robust_common_action_refusals": {
+        "fault_robust_then_single_privileged_query": [
+          {
+            "reason": "REFUSE_UNREPRESENTABLE_ROTATION",
+            "step": 7
+          }
+        ]
+      },
+      "robust_native_target_bound_checks": {
+        "fault_precommitted_seed_schedule_query": [
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.023768894374370575,
+            "rot_error_rad": 0.02803964542189666,
+            "step": 3,
+            "worst_case_position_limit_m": 0.023768888413906106,
+            "worst_case_rot_limit_rad": 0.028039773015897926
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.023768890649080276,
+            "rot_error_rad": 0.028039647038028515,
+            "step": 4,
+            "worst_case_position_limit_m": 0.0237688884139061,
+            "worst_case_rot_limit_rad": 0.028039773015897832
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.023768890649080276,
+            "rot_error_rad": 0.028039703805958757,
+            "step": 5,
+            "worst_case_position_limit_m": 0.04988024681806566,
+            "worst_case_rot_limit_rad": 0.028039773015897884
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.023768890649080276,
+            "rot_error_rad": 0.028039769043855987,
+            "step": 6,
+            "worst_case_position_limit_m": 0.0237688884139061,
+            "worst_case_rot_limit_rad": 0.028039773015897947
+          }
+        ],
+        "fault_robust_then_single_privileged_query": [
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.023768894374370575,
+            "rot_error_rad": 0.02803964542189666,
+            "step": 3,
+            "worst_case_position_limit_m": 0.023768888413906106,
+            "worst_case_rot_limit_rad": 0.028039773015897926
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.023768890649080276,
+            "rot_error_rad": 0.028039647038028515,
+            "step": 4,
+            "worst_case_position_limit_m": 0.0237688884139061,
+            "worst_case_rot_limit_rad": 0.028039773015897832
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.023768890649080276,
+            "rot_error_rad": 0.028039703805958757,
+            "step": 5,
+            "worst_case_position_limit_m": 0.04988024681806566,
+            "worst_case_rot_limit_rad": 0.028039773015897884
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.023768890649080276,
+            "rot_error_rad": 0.028039769043855987,
+            "step": 6,
+            "worst_case_position_limit_m": 0.0237688884139061,
+            "worst_case_rot_limit_rad": 0.028039773015897947
+          }
+        ],
+        "fault_robust_two_history_without_query": [
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.023768894374370575,
+            "rot_error_rad": 0.02803964542189666,
+            "step": 3,
+            "worst_case_position_limit_m": 0.023768888413906106,
+            "worst_case_rot_limit_rad": 0.028039773015897926
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.023768890649080276,
+            "rot_error_rad": 0.028039647038028515,
+            "step": 4,
+            "worst_case_position_limit_m": 0.0237688884139061,
+            "worst_case_rot_limit_rad": 0.028039773015897832
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.023768890649080276,
+            "rot_error_rad": 0.028039703805958757,
+            "step": 5,
+            "worst_case_position_limit_m": 0.04988024681806566,
+            "worst_case_rot_limit_rad": 0.028039773015897884
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.023768890649080276,
+            "rot_error_rad": 0.028039769043855987,
+            "step": 6,
+            "worst_case_position_limit_m": 0.0237688884139061,
+            "worst_case_rot_limit_rad": 0.028039773015897947
+          }
+        ]
+      },
+      "seed": 270002,
+      "steps": {
+        "fault_always_single_privileged_query": 11,
+        "fault_optimistic_unverified_ack": 50,
+        "fault_oracle_private_target": 11,
+        "fault_precommitted_seed_schedule_query": 7,
+        "fault_robust_then_single_privileged_query": 11,
+        "fault_robust_two_history_without_query": 7,
+        "fault_strict_common_exact": 3,
+        "source_no_fault": 18
+      },
+      "success_once": {
+        "fault_always_single_privileged_query": true,
+        "fault_optimistic_unverified_ack": false,
+        "fault_oracle_private_target": true,
+        "fault_precommitted_seed_schedule_query": false,
+        "fault_robust_then_single_privileged_query": true,
+        "fault_robust_two_history_without_query": false,
+        "fault_strict_common_exact": false,
+        "source_no_fault": true
+      },
+      "success_step": {
+        "fault_always_single_privileged_query": 11,
+        "fault_optimistic_unverified_ack": null,
+        "fault_oracle_private_target": 11,
+        "fault_precommitted_seed_schedule_query": null,
+        "fault_robust_then_single_privileged_query": 11,
+        "fault_robust_two_history_without_query": null,
+        "fault_strict_common_exact": null,
+        "source_no_fault": 18
+      },
+      "task": "StackCube-v1"
+    },
+    {
+      "failure_causes": {},
+      "faults": {
+        "fault_always_single_privileged_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.6745873689651489,
+          "step": 2
+        },
+        "fault_optimistic_unverified_ack": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.6745873689651489,
+          "step": 2
+        },
+        "fault_oracle_private_target": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.6745870113372803,
+          "step": 2
+        },
+        "fault_precommitted_seed_schedule_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.6745873689651489,
+          "step": 2
+        },
+        "fault_robust_then_single_privileged_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.6745873689651489,
+          "step": 2
+        },
+        "fault_robust_two_history_without_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.6745873689651489,
+          "step": 2
+        },
+        "fault_strict_common_exact": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.6745873689651489,
+          "step": 2
+        }
+      },
+      "initial_obs_diff": {
+        "fault_always_single_privileged_query": 0.0,
+        "fault_optimistic_unverified_ack": 0.0,
+        "fault_oracle_private_target": 0.0,
+        "fault_precommitted_seed_schedule_query": 0.0,
+        "fault_robust_then_single_privileged_query": 0.0,
+        "fault_robust_two_history_without_query": 0.0,
+        "fault_strict_common_exact": 0.0
+      },
+      "initial_source_physical_obs_sha256": "3f5db6c0fbf8375bef9c9550f61b84ab9784d484aa90a190642cfbb49fae3124",
+      "native_projection_NOT_EXACT": {
+        "fault_always_single_privileged_query": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.048082560300827,
+            "step": 4
+          },
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.306602917611599,
+            "step": 5
+          },
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.1079827262675375,
+            "step": 7
+          }
+        ],
+        "fault_optimistic_unverified_ack": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.2611976265907288,
+            "step": 5
+          },
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.3659613731138602,
+            "step": 7
+          }
+        ],
+        "fault_oracle_private_target": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.0480833053588867,
+            "step": 4
+          },
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.3066061213612556,
+            "step": 5
+          },
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.1079890215715396,
+            "step": 7
+          }
+        ],
+        "fault_robust_then_single_privileged_query": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.4552035741508007,
+            "step": 5
+          },
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.0827425253171865,
+            "step": 7
+          }
+        ]
+      },
+      "privileged_target_readback_decision_count": {
+        "fault_always_single_privileged_query": 1,
+        "fault_optimistic_unverified_ack": 0,
+        "fault_oracle_private_target": -1,
+        "fault_precommitted_seed_schedule_query": 0,
+        "fault_robust_then_single_privileged_query": 1,
+        "fault_robust_two_history_without_query": 0,
+        "fault_strict_common_exact": 0,
+        "source_no_fault": 0
+      },
+      "refusals": {
+        "fault_precommitted_seed_schedule_query": {
+          "certificate": "REFUSE_POSITION_BUDGET",
+          "possible_targets": 2,
+          "reason": "ROBUST_BOUND_OR_REPRESENTABILITY_REJECTED",
+          "step": 5,
+          "worst_position_m": 0.08609559535980227,
+          "worst_rotation_rad": 0.0231322220001328
+        },
+        "fault_robust_two_history_without_query": {
+          "certificate": "REFUSE_POSITION_BUDGET",
+          "possible_targets": 2,
+          "reason": "ROBUST_BOUND_OR_REPRESENTABILITY_REJECTED",
+          "step": 5,
+          "worst_position_m": 0.08609559535980227,
+          "worst_rotation_rad": 0.0231322220001328
+        },
+        "fault_strict_common_exact": {
+          "hypotheses": 2,
+          "reason": "AMBIGUOUS_PREVIOUS_TARGET",
+          "step": 3
+        }
+      },
+      "robust_common_action_authorizations": {
+        "fault_precommitted_seed_schedule_query": 2,
+        "fault_robust_then_single_privileged_query": 2,
+        "fault_robust_two_history_without_query": 2
+      },
+      "robust_common_action_refusals": {
+        "fault_robust_then_single_privileged_query": [
+          {
+            "reason": "REFUSE_POSITION_BUDGET",
+            "step": 5
+          }
+        ]
+      },
+      "robust_native_target_bound_checks": {
+        "fault_precommitted_seed_schedule_query": [
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020287618041038513,
+            "rot_error_rad": 0.023132279126980813,
+            "step": 3,
+            "worst_case_position_limit_m": 0.020287621021270755,
+            "worst_case_rot_limit_rad": 0.023132222000132742
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020287619903683662,
+            "rot_error_rad": 0.023132294280731963,
+            "step": 4,
+            "worst_case_position_limit_m": 0.020287621021270755,
+            "worst_case_rot_limit_rad": 0.023132222000132752
+          }
+        ],
+        "fault_robust_then_single_privileged_query": [
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020287618041038513,
+            "rot_error_rad": 0.023132279126980813,
+            "step": 3,
+            "worst_case_position_limit_m": 0.020287621021270755,
+            "worst_case_rot_limit_rad": 0.023132222000132742
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020287619903683662,
+            "rot_error_rad": 0.023132294280731963,
+            "step": 4,
+            "worst_case_position_limit_m": 0.020287621021270755,
+            "worst_case_rot_limit_rad": 0.023132222000132752
+          }
+        ],
+        "fault_robust_two_history_without_query": [
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020287618041038513,
+            "rot_error_rad": 0.023132279126980813,
+            "step": 3,
+            "worst_case_position_limit_m": 0.020287621021270755,
+            "worst_case_rot_limit_rad": 0.023132222000132742
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020287619903683662,
+            "rot_error_rad": 0.023132294280731963,
+            "step": 4,
+            "worst_case_position_limit_m": 0.020287621021270755,
+            "worst_case_rot_limit_rad": 0.023132222000132752
+          }
+        ]
+      },
+      "seed": 270003,
+      "steps": {
+        "fault_always_single_privileged_query": 11,
+        "fault_optimistic_unverified_ack": 50,
+        "fault_oracle_private_target": 11,
+        "fault_precommitted_seed_schedule_query": 5,
+        "fault_robust_then_single_privileged_query": 12,
+        "fault_robust_two_history_without_query": 5,
+        "fault_strict_common_exact": 3,
+        "source_no_fault": 11
+      },
+      "success_once": {
+        "fault_always_single_privileged_query": true,
+        "fault_optimistic_unverified_ack": false,
+        "fault_oracle_private_target": true,
+        "fault_precommitted_seed_schedule_query": false,
+        "fault_robust_then_single_privileged_query": true,
+        "fault_robust_two_history_without_query": false,
+        "fault_strict_common_exact": false,
+        "source_no_fault": true
+      },
+      "success_step": {
+        "fault_always_single_privileged_query": 11,
+        "fault_optimistic_unverified_ack": null,
+        "fault_oracle_private_target": 11,
+        "fault_precommitted_seed_schedule_query": null,
+        "fault_robust_then_single_privileged_query": 12,
+        "fault_robust_two_history_without_query": null,
+        "fault_strict_common_exact": null,
+        "source_no_fault": 11
+      },
+      "task": "StackCube-v1"
+    },
+    {
+      "failure_causes": {},
+      "faults": {
+        "fault_always_single_privileged_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.548716127872467,
+          "step": 2
+        },
+        "fault_optimistic_unverified_ack": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.548716127872467,
+          "step": 2
+        },
+        "fault_oracle_private_target": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.5487169623374939,
+          "step": 2
+        },
+        "fault_precommitted_seed_schedule_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.548716127872467,
+          "step": 2
+        },
+        "fault_robust_then_single_privileged_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.548716127872467,
+          "step": 2
+        },
+        "fault_robust_two_history_without_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.548716127872467,
+          "step": 2
+        },
+        "fault_strict_common_exact": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.548716127872467,
+          "step": 2
+        }
+      },
+      "initial_obs_diff": {
+        "fault_always_single_privileged_query": 0.0,
+        "fault_optimistic_unverified_ack": 0.0,
+        "fault_oracle_private_target": 0.0,
+        "fault_precommitted_seed_schedule_query": 0.0,
+        "fault_robust_then_single_privileged_query": 0.0,
+        "fault_robust_two_history_without_query": 0.0,
+        "fault_strict_common_exact": 0.0
+      },
+      "initial_source_physical_obs_sha256": "fd2a6a4bad547f74adb393532accd0c9ec775485eb6444d897b67cae3de3d124",
+      "native_projection_NOT_EXACT": {
+        "fault_always_single_privileged_query": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.0037469863891602,
+            "step": 8
+          }
+        ],
+        "fault_oracle_private_target": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.0037419199943542,
+            "step": 8
+          }
+        ],
+        "fault_precommitted_seed_schedule_query": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.0037469863891602,
+            "step": 8
+          }
+        ]
+      },
+      "privileged_target_readback_decision_count": {
+        "fault_always_single_privileged_query": 1,
+        "fault_optimistic_unverified_ack": 0,
+        "fault_oracle_private_target": -1,
+        "fault_precommitted_seed_schedule_query": 1,
+        "fault_robust_then_single_privileged_query": 0,
+        "fault_robust_two_history_without_query": 0,
+        "fault_strict_common_exact": 0,
+        "source_no_fault": 0
+      },
+      "refusals": {
+        "fault_strict_common_exact": {
+          "hypotheses": 2,
+          "reason": "AMBIGUOUS_PREVIOUS_TARGET",
+          "step": 3
+        }
+      },
+      "robust_common_action_authorizations": {
+        "fault_robust_then_single_privileged_query": 17,
+        "fault_robust_two_history_without_query": 17
+      },
+      "robust_common_action_refusals": {},
+      "robust_native_target_bound_checks": {
+        "fault_robust_then_single_privileged_query": [
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697587609291077,
+            "rot_error_rad": 0.018824742747656227,
+            "step": 3,
+            "worst_case_position_limit_m": 0.01769758462905885,
+            "worst_case_rot_limit_rad": 0.01882472607520885
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697587609291077,
+            "rot_error_rad": 0.01882473349355159,
+            "step": 4,
+            "worst_case_position_limit_m": 0.01769758462905885,
+            "worst_case_rot_limit_rad": 0.018824726075208804
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697587609291077,
+            "rot_error_rad": 0.018824771113597386,
+            "step": 5,
+            "worst_case_position_limit_m": 0.01769758462905885,
+            "worst_case_rot_limit_rad": 0.018824726075208856
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697587609291077,
+            "rot_error_rad": 0.018824805837560372,
+            "step": 6,
+            "worst_case_position_limit_m": 0.01769758462905885,
+            "worst_case_rot_limit_rad": 0.018824726075208822
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.01769760251045227,
+            "rot_error_rad": 0.018824805794120388,
+            "step": 7,
+            "worst_case_position_limit_m": 0.01769758462905885,
+            "worst_case_rot_limit_rad": 0.018824726075208766
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.01769760251045227,
+            "rot_error_rad": 0.01882482783898681,
+            "step": 8,
+            "worst_case_position_limit_m": 0.01769758462905885,
+            "worst_case_rot_limit_rad": 0.018824726075208797
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.01769760251045227,
+            "rot_error_rad": 0.018824887637924944,
+            "step": 9,
+            "worst_case_position_limit_m": 0.01769758462905882,
+            "worst_case_rot_limit_rad": 0.01882472607520874
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697609961032867,
+            "rot_error_rad": 0.01882497180787978,
+            "step": 10,
+            "worst_case_position_limit_m": 0.01769758462905882,
+            "worst_case_rot_limit_rad": 0.018824726075208832
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697609961032867,
+            "rot_error_rad": 0.018824965262531527,
+            "step": 11,
+            "worst_case_position_limit_m": 0.01769758462905882,
+            "worst_case_rot_limit_rad": 0.018824726075208808
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697609961032867,
+            "rot_error_rad": 0.018824966823596533,
+            "step": 12,
+            "worst_case_position_limit_m": 0.01769758462905882,
+            "worst_case_rot_limit_rad": 0.018824726075208773
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697613686323166,
+            "rot_error_rad": 0.018824990471255326,
+            "step": 13,
+            "worst_case_position_limit_m": 0.01769758462905882,
+            "worst_case_rot_limit_rad": 0.018824726075208697
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697609961032867,
+            "rot_error_rad": 0.01882500986888975,
+            "step": 14,
+            "worst_case_position_limit_m": 0.01769758462905882,
+            "worst_case_rot_limit_rad": 0.018824726075208714
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697609961032867,
+            "rot_error_rad": 0.01882504357257251,
+            "step": 15,
+            "worst_case_position_limit_m": 0.01769758462905882,
+            "worst_case_rot_limit_rad": 0.01882472607520872
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697609961032867,
+            "rot_error_rad": 0.018825042807664893,
+            "step": 16,
+            "worst_case_position_limit_m": 0.01769758462905882,
+            "worst_case_rot_limit_rad": 0.01882472607520873
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697609961032867,
+            "rot_error_rad": 0.01882499606256022,
+            "step": 17,
+            "worst_case_position_limit_m": 0.01769758462905882,
+            "worst_case_rot_limit_rad": 0.01882472607520872
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697609961032867,
+            "rot_error_rad": 0.018824936370252253,
+            "step": 18,
+            "worst_case_position_limit_m": 0.01769758462905882,
+            "worst_case_rot_limit_rad": 0.01882472607520872
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697609961032867,
+            "rot_error_rad": 0.018824898981863458,
+            "step": 19,
+            "worst_case_position_limit_m": 0.01769758462905882,
+            "worst_case_rot_limit_rad": 0.018824726075208773
+          }
+        ],
+        "fault_robust_two_history_without_query": [
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697587609291077,
+            "rot_error_rad": 0.018824742747656227,
+            "step": 3,
+            "worst_case_position_limit_m": 0.01769758462905885,
+            "worst_case_rot_limit_rad": 0.01882472607520885
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697587609291077,
+            "rot_error_rad": 0.01882473349355159,
+            "step": 4,
+            "worst_case_position_limit_m": 0.01769758462905885,
+            "worst_case_rot_limit_rad": 0.018824726075208804
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697587609291077,
+            "rot_error_rad": 0.018824771113597386,
+            "step": 5,
+            "worst_case_position_limit_m": 0.01769758462905885,
+            "worst_case_rot_limit_rad": 0.018824726075208856
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697587609291077,
+            "rot_error_rad": 0.018824805837560372,
+            "step": 6,
+            "worst_case_position_limit_m": 0.01769758462905885,
+            "worst_case_rot_limit_rad": 0.018824726075208822
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.01769760251045227,
+            "rot_error_rad": 0.018824805794120388,
+            "step": 7,
+            "worst_case_position_limit_m": 0.01769758462905885,
+            "worst_case_rot_limit_rad": 0.018824726075208766
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.01769760251045227,
+            "rot_error_rad": 0.01882482783898681,
+            "step": 8,
+            "worst_case_position_limit_m": 0.01769758462905885,
+            "worst_case_rot_limit_rad": 0.018824726075208797
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.01769760251045227,
+            "rot_error_rad": 0.018824887637924944,
+            "step": 9,
+            "worst_case_position_limit_m": 0.01769758462905882,
+            "worst_case_rot_limit_rad": 0.01882472607520874
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697609961032867,
+            "rot_error_rad": 0.01882497180787978,
+            "step": 10,
+            "worst_case_position_limit_m": 0.01769758462905882,
+            "worst_case_rot_limit_rad": 0.018824726075208832
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697609961032867,
+            "rot_error_rad": 0.018824965262531527,
+            "step": 11,
+            "worst_case_position_limit_m": 0.01769758462905882,
+            "worst_case_rot_limit_rad": 0.018824726075208808
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697609961032867,
+            "rot_error_rad": 0.018824966823596533,
+            "step": 12,
+            "worst_case_position_limit_m": 0.01769758462905882,
+            "worst_case_rot_limit_rad": 0.018824726075208773
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697613686323166,
+            "rot_error_rad": 0.018824990471255326,
+            "step": 13,
+            "worst_case_position_limit_m": 0.01769758462905882,
+            "worst_case_rot_limit_rad": 0.018824726075208697
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697609961032867,
+            "rot_error_rad": 0.01882500986888975,
+            "step": 14,
+            "worst_case_position_limit_m": 0.01769758462905882,
+            "worst_case_rot_limit_rad": 0.018824726075208714
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697609961032867,
+            "rot_error_rad": 0.01882504357257251,
+            "step": 15,
+            "worst_case_position_limit_m": 0.01769758462905882,
+            "worst_case_rot_limit_rad": 0.01882472607520872
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697609961032867,
+            "rot_error_rad": 0.018825042807664893,
+            "step": 16,
+            "worst_case_position_limit_m": 0.01769758462905882,
+            "worst_case_rot_limit_rad": 0.01882472607520873
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697609961032867,
+            "rot_error_rad": 0.01882499606256022,
+            "step": 17,
+            "worst_case_position_limit_m": 0.01769758462905882,
+            "worst_case_rot_limit_rad": 0.01882472607520872
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697609961032867,
+            "rot_error_rad": 0.018824936370252253,
+            "step": 18,
+            "worst_case_position_limit_m": 0.01769758462905882,
+            "worst_case_rot_limit_rad": 0.01882472607520872
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.017697609961032867,
+            "rot_error_rad": 0.018824898981863458,
+            "step": 19,
+            "worst_case_position_limit_m": 0.01769758462905882,
+            "worst_case_rot_limit_rad": 0.018824726075208773
+          }
+        ]
+      },
+      "seed": 270004,
+      "steps": {
+        "fault_always_single_privileged_query": 19,
+        "fault_optimistic_unverified_ack": 50,
+        "fault_oracle_private_target": 19,
+        "fault_precommitted_seed_schedule_query": 19,
+        "fault_robust_then_single_privileged_query": 20,
+        "fault_robust_two_history_without_query": 20,
+        "fault_strict_common_exact": 3,
+        "source_no_fault": 19
+      },
+      "success_once": {
+        "fault_always_single_privileged_query": true,
+        "fault_optimistic_unverified_ack": false,
+        "fault_oracle_private_target": true,
+        "fault_precommitted_seed_schedule_query": true,
+        "fault_robust_then_single_privileged_query": true,
+        "fault_robust_two_history_without_query": true,
+        "fault_strict_common_exact": false,
+        "source_no_fault": true
+      },
+      "success_step": {
+        "fault_always_single_privileged_query": 19,
+        "fault_optimistic_unverified_ack": null,
+        "fault_oracle_private_target": 19,
+        "fault_precommitted_seed_schedule_query": 19,
+        "fault_robust_then_single_privileged_query": 20,
+        "fault_robust_two_history_without_query": 20,
+        "fault_strict_common_exact": null,
+        "source_no_fault": 19
+      },
+      "task": "StackCube-v1"
+    },
+    {
+      "failure_causes": {},
+      "faults": {
+        "fault_always_single_privileged_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.6354576349258423,
+          "step": 2
+        },
+        "fault_optimistic_unverified_ack": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.6354576349258423,
+          "step": 2
+        },
+        "fault_oracle_private_target": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.6354585886001587,
+          "step": 2
+        },
+        "fault_precommitted_seed_schedule_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.6354576349258423,
+          "step": 2
+        },
+        "fault_robust_then_single_privileged_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.6354576349258423,
+          "step": 2
+        },
+        "fault_robust_two_history_without_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.6354576349258423,
+          "step": 2
+        },
+        "fault_strict_common_exact": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.6354576349258423,
+          "step": 2
+        }
+      },
+      "initial_obs_diff": {
+        "fault_always_single_privileged_query": 0.0,
+        "fault_optimistic_unverified_ack": 0.0,
+        "fault_oracle_private_target": 0.0,
+        "fault_precommitted_seed_schedule_query": 0.0,
+        "fault_robust_then_single_privileged_query": 0.0,
+        "fault_robust_two_history_without_query": 0.0,
+        "fault_strict_common_exact": 0.0
+      },
+      "initial_source_physical_obs_sha256": "a162c619ba344d0079472172deda370fdd5d45348ebfd861c117397971b3f56a",
+      "native_projection_NOT_EXACT": {
+        "fault_always_single_privileged_query": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.0626688599586487,
+            "step": 4
+          },
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.011785864830017,
+            "step": 32
+          }
+        ],
+        "fault_optimistic_unverified_ack": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.4092875201741817,
+            "step": 6
+          }
+        ],
+        "fault_oracle_private_target": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.0626693069934845,
+            "step": 4
+          }
+        ],
+        "fault_robust_then_single_privileged_query": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.2612665049892047,
+            "step": 6
+          }
+        ]
+      },
+      "privileged_target_readback_decision_count": {
+        "fault_always_single_privileged_query": 1,
+        "fault_optimistic_unverified_ack": 0,
+        "fault_oracle_private_target": -1,
+        "fault_precommitted_seed_schedule_query": 0,
+        "fault_robust_then_single_privileged_query": 1,
+        "fault_robust_two_history_without_query": 0,
+        "fault_strict_common_exact": 0,
+        "source_no_fault": 0
+      },
+      "refusals": {
+        "fault_precommitted_seed_schedule_query": {
+          "certificate": "REFUSE_UNREPRESENTABLE_ROTATION",
+          "possible_targets": 2,
+          "reason": "ROBUST_BOUND_OR_REPRESENTABILITY_REJECTED",
+          "step": 6,
+          "worst_position_m": 0.02060959041118622,
+          "worst_rotation_rad": 0.023037909660539195
+        },
+        "fault_robust_two_history_without_query": {
+          "certificate": "REFUSE_UNREPRESENTABLE_ROTATION",
+          "possible_targets": 2,
+          "reason": "ROBUST_BOUND_OR_REPRESENTABILITY_REJECTED",
+          "step": 6,
+          "worst_position_m": 0.02060959041118622,
+          "worst_rotation_rad": 0.023037909660539195
+        },
+        "fault_strict_common_exact": {
+          "hypotheses": 2,
+          "reason": "AMBIGUOUS_PREVIOUS_TARGET",
+          "step": 3
+        }
+      },
+      "robust_common_action_authorizations": {
+        "fault_precommitted_seed_schedule_query": 3,
+        "fault_robust_then_single_privileged_query": 3,
+        "fault_robust_two_history_without_query": 3
+      },
+      "robust_common_action_refusals": {
+        "fault_robust_then_single_privileged_query": [
+          {
+            "reason": "REFUSE_UNREPRESENTABLE_ROTATION",
+            "step": 6
+          }
+        ]
+      },
+      "robust_native_target_bound_checks": {
+        "fault_precommitted_seed_schedule_query": [
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020609591156244278,
+            "rot_error_rad": 0.023037912919425713,
+            "step": 3,
+            "worst_case_position_limit_m": 0.02060959041118622,
+            "worst_case_rot_limit_rad": 0.02303790966053929
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.02060958743095398,
+            "rot_error_rad": 0.023037925903414434,
+            "step": 4,
+            "worst_case_position_limit_m": 0.02060959041118622,
+            "worst_case_rot_limit_rad": 0.02303790966053921
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.02060958743095398,
+            "rot_error_rad": 0.023037888986136266,
+            "step": 5,
+            "worst_case_position_limit_m": 0.02060959041118622,
+            "worst_case_rot_limit_rad": 0.02303790966053916
+          }
+        ],
+        "fault_robust_then_single_privileged_query": [
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020609591156244278,
+            "rot_error_rad": 0.023037912919425713,
+            "step": 3,
+            "worst_case_position_limit_m": 0.02060959041118622,
+            "worst_case_rot_limit_rad": 0.02303790966053929
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.02060958743095398,
+            "rot_error_rad": 0.023037925903414434,
+            "step": 4,
+            "worst_case_position_limit_m": 0.02060959041118622,
+            "worst_case_rot_limit_rad": 0.02303790966053921
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.02060958743095398,
+            "rot_error_rad": 0.023037888986136266,
+            "step": 5,
+            "worst_case_position_limit_m": 0.02060959041118622,
+            "worst_case_rot_limit_rad": 0.02303790966053916
+          }
+        ],
+        "fault_robust_two_history_without_query": [
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020609591156244278,
+            "rot_error_rad": 0.023037912919425713,
+            "step": 3,
+            "worst_case_position_limit_m": 0.02060959041118622,
+            "worst_case_rot_limit_rad": 0.02303790966053929
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.02060958743095398,
+            "rot_error_rad": 0.023037925903414434,
+            "step": 4,
+            "worst_case_position_limit_m": 0.02060959041118622,
+            "worst_case_rot_limit_rad": 0.02303790966053921
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.02060958743095398,
+            "rot_error_rad": 0.023037888986136266,
+            "step": 5,
+            "worst_case_position_limit_m": 0.02060959041118622,
+            "worst_case_rot_limit_rad": 0.02303790966053916
+          }
+        ]
+      },
+      "seed": 270005,
+      "steps": {
+        "fault_always_single_privileged_query": 50,
+        "fault_optimistic_unverified_ack": 50,
+        "fault_oracle_private_target": 50,
+        "fault_precommitted_seed_schedule_query": 6,
+        "fault_robust_then_single_privileged_query": 11,
+        "fault_robust_two_history_without_query": 6,
+        "fault_strict_common_exact": 3,
+        "source_no_fault": 10
+      },
+      "success_once": {
+        "fault_always_single_privileged_query": false,
+        "fault_optimistic_unverified_ack": false,
+        "fault_oracle_private_target": false,
+        "fault_precommitted_seed_schedule_query": false,
+        "fault_robust_then_single_privileged_query": true,
+        "fault_robust_two_history_without_query": false,
+        "fault_strict_common_exact": false,
+        "source_no_fault": true
+      },
+      "success_step": {
+        "fault_always_single_privileged_query": null,
+        "fault_optimistic_unverified_ack": null,
+        "fault_oracle_private_target": null,
+        "fault_precommitted_seed_schedule_query": null,
+        "fault_robust_then_single_privileged_query": 11,
+        "fault_robust_two_history_without_query": null,
+        "fault_strict_common_exact": null,
+        "source_no_fault": 10
+      },
+      "task": "StackCube-v1"
+    },
+    {
+      "failure_causes": {},
+      "faults": {
+        "fault_always_single_privileged_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.6353766918182373,
+          "step": 2
+        },
+        "fault_optimistic_unverified_ack": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.6353766918182373,
+          "step": 2
+        },
+        "fault_oracle_private_target": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.6353764533996582,
+          "step": 2
+        },
+        "fault_precommitted_seed_schedule_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.6353766918182373,
+          "step": 2
+        },
+        "fault_robust_then_single_privileged_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.6353766918182373,
+          "step": 2
+        },
+        "fault_robust_two_history_without_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.6353766918182373,
+          "step": 2
+        },
+        "fault_strict_common_exact": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.6353766918182373,
+          "step": 2
+        }
+      },
+      "initial_obs_diff": {
+        "fault_always_single_privileged_query": 0.0,
+        "fault_optimistic_unverified_ack": 0.0,
+        "fault_oracle_private_target": 0.0,
+        "fault_precommitted_seed_schedule_query": 0.0,
+        "fault_robust_then_single_privileged_query": 0.0,
+        "fault_robust_two_history_without_query": 0.0,
+        "fault_strict_common_exact": 0.0
+      },
+      "initial_source_physical_obs_sha256": "9d8a62e6a09040bec92ab112159e06127e359f6e7df3516ab0c26722adf02919",
+      "native_projection_NOT_EXACT": {
+        "fault_always_single_privileged_query": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.1932451277971268,
+            "step": 6
+          }
+        ],
+        "fault_optimistic_unverified_ack": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.0296324174456701,
+            "step": 16
+          }
+        ],
+        "fault_oracle_private_target": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.1932340264320374,
+            "step": 6
+          }
+        ]
+      },
+      "privileged_target_readback_decision_count": {
+        "fault_always_single_privileged_query": 1,
+        "fault_optimistic_unverified_ack": 0,
+        "fault_oracle_private_target": -1,
+        "fault_precommitted_seed_schedule_query": 0,
+        "fault_robust_then_single_privileged_query": 0,
+        "fault_robust_two_history_without_query": 0,
+        "fault_strict_common_exact": 0,
+        "source_no_fault": 0
+      },
+      "refusals": {
+        "fault_strict_common_exact": {
+          "hypotheses": 2,
+          "reason": "AMBIGUOUS_PREVIOUS_TARGET",
+          "step": 3
+        }
+      },
+      "robust_common_action_authorizations": {
+        "fault_precommitted_seed_schedule_query": 14,
+        "fault_robust_then_single_privileged_query": 14,
+        "fault_robust_two_history_without_query": 14
+      },
+      "robust_common_action_refusals": {},
+      "robust_native_target_bound_checks": {
+        "fault_precommitted_seed_schedule_query": [
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131585955619812,
+            "rot_error_rad": 0.023333084613931705,
+            "step": 3,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058774
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131585955619812,
+            "rot_error_rad": 0.02333316296325813,
+            "step": 4,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058757
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131585955619812,
+            "rot_error_rad": 0.023333141733315983,
+            "step": 5,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058757
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131585955619812,
+            "rot_error_rad": 0.023333185799906942,
+            "step": 6,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058666
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131585955619812,
+            "rot_error_rad": 0.02333315628938309,
+            "step": 7,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058743
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.01913158968091011,
+            "rot_error_rad": 0.023333157579079132,
+            "step": 8,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058805
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.01913159340620041,
+            "rot_error_rad": 0.02333316794098264,
+            "step": 9,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058833
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.01913159340620041,
+            "rot_error_rad": 0.023333155195325448,
+            "step": 10,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058805
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131600856781006,
+            "rot_error_rad": 0.02333314876695203,
+            "step": 11,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058854
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131600856781006,
+            "rot_error_rad": 0.023333135937190858,
+            "step": 12,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058854
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131600856781006,
+            "rot_error_rad": 0.02333315482970697,
+            "step": 13,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.02333304822105883
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131600856781006,
+            "rot_error_rad": 0.023333144736455477,
+            "step": 14,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.02333304822105884
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131604582071304,
+            "rot_error_rad": 0.023333144582112532,
+            "step": 15,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058906
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131600856781006,
+            "rot_error_rad": 0.02333315641337653,
+            "step": 16,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058857
+          }
+        ],
+        "fault_robust_then_single_privileged_query": [
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131585955619812,
+            "rot_error_rad": 0.023333084613931705,
+            "step": 3,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058774
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131585955619812,
+            "rot_error_rad": 0.02333316296325813,
+            "step": 4,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058757
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131585955619812,
+            "rot_error_rad": 0.023333141733315983,
+            "step": 5,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058757
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131585955619812,
+            "rot_error_rad": 0.023333185799906942,
+            "step": 6,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058666
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131585955619812,
+            "rot_error_rad": 0.02333315628938309,
+            "step": 7,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058743
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.01913158968091011,
+            "rot_error_rad": 0.023333157579079132,
+            "step": 8,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058805
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.01913159340620041,
+            "rot_error_rad": 0.02333316794098264,
+            "step": 9,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058833
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.01913159340620041,
+            "rot_error_rad": 0.023333155195325448,
+            "step": 10,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058805
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131600856781006,
+            "rot_error_rad": 0.02333314876695203,
+            "step": 11,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058854
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131600856781006,
+            "rot_error_rad": 0.023333135937190858,
+            "step": 12,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058854
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131600856781006,
+            "rot_error_rad": 0.02333315482970697,
+            "step": 13,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.02333304822105883
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131600856781006,
+            "rot_error_rad": 0.023333144736455477,
+            "step": 14,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.02333304822105884
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131604582071304,
+            "rot_error_rad": 0.023333144582112532,
+            "step": 15,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058906
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131600856781006,
+            "rot_error_rad": 0.02333315641337653,
+            "step": 16,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058857
+          }
+        ],
+        "fault_robust_two_history_without_query": [
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131585955619812,
+            "rot_error_rad": 0.023333084613931705,
+            "step": 3,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058774
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131585955619812,
+            "rot_error_rad": 0.02333316296325813,
+            "step": 4,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058757
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131585955619812,
+            "rot_error_rad": 0.023333141733315983,
+            "step": 5,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058757
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131585955619812,
+            "rot_error_rad": 0.023333185799906942,
+            "step": 6,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058666
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131585955619812,
+            "rot_error_rad": 0.02333315628938309,
+            "step": 7,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058743
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.01913158968091011,
+            "rot_error_rad": 0.023333157579079132,
+            "step": 8,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058805
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.01913159340620041,
+            "rot_error_rad": 0.02333316794098264,
+            "step": 9,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058833
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.01913159340620041,
+            "rot_error_rad": 0.023333155195325448,
+            "step": 10,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058805
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131600856781006,
+            "rot_error_rad": 0.02333314876695203,
+            "step": 11,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058854
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131600856781006,
+            "rot_error_rad": 0.023333135937190858,
+            "step": 12,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058854
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131600856781006,
+            "rot_error_rad": 0.02333315482970697,
+            "step": 13,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.02333304822105883
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131600856781006,
+            "rot_error_rad": 0.023333144736455477,
+            "step": 14,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.02333304822105884
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131604582071304,
+            "rot_error_rad": 0.023333144582112532,
+            "step": 15,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058906
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.019131600856781006,
+            "rot_error_rad": 0.02333315641337653,
+            "step": 16,
+            "worst_case_position_limit_m": 0.019131585955619812,
+            "worst_case_rot_limit_rad": 0.023333048221058857
+          }
+        ]
+      },
+      "seed": 270006,
+      "steps": {
+        "fault_always_single_privileged_query": 15,
+        "fault_optimistic_unverified_ack": 50,
+        "fault_oracle_private_target": 15,
+        "fault_precommitted_seed_schedule_query": 17,
+        "fault_robust_then_single_privileged_query": 17,
+        "fault_robust_two_history_without_query": 17,
+        "fault_strict_common_exact": 3,
+        "source_no_fault": 15
+      },
+      "success_once": {
+        "fault_always_single_privileged_query": true,
+        "fault_optimistic_unverified_ack": false,
+        "fault_oracle_private_target": true,
+        "fault_precommitted_seed_schedule_query": true,
+        "fault_robust_then_single_privileged_query": true,
+        "fault_robust_two_history_without_query": true,
+        "fault_strict_common_exact": false,
+        "source_no_fault": true
+      },
+      "success_step": {
+        "fault_always_single_privileged_query": 15,
+        "fault_optimistic_unverified_ack": null,
+        "fault_oracle_private_target": 15,
+        "fault_precommitted_seed_schedule_query": 17,
+        "fault_robust_then_single_privileged_query": 17,
+        "fault_robust_two_history_without_query": 17,
+        "fault_strict_common_exact": null,
+        "source_no_fault": 15
+      },
+      "task": "StackCube-v1"
+    },
+    {
+      "failure_causes": {},
+      "faults": {
+        "fault_always_single_privileged_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.706649124622345,
+          "step": 2
+        },
+        "fault_optimistic_unverified_ack": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.706649124622345,
+          "step": 2
+        },
+        "fault_oracle_private_target": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.7066485285758972,
+          "step": 2
+        },
+        "fault_precommitted_seed_schedule_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.706649124622345,
+          "step": 2
+        },
+        "fault_robust_then_single_privileged_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.706649124622345,
+          "step": 2
+        },
+        "fault_robust_two_history_without_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.706649124622345,
+          "step": 2
+        },
+        "fault_strict_common_exact": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.706649124622345,
+          "step": 2
+        }
+      },
+      "initial_obs_diff": {
+        "fault_always_single_privileged_query": 0.0,
+        "fault_optimistic_unverified_ack": 0.0,
+        "fault_oracle_private_target": 0.0,
+        "fault_precommitted_seed_schedule_query": 0.0,
+        "fault_robust_then_single_privileged_query": 0.0,
+        "fault_robust_two_history_without_query": 0.0,
+        "fault_strict_common_exact": 0.0
+      },
+      "initial_source_physical_obs_sha256": "740fc7aae7d8e3be6fa1681fa4d7568f12c3c6e0bda3326b8cb0c5174cb54ba8",
+      "native_projection_NOT_EXACT": {},
+      "privileged_target_readback_decision_count": {
+        "fault_always_single_privileged_query": 1,
+        "fault_optimistic_unverified_ack": 0,
+        "fault_oracle_private_target": -1,
+        "fault_precommitted_seed_schedule_query": 0,
+        "fault_robust_then_single_privileged_query": 0,
+        "fault_robust_two_history_without_query": 0,
+        "fault_strict_common_exact": 0,
+        "source_no_fault": 0
+      },
+      "refusals": {
+        "fault_strict_common_exact": {
+          "hypotheses": 2,
+          "reason": "AMBIGUOUS_PREVIOUS_TARGET",
+          "step": 3
+        }
+      },
+      "robust_common_action_authorizations": {
+        "fault_precommitted_seed_schedule_query": 11,
+        "fault_robust_then_single_privileged_query": 11,
+        "fault_robust_two_history_without_query": 11
+      },
+      "robust_common_action_refusals": {},
+      "robust_native_target_bound_checks": {
+        "fault_precommitted_seed_schedule_query": [
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511388778686523,
+            "rot_error_rad": 0.020736059299770664,
+            "step": 3,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.020736064738781593
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.0205113859847188,
+            "rot_error_rad": 0.020736056359680583,
+            "step": 4,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.020736064738781583
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511388778686523,
+            "rot_error_rad": 0.02073604207385627,
+            "step": 5,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.020736064738781583
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511388778686523,
+            "rot_error_rad": 0.020736078262541036,
+            "step": 6,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.02073606473878155
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511388778686523,
+            "rot_error_rad": 0.02073607781097702,
+            "step": 7,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.020736064738781555
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511388778686523,
+            "rot_error_rad": 0.020736081599659048,
+            "step": 8,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.0207360647387815
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511385053396225,
+            "rot_error_rad": 0.020736082448120068,
+            "step": 9,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.020736064738781472
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511385053396225,
+            "rot_error_rad": 0.02073607476269596,
+            "step": 10,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.0207360647387815
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511381328105927,
+            "rot_error_rad": 0.020736073773591147,
+            "step": 11,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.020736064738781538
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511381328105927,
+            "rot_error_rad": 0.02073607233799383,
+            "step": 12,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.0207360647387815
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511381328105927,
+            "rot_error_rad": 0.020736104385433104,
+            "step": 13,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.02073606473878146
+          }
+        ],
+        "fault_robust_then_single_privileged_query": [
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511388778686523,
+            "rot_error_rad": 0.020736059299770664,
+            "step": 3,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.020736064738781593
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.0205113859847188,
+            "rot_error_rad": 0.020736056359680583,
+            "step": 4,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.020736064738781583
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511388778686523,
+            "rot_error_rad": 0.02073604207385627,
+            "step": 5,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.020736064738781583
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511388778686523,
+            "rot_error_rad": 0.020736078262541036,
+            "step": 6,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.02073606473878155
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511388778686523,
+            "rot_error_rad": 0.02073607781097702,
+            "step": 7,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.020736064738781555
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511388778686523,
+            "rot_error_rad": 0.020736081599659048,
+            "step": 8,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.0207360647387815
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511385053396225,
+            "rot_error_rad": 0.020736082448120068,
+            "step": 9,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.020736064738781472
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511385053396225,
+            "rot_error_rad": 0.02073607476269596,
+            "step": 10,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.0207360647387815
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511381328105927,
+            "rot_error_rad": 0.020736073773591147,
+            "step": 11,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.020736064738781538
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511381328105927,
+            "rot_error_rad": 0.02073607233799383,
+            "step": 12,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.0207360647387815
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511381328105927,
+            "rot_error_rad": 0.020736104385433104,
+            "step": 13,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.02073606473878146
+          }
+        ],
+        "fault_robust_two_history_without_query": [
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511388778686523,
+            "rot_error_rad": 0.020736059299770664,
+            "step": 3,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.020736064738781593
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.0205113859847188,
+            "rot_error_rad": 0.020736056359680583,
+            "step": 4,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.020736064738781583
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511388778686523,
+            "rot_error_rad": 0.02073604207385627,
+            "step": 5,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.020736064738781583
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511388778686523,
+            "rot_error_rad": 0.020736078262541036,
+            "step": 6,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.02073606473878155
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511388778686523,
+            "rot_error_rad": 0.02073607781097702,
+            "step": 7,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.020736064738781555
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511388778686523,
+            "rot_error_rad": 0.020736081599659048,
+            "step": 8,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.0207360647387815
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511385053396225,
+            "rot_error_rad": 0.020736082448120068,
+            "step": 9,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.020736064738781472
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511385053396225,
+            "rot_error_rad": 0.02073607476269596,
+            "step": 10,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.0207360647387815
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511381328105927,
+            "rot_error_rad": 0.020736073773591147,
+            "step": 11,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.020736064738781538
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511381328105927,
+            "rot_error_rad": 0.02073607233799383,
+            "step": 12,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.0207360647387815
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020511381328105927,
+            "rot_error_rad": 0.020736104385433104,
+            "step": 13,
+            "worst_case_position_limit_m": 0.020511388778686523,
+            "worst_case_rot_limit_rad": 0.02073606473878146
+          }
+        ]
+      },
+      "seed": 270007,
+      "steps": {
+        "fault_always_single_privileged_query": 13,
+        "fault_optimistic_unverified_ack": 50,
+        "fault_oracle_private_target": 13,
+        "fault_precommitted_seed_schedule_query": 14,
+        "fault_robust_then_single_privileged_query": 14,
+        "fault_robust_two_history_without_query": 14,
+        "fault_strict_common_exact": 3,
+        "source_no_fault": 12
+      },
+      "success_once": {
+        "fault_always_single_privileged_query": true,
+        "fault_optimistic_unverified_ack": false,
+        "fault_oracle_private_target": true,
+        "fault_precommitted_seed_schedule_query": true,
+        "fault_robust_then_single_privileged_query": true,
+        "fault_robust_two_history_without_query": true,
+        "fault_strict_common_exact": false,
+        "source_no_fault": true
+      },
+      "success_step": {
+        "fault_always_single_privileged_query": 13,
+        "fault_optimistic_unverified_ack": null,
+        "fault_oracle_private_target": 13,
+        "fault_precommitted_seed_schedule_query": 14,
+        "fault_robust_then_single_privileged_query": 14,
+        "fault_robust_two_history_without_query": 14,
+        "fault_strict_common_exact": null,
+        "source_no_fault": 12
+      },
+      "task": "StackCube-v1"
+    },
+    {
+      "failure_causes": {},
+      "faults": {
+        "fault_always_single_privileged_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.7051764726638794,
+          "step": 2
+        },
+        "fault_optimistic_unverified_ack": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.7051764726638794,
+          "step": 2
+        },
+        "fault_oracle_private_target": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.7051764726638794,
+          "step": 2
+        },
+        "fault_precommitted_seed_schedule_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.7051764726638794,
+          "step": 2
+        },
+        "fault_robust_then_single_privileged_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.7051764726638794,
+          "step": 2
+        },
+        "fault_robust_two_history_without_query": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.7051764726638794,
+          "step": 2
+        },
+        "fault_strict_common_exact": {
+          "actual_native_arm_command": "all_zero_hold",
+          "controller_execution_ack_seen_by_adapter": "unknown",
+          "original_desired_arm_action_l2": 0.7051764726638794,
+          "step": 2
+        }
+      },
+      "initial_obs_diff": {
+        "fault_always_single_privileged_query": 0.0,
+        "fault_optimistic_unverified_ack": 0.0,
+        "fault_oracle_private_target": 0.0,
+        "fault_precommitted_seed_schedule_query": 0.0,
+        "fault_robust_then_single_privileged_query": 0.0,
+        "fault_robust_two_history_without_query": 0.0,
+        "fault_strict_common_exact": 0.0
+      },
+      "initial_source_physical_obs_sha256": "cfe46ead8869708329975e69df7af09154914f953847a8c24704cf94197ec957",
+      "native_projection_NOT_EXACT": {
+        "fault_optimistic_unverified_ack": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.0600312656577535,
+            "step": 5
+          },
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.0485055297613144,
+            "step": 11
+          },
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.4553606510162354,
+            "step": 17
+          },
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.1202113330364227,
+            "step": 30
+          },
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.032034382224083,
+            "step": 34
+          },
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.0414297506213188,
+            "step": 36
+          },
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.138862520456314,
+            "step": 40
+          },
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.1453630775213242,
+            "step": 42
+          },
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.0216010361909866,
+            "step": 46
+          },
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.1205760017037392,
+            "step": 48
+          }
+        ],
+        "fault_robust_then_single_privileged_query": [
+          {
+            "exactness": "NOT_EXACT",
+            "native_required_amplitude": 1.0824062702434274,
+            "step": 10
+          }
+        ]
+      },
+      "privileged_target_readback_decision_count": {
+        "fault_always_single_privileged_query": 1,
+        "fault_optimistic_unverified_ack": 0,
+        "fault_oracle_private_target": -1,
+        "fault_precommitted_seed_schedule_query": 1,
+        "fault_robust_then_single_privileged_query": 1,
+        "fault_robust_two_history_without_query": 0,
+        "fault_strict_common_exact": 0,
+        "source_no_fault": 0
+      },
+      "refusals": {
+        "fault_robust_two_history_without_query": {
+          "certificate": "REFUSE_UNREPRESENTABLE_ROTATION",
+          "possible_targets": 2,
+          "reason": "ROBUST_BOUND_OR_REPRESENTABILITY_REJECTED",
+          "step": 10,
+          "worst_position_m": 0.04553045630455019,
+          "worst_rotation_rad": 0.022885733235998393
+        },
+        "fault_strict_common_exact": {
+          "hypotheses": 2,
+          "reason": "AMBIGUOUS_PREVIOUS_TARGET",
+          "step": 3
+        }
+      },
+      "robust_common_action_authorizations": {
+        "fault_robust_then_single_privileged_query": 7,
+        "fault_robust_two_history_without_query": 7
+      },
+      "robust_common_action_refusals": {
+        "fault_robust_then_single_privileged_query": [
+          {
+            "reason": "REFUSE_UNREPRESENTABLE_ROTATION",
+            "step": 10
+          }
+        ]
+      },
+      "robust_native_target_bound_checks": {
+        "fault_robust_then_single_privileged_query": [
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.0205288827419281,
+            "rot_error_rad": 0.022885727996739016,
+            "step": 3,
+            "worst_case_position_limit_m": 0.020528885722160342,
+            "worst_case_rot_limit_rad": 0.022885733235998348
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.02052888087928295,
+            "rot_error_rad": 0.022885707614714902,
+            "step": 4,
+            "worst_case_position_limit_m": 0.020528885722160342,
+            "worst_case_rot_limit_rad": 0.022885733235998285
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020528879016637802,
+            "rot_error_rad": 0.02288567512085749,
+            "step": 5,
+            "worst_case_position_limit_m": 0.020528885722160342,
+            "worst_case_rot_limit_rad": 0.02288573323599827
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020528879016637802,
+            "rot_error_rad": 0.02288569566506704,
+            "step": 6,
+            "worst_case_position_limit_m": 0.020528885722160342,
+            "worst_case_rot_limit_rad": 0.022885733235998285
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020528879016637802,
+            "rot_error_rad": 0.022885622551334407,
+            "step": 7,
+            "worst_case_position_limit_m": 0.020528885722160342,
+            "worst_case_rot_limit_rad": 0.02288573323599839
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020528879016637802,
+            "rot_error_rad": 0.02288565332504082,
+            "step": 8,
+            "worst_case_position_limit_m": 0.020528885722160342,
+            "worst_case_rot_limit_rad": 0.022885733235998355
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020528877153992653,
+            "rot_error_rad": 0.022885596382558576,
+            "step": 9,
+            "worst_case_position_limit_m": 0.020528885722160342,
+            "worst_case_rot_limit_rad": 0.02288573323599835
+          }
+        ],
+        "fault_robust_two_history_without_query": [
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.0205288827419281,
+            "rot_error_rad": 0.022885727996739016,
+            "step": 3,
+            "worst_case_position_limit_m": 0.020528885722160342,
+            "worst_case_rot_limit_rad": 0.022885733235998348
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.02052888087928295,
+            "rot_error_rad": 0.022885707614714902,
+            "step": 4,
+            "worst_case_position_limit_m": 0.020528885722160342,
+            "worst_case_rot_limit_rad": 0.022885733235998285
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020528879016637802,
+            "rot_error_rad": 0.02288567512085749,
+            "step": 5,
+            "worst_case_position_limit_m": 0.020528885722160342,
+            "worst_case_rot_limit_rad": 0.02288573323599827
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020528879016637802,
+            "rot_error_rad": 0.02288569566506704,
+            "step": 6,
+            "worst_case_position_limit_m": 0.020528885722160342,
+            "worst_case_rot_limit_rad": 0.022885733235998285
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020528879016637802,
+            "rot_error_rad": 0.022885622551334407,
+            "step": 7,
+            "worst_case_position_limit_m": 0.020528885722160342,
+            "worst_case_rot_limit_rad": 0.02288573323599839
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020528879016637802,
+            "rot_error_rad": 0.02288565332504082,
+            "step": 8,
+            "worst_case_position_limit_m": 0.020528885722160342,
+            "worst_case_rot_limit_rad": 0.022885733235998355
+          },
+          {
+            "only_audit_after_physical_dispatch": true,
+            "position_error_m": 0.020528877153992653,
+            "rot_error_rad": 0.022885596382558576,
+            "step": 9,
+            "worst_case_position_limit_m": 0.020528885722160342,
+            "worst_case_rot_limit_rad": 0.02288573323599835
+          }
+        ]
+      },
+      "seed": 270008,
+      "steps": {
+        "fault_always_single_privileged_query": 12,
+        "fault_optimistic_unverified_ack": 50,
+        "fault_oracle_private_target": 12,
+        "fault_precommitted_seed_schedule_query": 12,
+        "fault_robust_then_single_privileged_query": 35,
+        "fault_robust_two_history_without_query": 10,
+        "fault_strict_common_exact": 3,
+        "source_no_fault": 11
+      },
+      "success_once": {
+        "fault_always_single_privileged_query": true,
+        "fault_optimistic_unverified_ack": false,
+        "fault_oracle_private_target": true,
+        "fault_precommitted_seed_schedule_query": true,
+        "fault_robust_then_single_privileged_query": true,
+        "fault_robust_two_history_without_query": false,
+        "fault_strict_common_exact": false,
+        "source_no_fault": true
+      },
+      "success_step": {
+        "fault_always_single_privileged_query": 12,
+        "fault_optimistic_unverified_ack": null,
+        "fault_oracle_private_target": 12,
+        "fault_precommitted_seed_schedule_query": 12,
+        "fault_robust_then_single_privileged_query": 35,
+        "fault_robust_two_history_without_query": null,
+        "fault_strict_common_exact": null,
+        "source_no_fault": 11
+      },
+      "task": "StackCube-v1"
+    }
+  ],
+  "fault_is_native_target_hold_not_network_loss": true,
+  "fault_reached_counts": {
+    "fault_always_single_privileged_query": 8,
+    "fault_optimistic_unverified_ack": 8,
+    "fault_oracle_private_target": 8,
+    "fault_precommitted_seed_schedule_query": 8,
+    "fault_robust_then_single_privileged_query": 8,
+    "fault_robust_two_history_without_query": 8,
+    "fault_strict_common_exact": 8
+  },
+  "frozen_model_retrained": false,
+  "frozen_protocol": "research/CERTIFY_QUERY_PERIODIC_PLACEBO_64_PREDECLARED_V1.json",
+  "independent_external_reproduction": false,
+  "original_external_frozen_checkpoint_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c",
+  "original_robust_certifier_git_blob": "bb5fd155b7291fb127f94138fca321201c8271c3",
+  "original_seed_population": [
+    270001,
+    270002,
+    270003,
+    270004,
+    270005,
+    270006,
+    270007,
+    270008
+  ],
+  "original_source_method_git_blob": "1dc653cdc44e422c8340475ad00f828b3a41eb4f",
+  "periodic_readback_counts": [
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1
+  ],
+  "physical_robot_safety_certified": false,
+  "precommitted_query_placebo": "one privileged target read at t3 if seed%4 == 0; else no reads; independent of prior task observations",
+  "privileged_readback_counts_are_decision_only_not_audit_reads": true,
+  "real_physx_simulator": true,
+  "robust_no_query_authorization_count": 61,
+  "schema": "certify_query_nonadaptive_budget_placebo_new64_v1",
+  "selective_readback_counts": [
+    1,
+    1,
+    1,
+    0,
+    1,
+    0,
+    0,
+    1
+  ],
+  "success_counts": {
+    "fault_always_single_privileged_query": 7,
+    "fault_optimistic_unverified_ack": 1,
+    "fault_oracle_private_target": 7,
+    "fault_precommitted_seed_schedule_query": 4,
+    "fault_robust_then_single_privileged_query": 8,
+    "fault_robust_two_history_without_query": 3,
+    "fault_strict_common_exact": 0,
+    "source_no_fault": 8
+  },
+  "task": "StackCube-v1"
+}
