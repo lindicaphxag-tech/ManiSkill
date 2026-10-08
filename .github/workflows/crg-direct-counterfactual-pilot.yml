@@ -1,0 +1,92 @@
+name: CRG Prospective Direct Counterfactual PushT Bank
+
+on:
+  pull_request:
+    paths:
+      - "research/crg_core/prospective/direct_counterfactual_pilot_v1.json"
+      - "research/crg_core/prospective/run_direct_counterfactual_state.py"
+      - "research/crg_core/prospective/aggregate_direct_counterfactual.py"
+      - "tests/test_crg_direct_counterfactual_pilot.py"
+      - ".github/workflows/crg-direct-counterfactual-pilot.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crg-direct-counterfactual-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  state:
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        reset_seed: [311, 313, 317, 331, 337]
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Pin exact existing policy-query source and PushT runtime
+        run: |
+          git clone -q https://github.com/lindicaphxag-tech/ManiSkill.git /tmp/frozen-dec-source
+          git -C /tmp/frozen-dec-source checkout -q 8207ac01c56e75ccee19cba0e75eb0978cde37b2
+          test "$(git -C /tmp/frozen-dec-source rev-parse HEAD)" = 8207ac01c56e75ccee19cba0e75eb0978cde37b2
+          git clone -q https://github.com/huggingface/lerobot.git /tmp/lerobot
+          git -C /tmp/lerobot checkout -q 3c0a209f9fac4d2a57617e686a7f2a2309144ba2
+          test "$(git -C /tmp/lerobot rev-parse HEAD)" = 3c0a209f9fac4d2a57617e686a7f2a2309144ba2
+          sed -i 's/^pyav = ">=12.0.5"/av = ">=12.0.5"/' /tmp/lerobot/pyproject.toml
+          grep -q '^av = ">=12.0.5"' /tmp/lerobot/pyproject.toml
+          python -m pip install -q -e '/tmp/lerobot[pusht]'
+          python -m pip install -q --force-reinstall --no-deps 'pymunk==6.11.1'
+          python -m pip install -q --no-deps 'gym-pusht==0.1.5'
+          python -c 'import importlib.metadata as m,pymunk; assert m.version("gym-pusht")=="0.1.5"; assert hasattr(pymunk.Space,"add_collision_handler")'
+      - name: Run one frozen full-request response state
+        run: |
+          mkdir -p /tmp/direct-response-states
+          PYTHONPATH=/tmp/frozen-dec-source python research/crg_core/prospective/run_direct_counterfactual_state.py \
+            --reset-seed "${{ matrix.reset_seed }}" \
+            --output "/tmp/direct-response-states/state-${{ matrix.reset_seed }}.json"
+          python -c 'import json,os,pathlib; s=int(os.environ["RESET_SEED"]); x=json.loads(pathlib.Path(f"/tmp/direct-response-states/state-{s}.json").read_text()); assert x["reset_seed"]==s; assert x["total_policy_forward_counts"]==48; assert x["certified_transfer_authorizations"]==0; assert len(x["observations"])==12'
+        env:
+          RESET_SEED: ${{ matrix.reset_seed }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: direct-full-response-state-${{ matrix.reset_seed }}
+          path: /tmp/direct-response-states/state-${{ matrix.reset_seed }}.json
+          if-no-files-found: error
+          retention-days: 90
+
+  aggregate:
+    needs: state
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -q numpy pytest
+      - name: Validate anti-tampering regression tests
+        run: python -m pytest -q tests/test_crg_direct_counterfactual_pilot.py
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: direct-full-response-state-*
+          path: /tmp/direct-response-states
+          merge-multiple: true
+      - name: Recompute from ALL five original state JSONs
+        run: |
+          test "$(find /tmp/direct-response-states -name 'state-*.json' | wc -l)" -eq 5
+          python -m research.crg_core.prospective.aggregate_direct_counterfactual \
+            --input-dir /tmp/direct-response-states \
+            --output /tmp/direct-response-states/direct_counterfactual_result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crg-direct-counterfactual-5state-original-evidence
+          path: /tmp/direct-response-states
+          if-no-files-found: error
+          retention-days: 90
