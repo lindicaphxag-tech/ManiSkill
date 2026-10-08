@@ -1,0 +1,61 @@
+name: ManiSkill exact-head CPU Vulkan native probe
+
+on:
+  push:
+    branches: [research/native-delta-pose-assay]
+    paths:
+      - "research/kaggle_native_assay/lavapipe_production_semantics_smoke.py"
+      - ".github/workflows/maniskill-lavapipe-native-assay.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-head-native:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 28
+    env:
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+      OMP_NUM_THREADS: "2"
+      OPENBLAS_NUM_THREADS: "2"
+      XDG_RUNTIME_DIR: /tmp
+      VK_ICD_FILENAMES: /usr/share/vulkan/icd.d/lvp_icd.x86_64.json
+      VK_DRIVER_FILES: /usr/share/vulkan/icd.d/lvp_icd.x86_64.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Configure deterministic software Vulkan implementation
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y mesa-vulkan-drivers libvulkan1 vulkan-tools
+          test -f "$VK_ICD_FILENAMES"
+          vulkaninfo --summary > vulkan_driver_summary.txt 2>&1
+          grep -iE 'llvmpipe|lavapipe' vulkan_driver_summary.txt
+      - name: Freeze exact current public upstream PR source
+        run: |
+          cp research/kaggle_native_assay/lavapipe_production_semantics_smoke.py /tmp/pr1495_native_smoke.py
+          git fetch --no-tags --depth=1 https://github.com/mani-skill/ManiSkill.git 69facfaafaa0ef233d36ef19e6cd9a0f03532ee0
+          git checkout --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "69facfaafaa0ef233d36ef19e6cd9a0f03532ee0"
+      - name: Install actual CPU native controller dependency stack
+        run: |
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e . pytest
+      - name: Run actual converter tests at exact source commit
+        run: python -m pytest -q tests/test_action_conversion.py
+      - name: Test real initialized production controller and PhysX CPU step
+        run: |
+          python /tmp/pr1495_native_smoke.py 2>&1 | tee native_controller_console.log
+      - name: Retain environment result or failure evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr1495-cpu-vulkan-attempt
+          if-no-files-found: warn
+          path: |
+            vulkan_driver_summary.txt
+            native_controller_console.log
+            native_cpu_controller_parity.json
