@@ -116,6 +116,42 @@ interface contract-dependency decision for review; it is **not** proof
 that #1472 is universally wrong, that #1495 improves learned policies,
 or that SemRepair has been accepted into ManiSkill.
 
+## Finalized independent checks: genuine HDF5 holdout and frozen PPO unique seeds
+
+The earlier mislabeled 100–199 holdout was **withdrawn** after an independent
+HDF5-content audit identified accidental reuse of the 0–99 source groups.
+The subsequent **physically resliced** 100–199 cohort
+[run #37752565886](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37752565886)
+and [independent source-provenance audit #37807994333](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37807994333)
+are now green. The source-index-disjoint, four-arm replay results were
+**94/95/0/95 out of 100** (baseline / converter-only / controller-only / both).
+The first cohort was **90/91/1/91 out of 100**. Importantly, **24 source
+seeds were reused across those physically distinct cohorts**: they are
+*not* 200 independent random seeds. A post-hoc outcome-independent restriction
+to the 76 unseen source seeds gives **71/71/0/71** and is presented as
+a sensitivity analysis only, not a preregistered holdout.
+
+A separate [published frozen PPO physical controller-swap run
+#37808182157](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37808182157)
+compares a source controller, compiled target controller and naive wrong-ABI
+copy with the **same SHA-256-pinned ActionShift actor** and no training.
+The original report runs 15 episodes, but repeats seed `10014` as an
+order-effect diagnostic. Therefore its valid *unique-seed* tally is
+**14/14 source, 14/14 compiled, 0/14 naive**, **not 15 independent seeds**.
+
+[An independent implementation that audits the original Actions raw
+JSON and rejects denominator/ABI/checkpoint tampering](research/kaggle_diffusion_policy_peg/audit_frozen_ppo_unique_seeds.py)
+is tested by [CI #37810413730](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37810413730).
+This still counts as contributor-operated verification, **not** an external
+third-party replication. The sample is selected, has one policy and one
+PickCube environment; the intentionally wrong naive adapter is a negative
+control, not a state-of-the-art competing transfer method.
+
+**Scope:** demonstration replayability is not a trained-policy task success
+rate. The frozen PPO represents known-semantics policy transport, **not**
+blind inference of a hidden semantic contract. Neither source establishes
+maintainer adoption or general transfer performance.
+
 ## New native task-level pipeline evidence (2026-10-08)
 
 A public CPU-only **official PegInsertionSide Diffusion Policy pipeline** has
