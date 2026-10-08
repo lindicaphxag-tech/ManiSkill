@@ -51,12 +51,12 @@ jobs:
         run: |
           cd /tmp/ack-original/all
           cat > ORIGINAL_FIVE_SOURCE_SHA256SUMS <<'EOF'
-bcbdcf8eea1f214dd4e6106402f45eaf19bcfe46fbff3edf9b74cad0e31da4cc  unknown_ack_bounded_query_pull_cube_original8.json
-017168fe746ecbe568a328a49814b7aa01157eaa269aa5eea4b54ac679f811f3  unknown_ack_bounded_query_stack_cube_original8.json
-e6035ae1f17da5e58cc408d34e9518230b5e58752c39e9b2e51382a4db7d3133  original_ack_bounded_query_16_aggregate.json
-1eb483e9218dea229b3983328e2bf1e4620c73f727102ac8ad71b521cd5df081  ack_bounded_query_pull_cube.log
-48bb68fe8b6b418dc0a23a481893299a8342ce760944be245370734c9c7e43b9  ack_bounded_query_stack_cube.log
-EOF
+          bcbdcf8eea1f214dd4e6106402f45eaf19bcfe46fbff3edf9b74cad0e31da4cc  unknown_ack_bounded_query_pull_cube_original8.json
+          017168fe746ecbe568a328a49814b7aa01157eaa269aa5eea4b54ac679f811f3  unknown_ack_bounded_query_stack_cube_original8.json
+          e6035ae1f17da5e58cc408d34e9518230b5e58752c39e9b2e51382a4db7d3133  original_ack_bounded_query_16_aggregate.json
+          1eb483e9218dea229b3983328e2bf1e4620c73f727102ac8ad71b521cd5df081  ack_bounded_query_pull_cube.log
+          48bb68fe8b6b418dc0a23a481893299a8342ce760944be245370734c9c7e43b9  ack_bounded_query_stack_cube.log
+          EOF
           sha256sum -c ORIGINAL_FIVE_SOURCE_SHA256SUMS
       - name: Independently regenerate the complete 16-seed seven-arm audit
         run: |
