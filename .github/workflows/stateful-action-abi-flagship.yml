@@ -1,0 +1,55 @@
+name: Public frozen-policy ABI flagship evidence verification
+
+on:
+  pull_request:
+    paths:
+      - 'research/frozen_policy_transfer/STATEFUL_ACTION_ABI_FLAGSHIP.md'
+      - 'research/frozen_policy_transfer/README.md'
+      - 'research/frozen_policy_transfer/evidence/pull_stack_new_task_64/**'
+      - 'research/action_abi_pull_stack_aggregate.py'
+      - 'tests/test_action_abi_pull_stack_auditor.py'
+      - '.github/workflows/stateful-action-abi-flagship.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  immutable-original-64-state-reproduction:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.12', '3.13']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Verify all nine original source task JSON SHA256 hashes
+        run: |
+          cd research/frozen_policy_transfer/evidence/pull_stack_new_task_64
+          sha256sum -c SHA256SUMS
+      - name: Recompute every preregistered real PhysX seed and matched five-arm outcome
+        run: |
+          python -m research.action_abi_pull_stack_aggregate \
+            --input-dir research/frozen_policy_transfer/evidence/pull_stack_new_task_64 \
+            --output /tmp/recomputed-64.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          folder=Path('research/frozen_policy_transfer/evidence/pull_stack_new_task_64')
+          orig=json.loads((folder/'abi_pull_stack_prospective_aggregate.json').read_text())
+          new=json.loads(Path('/tmp/recomputed-64.json').read_text())
+          assert orig == new, 'original 64-state result disagrees with independent replay'
+          a=orig['results']['pull_cube']
+          b=orig['results']['stack_cube']
+          assert a['success_by_arm']=={'source':31,'memory':17,'projected':31,'stateless':14,'naive':14}
+          assert b['success_by_arm']=={'source':28,'memory':11,'projected':30,'stateless':0,'naive':0}
+          assert (a['projected_only_success'],a['stateless_only_success'])==(17,0)
+          assert (b['projected_only_success'],b['stateless_only_success'])==(30,0)
+          assert a['status']==b['status']=='PREDECLARED_MEMORY_GAIN_PRESENT'
+          print('PASS: 64 distinct original task states, 2 checkpoint/task families, complete 5-arm replay')
+          PY
+      - name: Prove fail-closed auditing under destructive evidence mutations
+        run: python -m unittest discover -s tests -p test_action_abi_pull_stack_auditor.py -v

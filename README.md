@@ -1,3 +1,17 @@
+> **Independent contributor's research fork — not the official ManiSkill project.** The original project's README begins below. Changes under `research/frozen_policy_transfer/` are owned and evaluated by this fork's contributor; no ManiSkill maintainer endorsement is implied.
+
+### Research flagship: stateful controller action-ABI transfer without PPO retraining
+
+Four independently pretrained third-party PPOs on PickCube, PushCube, PullCube and StackCube, with *true PhysX CPU closed-loop official task flags*. The action adapter uses the destination controller's **previous commanded target pose**, rather than just the current achieved pose, and marks bounded projection **NOT_EXACT**.
+
+**Two preregistered new task/checkpoint families:** PullCube source **31/32**, matched memory-blind **14/32**, stateful **31/32**; StackCube source **28/32**, blind **0/32**, stateful **30/32**. Both passed frozen competence and memory-isolation thresholds on all original states.
+
+[**Method / four-task evidence / originality limits**](research/frozen_policy_transfer/STATEFUL_ACTION_ABI_FLAGSHIP.md) · [**Run original 64-state, nine-file offline evidence audit**](research/frozen_policy_transfer/README.md) · [**Permanent original JSONs**](research/frozen_policy_transfer/evidence/pull_stack_new_task_64/) · [**Public reviewer falsification challenge**](https://github.com/lindicaphxag-tech/kaggle/issues/67)
+
+**Scope:** owner-run simulated policies on one Panda controller family, not four different robots, a first robot action adapter, safe hardware deployment, independent academic replication, or a VLA model.
+
+---
+
 # ManiSkill 3
 
 
