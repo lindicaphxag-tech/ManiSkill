@@ -110,7 +110,7 @@ The original 64-state selective-vs-mandatory comparison varies both query *avail
 | Evidence-triggered certificate/query | **32** | **26** | **58** | **17** |
 | Precommitted periodic query schedule | 30 | 17 | 47 | 16 |
 | Every-fault mandatory trusted query | 32 | 28 | 60 | 64 |
-| No-readback bounded/refusal | 28 | 13 | 41 | 0 |
+| No-readback bounded/refusal | 29 | 12 | 41 | 0 |
 | Optimistic ACK executed assumption | — | — | 40 | 0 |
 
 The matched adaptive-periodic contingency comprised 46 successes for both, 12 adaptive-only successes, 1 periodic-only success and 5 failures for both, giving unadjusted two-sided exact McNemar \(p=0.00341796875\). The two arms used **nearly** the same number of privileged reads, not exactly the same (17 versus 16). Thus the experiment identifies a substantial *in-cohort* advantage over this **specific fixed timing placebo**, not a globally optimal decision policy, a learned/belief-agent baseline or an equal-cost guarantee. Query placement is confounded with initial state complexity, as intended for a state-independent placebo, and no posthoc alternative schedule was optimized on the held-out episodes. Generalization beyond these two frozen PPOs in the same Panda controller family remains untested.
