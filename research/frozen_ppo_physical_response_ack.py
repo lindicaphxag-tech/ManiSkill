@@ -140,10 +140,15 @@ def trial(policy,seed):
                         "achieved_pre_probe_xyz":before_xyz.tolist(),
                         "achieved_post_probe_xyz":after_xyz.tolist(),
                         "motion_m":float(np.linalg.norm(after_xyz-before_xyz))}
-                    if name in observers:
+                    if name in ("blind_probe_optimistic","blind_probe_pessimistic"):
+                        # These maintained a single valid guessed target; one
+                        # zero target-native delta leaves its target unchanged.
                         tracker=observers[name]
                         ticket=tracker.prepare(np.zeros(6,dtype=np.float32))
                         tracker.acknowledge(ticket.ticket,applied=True)
+                    # Ambiguous belief and privileged comparator were
+                    # intentionally invalidated by UNKNOWN ACK: they are
+                    # resynchronized only after this physical response.
                     if name=="achieved_probe_classifier":
                         if name not in hypotheses:
                             raise RuntimeError("No untrusted candidate histories")
