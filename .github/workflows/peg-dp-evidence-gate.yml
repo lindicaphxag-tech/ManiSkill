@@ -8,6 +8,8 @@ on:
       - "research/kaggle_diffusion_policy_peg/policy_evidence_gate.py"
       - "research/kaggle_diffusion_policy_peg/assay_design.py"
       - "research/kaggle_diffusion_policy_peg/replay_itt.py"
+      - "research/kaggle_diffusion_policy_peg/audit_replay_journal.py"
+      - "research/kaggle_diffusion_policy_peg/tests/test_audit_replay_journal.py"
       - "research/kaggle_diffusion_policy_peg/tests/test_replay_itt.py"
       - "research/kaggle_diffusion_policy_peg/run_assay_factorial.py"
       - "research/kaggle_diffusion_policy_peg/tests/test_policy_evidence_gate.py"
@@ -17,6 +19,8 @@ on:
       - "research/kaggle_diffusion_policy_peg/policy_evidence_gate.py"
       - "research/kaggle_diffusion_policy_peg/assay_design.py"
       - "research/kaggle_diffusion_policy_peg/replay_itt.py"
+      - "research/kaggle_diffusion_policy_peg/audit_replay_journal.py"
+      - "research/kaggle_diffusion_policy_peg/tests/test_audit_replay_journal.py"
       - "research/kaggle_diffusion_policy_peg/tests/test_replay_itt.py"
       - "research/kaggle_diffusion_policy_peg/run_assay_factorial.py"
       - "research/kaggle_diffusion_policy_peg/tests/test_policy_evidence_gate.py"
@@ -42,6 +46,7 @@ jobs:
           python -m py_compile research/kaggle_diffusion_policy_peg/policy_evidence_gate.py
           python -m py_compile research/kaggle_diffusion_policy_peg/assay_design.py
           python -m py_compile research/kaggle_diffusion_policy_peg/replay_itt.py
+          python -m py_compile research/kaggle_diffusion_policy_peg/audit_replay_journal.py
           python -m py_compile research/kaggle_diffusion_policy_peg/run_assay_factorial.py
       - name: Adversarial artifact acceptance tests (pure stdlib)
         run: python -m unittest discover -s research/kaggle_diffusion_policy_peg/tests -p 'test_*.py' -v
