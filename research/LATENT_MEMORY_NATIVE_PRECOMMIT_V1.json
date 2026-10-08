@@ -1,0 +1,61 @@
+{
+  "schema": "latent_memory_native_commanded_setpoint_verification_v1",
+  "freeze_date": "2026-10-09",
+  "objective": "Test the CERTIFICATE's verified additive root-frame *commanded Cartesian target* prediction against real unmodified ManiSkill Panda pd_ee_target_delta_pose controller; does NOT test robot safety or third-party policy task success.",
+  "source_repository": "lindicaphxag-tech/ManiSkill",
+  "real_task_cases": [
+    {
+      "task": "PickCube-v1",
+      "seed": 2277
+    },
+    {
+      "task": "PushCube-v1",
+      "seed": 3388
+    },
+    {
+      "task": "PullCube-v1",
+      "seed": 4499
+    },
+    {
+      "task": "StackCube-v1",
+      "seed": 5511
+    }
+  ],
+  "frozen_intervention": {
+    "sim_backend": "physx_cpu",
+    "obs_mode": "state",
+    "control_mode": "pd_ee_target_delta_pose",
+    "controller_config_requires": [
+      "use_target",
+      "use_delta",
+      "root_translation in config.frame",
+      "normalize_action",
+      "symmetric or nonsymmetric audited native position action bounds"
+    ],
+    "physical_position_delta_m": [
+      0.008,
+      -0.006,
+      0.005
+    ],
+    "memory_uncertainty_half_width_m": 0.0015,
+    "setpoint_error_budget_m": 0.002,
+    "expected_minimax_error_m": 0.0015,
+    "minimum_numerical_guard_m": 1e-12,
+    "max_actual_controller_target_setpoint_error_m": 0.0001
+  },
+  "precommitted_checks": [
+    "all 4 task/seed cases run without dropped trials",
+    "true controller _target_pose captured before action and after official env.step",
+    "certified physical command converted using actual native action_space_low/high",
+    "controller's actual target position equals prior target plus chosen Cartesian position physical command within 0.1 mm",
+    "minimax worst-case robust commanded setpoint error computed and bounded by 2 mm",
+    "refuse missing attestation, stale controller memory, unverified controller and too-wide ambiguity before dispatch"
+  ],
+  "interpretation": "A passed native test validates additive target-position action chart on the tested Panda controller, under an artificially specified uncertainty enclosure known to include truth; it does not validate availability of trusted bounds in the real world, correct target tracking, physical safety, orientation or task completion.",
+  "prohibition": [
+    "no action source selection after outcomes",
+    "no claiming this CPU controller test tests PPO success",
+    "no changing action bounds or error budgets after inspecting CI",
+    "no deriving certified sensor provenance from a boolean alone"
+  ]
+}
