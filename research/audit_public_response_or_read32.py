@@ -51,6 +51,7 @@ def audit(directory:Path)->dict:
                 if not isinstance(rows,list) or len(rows)!=4:
                     raise ValueError("Missing original failures/complete 4 episode denominator: "+name)
                 count={k:0 for k in ARMS}
+                hybrid_only=authority_only=0
                 public_accept=public_wrong=hybrid_accept=hybrid_wrong=hybrid_reads=exposed=0
                 for i,r in enumerate(rows):
                     seed=seeds[i]
@@ -63,6 +64,10 @@ def audit(directory:Path)->dict:
                         raise ValueError("Native fault/probe/task success ledger corrupted")
                     for a in ARMS:
                         count[a]+=int(r["success_once"][a])
+                    hybrid_only+=int(r["success_once"][HYBRID] and
+                                     not r["success_once"][PRIVILEGED])
+                    authority_only+=int(not r["success_once"][HYBRID] and
+                                        r["success_once"][PRIVILEGED])
                     obs=r.get("initial_obs_diff",{})
                     if set(obs)!=set(ARMS[1:]) or any(
                         not isinstance(v,(float,int)) or not 0<=v<=.0005 for v in obs.values()):
@@ -128,7 +133,9 @@ def audit(directory:Path)->dict:
                     all_original_four=len(rows),task_success=count,
                     public_decisions=public_accept,public_wrong=public_wrong,
                     hybrid_public_decisions=hybrid_accept,hybrid_wrong=hybrid_wrong,
-                    hybrid_explicit_reads=hybrid_reads,fault_probe_reached=exposed,
+                    hybrid_explicit_reads=hybrid_reads,
+                    hybrid_only=hybrid_only,authority_only=authority_only,
+                    fault_probe_reached=exposed,
                     original_source=name)
     if len(seen)!=32 or len({(t,s) for t,s,_ in seen})!=16:
         raise ValueError("32 unique task×truth conditions must cover 16 distinct reset states")
@@ -142,6 +149,8 @@ def audit(directory:Path)->dict:
         hybrid_false_confident_labels=sum(v["hybrid_wrong"] for v in summaries.values()),
         hybrid_privileged_reads=sum(v["hybrid_explicit_reads"] for v in summaries.values()),
         privileged_always_reads=32,
+        paired_hybrid_only=sum(v["hybrid_only"] for v in summaries.values()),
+        paired_authority_only=sum(v["authority_only"] for v in summaries.values()),
         per_condition=summaries,
         limitations="Same contributor native CPU PhysX on Panda; empirical response envelope not independent physical certification; actual target hold not packet loss.")
 
