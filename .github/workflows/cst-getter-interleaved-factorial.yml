@@ -1,0 +1,38 @@
+name: CST Interleaved State Getter Factorial
+
+on:
+  push:
+    branches:
+      - validation/cst-state-getter-intervention-20261009
+  workflow_dispatch:
+
+jobs:
+  within-runner-causal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU simulator
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Interleave four getter interventions in fresh child processes
+        run: |
+          set -o pipefail
+          python research/audit_getter_factorial.py 2>&1 | tee getter_factorial.log
+          test -s getter_factorial_artifacts/summary.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cst-getter-causal-factorial
+          path: |
+            getter_factorial_artifacts/
+            getter_factorial.log
+          if-no-files-found: warn
