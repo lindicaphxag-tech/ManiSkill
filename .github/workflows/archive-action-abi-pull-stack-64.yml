@@ -1,0 +1,191 @@
+name: Permanent 64-state two-new-task evidence archive
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/archive-action-abi-pull-stack-64.yml'
+      - 'research/action_abi_pull_stack_aggregate.py'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-action-abi-pull-stack-64.yml'
+      - 'research/action_abi_pull_stack_aggregate.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  immutable-ci-source-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check exact successful original physical-simulator run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37815152548 --jq .head_sha)" = "9ffa86c6d3a86d2cee44b6e13c560033a8b373cf"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37815152548 --jq .conclusion)" = success
+      - name: Materialize exactly nine original no-cherry-pick JSONs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/source64 /tmp/replay64
+          gh run download 37815152548 --repo "$GITHUB_REPOSITORY" --name full-64-state-two-new-task-frozen-ppo-audit --dir /tmp/source64
+          for n in \
+          abi_independent_pull_cube_chunk_0.json \
+          abi_independent_pull_cube_chunk_1.json \
+          abi_independent_pull_cube_chunk_2.json \
+          abi_independent_pull_cube_chunk_3.json \
+          abi_independent_stack_cube_chunk_0.json \
+          abi_independent_stack_cube_chunk_1.json \
+          abi_independent_stack_cube_chunk_2.json \
+          abi_independent_stack_cube_chunk_3.json \
+          abi_pull_stack_prospective_aggregate.json; do
+            files=$(find /tmp/source64 -name "$n" -type f)
+            test "$(printf '%s\n' "$files" | wc -l)" -eq 1
+            cp "$files" "/tmp/replay64/$n"
+          done
+      - name: Check original SOURCE BYTES against prepublished SHA-256 manifest
+        run: |
+          cd /tmp/replay64
+          printf '%s\n' \
+            '64a788b0ff9f6d81ff7579eba38c0b4c181b7093387cf8181395e3cb42686c8d  abi_independent_pull_cube_chunk_0.json' \
+            '824e8f9d1193628a41ae4a130430df61f0ce714b6c70390a77738714e99f9ecc  abi_independent_pull_cube_chunk_1.json' \
+            '71f5a9450d3e6ec34c581f55edb667bd1477a0d8d4e59dbd5942b8f6c3a1ed07  abi_independent_pull_cube_chunk_2.json' \
+            '8f001217f690c6aef1fba51e009677628e03142cca636d984cdc1938beb52c85  abi_independent_pull_cube_chunk_3.json' \
+            '2063cf4fb108219fa482efd1deed05a23a4ce9664b1d4bf146cfd45d30b3ae90  abi_independent_stack_cube_chunk_0.json' \
+            'd36132e5cda9f2a16c4ec515402abc91796141f2b13f29a036903ea4275424fb  abi_independent_stack_cube_chunk_1.json' \
+            '2bcf5c820dc6681573e8e5384bb9bc75c115497edeea702c8734f353cb85cf01  abi_independent_stack_cube_chunk_2.json' \
+            '8b63cc6f3149a84f8ab3a74ee8a4d431af69fb5355efd8a6a2bd5b5434cc2963  abi_independent_stack_cube_chunk_3.json' \
+            'e7c4984d10fcf4c521b874e5ac6d18e451f93d3899a831226f8abd23f2e0e57b  abi_pull_stack_prospective_aggregate.json' > original-64.sha256
+          sha256sum -c original-64.sha256
+      - name: Replay original 8 x 8 episodes and compare frozen source statistics
+        run: |
+          python -m research.action_abi_pull_stack_aggregate --input-dir /tmp/replay64 --output /tmp/replay64/recomputed.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          base=Path('/tmp/replay64')
+          original=json.loads((base/'abi_pull_stack_prospective_aggregate.json').read_text())
+          rerun=json.loads((base/'recomputed.json').read_text())
+          assert original==rerun, 'unmatched numeric or nonnumeric original result'
+          assert original['n_independent_tasks']==2
+          assert original['total_original_task_states']==64
+          a=original['results']['pull_cube']
+          b=original['results']['stack_cube']
+          assert a['success_by_arm']=={'source':31,'memory':17,'projected':31,'stateless':14,'naive':14}
+          assert b['success_by_arm']=={'source':28,'memory':11,'projected':30,'stateless':0,'naive':0}
+          assert (a['projected_only_success'],a['stateless_only_success'])==(17,0)
+          assert (b['projected_only_success'],b['stateless_only_success'])==(30,0)
+          assert a['status']==b['status']=='PREDECLARED_MEMORY_GAIN_PRESENT'
+          print('Verified all original JSON hashes, two policies, 64 task states, every original source outcome')
+          PY
+  trusted-main-commit-originals:
+    if: github.event_name != 'pull_request'
+    needs: immutable-ci-source-replay
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check exact successful original physical-simulator run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37815152548 --jq .head_sha)" = "9ffa86c6d3a86d2cee44b6e13c560033a8b373cf"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37815152548 --jq .conclusion)" = success
+      - name: Materialize exactly nine original no-cherry-pick JSONs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/source64 /tmp/replay64
+          gh run download 37815152548 --repo "$GITHUB_REPOSITORY" --name full-64-state-two-new-task-frozen-ppo-audit --dir /tmp/source64
+          for n in \
+          abi_independent_pull_cube_chunk_0.json \
+          abi_independent_pull_cube_chunk_1.json \
+          abi_independent_pull_cube_chunk_2.json \
+          abi_independent_pull_cube_chunk_3.json \
+          abi_independent_stack_cube_chunk_0.json \
+          abi_independent_stack_cube_chunk_1.json \
+          abi_independent_stack_cube_chunk_2.json \
+          abi_independent_stack_cube_chunk_3.json \
+          abi_pull_stack_prospective_aggregate.json; do
+            files=$(find /tmp/source64 -name "$n" -type f)
+            test "$(printf '%s\n' "$files" | wc -l)" -eq 1
+            cp "$files" "/tmp/replay64/$n"
+          done
+      - name: Check original SOURCE BYTES against prepublished SHA-256 manifest
+        run: |
+          cd /tmp/replay64
+          printf '%s\n' \
+            '64a788b0ff9f6d81ff7579eba38c0b4c181b7093387cf8181395e3cb42686c8d  abi_independent_pull_cube_chunk_0.json' \
+            '824e8f9d1193628a41ae4a130430df61f0ce714b6c70390a77738714e99f9ecc  abi_independent_pull_cube_chunk_1.json' \
+            '71f5a9450d3e6ec34c581f55edb667bd1477a0d8d4e59dbd5942b8f6c3a1ed07  abi_independent_pull_cube_chunk_2.json' \
+            '8f001217f690c6aef1fba51e009677628e03142cca636d984cdc1938beb52c85  abi_independent_pull_cube_chunk_3.json' \
+            '2063cf4fb108219fa482efd1deed05a23a4ce9664b1d4bf146cfd45d30b3ae90  abi_independent_stack_cube_chunk_0.json' \
+            'd36132e5cda9f2a16c4ec515402abc91796141f2b13f29a036903ea4275424fb  abi_independent_stack_cube_chunk_1.json' \
+            '2bcf5c820dc6681573e8e5384bb9bc75c115497edeea702c8734f353cb85cf01  abi_independent_stack_cube_chunk_2.json' \
+            '8b63cc6f3149a84f8ab3a74ee8a4d431af69fb5355efd8a6a2bd5b5434cc2963  abi_independent_stack_cube_chunk_3.json' \
+            'e7c4984d10fcf4c521b874e5ac6d18e451f93d3899a831226f8abd23f2e0e57b  abi_pull_stack_prospective_aggregate.json' > original-64.sha256
+          sha256sum -c original-64.sha256
+      - name: Replay original 8 x 8 episodes and compare frozen source statistics
+        run: |
+          python -m research.action_abi_pull_stack_aggregate --input-dir /tmp/replay64 --output /tmp/replay64/recomputed.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          base=Path('/tmp/replay64')
+          original=json.loads((base/'abi_pull_stack_prospective_aggregate.json').read_text())
+          rerun=json.loads((base/'recomputed.json').read_text())
+          assert original==rerun, 'unmatched numeric or nonnumeric original result'
+          assert original['n_independent_tasks']==2
+          assert original['total_original_task_states']==64
+          a=original['results']['pull_cube']
+          b=original['results']['stack_cube']
+          assert a['success_by_arm']=={'source':31,'memory':17,'projected':31,'stateless':14,'naive':14}
+          assert b['success_by_arm']=={'source':28,'memory':11,'projected':30,'stateless':0,'naive':0}
+          assert (a['projected_only_success'],a['stateless_only_success'])==(17,0)
+          assert (b['projected_only_success'],b['stateless_only_success'])==(30,0)
+          assert a['status']==b['status']=='PREDECLARED_MEMORY_GAIN_PRESENT'
+          print('Verified all original JSON hashes, two policies, 64 task states, every original source outcome')
+          PY
+      - name: Preserve all nine unmodified raw JSONs for permanent independent inspection
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/pull_stack_new_task_64
+          mkdir -p "$dest"
+          cp /tmp/replay64/abi_independent_*.json "$dest/"
+          cp /tmp/replay64/abi_pull_stack_prospective_aggregate.json "$dest/"
+          cat > "$dest/README.md" <<'EOF'
+          # Source-pinned independent task-extension test, PullCube + StackCube
+          Source: successful real PhysX Actions 37815152548 on 9ffa86c6d3a86d2cee44b6e13c560033a8b373cf.
+          Frozen before code: protocol commit 582e39206cedf3565217514b1fdc1872c1cffae7.
+          Two new released frozen PPOs. Every original controller/task row is copied unchanged and SHA-256 verified against this workflow.
+          PullCube: source 31/32; naive 14/32; exact 17/32; memory bounded 31/32; state-blind bounded 14/32; paired memory-only 17 vs blind-only 0.
+          StackCube: source 28/32; naive 0/32; exact 11/32; memory bounded 30/32; state-blind bounded 0/32; paired memory-only 30 vs blind-only 0.
+          Original task competence and declared memory-gain criteria PASSED on both new task families.
+          NON-EXACT bounded projections: PullCube 15, StackCube 33. This is not an exact action equivalence or safety proof.
+          Owner-run simulation, NOT independent external replication, hardware transfer or general VLA performance.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dest"
+          if git diff --cached --quiet; then
+            echo 'Already source-verified and committed'
+            exit 0
+          fi
+          git commit -m 'evidence: permanently preserve nine independent PullCube StackCube original JSONs'
+          git push origin HEAD:main
