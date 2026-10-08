@@ -114,7 +114,7 @@ def test_forged_robust_margin_is_rejected():
         d,
         certified_radius=0.5,
         epsilon_g=0.1,
-        residual_tolerance=tau,
+        residual_tolerance=0.1,
         witness=forged,
     )
 
