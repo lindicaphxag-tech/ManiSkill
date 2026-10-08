@@ -130,6 +130,63 @@ def verify(doc: dict, *, expected_size: int, source_offset: int = 0, origin_run_
     }
 
 
+
+def verify_execution_binding(doc: dict, execution: dict, *, offset: int, count: int) -> dict:
+    """Refuse ledger claims unsupported by *physical* sliced input HDF5 groups."""
+    if execution.get("status") != "passed":
+        raise ValueError("source execution did not complete")
+    if execution.get("source_episode_offset") != offset:
+        raise ValueError("source execution offset differs from frozen cohort")
+    indices=list(range(offset,offset+count))
+    if execution.get("source_episode_indices") != indices:
+        raise ValueError("physical source episode indices do not match frozen cohort")
+    if execution.get("factorial_replay") != doc:
+        raise ValueError("experiment-log factorial record differs from supplied ledger")
+    proof=execution.get("source_materialization")
+    if not isinstance(proof,dict) or set(proof)!=set(ARMS):
+        raise ValueError("missing arm-specific physical HDF5 cohort proof")
+    expected_seeds=[row["source_seed"] for row in doc["source_seed_matrix"]]
+    identity_hashes={}
+    for arm in ARMS:
+        evidence=proof[arm]
+        if evidence.get("selection_verified") is not True:
+            raise ValueError(f"{arm}: original-source selection not verified")
+        if evidence.get("original_source_episode_indices") != indices:
+            raise ValueError(f"{arm}: physical HDF5 source indices mismatch")
+        if evidence.get("original_source_episode_seeds") != expected_seeds:
+            raise ValueError(f"{arm}: physical HDF5 source seeds mismatch")
+        ids=evidence.get("original_source_episode_ids")
+        if not isinstance(ids,list) or len(ids)!=count or len(set(ids))!=count:
+            raise ValueError(f"{arm}: ambiguous original source IDs")
+        if evidence.get("replay_h5_group_count") != count:
+            raise ValueError(f"{arm}: HDF5 subset cardinality mismatch")
+        h5=evidence.get("selected_h5_sha256")
+        meta=evidence.get("selected_json_sha256")
+        if not isinstance(h5,str) or not isinstance(meta,str) or any(
+            len(x)!=64 or any(c not in "0123456789abcdef" for c in x) for x in (h5,meta)
+        ):
+            raise ValueError(f"{arm}: missing physical source file identity digests")
+        canonical={
+            "indices":indices, "ids":ids,"seeds":expected_seeds,
+            "h5":h5,"json":meta,
+        }
+        digest=hashlib.sha256(json.dumps(
+            canonical,sort_keys=True,separators=(",",":")
+        ).encode("utf-8")).hexdigest()
+        if evidence.get("identity_sha256")!=digest:
+            raise ValueError(f"{arm}: tampered HDF5 slice proof")
+        identity_hashes[arm]=digest
+    if len(set(identity_hashes.values()))!=1:
+        raise ValueError("four factor arms trained/replayed from non-identical source datasets")
+    return {
+        "physical_hdf5_cohort_verified":True,
+        "source_episode_offset":offset,
+        "original_source_id_count":count,
+        "physical_source_identity_sha256":next(iter(identity_hashes.values())),
+        "all_four_arms_bound_to_same_original_episode_seeds":True,
+    }
+
+
 def self_test() -> None:
     import copy
     arms=list(ARMS)
@@ -178,6 +235,7 @@ def main():
     p.add_argument("--expected-size",type=int,default=100)
     p.add_argument("--source-offset",type=int,default=0)
     p.add_argument("--origin-run-id",type=int,default=FROZEN_ARTIFACT_RUN)
+    p.add_argument("--verify-physical-slices",action="store_true",help="Also bind every actual HDF5 input cohort to frozen seed identities")
     p.add_argument("--self-test",action="store_true")
     p.add_argument("--output",type=Path,help="Write independently derived JSON report")
     args=p.parse_args()
@@ -195,6 +253,16 @@ def main():
         source_offset=args.source_offset,
         origin_run_id=args.origin_run_id,
     )
+    if args.verify_physical_slices:
+        logs=list(args.search.rglob("experiment_log.json"))
+        if len(logs)!=1:
+            raise ValueError(f"expected one original execution log, found {logs}")
+        doc=json.loads(matches[0].read_text(encoding="utf-8"))
+        proof=verify_execution_binding(
+            doc,json.loads(logs[0].read_text(encoding="utf-8")),
+            offset=args.source_offset,count=args.expected_size
+        )
+        result.update(proof)
     out=json.dumps(result,sort_keys=True,indent=2)+"\n"
     if args.output:
         args.output.write_text(out,encoding="utf-8")
