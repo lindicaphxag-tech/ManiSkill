@@ -19,7 +19,7 @@ from scipy.spatial.transform import Rotation
 from huggingface_hub import hf_hub_download
 
 import frozen_ppo_action_history_observer as base
-from action_abi_history_observer import ActionHistoryObserver, TargetPose
+from research.action_abi_history_observer import ActionHistoryObserver, TargetPose
 from action_abi_uncertain_delivery_belief import UncertainDeliveryBelief
 from mani_skill.utils.structs import Pose
 
