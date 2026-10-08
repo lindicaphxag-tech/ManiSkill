@@ -38,6 +38,58 @@ Version 4 of the corrected paired-assay kernel includes this evaluation shim: it
 
 Version 4 was submitted on 2026-10-08 after version 3 exposed the NumPy metric mismatch. Unlike the earlier, invalid `maniskill-dp-peg-1495-1472` version 4, this corrected runner replays demonstrations independently under both source trees, intersects the successful trajectories by source `episode_seed`, and trains both arms on the resulting paired set. At 2026-10-07 19:43 UTC, Kaggle reported this corrected kernel as `RUNNING`; no v4 metrics or output artifacts were available. The live status alone is not evidence of progress or a successful run. Do not interpret v4 as policy evidence until the final logs and result manifest are retrieved and audited.
 
+## 2026-10-08: first successful paired official CPU Diffusion Policy pipeline
+
+**New independently inspectable public CI:**
+[GitHub Actions run #37713921020 (SUCCESS)](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37713921020)
+with [raw logs, experiment manifest and scalar artifacts](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37713921020/artifacts/11523182890).
+The exact CI checkout is `4cb046e4f7515b2c64ebd4c9bb2ce4c67bd32f8b`
+on the isolated `validation/dp-peg-lavapipe-v1` branch.
+
+This is **the first complete training-plus-evaluation smoke** after the earlier
+Vulkan initialization, replay render-device, GitHub PR-Files 403,
+Gymnasium `final_info` and shutdown SIGSEGV failures. It is not a
+trained-policy accuracy or performance breakthrough.
+
+- Official pinned PegInsertionSide demos replayed **independently under two source trees**.
+  Baseline: **6/8** saved. Combined #1495 + exact #1472: **6/8** saved.
+- The **same six source episode seeds** were selected, with source-seed
+  digest `6798520268c5031144a068f3f29a83d01152c10b6cfeda824afdc755fb0d3fec`.
+- Each *arm-specific* paired dataset contains **893 transitions** and
+  **887 diffusion windows**. Baseline paired HDF5 SHA-256:
+  `e398804491af92e8ceecd9d653754c992ef2b6e66f8bb8f0f0f544e685fd78d9`;
+  combined SHA-256:
+  `b01e76afa6ff1061c51a3a0c8e93c311ef02970f1e6015268070c7e792e7dc28`.
+- Both runs instantiate the official ~**4.40M-parameter** Diffusion Policy,
+  execute **two real optimizer steps**, complete **three tiny evaluation
+  checkpoints of two episodes each**, write TensorBoard metric exports,
+  and close both the simulation environment and the TensorBoard writer
+  normally (`SMOKE_LIFECYCLE` before/after markers recorded).
+- Both arms' success-once and success-at-end are **0.0000** at these
+  undertrained short-horizon checkpoints. The *visible baseline loss*
+  at the first logged update is `1.144664`; the combined arm is
+  `1.144364`. **These are not meaningful performance comparisons**:
+  two updates, one training seed, six demos, 20-step evaluation horizon,
+  sparse reward and effectively untrained policies.
+- Runtime: **Python 3.11**, Linux x86_64, CPU PyTorch, headless Mesa
+  Lavapipe/PhysX CPU, Gymnasium 1.2.0; the smoke runner changes
+  renderer selection to `none`, uses a synchronous one-env
+  evaluation worker, converts episode metrics to NumPy, and fixes
+  replay to immutable #1472 test blobs; these are **isolated
+  reproducibility shims**, not modifications submitted in upstream #1495.
+
+**Attribution boundary:** this A/B comparison isolates the *composition*
+of two distinct PRs, not the effect of #1495 alone. It offers **no
+evidence** of better task success. The next discriminating design is a
+four-cell converter×controller assay with independently replayed demos;
+partial repairs may fail demo conversion entirely, in which case that
+outcome must be reported as a non-trainable cell, not silently
+excluded or assigned invented learned-policy metrics.
+
+Archive retention: this GitHub Actions artifact is scheduled to expire
+in January 2027. The factual counts, file identities and explicit negative
+performance outcome are therefore preserved in this README.
+
 ## Novelty boundary
 
 This experiment does not claim a new general SO(3) action representation: the [SO(3) action representation study](https://openreview.net/forum?id=g4ZrpMQL1Z) already compares common representations at scale. It also does not claim that Cartesian delta actions or action adapters are new; [SPACE](https://arxiv.org/abs/2606.24049) studies them across embodiments and dynamics shifts. Controller-gain effects on behavior cloning are studied in [Tune to Learn](https://arxiv.org/abs/2604.02523). The narrower engineering question here is whether two specific ManiSkill action-conversion/controller changes compose correctly and alter the official PegInsertionSide diffusion-policy pipeline. The current two-arm comparison only estimates their combined effect; it cannot attribute an effect to either PR individually. No performance claim is justified without a four-cell factorial comparison and replicated seeds.
