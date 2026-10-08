@@ -17,11 +17,15 @@ fixed rotation sign? The PR intentionally changes **two files / one commit**.
 | Frozen first 100 official PegInsertionSide demos | [Replay #37719545972](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37719545972) · [independent source-seed audit #37751515316](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37751515316) | Baseline **90**; converter only **91**; controller only **1**; both **91** |
 | Paired CPU official Diffusion Policy | [CI #37713921020](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37713921020) | Both arms trained and evaluated, but **0%** success after two updates: no policy superiority claim |
 
-**Critical limitation:** A purported disjoint 100–199 validation reused the
-wrong HDF5 cohort. It was rejected by the independent audit and
-[withdrawn](https://github.com/lindicaphxag-tech/ManiSkill/blob/research/native-delta-pose-assay/research/kaggle_diffusion_policy_peg/HOLDOUT_SOURCE_VALIDITY_ERRATUM_2026_10_08.md).
-Do **not** count it as a second replication while the corrected source-bound
-replay is under validation.
+**Corrected holdout (independently source-bound):** the original purported
+100–199 result had reused the wrong HDF5 cohort and remains withdrawn.
+A **new** physically sliced replay and [independent audit #37807994333](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37807994333)
+now verify actual original HDF5 source indices 100–199, with four-arm
+replay counts **94/95/0/95 out of 100**. The source episode indices are
+disjoint, but 24 source *seeds* recur across the two 100-row cohorts;
+the audit's **post-hoc**, seed-disjoint 76-row sensitivity yields
+**71/71/0/71**. Neither is learned-policy task success or 200
+independent-seed measurements.
 
 **What to review:** the signed axis-separable mapper assumption and whether
 #1495 should merge standalone or document its compatibility dependency on
@@ -39,23 +43,57 @@ that active action chart.
 
 Unsupported mappings fail explicitly rather than silently guessing.
 
-## 2026-10-08 research-integrity correction
+## 2026-10-08 research-integrity correction and valid subsequent holdout
 
-**Please do not cite the apparent 100–199 heldout replay as replication.**
-The nominally green [holdout run #37745942944](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37745942944)
-actually re-used the first 100 HDF5 source groups despite recording
-episode-index metadata 100–199. The independent original-artifact
+The earlier [run #37745942944](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37745942944)
+**incorrectly reused the first 100 HDF5 groups**, despite labeling them
+source indices 100–199. The independent original-artifact
 [audit #37752017483](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37752017483)
-failed on the source-seed count mismatch. The result is **invalid for
-disjoint cohort inference**, not evidence of a second success.
+correctly FAILED. That earlier run remains **invalid and withdrawn**.
 
-[Root cause, withdrawal and corrected physical-HDF5 slicing status](https://github.com/lindicaphxag-tech/ManiSkill/blob/research/native-delta-pose-assay/research/kaggle_diffusion_policy_peg/HOLDOUT_SOURCE_VALIDITY_ERRATUM_2026_10_08.md).
+A separate corrected replay
+[run #37752565886](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37752565886)
+uses **physically different HDF5 groups 100–199**. The independent
+[original-source and six-pair audit #37807994333](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37807994333)
+passed: all four arms share the same 100 original episode identities and
+the hashes refer to the true sliced cohort.
 
-The **first** 100-demo cohort result below remains valid: independently
-audited 90/91/1/91 successful conversions on source indices 0–99. We have
-not changed the preregistered 100–199 target, and no corrected holdout
-outcome is claimed until actual sliced inputs and original seed identities
-pass the same audit.
+| Original HDF5 source indices | Baseline | #1495 only | #1472 only | Both |
+|---|---:|---:|---:|---:|
+| 0–99, independent audit passed | 90/100 | 91/100 | 1/100 | 91/100 |
+| 100–199, corrected source-bound audit passed | 94/100 | 95/100 | 0/100 | 95/100 |
+| 76 heldout rows with seeds absent from first 100 (post-hoc sensitivity) | 71/76 | 71/76 | 0/76 | 71/76 |
+
+**Dependence disclosure:** across the 200 original episode indices, there are
+only **176 unique source seeds**, not 200. The 76-row analysis is an
+exploratory *selection independent of the replay outcome*, not a new
+prospectively registered experiment. No claims of two independent
+100-seed samples, task success improvement, or upstream adoption follow.
+
+**Reviewer decision:** the two-file converter #1495 provides signed active
+controller action-chart compatibility. In the official replay experiment,
+the isolated #1472 controller swap is catastrophically incompatible with
+the existing converter, while the combined patch restores ordinary
+replayability. That is evidence for an **atomic compatibility contract**,
+not a causal claim that either patch improves learned-policy reward.
+
+### Additional frozen PPO control-interface evidence (different task)
+
+On PickCube, an independent public
+[frozen PPO controller-swap run #37808182157](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37808182157)
+executes a SHA-256-pinned third-party published policy with **no retraining**:
+14 distinct deliberately selected seeds were evaluated, with seed 10014
+repeated as an order control. Source and compiled adapters each succeed
+on **14/14 distinct seeds**, while naive wrong-ABI copying fails on all 14.
+The original report contains **15 executions, not 15 independent seeds**.
+These are exploratory physical-policy tests under known interface semantics,
+**not** proof of automatic discovery of unknown semantics, cross-task
+generalization, or #1495 itself improving learned-policy success.
+
+An author-independent *implementation*, but still contributor-operated,
+[raw-artifact auditor](https://github.com/lindicaphxag-tech/ManiSkill/blob/evidence/frozen-ppo-unique-seed-audit-v1/research/kaggle_diffusion_policy_peg/audit_frozen_ppo_unique_seeds.py)
+is maintained separately and checks this repeated-seed denominator against
+the original frozen ActionShift checkpoint hash.
 
 ## Frozen current identities
 
@@ -407,11 +445,15 @@ common-success demonstration intersection is zero because the
 controller-only cell fails all 100 source episodes. It cannot be used
 to generate a four-way common-survivor training dataset.
 
-A one-seed frozen PPO controller-swap run
+An earlier one-seed frozen PPO controller-swap run
 [37807284160](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37807284160)
-was negative for the compiled and naive swap despite the original source
-policy succeeding; do not extrapolate replay compensation into policy
-recovery.
+was negative for both compiled and naive adapters under that particular
+execution configuration. A later exploratory, pinned-checkpoint physical
+run [#37808182157](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37808182157)
+found source and compiled success in 14/14 distinct seeds and naive 0/14,
+including an explicit repeated-seed order control. Both results are retained:
+configuration sensitivity and nonrandom seed choice prevent unqualified
+statements about a universal controller-swap success rate.
 
 **Single merge-enabling maintainer decision:** should #1495's source-aware
 signed mapping be accepted as a *current ManiSkill3 compatibility fix*
