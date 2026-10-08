@@ -1,6 +1,14 @@
 > **Independent contributor's research fork — not the official ManiSkill project.** The original project's README begins below. Changes under `research/frozen_policy_transfer/` are owned and evaluated by this fork's contributor; no ManiSkill maintainer endorsement is implied.
 
-### Research flagship: stateful controller action-ABI transfer without PPO retraining
+### Research flagship: evidence-gated frozen-policy action transport
+
+**[New research packet: controller-state observability, strong history-observer controls, true native ambiguity witnesses and certified refusal](research/frozen_policy_transfer/OBSERVABILITY_AUTHORITY_RESEARCH_PACKET.md).** The original four-task results have now been challenged with **64 additional preregistered paired PhysX states**: a history-reconstructed target and direct live-target conversion match every binary task outcome (**PullCube 32/32 vs 32/32; StackCube 29/32 vs 29/32**). [Permanent nine-file original JSON + SHA256 archive](research/frozen_policy_transfer/evidence/shadow_observer_64_71001_81032/) · [full official original run](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37818985343). This *shadow* uses controller update code and observation memory validation, so it is not independent black-box control.
+
+A **separately implemented action-only observer** requiring reset provenance and confirmed command delivery—not private target state access during decision making—matched privileged transfer on **16 new original PhysX states** ([predeclared complete study](research/frozen_policy_transfer/ACTION_HISTORY_OBSERVER_PROSPECTIVE_16.md)). Controlled four-task native counterfactuals demonstrate that distinct hidden prior target states can require different inverses even with matching achieved states, while a separately checked joint-target controller provides limited contract portability. The robust additive-setpoint minimax/refusal certificate applies only under **trusted target-memory bounds and a verified chart**, never by itself to hardware safety.
+
+**Corrected scientific claim:** reconstructibility of the effective previous commanded target under trustworthy history, not an unconditional need to read a private controller variable. Missing or ambiguous acknowledgement must be refused unless independent evidence bounds the possible commanded-target error. These are **contributor-run studies on one Panda robot family**, not third-party execution, a cross-robot method or accepted publication.
+
+### Original four-task frozen-policy transfer evidence
 
 Four independently pretrained third-party PPOs on PickCube, PushCube, PullCube and StackCube, with *true PhysX CPU closed-loop official task flags*. The action adapter uses the destination controller's **previous commanded target pose**, rather than just the current achieved pose, and marks bounded projection **NOT_EXACT**.
 
