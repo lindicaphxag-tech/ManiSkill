@@ -86,7 +86,13 @@ def inspect(originals: Path):
             decision_reads=row.get("privileged_target_readback_decision_count",{})
             for a in ARMS:
                 count=decision_reads.get(a)
-                if type(count) is not int or count<0:
+                if type(count) is not int:
+                    raise ValueError("Missing target readback count")
+                if a=="fault_oracle_private_target":
+                    if count!=-1:
+                        raise ValueError("Unrestricted private target reads MUST be labelled -1")
+                    continue
+                if count<0:
                     raise ValueError("Missing authoritatively declared target readback count")
                 if a in ("fault_robust_then_single_privileged_query",
                          "fault_always_single_privileged_query") and count>1:
