@@ -2,14 +2,14 @@ name: PegInsertion locked 100-199 holdout four-arm replay
 
 on:
   push:
-    branches: [validation/dp-peg-factorial-heldout-100-199-v1]
+    branches: [fix/peg-heldout-source-selection-v2]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: peg-factorial-holdout-100-199-v1
+  group: peg-heldout-fixed-v2
   cancel-in-progress: true
 
 jobs:
@@ -63,7 +63,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dp-peg-factorial-holdout-100-199-replay
+          name: dp-peg-heldout-fixed-v2
           path: |
             ${{ runner.temp }}/semrepair_dp_smoke/assay_output/
             /tmp/semrepair-vulkaninfo.txt
