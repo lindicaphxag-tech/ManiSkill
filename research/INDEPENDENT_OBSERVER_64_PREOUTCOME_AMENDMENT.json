@@ -1,0 +1,22 @@
+{
+  "status": "PREOUTCOME_AMENDMENT_BEFORE_ANY SIMULATOR EXECUTION",
+  "amends": "research/INDEPENDENT_HISTORY_OBSERVER_REDACTED_64_PREREG_20261009.json",
+  "date": "2026-10-09",
+  "cause": "Separate policy-input NaN redaction intervention is not part of the frozen original runner and is deferred to its own separately registered study.",
+  "unchanged": [
+    "policy checkpoints",
+    "frozen independent observer and controller conversion",
+    "two 32-state seed cohorts",
+    "baseline arms",
+    "full denominator",
+    "primary matched success outcome",
+    "endpoint target-state residual audits"
+  ],
+  "revised_primary_question": "Does the frozen independently implemented action-history observer match the live-memory method over 64 entirely new paired PhysX initial states, without per-step private target reads?",
+  "changed": [
+    "No forced NaN perturbation to public observation tensors; observer uses the original source ABI projection that removes the target-pose slice but does not actively poison it.",
+    "This experiment does not demonstrate resistance to a deliberately forged/masked target-memory field."
+  ],
+  "execution_commit_rule": "Run only after source method unchanged vs frozen PR #63 head 0865e6d50ec30d6a069e2d7dfee1f9be834c2c21 is verified in CI.",
+  "interpretation": "Accept both positive and negative; count all specified episodes, show all six arms and incomplete/missing data; any future redaction experiment requires separate preregistration and new untouched seeds."
+}
