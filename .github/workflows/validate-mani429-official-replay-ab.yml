@@ -60,6 +60,7 @@ jobs:
               shutil.copy2(src.with_suffix(".json"),target/"trajectory.json")
           PY
       - name: Replay first 8 official policy-generated episodes with upstream baseline
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -91,7 +92,7 @@ jobs:
               p=pathlib.Path(variant+"_replay.log")
               text=p.read_text(errors="replace") if p.exists() else ""
               found=re.search(r"Replayed\s+(\d+)\s+episodes,\s+(\d+)/(\d+)=",text)
-              report[variant]={"summary_found":bool(found),"episodes":int(found.group(1)) if found else None,"successful":int(found.group(2)) if found else None,"log_file":str(p)}
+              report[variant]={"summary_found":bool(found),"episodes":int(found.group(1)) if found else None,"successful":int(found.group(2)) if found else None,"error_type":"TypeError" if "TypeError:" in text else None,"log_file":str(p)}
           pathlib.Path("comparison.json").write_text(json.dumps(report,indent=2))
           print("REPLAY_AB_COMPARISON",json.dumps(report))
           PY
