@@ -1,0 +1,349 @@
+{
+  "checkpoint_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c",
+  "public_pretrained": true,
+  "training_performed": false,
+  "backend": "physx_cpu",
+  "controller_contracts": {
+    "source": "pd_ee_delta_pose achieved-relative",
+    "memory": "pd_ee_target_delta_pose with live previous-target inversion",
+    "projected": "pd_ee_target_delta_pose with live goal memory + bounded projection",
+    "stateless": "pd_ee_target_delta_pose with achieved-pose substitute + same bounded projection",
+    "naive": "pd_ee_target_delta_pose direct-copy"
+  },
+  "success_count": {
+    "source": 7,
+    "memory": 3,
+    "projected": 8,
+    "stateless": 0,
+    "naive": 0
+  },
+  "refused_episodes": 5,
+  "episodes": [
+    {
+      "seed": 61025,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": true,
+        "projected": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 18,
+        "memory": 18,
+        "projected": 18,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {},
+      "approximations": {},
+      "max_required_native_amp": 1.0000004452204219
+    },
+    {
+      "seed": 61026,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": false,
+        "memory": false,
+        "projected": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 50,
+        "memory": 14,
+        "projected": 35,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {
+        "memory": {
+          "step": 14,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.0386357053105981
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 14,
+            "required_native_amp": 1.0386357053105981,
+            "exactness": "NOT_EXACT"
+          },
+          {
+            "step": 15,
+            "required_native_amp": 1.4027654306753117,
+            "exactness": "NOT_EXACT"
+          },
+          {
+            "step": 27,
+            "required_native_amp": 1.0783708289983942,
+            "exactness": "NOT_EXACT"
+          },
+          {
+            "step": 28,
+            "required_native_amp": 1.3934468477964401,
+            "exactness": "NOT_EXACT"
+          },
+          {
+            "step": 30,
+            "required_native_amp": 1.1159224822601257,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.4027654306753117
+    },
+    {
+      "seed": 61027,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 14,
+        "memory": 5,
+        "projected": 15,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {
+        "memory": {
+          "step": 5,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.007019355893135
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 5,
+            "required_native_amp": 1.007019355893135,
+            "exactness": "NOT_EXACT"
+          },
+          {
+            "step": 6,
+            "required_native_amp": 1.1335233343957989,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.1335233343957989
+    },
+    {
+      "seed": 61028,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 10,
+        "memory": 4,
+        "projected": 11,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {
+        "memory": {
+          "step": 4,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.5798781067132945
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 4,
+            "required_native_amp": 1.5798781067132945,
+            "exactness": "NOT_EXACT"
+          },
+          {
+            "step": 6,
+            "required_native_amp": 1.1119353988459897,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.5798781067132945
+    },
+    {
+      "seed": 61029,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": true,
+        "projected": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 12,
+        "memory": 12,
+        "projected": 12,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {},
+      "approximations": {},
+      "max_required_native_amp": 1.000000795086283
+    },
+    {
+      "seed": 61030,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 14,
+        "memory": 7,
+        "projected": 14,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {
+        "memory": {
+          "step": 7,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.1406039053481356
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 7,
+            "required_native_amp": 1.1406039053481356,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.1406039053481356
+    },
+    {
+      "seed": 61031,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 11,
+        "memory": 4,
+        "projected": 11,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {
+        "memory": {
+          "step": 4,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.0272839665412903
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 4,
+            "required_native_amp": 1.0272839665412903,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.0272839665412903
+    },
+    {
+      "seed": 61032,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": true,
+        "projected": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 13,
+        "memory": 13,
+        "projected": 13,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {},
+      "approximations": {},
+      "max_required_native_amp": 1.0000013661278198
+    }
+  ],
+  "task": "StackCube-v1",
+  "protocol": "research/ACTION_ABI_PULL_STACK_PREREGISTERED_V1.json",
+  "hf_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+  "seed_chunk": "3",
+  "seed_list": [
+    61025,
+    61026,
+    61027,
+    61028,
+    61029,
+    61030,
+    61031,
+    61032
+  ],
+  "all_preregistered_seeds": [
+    61001,
+    61032
+  ]
+}

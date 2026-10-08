@@ -1,0 +1,282 @@
+{
+  "checkpoint_sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+  "public_pretrained": true,
+  "training_performed": false,
+  "backend": "physx_cpu",
+  "controller_contracts": {
+    "source": "pd_ee_delta_pose achieved-relative",
+    "memory": "pd_ee_target_delta_pose with live previous-target inversion",
+    "projected": "pd_ee_target_delta_pose with live goal memory + bounded projection",
+    "stateless": "pd_ee_target_delta_pose with achieved-pose substitute + same bounded projection",
+    "naive": "pd_ee_target_delta_pose direct-copy"
+  },
+  "success_count": {
+    "source": 7,
+    "memory": 5,
+    "projected": 7,
+    "stateless": 3,
+    "naive": 3
+  },
+  "refused_episodes": 2,
+  "episodes": [
+    {
+      "seed": 51001,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": true,
+        "projected": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 8,
+        "memory": 8,
+        "projected": 8,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {},
+      "approximations": {},
+      "max_required_native_amp": 1.0000000262446196
+    },
+    {
+      "seed": 51002,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": true,
+        "projected": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 8,
+        "memory": 8,
+        "projected": 8,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {},
+      "approximations": {},
+      "max_required_native_amp": 1.000000238418579
+    },
+    {
+      "seed": 51003,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": true,
+        "projected": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 9,
+        "memory": 9,
+        "projected": 9,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {},
+      "approximations": {},
+      "max_required_native_amp": 1.000000238418579
+    },
+    {
+      "seed": 51004,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "stateless": true,
+        "naive": true
+      },
+      "steps": {
+        "source": 6,
+        "memory": 4,
+        "projected": 6,
+        "stateless": 6,
+        "naive": 6
+      },
+      "refusals": {
+        "memory": {
+          "step": 4,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.1014432460069656
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 4,
+            "required_native_amp": 1.1014432460069656,
+            "exactness": "NOT_EXACT"
+          },
+          {
+            "step": 5,
+            "required_native_amp": 1.0259243845939636,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.1014432460069656
+    },
+    {
+      "seed": 51005,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": true,
+        "projected": true,
+        "stateless": true,
+        "naive": true
+      },
+      "steps": {
+        "source": 7,
+        "memory": 7,
+        "projected": 7,
+        "stateless": 6,
+        "naive": 6
+      },
+      "refusals": {},
+      "approximations": {},
+      "max_required_native_amp": 1.000000238418579
+    },
+    {
+      "seed": 51006,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": true,
+        "projected": true,
+        "stateless": true,
+        "naive": true
+      },
+      "steps": {
+        "source": 7,
+        "memory": 7,
+        "projected": 7,
+        "stateless": 7,
+        "naive": 7
+      },
+      "refusals": {},
+      "approximations": {},
+      "max_required_native_amp": 1.000000238418579
+    },
+    {
+      "seed": 51007,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": false,
+        "memory": false,
+        "projected": false,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 50,
+        "memory": 50,
+        "projected": 50,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {},
+      "approximations": {},
+      "max_required_native_amp": 1.000000238418579
+    },
+    {
+      "seed": 51008,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 6,
+        "memory": 4,
+        "projected": 6,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {
+        "memory": {
+          "step": 4,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.4745022356510162
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 4,
+            "required_native_amp": 1.4745022356510162,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.4745022356510162
+    }
+  ],
+  "task": "PullCube-v1",
+  "protocol": "research/ACTION_ABI_PULL_STACK_PREREGISTERED_V1.json",
+  "hf_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+  "seed_chunk": "0",
+  "seed_list": [
+    51001,
+    51002,
+    51003,
+    51004,
+    51005,
+    51006,
+    51007,
+    51008
+  ],
+  "all_preregistered_seeds": [
+    51001,
+    51032
+  ]
+}
