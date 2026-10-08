@@ -138,23 +138,29 @@ def apply_controller_pr_overlay(commit: str) -> None:
 
     test_path = REPO / "tests" / "test_pd_ee_pose_controller.py"
     test_path.parent.mkdir(parents=True, exist_ok=True)
-    request = urllib.request.Request(
-        "https://api.github.com/repos/mani-skill/ManiSkill/pulls/1472/files?per_page=100",
-        headers={"Accept": "application/vnd.github+json", "User-Agent": "ManiSkill-assay"},
-    )
-    with urllib.request.urlopen(request, timeout=30) as response:
-        changed_files = json.load(response)
-    test_patch = next(
-        (item for item in changed_files if item.get("filename") == "tests/test_pd_ee_pose_controller.py"),
-        None,
-    )
-    if not test_patch or test_patch.get("status") != "added" or test_patch.get("additions") != 76:
-        raise RuntimeError("Could not resolve the pinned #1472 controller regression test patch")
-    patch_lines = test_patch.get("patch", "").splitlines()
-    if any(line and not line.startswith(("+", "@@")) for line in patch_lines):
-        raise RuntimeError("#1472 test patch is not a pure file addition")
-    test_source = "\n".join(line[1:] for line in patch_lines if line.startswith("+")) + "\n"
-    test_bytes = test_source.encode("utf-8")
+    if SMOKE_MODE:
+        # Exact Git object fetched once by SHA, not the mutable public Files API.
+        # Only the isolated smoke branch uses this archived, hash-checked copy.
+        cached_test = Path(__file__).resolve().parent / "pinned" / "test_pd_ee_pose_controller.py"
+        test_bytes = cached_test.read_bytes()
+    else:
+        request = urllib.request.Request(
+            "https://api.github.com/repos/mani-skill/ManiSkill/pulls/1472/files?per_page=100",
+            headers={"Accept": "application/vnd.github+json", "User-Agent": "ManiSkill-assay"},
+        )
+        with urllib.request.urlopen(request, timeout=30) as response:
+            changed_files = json.load(response)
+        test_patch = next(
+            (item for item in changed_files if item.get("filename") == "tests/test_pd_ee_pose_controller.py"),
+            None,
+        )
+        if not test_patch or test_patch.get("status") != "added" or test_patch.get("additions") != 76:
+            raise RuntimeError("Could not resolve the pinned #1472 controller regression test patch")
+        patch_lines = test_patch.get("patch", "").splitlines()
+        if any(line and not line.startswith(("+", "@@")) for line in patch_lines):
+            raise RuntimeError("#1472 test patch is not a pure file addition")
+        test_source = "\n".join(line[1:] for line in patch_lines if line.startswith("+")) + "\n"
+        test_bytes = test_source.encode("utf-8")
     git_blob_sha = hashlib.sha1(b"blob " + str(len(test_bytes)).encode() + b"\0" + test_bytes).hexdigest()
     if git_blob_sha != "ce7e6e66cf3e286168d3d82f763307e18b587659":
         raise RuntimeError("#1472 test patch does not match the pinned Git blob")
