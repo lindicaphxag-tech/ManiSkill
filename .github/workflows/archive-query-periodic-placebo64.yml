@@ -1,0 +1,193 @@
+name: Immutable original 64 query-timing placebo PhysX audit and archive
+
+on:
+  pull_request:
+    paths:
+      - 'research/CERTIFY_QUERY_PERIODIC_PLACEBO_64_PREDECLARED_V1.json'
+      - 'research/audit_certify_query_periodic_placebo64.py'
+      - '.github/workflows/archive-query-periodic-placebo64.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/CERTIFY_QUERY_PERIODIC_PLACEBO_64_PREDECLARED_V1.json'
+      - 'research/audit_certify_query_periodic_placebo64.py'
+      - '.github/workflows/archive-query-periodic-placebo64.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  exact-source-and-four-adversarial-mutations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify actual original successful PhysX source, eight ZIP digests and four evidence attacks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/CERTIFY_QUERY_PERIODIC_PLACEBO_64_PREDECLARED_V1.json)" = "fc6c52c227f68c351b4f5637069672eae62a2e62"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37833053629 --jq .head_sha)" = "e23909a43b8d9aeb4dba5b46e8f9c9845993cb57"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37833053629 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11574044288 --jq .digest)" = "sha256:70003dff85d071dba75b695d94742df7cfc69dc849c2fe9f38bc172058a7c9ad"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11573929639 --jq .digest)" = "sha256:e29ae29ba271337d68106f7d864530c820c173135a95fb1d539f31d6d640f87d"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11574755657 --jq .digest)" = "sha256:b8d70b8bd8130d9234d7c2f586d6001557d5e32eca92628beea2572a17d2d8fa"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11574457033 --jq .digest)" = "sha256:8a49c76a99678e424ad42385593ec2f55b2cbdc6a870b21ef451426be25afe2f"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11574103909 --jq .digest)" = "sha256:b5cb1e1b9ef5f15220fc17603f0ba81f9e01b8fe511c0fd7463a4768ba0088d1"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11574307686 --jq .digest)" = "sha256:1cee94384710fe42cd7c33dfb3c777ec5e29d3d6af0128695ee236dc576386f7"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11573944792 --jq .digest)" = "sha256:8fbe18251e4aa27e22141a75c6f416bafbce60edab350d7283b05e6bd7623e4c"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11575005123 --jq .digest)" = "sha256:347b8faba1f9712018006a6baf46297d58bfbd5d2e774598887934f56d82221e"
+          mkdir -p /tmp/placebo64-sources /tmp/placebo64-unmodified
+          gh run download 37833053629 --repo "$GITHUB_REPOSITORY" --pattern "query-placebo-original-*" --dir /tmp/placebo64-sources
+          test -s "/tmp/placebo64-sources/query-placebo-original-pull_cube-chunk-0/query_placebo_pull_cube_chunk0_original8.json" && cp "/tmp/placebo64-sources/query-placebo-original-pull_cube-chunk-0/query_placebo_pull_cube_chunk0_original8.json" "/tmp/placebo64-unmodified/query_placebo_pull_cube_chunk0_original8.json"
+          test -s "/tmp/placebo64-sources/query-placebo-original-pull_cube-chunk-1/query_placebo_pull_cube_chunk1_original8.json" && cp "/tmp/placebo64-sources/query-placebo-original-pull_cube-chunk-1/query_placebo_pull_cube_chunk1_original8.json" "/tmp/placebo64-unmodified/query_placebo_pull_cube_chunk1_original8.json"
+          test -s "/tmp/placebo64-sources/query-placebo-original-pull_cube-chunk-2/query_placebo_pull_cube_chunk2_original8.json" && cp "/tmp/placebo64-sources/query-placebo-original-pull_cube-chunk-2/query_placebo_pull_cube_chunk2_original8.json" "/tmp/placebo64-unmodified/query_placebo_pull_cube_chunk2_original8.json"
+          test -s "/tmp/placebo64-sources/query-placebo-original-pull_cube-chunk-3/query_placebo_pull_cube_chunk3_original8.json" && cp "/tmp/placebo64-sources/query-placebo-original-pull_cube-chunk-3/query_placebo_pull_cube_chunk3_original8.json" "/tmp/placebo64-unmodified/query_placebo_pull_cube_chunk3_original8.json"
+          test -s "/tmp/placebo64-sources/query-placebo-original-stack_cube-chunk-0/query_placebo_stack_cube_chunk0_original8.json" && cp "/tmp/placebo64-sources/query-placebo-original-stack_cube-chunk-0/query_placebo_stack_cube_chunk0_original8.json" "/tmp/placebo64-unmodified/query_placebo_stack_cube_chunk0_original8.json"
+          test -s "/tmp/placebo64-sources/query-placebo-original-stack_cube-chunk-1/query_placebo_stack_cube_chunk1_original8.json" && cp "/tmp/placebo64-sources/query-placebo-original-stack_cube-chunk-1/query_placebo_stack_cube_chunk1_original8.json" "/tmp/placebo64-unmodified/query_placebo_stack_cube_chunk1_original8.json"
+          test -s "/tmp/placebo64-sources/query-placebo-original-stack_cube-chunk-2/query_placebo_stack_cube_chunk2_original8.json" && cp "/tmp/placebo64-sources/query-placebo-original-stack_cube-chunk-2/query_placebo_stack_cube_chunk2_original8.json" "/tmp/placebo64-unmodified/query_placebo_stack_cube_chunk2_original8.json"
+          test -s "/tmp/placebo64-sources/query-placebo-original-stack_cube-chunk-3/query_placebo_stack_cube_chunk3_original8.json" && cp "/tmp/placebo64-sources/query-placebo-original-stack_cube-chunk-3/query_placebo_stack_cube_chunk3_original8.json" "/tmp/placebo64-unmodified/query_placebo_stack_cube_chunk3_original8.json"
+          python -m research.audit_certify_query_periodic_placebo64 --input-dir /tmp/placebo64-unmodified --output /tmp/placebo64-verified.json
+          python - <<'PY'
+          import shutil, tempfile, json
+          from pathlib import Path
+          from research.audit_certify_query_periodic_placebo64 import audit
+          src=Path('/tmp/placebo64-unmodified')
+          files=sorted(src.glob('*.json'))
+          assert len(files)==8
+          r=audit(src)
+          assert r['original_source_task_states']==64
+          assert r['native_task_success']['fault_robust_then_single_privileged_query']==58
+          assert r['native_task_success']['fault_precommitted_seed_schedule_query']==47
+          assert r['adaptive_target_decision_reads']==17
+          assert r['periodic_nonadaptive_target_decision_reads']==16
+          assert r['adaptive_vs_periodic']['adaptive_only']==12
+          assert r['adaptive_vs_periodic']['comparator_only']==1
+          for corruption in ('missing','duplicate_seed','flip_success','steal_query'):
+              with tempfile.TemporaryDirectory() as d:
+                  path=Path(d)/'mutated'
+                  shutil.copytree(src,path)
+                  f=path/files[0].name
+                  if corruption=='missing':f.unlink()
+                  else:
+                      j=json.loads(f.read_text())
+                      if corruption=='duplicate_seed':j['episodes'][0]['seed']=j['episodes'][1]['seed']
+                      if corruption=='flip_success':
+                          k='fault_robust_then_single_privileged_query'
+                          j['episodes'][0]['success_once'][k]=not j['episodes'][0]['success_once'][k]
+                      if corruption=='steal_query':
+                          j['episodes'][0]['privileged_target_readback_decision_count']['fault_precommitted_seed_schedule_query']=2
+                      f.write_text(json.dumps(j))
+                  try: audit(path); raise AssertionError('Evidence corruption silently accepted '+corruption)
+                  except ValueError:pass
+          print('PASS eight original ZIP digests, 64 outcome/quota records, 4 source tamper tests')
+          PY
+  trusted-main-original-8-json-permanent-archive:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: exact-source-and-four-adversarial-mutations
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Recheck complete original artifacts and 64 source records with read-only GH Actions authorization
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/CERTIFY_QUERY_PERIODIC_PLACEBO_64_PREDECLARED_V1.json)" = "fc6c52c227f68c351b4f5637069672eae62a2e62"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37833053629 --jq .head_sha)" = "e23909a43b8d9aeb4dba5b46e8f9c9845993cb57"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37833053629 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11574044288 --jq .digest)" = "sha256:70003dff85d071dba75b695d94742df7cfc69dc849c2fe9f38bc172058a7c9ad"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11573929639 --jq .digest)" = "sha256:e29ae29ba271337d68106f7d864530c820c173135a95fb1d539f31d6d640f87d"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11574755657 --jq .digest)" = "sha256:b8d70b8bd8130d9234d7c2f586d6001557d5e32eca92628beea2572a17d2d8fa"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11574457033 --jq .digest)" = "sha256:8a49c76a99678e424ad42385593ec2f55b2cbdc6a870b21ef451426be25afe2f"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11574103909 --jq .digest)" = "sha256:b5cb1e1b9ef5f15220fc17603f0ba81f9e01b8fe511c0fd7463a4768ba0088d1"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11574307686 --jq .digest)" = "sha256:1cee94384710fe42cd7c33dfb3c777ec5e29d3d6af0128695ee236dc576386f7"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11573944792 --jq .digest)" = "sha256:8fbe18251e4aa27e22141a75c6f416bafbce60edab350d7283b05e6bd7623e4c"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11575005123 --jq .digest)" = "sha256:347b8faba1f9712018006a6baf46297d58bfbd5d2e774598887934f56d82221e"
+          mkdir -p /tmp/placebo64-sources /tmp/placebo64-unmodified
+          gh run download 37833053629 --repo "$GITHUB_REPOSITORY" --pattern "query-placebo-original-*" --dir /tmp/placebo64-sources
+          test -s "/tmp/placebo64-sources/query-placebo-original-pull_cube-chunk-0/query_placebo_pull_cube_chunk0_original8.json" && cp "/tmp/placebo64-sources/query-placebo-original-pull_cube-chunk-0/query_placebo_pull_cube_chunk0_original8.json" "/tmp/placebo64-unmodified/query_placebo_pull_cube_chunk0_original8.json"
+          test -s "/tmp/placebo64-sources/query-placebo-original-pull_cube-chunk-1/query_placebo_pull_cube_chunk1_original8.json" && cp "/tmp/placebo64-sources/query-placebo-original-pull_cube-chunk-1/query_placebo_pull_cube_chunk1_original8.json" "/tmp/placebo64-unmodified/query_placebo_pull_cube_chunk1_original8.json"
+          test -s "/tmp/placebo64-sources/query-placebo-original-pull_cube-chunk-2/query_placebo_pull_cube_chunk2_original8.json" && cp "/tmp/placebo64-sources/query-placebo-original-pull_cube-chunk-2/query_placebo_pull_cube_chunk2_original8.json" "/tmp/placebo64-unmodified/query_placebo_pull_cube_chunk2_original8.json"
+          test -s "/tmp/placebo64-sources/query-placebo-original-pull_cube-chunk-3/query_placebo_pull_cube_chunk3_original8.json" && cp "/tmp/placebo64-sources/query-placebo-original-pull_cube-chunk-3/query_placebo_pull_cube_chunk3_original8.json" "/tmp/placebo64-unmodified/query_placebo_pull_cube_chunk3_original8.json"
+          test -s "/tmp/placebo64-sources/query-placebo-original-stack_cube-chunk-0/query_placebo_stack_cube_chunk0_original8.json" && cp "/tmp/placebo64-sources/query-placebo-original-stack_cube-chunk-0/query_placebo_stack_cube_chunk0_original8.json" "/tmp/placebo64-unmodified/query_placebo_stack_cube_chunk0_original8.json"
+          test -s "/tmp/placebo64-sources/query-placebo-original-stack_cube-chunk-1/query_placebo_stack_cube_chunk1_original8.json" && cp "/tmp/placebo64-sources/query-placebo-original-stack_cube-chunk-1/query_placebo_stack_cube_chunk1_original8.json" "/tmp/placebo64-unmodified/query_placebo_stack_cube_chunk1_original8.json"
+          test -s "/tmp/placebo64-sources/query-placebo-original-stack_cube-chunk-2/query_placebo_stack_cube_chunk2_original8.json" && cp "/tmp/placebo64-sources/query-placebo-original-stack_cube-chunk-2/query_placebo_stack_cube_chunk2_original8.json" "/tmp/placebo64-unmodified/query_placebo_stack_cube_chunk2_original8.json"
+          test -s "/tmp/placebo64-sources/query-placebo-original-stack_cube-chunk-3/query_placebo_stack_cube_chunk3_original8.json" && cp "/tmp/placebo64-sources/query-placebo-original-stack_cube-chunk-3/query_placebo_stack_cube_chunk3_original8.json" "/tmp/placebo64-unmodified/query_placebo_stack_cube_chunk3_original8.json"
+          python -m research.audit_certify_query_periodic_placebo64 --input-dir /tmp/placebo64-unmodified --output /tmp/placebo64-verified.json
+          python - <<'PY'
+          import shutil, tempfile, json
+          from pathlib import Path
+          from research.audit_certify_query_periodic_placebo64 import audit
+          src=Path('/tmp/placebo64-unmodified')
+          files=sorted(src.glob('*.json'))
+          assert len(files)==8
+          r=audit(src)
+          assert r['original_source_task_states']==64
+          assert r['native_task_success']['fault_robust_then_single_privileged_query']==58
+          assert r['native_task_success']['fault_precommitted_seed_schedule_query']==47
+          assert r['adaptive_target_decision_reads']==17
+          assert r['periodic_nonadaptive_target_decision_reads']==16
+          assert r['adaptive_vs_periodic']['adaptive_only']==12
+          assert r['adaptive_vs_periodic']['comparator_only']==1
+          for corruption in ('missing','duplicate_seed','flip_success','steal_query'):
+              with tempfile.TemporaryDirectory() as d:
+                  path=Path(d)/'mutated'
+                  shutil.copytree(src,path)
+                  f=path/files[0].name
+                  if corruption=='missing':f.unlink()
+                  else:
+                      j=json.loads(f.read_text())
+                      if corruption=='duplicate_seed':j['episodes'][0]['seed']=j['episodes'][1]['seed']
+                      if corruption=='flip_success':
+                          k='fault_robust_then_single_privileged_query'
+                          j['episodes'][0]['success_once'][k]=not j['episodes'][0]['success_once'][k]
+                      if corruption=='steal_query':
+                          j['episodes'][0]['privileged_target_readback_decision_count']['fault_precommitted_seed_schedule_query']=2
+                      f.write_text(json.dumps(j))
+                  try: audit(path); raise AssertionError('Evidence corruption silently accepted '+corruption)
+                  except ValueError:pass
+          print('PASS eight original ZIP digests, 64 outcome/quota records, 4 source tamper tests')
+          PY
+      - name: Commit exact eight ORIGINAL byte-for-byte source JSONs and SHA256SUMS
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/certify_query_periodic_placebo_new64_260001_270032
+          mkdir -p "$dest"
+          cp /tmp/placebo64-unmodified/*.json "$dest/"
+          (cd "$dest" && sha256sum ./*.json > SHA256SUMS && sha256sum -c SHA256SUMS)
+          python -m research.audit_certify_query_periodic_placebo64 --input-dir "$dest" --output /tmp/certify-query-placebo-new64-after-copy-audit.json
+          printf '%s\n' \
+          '# 64 precommitted unique-state PhysX query-timing placebo originals' \
+          '' \
+          'Eight byte-identical original JSON files from successful true PhysX run 37833053629 (source head e23909a43b8d9aeb4dba5b46e8f9c9845993cb57).' \
+          'Original BEFORE-OUTCOME study freeze ee209f6bc80e2bb280f9b00e6a9bafc330bdc799; predeclared protocol SHA blob fc6c52c227f68c351b4f5637069672eae62a2e62.' \
+          'Two frozen third-party PPOs, Pull 260001-260032, Stack 270001-270032, actual native Panda PhysX target-hold at step 2.' \
+          'Original SUCCESS: selective evidence-triggered 58/64 with 17 privileged target state reads; precommitted every-fourth-seed readback 47/64 with 16 reads; always-query 60/64 with 64 reads.' \
+          'Exact paired wins 12 selective-only vs 1 periodic-only; exploratory two-sided exact McNemar p=0.00341796875, not multiple-comparisons adjusted.' \
+          'This is not third-party laboratory replication, robot collision safety, new event-triggered-control theorem, another robot embodiment, or actual network drop.' \
+          'Independent original byte ZIP SHA digests and deliberate data-corruption checks: .github/workflows/archive-query-periodic-placebo64.yml.' \
+          'Use: sha256sum -c SHA256SUMS && python -m research.audit_certify_query_periodic_placebo64 --input-dir . --output /tmp/verified.json' \
+          > "$dest/README.md"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dest"
+          if git diff --cached --quiet;then exit 0;fi
+          git commit -m 'evidence: archive 8 original 64-case precommitted query-timing placebo PhysX sources'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin main
+            if git push origin HEAD:main;then exit 0;fi
+          done
+          exit 1
