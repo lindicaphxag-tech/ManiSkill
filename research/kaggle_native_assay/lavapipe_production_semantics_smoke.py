@@ -42,6 +42,9 @@ def main():
         control_mode="pd_ee_delta_pose",
         sim_backend="physx_cpu",
         render_mode=None,
+        # Official ManiSkill API explicitly disables Vulkan RenderSystem.
+        # State-only PhysX CPU control does not need a graphics device.
+        render_backend="none",
     )
     try:
         env.reset(seed=1495)
@@ -89,7 +92,7 @@ def main():
             "limitations": [
                 "No learned-policy evaluation or PegInsertionSide training",
                 "One deterministic source/pose/episode, no broad task performance",
-                "Lavapipe CPU Vulkan rendering is an experiment, not supported production GPU evidence",
+                "Rendering is explicitly disabled; no Vulkan graphics path is tested",
             ],
         }
         text = json.dumps(result, sort_keys=True, indent=2)
