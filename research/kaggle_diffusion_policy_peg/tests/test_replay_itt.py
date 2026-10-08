@@ -36,7 +36,7 @@ def fixture():
         "repository": "haosulab/ManiSkill_Demonstrations",
         "revision": "d674485bbffdd533914e52d272fdda34c0515608",
         "path": "demos/PegInsertionSide-v1.zip",
-        "sha256": "7d61e4319a0395b220574f1e26ea65bd4ad1406387fbbea96a2ddbb6a9c",
+        "sha256": "7d61e4319a0395b220574f1e26ea65bd4ad1406387fb3debfbea96a2ddbb6a9c",
         "size_bytes": 29475456,
     }
     return build_replay_record(
