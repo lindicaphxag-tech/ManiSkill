@@ -1,0 +1,35 @@
+name: Frozen PPO controller swap source-vs-compiled-vs-naive
+
+on:
+  push:
+    branches:
+      - validation/frozen-ppo-ee-controller-swap-20261008
+  workflow_dispatch:
+
+jobs:
+  frozen-policy-physical-swap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install genuine ManiSkill CPU physics
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Frozen PPO source/adapter/direct-copy comparison
+        run: |
+          python research/frozen_ppo_ee_swap.py 2>&1 | tee frozen_policy_controller_swap.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frozen-ppo-three-arm-controller-swap
+          path: |
+            frozen_ppo_controller_swap.json
+            frozen_policy_controller_swap.log
