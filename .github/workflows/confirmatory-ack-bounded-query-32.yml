@@ -1,0 +1,161 @@
+name: Frozen confirmatory ACK bounded/query 32-state real PhysX
+
+on:
+  push:
+    branches: [research/confirmatory-ack-budget-32state-v1]
+  pull_request:
+    paths:
+      - 'research/UNKNOWN_ACK_BOUNDED_QUERY_CONFIRMATORY_32_FROZEN_V1.json'
+      - 'research/frozen_ppo_ack_bounded_query_confirm32.py'
+      - 'research/ack_bounded_query_confirm32_aggregate.py'
+      - '.github/workflows/confirmatory-ack-bounded-query-32.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  precommitted-protocol-and-frozen-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fail if prospective protocol changed since original preregistration
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/UNKNOWN_ACK_BOUNDED_QUERY_CONFIRMATORY_32_FROZEN_V1.json)" = "ac6ae1ce67cfb2f4d0a16c84bca5dc8e823b2f00"
+          python - <<'PY'
+          import json
+          p=json.load(open('research/UNKNOWN_ACK_BOUNDED_QUERY_CONFIRMATORY_32_FROZEN_V1.json'))
+          assert p['new_studies']['pull_cube']['seed_range_inclusive']==[142001,142016]
+          assert p['new_studies']['stack_cube']['seed_range_inclusive']==[152001,152016]
+          assert p['fixed_budgets']['position_inf_m']==.05
+          assert p['fixed_budgets']['rotation_geodesic_rad']==.05
+          assert len(p['arms'])==7
+          assert p['precommitted_gates']['selective_query_success_must_be_at_least_mandatory_minus_2_in_total_32'] is True
+          assert p['precommitted_gates']['selective_readback_savings_must_be_at_least_8_out_of_32_compared_with_mandatory'] is True
+          PY
+      - name: Independently compile both reused source modules, no numerical retuning
+        run: |
+          python -m py_compile research/frozen_ppo_ack_bounded_query_confirm32.py research/ack_bounded_query_confirm32_aggregate.py
+      - name: Reject any controller source change outside preregistered cohort/provenance
+        run: |
+          python - <<'PY'
+          import difflib
+          from pathlib import Path
+          old=Path('research/frozen_ppo_ack_bounded_query.py').read_text()
+          new=Path('research/frozen_ppo_ack_bounded_query_confirm32.py').read_text()
+          swaps=[
+            ('Protocol fixed before this source in UNKNOWN_ACK_BOUNDED_QUERY_FROZEN_V1.json.',
+             'This confirmation reuses the previously green frozen method and only selects a new preregistered source cohort.'),
+            ('range(122001,122009)','range(142001,142017)'),
+            ('range(132001,132009)','range(152001,152017)'),
+            ('PROTO="research/UNKNOWN_ACK_BOUNDED_QUERY_FROZEN_V1.json"',
+             'PROTO="research/UNKNOWN_ACK_BOUNDED_QUERY_CONFIRMATORY_32_FROZEN_V1.json"'),
+            ('assert len(rows)==8 and [r["seed"] for r in rows]==list(SEEDS)',
+             'assert len(rows)==16 and [r["seed"] for r in rows]==list(SEEDS)'),
+            ('"schema":"unknown_ack_bounded_or_query_physx_v1"',
+             '"schema":"unknown_ack_bounded_query_confirmatory_32_v1"'),
+            ('p=f"unknown_ack_bounded_query_{TASK}_original8.json"',
+             'p=f"unknown_ack_bounded_query_confirm32_{TASK}_original16.json"'),
+          ]
+          for a,b in swaps:
+              assert old.count(a)==1,a
+              old=old.replace(a,b)
+          assert old==new, "Attempted retrospective methodology edit"
+          print("PASS: exact known algorithm equivalence, only seven preregistered cohort/provenance changes")
+          PY
+
+  two-independent-task-populations:
+    needs: precommitted-protocol-and-frozen-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+    env:
+      PYTHONUNBUFFERED: '1'
+      ABI_TASK: ${{ matrix.task }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install genuine PhysX and original published frozen-policy runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Execute all 16 new states × 7 actual native controllers, include ALL negative results
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/frozen_ppo_ack_bounded_query_confirm32.py 2>&1 | tee "confirm32_${ABI_TASK}.log"
+          test -s "unknown_ack_bounded_query_confirm32_${ABI_TASK}_original16.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-confirm32-${{ matrix.task }}
+          path: |
+            unknown_ack_bounded_query_confirm32_*.json
+            confirm32_*.log
+
+  independent-original-32-denominator-audit:
+    needs: two-independent-task-populations
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-confirm32-*
+          path: /tmp/confirm32_source
+          merge-multiple: true
+      - name: Verify all 32 original states and every actual controller outcome
+        run: |
+          python -m research.ack_bounded_query_confirm32_aggregate --input-dir /tmp/confirm32_source --output confirm32_full_32_original_aggregate.json
+      - name: Report prespecified positives AND negatives without invalidating original evidence
+        run: |
+          python - <<'PY'
+          import json
+          q=json.load(open('confirm32_full_32_original_aggregate.json'))
+          r=q['results']
+          a,b=r['pull_cube'],r['stack_cube']
+          assert q['original_task_state_count']==32
+          arms=['fault_robust_two_history_without_query','fault_robust_then_single_privileged_query',
+                'fault_always_single_privileged_query','fault_optimistic_unverified_ack']
+          total={key:a['task_success_by_arm'][key]+b['task_success_by_arm'][key] for key in arms}
+          selective_reads=a['selective_privileged_readback_total']+b['selective_privileged_readback_total']
+          mandatory_reads=a['mandatory_privileged_readback_total']+b['mandatory_privileged_readback_total']
+          # These are descriptive preregistered result-classification rules:
+          # Failures are REPORTED, never filtered or hidden by exit-code tuning.
+          gates={
+             'original_policy_competence_both_tasks':a['source_competent_min_10'] and b['source_competent_min_10'],
+             'selective_noninferiority_margin_two_of_32':total[arms[1]]>=total[arms[2]]-2,
+             'selective_privileged_readback_saving_at_least_eight':mandatory_reads-selective_reads>=8,
+             'zero_query_mechanistic_net_success_gain_at_least_five':total[arms[0]]-total[arms[3]]>=5
+          }
+          print('PREDECLARED_CONFIRMATORY_GATES',json.dumps({
+            'success_counts':total,'selective_reads':selective_reads,
+            'mandatory_reads':mandatory_reads,'gates':gates
+          },sort_keys=True))
+          with open('confirm32_registered_gates.json','w') as f:
+              json.dump({'gates':gates,'task_success_counts':total,
+                         'selective_reads':selective_reads,
+                         'mandatory_reads':mandatory_reads},f,indent=2)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: all-original-confirmatory-32-task-state-and-seven-arm-evidence
+          path: |
+            /tmp/confirm32_source/*.json
+            /tmp/confirm32_source/*.log
+            confirm32_full_32_original_aggregate.json
+            confirm32_registered_gates.json
