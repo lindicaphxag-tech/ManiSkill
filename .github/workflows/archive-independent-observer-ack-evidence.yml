@@ -38,6 +38,27 @@ jobs:
           gh run download 37822693649 --repo "$GITHUB_REPOSITORY" \
             --name complete-physical-ack-loss-recovery-evidence \
             --dir /tmp/original-ack
+          # Different upload-artifact path roots can preserve a nested directory.
+          # Materialize one exact copy of every expected file at the audit root.
+          for t in pull_cube stack_cube; do
+            for part in 0 1 2 3; do
+              name="independent_observer_${t}_${part}.json"
+              item=$(find /tmp/original-observer -name "$name" -type f)
+              test "$(find /tmp/original-observer -name "$name" -type f | wc -l)" -eq 1
+              test "$item" = "/tmp/original-observer/$name" || cp "$item" "/tmp/original-observer/$name"
+            done
+            name="ack_loss_physx_resync_${t}_8.json"
+            item=$(find /tmp/original-ack -name "$name" -type f)
+            test "$(find /tmp/original-ack -name "$name" -type f | wc -l)" -eq 1
+            test "$item" = "/tmp/original-ack/$name" || cp "$item" "/tmp/original-ack/$name"
+          done
+          for entry in "independent-history-64-aggregate.json:original-observer" "ack-loss-physx-full-aggregate.json:original-ack"; do
+            name="${entry%%:*}"
+            dir="${entry#*:}"
+            item=$(find "/tmp/$dir" -name "$name" -type f)
+            test "$(find "/tmp/$dir" -name "$name" -type f | wc -l)" -eq 1
+            test "$item" = "/tmp/$dir/$name" || cp "$item" "/tmp/$dir/$name"
+          done
       - name: Independently verify original task denominator, source identities, and no-cherry-pick outcomes
         run: |
           python - <<'PY'
