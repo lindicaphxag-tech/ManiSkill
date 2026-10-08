@@ -1,0 +1,298 @@
+"""Frozen PPO under achieved-delta vs target-delta controller semantics.
+
+No training. Controller interface can refuse nonrepresentable target memory
+translations rather than silently clipping and claiming exact transfer.
+"""
+import hashlib
+import json
+import os
+from pathlib import Path
+
+import gymnasium as gym
+import numpy as np
+import torch
+from scipy.spatial.transform import Rotation
+from huggingface_hub import hf_hub_download
+
+import mani_skill.envs  # noqa F401
+from mani_skill.utils.structs import Pose
+from action_abi_history_observer import ActionHistoryObserver, TargetPose
+
+from frozen_ppo_observer_policy import (
+    _actor, _bool_value, REPO, FILENAME, EXPECTED,
+)
+
+PUBLISHED_MODEL_REVISION="6bdeb28810330ab5425ccd629bb561c58a56ff85"
+TASKS={
+    "pull_cube":("PullCube-v1","ppo/pull_cube_final_ckpt.pt",
+                 "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",62001),
+    "stack_cube":("StackCube-v1","ppo/stack_cube_final_ckpt.pt",
+                  "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c",72001)
+}
+TASK=os.environ.get("ABI_TASK")
+if TASK not in TASKS:
+    raise ValueError("ABI_TASK must be pull_cube or stack_cube; no unregistered task")
+TASK_NAME,FILENAME,EXPECTED,FIRST_SEED=TASKS[TASK]
+ALL_SEEDS=tuple(range(FIRST_SEED,FIRST_SEED+8))
+CHUNK=None
+SEEDS=ALL_SEEDS
+OUTPUT_NAME=f"abi_observer_{TASK}_fresh8.json"
+POLICY_OBS_DIM=0
+STEPS=50
+TOL=1e-5
+
+
+def env(mode):
+    return gym.make(TASK_NAME,num_envs=1,obs_mode="state",
+                    sim_backend="physx_cpu",reconfiguration_freq=1,
+                    control_mode=mode,disable_env_checker=True)
+
+
+def rot_from_wxyz(wxyz):
+    q=np.asarray(wxyz,dtype=float).reshape(-1,4)[0]
+    return Rotation.from_quat([q[1],q[2],q[3],q[0]])
+
+
+def normalized_target_delta(source_arm,target_arm,policy_native, *, approximate=False, use_history=True, old_override=None):
+    """Inverts physical achieved-relative EE goal into target-relative ABI."""
+    # Main intervention: identical conversion and projection; only the
+    # reference pose changes. In the stateless negative control, the
+    # achieved pose is (incorrectly) substituted for the last target.
+    old=(old_override if old_override is not None else (target_arm._target_pose if use_history else target_arm.ee_pose_at_base))
+    if old is None:
+        return None,"controller runtime previous target memory missing",None
+
+    # Decode policy's original normalized achieved-relative command.
+    delta=source_arm._preprocess_action(policy_native[:,:6])
+    desired=source_arm.compute_target_pose(target_arm.ee_pose_at_base,delta)
+    desired_pos=np.asarray(desired.p.detach().cpu(),dtype=float).reshape(-1,3)[0]
+    old_pos=np.asarray(old.p.detach().cpu(),dtype=float).reshape(-1,3)[0]
+    desired_R=rot_from_wxyz(desired.q)
+    old_R=rot_from_wxyz(old.q)
+
+    physical_pos=desired_pos-old_pos
+    physical_euler=(desired_R*old_R.inv()).as_euler("XYZ")
+    lower=float(source_arm.config.pos_lower)
+    upper=float(source_arm.config.pos_upper)
+    rot_scale=float(source_arm.config.rot_lower)
+    if abs(rot_scale)<1e-8 or upper <= lower:
+        return None,"ill-defined controller action limits",None
+
+    # Inverse of ManiSkill's native bounded pos affine scaling:
+    # physical delta = (u+1)/2*(upper-lower)+lower.
+    pos_native=2*(physical_pos-lower)/(upper-lower)-1
+    # PDEEPoseController._clip_and_scale_action multiplies native Euler
+    # vector by config.rot_lower, clipping its Euclidean norm to <=1.
+    rot_native=physical_euler/rot_scale
+    amp=float(max(np.max(np.abs(pos_native)),np.linalg.norm(rot_native)))
+    if not np.all(np.isfinite(pos_native)) or not np.all(np.isfinite(rot_native)):
+        return None,"nonfinite target action",amp
+    if amp>1+TOL:
+        if not approximate:
+            return None,"required delta outside target native bounds",amp
+        # Experimental non-exact fallback: Euclidean closest normalized
+        # position command (box) and rotation command (unit ball).
+        pos_native=np.clip(pos_native,-1.0,1.0)
+        rot_len=float(np.linalg.norm(rot_native))
+        if rot_len>1.0:
+            rot_native=rot_native/rot_len
+        return torch.as_tensor(np.r_[pos_native,rot_native],
+                               dtype=policy_native.dtype).reshape(1,6),"APPROXIMATE_BOUNDED_PROJECTION",amp
+    return torch.as_tensor(np.r_[pos_native,rot_native],
+                           dtype=policy_native.dtype).reshape(1,6),None,amp
+
+
+def _project_policy_observation(flat_observation, environment):
+    """Project target controller observations back into the source ABI.
+
+    ManiSkill's state observation order is: agent.qpos, agent.qvel,
+    agent.controller.target_pose (7D when use_target=True), task.extra.
+    The frozen PPO was trained without the controller target-pose field.
+    Do not merely truncate: preserve all task.extra coordinates.
+    """
+    obs=torch.as_tensor(flat_observation)
+    if POLICY_OBS_DIM <=0:
+        raise RuntimeError("Source policy observation ABI not initialized")
+    if obs.ndim != 2 or obs.shape[0] != 1:
+        raise RuntimeError("Unexpected state observation batch shape")
+    agent=environment.unwrapped.agent
+    arm=agent.controller.controllers["arm"]
+    nq=int(agent.robot.get_qpos().shape[-1])
+    nv=int(agent.robot.get_qvel().shape[-1])
+    if agent.controller.controllers["arm"].config.use_target:
+        memory=arm.get_state().get("target_pose")
+        if memory is None:
+            raise RuntimeError("Controller target memory missing: refuse projection")
+        memory=torch.as_tensor(memory,device=obs.device,dtype=obs.dtype)
+        if memory.shape[-1]!=7 or obs.shape[-1]!=POLICY_OBS_DIM+7:
+            raise RuntimeError("Target observation ABI changed; cannot project")
+        offset=nq+nv
+        actual=obs[:,offset:offset+7]
+        if not torch.allclose(actual,memory,atol=1e-5,rtol=0):
+            raise RuntimeError("Observation controller-state slice mismatches live target memory")
+        converted=torch.cat([obs[:,:offset],obs[:,offset+7:]],dim=1)
+        if converted.shape[-1]!=POLICY_OBS_DIM:
+            raise RuntimeError("Projected observation ABI does not match exact frozen source network input")
+        return converted
+    if obs.shape[-1]!=POLICY_OBS_DIM:
+        raise RuntimeError("Source observation ABI differs from frozen network input width")
+    return obs
+
+
+def act(policy,observation):
+    with torch.no_grad():
+        return policy(observation.detach().cpu().float()).clip(-1,1)
+
+
+def trial(policy, seed):
+    worlds={
+        "source":env("pd_ee_delta_pose"),
+        "memory":env("pd_ee_target_delta_pose"),
+        "projected":env("pd_ee_target_delta_pose"),
+        "observer":env("pd_ee_target_delta_pose"),
+        "stateless":env("pd_ee_target_delta_pose"),
+        "naive":env("pd_ee_target_delta_pose"),
+    }
+    outcome={"seed":seed,"initial_obs_diff":{},"success_once":{},
+             "steps":{},"refusals":{},"approximations":{},"max_required_native_amp":0.0,
+             "observer_end_target_error":None}
+    try:
+        observations={k:w.reset(seed=seed)[0] for k,w in worlds.items()}
+        canonical_start=_project_policy_observation(observations["source"],worlds["source"])
+        for key in ("memory","projected","observer","stateless","naive"):
+            projected=_project_policy_observation(observations[key],worlds[key])
+            diff=float(torch.max(torch.abs(canonical_start-projected)).item())
+            outcome["initial_obs_diff"][key]=diff
+            if diff>5e-4:
+                raise RuntimeError(f"Nonidentical physical/task initial state {key}: {diff}")
+        controller={k:w.unwrapped.agent.controller for k,w in worlds.items()}
+        source_arm=controller["source"].controllers["arm"]
+        observer_arm=controller["observer"].controllers["arm"]
+        c=observer_arm.config
+        observer=ActionHistoryObserver(
+            c.pos_lower,c.pos_upper,c.rot_lower,frame=c.frame,
+            use_delta=c.use_delta,use_target=c.use_target,
+            normalize_action=c.normalize_action)
+        initial=observer_arm.ee_pose_at_base
+        p=np.asarray(initial.p.detach().cpu()).reshape(-1,3)[0]
+        q=np.asarray(initial.q.detach().cpu()).reshape(-1,4)[0]
+        observer.reset(TargetPose.from_arrays(p,q[[1,2,3,0]]))
+        done={k:False for k in worlds}
+        for t in range(STEPS):
+            for name,w in worlds.items():
+                if done[name]:
+                    continue
+                native=act(policy,_project_policy_observation(observations[name],w))
+                if name in ("memory","projected","stateless","observer"):
+                    arm=controller[name].controllers["arm"]
+                    if name=="observer":
+                        estimation=observer.pose
+                        xyz=np.asarray(estimation.position,dtype=np.float32).reshape(1,3)
+                        xyzw=np.asarray(estimation.quaternion_xyzw,dtype=np.float32)
+                        wxyz=xyzw[[3,0,1,2]].reshape(1,4)
+                        prior=Pose.create_from_pq(torch.as_tensor(xyz),torch.as_tensor(wxyz))
+                    else:
+                        prior=None
+                    rewritten,reason,amplitude=normalized_target_delta(
+                        source_arm,arm,native,
+                        approximate=(name!="memory"),
+                        use_history=(name!="stateless"),
+                        old_override=prior)
+                    if reason == "APPROXIMATE_BOUNDED_PROJECTION":
+                        outcome["approximations"].setdefault(name,[]).append({
+                            "step":t,"required_native_amp":amplitude,
+                            "exactness":"NOT_EXACT",
+                        })
+                    if amplitude is not None:
+                        outcome["max_required_native_amp"]=max(
+                            outcome["max_required_native_amp"],amplitude)
+                    if rewritten is None:
+                        outcome["refusals"][name]={
+                            "step":t,"reason":reason,"required_amp":amplitude
+                        }
+                        done[name]=True
+                        continue
+                    source_parts=controller["source"].to_action_dict(native[0])
+                    action=controller[name].from_action_dict({
+                        "arm":rewritten[0],"gripper":source_parts["gripper"]
+                    }).reshape(1,-1)
+                else:
+                    action=native
+                if name=="observer":
+                    pending=observer.prepare(rewritten[0].detach().cpu().numpy())
+                observations[name],_,term,trunc,info=w.step(action)
+                if name=="observer":
+                    observer.acknowledge(pending.ticket,applied=True)
+                val=info.get("success")
+                if val is None:
+                    raise RuntimeError(f"Missing actual {TASK_NAME} success flag")
+                outcome["success_once"][name]=(
+                    outcome["success_once"].get(name,False) or _bool_value(val)
+                )
+                outcome["steps"][name]=t+1
+                done[name]=_bool_value(term) or _bool_value(trunc)
+            if all(done.values()):
+                break
+        # Audit-only getter AFTER the full closed loop: never used to choose actions.
+        real=controller["observer"].controllers["arm"].get_state()["target_pose"]
+        actual=np.asarray(real.detach().cpu()).reshape(-1,7)[0]
+        predicted=observer.pose
+        xyz_error=float(np.max(np.abs(actual[:3]-np.asarray(predicted.position))))
+        qreal=rot_from_wxyz(actual[3:])
+        qobs=Rotation.from_quat(predicted.quaternion_xyzw)
+        ang_error=float((qreal*qobs.inv()).magnitude())
+        outcome["observer_end_target_error"]={"max_position_abs":xyz_error,"rotation_rad":ang_error}
+        if xyz_error>3e-5 or ang_error>3e-4:
+            raise RuntimeError("Action-history observer diverged from final controller memory")
+        print("FROZEN_TARGET_MEMORY_EPISODE",json.dumps(outcome,sort_keys=True))
+        return outcome
+    finally:
+        for x in worlds.values():
+            x.close()
+
+
+def main():
+    global POLICY_OBS_DIM
+    file=Path(hf_hub_download(repo_id=REPO,filename=FILENAME,revision=PUBLISHED_MODEL_REVISION))
+    sha=hashlib.sha256(file.read_bytes()).hexdigest()
+    if sha!=EXPECTED:
+        raise RuntimeError("Published frozen model hash changed")
+    env0=env("pd_ee_delta_pose")
+    try:
+        observation,_=env0.reset(seed=SEEDS[0])
+        POLICY_OBS_DIM=int(observation.shape[-1])
+        print("PUSH_CUBE_SOURCE_ABI",{"policy_obs":POLICY_OBS_DIM,"checkpoint":EXPECTED,"mode":"pd_ee_delta_pose"})
+        actor=_actor(torch.load(file,map_location="cpu",weights_only=True),
+                     int(observation.shape[-1]),7)
+    finally:
+        env0.close()
+    records=[trial(actor,seed) for seed in SEEDS]
+    counts={key:sum(x["success_once"].get(key,False) for x in records)
+            for key in ("source","memory","projected","observer","stateless","naive")}
+    refusals=sum("memory" in x["refusals"] for x in records)
+    data={"checkpoint_sha256":sha,"public_pretrained":True,
+          "training_performed":False,"backend":"physx_cpu",
+          "controller_contracts":{
+             "source":"pd_ee_delta_pose achieved-relative",
+             "memory":"pd_ee_target_delta_pose with live previous-target inversion",
+             "projected":"pd_ee_target_delta_pose with live goal memory + bounded projection",
+             "stateless":"pd_ee_target_delta_pose with achieved-pose substitute + same bounded projection",
+             "observer":"pd_ee_target_delta_pose with action-only reconstructed target + same bounded projection",
+             "naive":"pd_ee_target_delta_pose direct-copy"},
+          "success_count":counts,"refused_episodes":refusals,"episodes":records}
+    data["task"]=TASK_NAME
+    data["protocol"]="research/ACTION_ABI_HISTORY_OBSERVER_PREDECLARED_V1.json"
+    data["hf_revision"]=PUBLISHED_MODEL_REVISION
+    data["seed_chunk"]=CHUNK
+    data["seed_list"]=list(SEEDS)
+    data["all_preregistered_seeds"]=[FIRST_SEED,FIRST_SEED+7]
+    Path(OUTPUT_NAME).write_text(json.dumps(data,indent=2))
+    print("FROZEN_TARGET_MEMORY_SUMMARY",json.dumps({
+        "success":counts,"refused":refusals,
+        "approximate_steps":{k:sum(len(x["approximations"].get(k,[])) for x in records)
+                             for k in ("projected","observer","stateless")},
+        "episodes":len(records)}))
+
+
+if __name__=="__main__":
+    main()
