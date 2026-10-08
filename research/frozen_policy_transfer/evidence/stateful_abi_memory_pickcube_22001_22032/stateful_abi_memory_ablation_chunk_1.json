@@ -1,0 +1,345 @@
+{
+  "checkpoint_sha256": "3e6c95d63a2132843323e24cf7ba962b8cf2610f04b2a5a43f3efb6fef8497a8",
+  "public_pretrained": true,
+  "training_performed": false,
+  "backend": "physx_cpu",
+  "controller_contracts": {
+    "source": "pd_ee_delta_pose achieved-relative",
+    "memory": "pd_ee_target_delta_pose with live previous-target inversion",
+    "projected": "pd_ee_target_delta_pose with bounded non-exact projection",
+    "naive": "pd_ee_target_delta_pose direct-copy",
+    "memory_blind_projected": "target-delta action uses achieved EE instead of previous target; identical physical source goal and bounded projection as projected arm"
+  },
+  "success_count": {
+    "source": 8,
+    "memory": 1,
+    "projected": 8,
+    "memory_blind_projected": 1,
+    "naive": 1
+  },
+  "refused_episodes": 7,
+  "episodes": [
+    {
+      "seed": 22009,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "memory_blind_projected": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "memory_blind_projected": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 11,
+        "memory": 4,
+        "projected": 11,
+        "memory_blind_projected": 50,
+        "naive": 50
+      },
+      "refusals": {
+        "memory": {
+          "step": 4,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.6291781142354007
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 4,
+            "required_native_amp": 1.6291781142354007,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.6291781142354007
+    },
+    {
+      "seed": 22010,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "memory_blind_projected": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "memory_blind_projected": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 13,
+        "memory": 5,
+        "projected": 13,
+        "memory_blind_projected": 50,
+        "naive": 50
+      },
+      "refusals": {
+        "memory": {
+          "step": 5,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.5349310822784896
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 5,
+            "required_native_amp": 1.5349310822784896,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.5349310822784896
+    },
+    {
+      "seed": 22011,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "memory_blind_projected": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "memory_blind_projected": true,
+        "naive": true
+      },
+      "steps": {
+        "source": 13,
+        "memory": 4,
+        "projected": 13,
+        "memory_blind_projected": 34,
+        "naive": 34
+      },
+      "refusals": {
+        "memory": {
+          "step": 4,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.3770721107721329
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 4,
+            "required_native_amp": 1.3770721107721329,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.3770721107721329
+    },
+    {
+      "seed": 22012,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "memory_blind_projected": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "memory_blind_projected": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 12,
+        "memory": 4,
+        "projected": 12,
+        "memory_blind_projected": 50,
+        "naive": 50
+      },
+      "refusals": {
+        "memory": {
+          "step": 4,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.5966621786355968
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 4,
+            "required_native_amp": 1.5966621786355968,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.5966621786355968
+    },
+    {
+      "seed": 22013,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "memory_blind_projected": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": true,
+        "projected": true,
+        "memory_blind_projected": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 11,
+        "memory": 11,
+        "projected": 11,
+        "memory_blind_projected": 50,
+        "naive": 50
+      },
+      "refusals": {},
+      "approximations": {},
+      "max_required_native_amp": 1.000000238418579
+    },
+    {
+      "seed": 22014,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "memory_blind_projected": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "memory_blind_projected": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 8,
+        "memory": 4,
+        "projected": 8,
+        "memory_blind_projected": 50,
+        "naive": 50
+      },
+      "refusals": {
+        "memory": {
+          "step": 4,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.1599591374397278
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 4,
+            "required_native_amp": 1.1599591374397278,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.1599591374397278
+    },
+    {
+      "seed": 22015,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "memory_blind_projected": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "memory_blind_projected": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 13,
+        "memory": 4,
+        "projected": 14,
+        "memory_blind_projected": 50,
+        "naive": 50
+      },
+      "refusals": {
+        "memory": {
+          "step": 4,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.6314190626144405
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 4,
+            "required_native_amp": 1.6314190626144405,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.6314190626144405
+    },
+    {
+      "seed": 22016,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "memory_blind_projected": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "memory_blind_projected": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 9,
+        "memory": 4,
+        "projected": 10,
+        "memory_blind_projected": 50,
+        "naive": 50
+      },
+      "refusals": {
+        "memory": {
+          "step": 4,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.2510405480861664
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 4,
+            "required_native_amp": 1.2510405480861664,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.2510405480861664
+    }
+  ],
+  "seed_chunk": "1",
+  "all_preregistered_seeds": [
+    22001,
+    22032
+  ],
+  "seed_list": [
+    22009,
+    22010,
+    22011,
+    22012,
+    22013,
+    22014,
+    22015,
+    22016
+  ],
+  "protocol": "research/STATEFUL_ABI_MEMORY_ABLATION_FROZEN_V1.json"
+}
