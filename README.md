@@ -8,6 +8,8 @@ Four independently pretrained third-party PPOs on PickCube, PushCube, PullCube a
 
 [**Method / four-task evidence / originality limits**](research/frozen_policy_transfer/STATEFUL_ACTION_ABI_FLAGSHIP.md) · [**Run original 64-state, nine-file offline evidence audit**](research/frozen_policy_transfer/README.md) · [**Permanent original JSONs**](research/frozen_policy_transfer/evidence/pull_stack_new_task_64/) · [**Public reviewer falsification challenge**](https://github.com/lindicaphxag-tech/kaggle/issues/67)
 
+**New: getter-free controller-memory observer, externally inspectable.** A separate predeclared 16-task-state PhysX study reconstructs the previous command target from the reset pose and acknowledged actions, without a private target-state read at decision time. Observer and privileged-memory task outcomes match on **13/16** successes (Pull 6/8, Stack 7/8); a matched memory-blind arm reaches **5/16**. Twelve steps were marked **NOT_EXACT**. [**Original CI, all per-seed records, target-reconstruction error, limits**](research/frozen_policy_transfer/ACTION_HISTORY_OBSERVER_PROSPECTIVE_16.md) · [Source](research/action_abi_history_observer.py) · [External falsification invitation](https://github.com/lindicaphxag-tech/kaggle/issues/67)
+
 **Scope:** owner-run simulated policies on one Panda controller family, not four different robots, a first robot action adapter, safe hardware deployment, independent academic replication, or a VLA model.
 
 ---
