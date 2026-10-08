@@ -1,4 +1,4 @@
-"""Fail-closed audit of 16 source-frozen seven-arm genuine PhysX ACK-fault rows.
+"""Fail-closed audit of 32 source-frozen seven-arm genuine PhysX ACK-fault rows.
 
 No cherry-picked seeds; original source policy competence and all faults
 are reported separately, including incomplete / refused target episodes.
@@ -30,7 +30,7 @@ INTERVENED=ARMS[1:]
 def inspect(originals: Path):
     found=sorted(originals.rglob("unknown_ack_bounded_query_confirm32_*_original16.json"))
     if len(found)!=2:
-        raise ValueError(f"Expected exactly two original, full eight-seed task files; got {len(found)}")
+        raise ValueError(f"Expected exactly two original, full 16-seed task files; got {len(found)}")
     task_results={}
     for task,(env,seeds,sha) in SPECS.items():
         file=next((p for p in found if p.name==f"unknown_ack_bounded_query_confirm32_{task}_original16.json"),None)
@@ -130,7 +130,7 @@ def inspect(originals: Path):
         if q.get("robust_no_query_authorization_count")!=robust_step_count:
             raise ValueError("Published robust-only step count changed")
         task_results[task]={
-            "task":env,"original_seeds":seeds,"source_competent_min_5":calc[ARMS[0]]>=5,
+            "task":env,"original_seeds":seeds,"source_competent_min_10":calc[ARMS[0]]>=10,
             "task_success_by_arm":calc,"actual_fault_injections":faulted,
             "selective_privileged_readback_total":sum(x["selective"] for x in query_counts.values()),
             "mandatory_privileged_readback_total":sum(x["always"] for x in query_counts.values()),
@@ -159,7 +159,7 @@ def main():
     a.output.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n",encoding="utf-8")
     print("ACK_BOUNDED_QUERY_FINAL",json.dumps({
         k:{"counts":v["task_success_by_arm"],
-           "source_competent":v["source_competent_min_5"],
+           "source_competent":v["source_competent_min_10"],
            "queries_selective":v["selective_privileged_readback_total"],
            "queries_mandatory":v["mandatory_privileged_readback_total"],
            "bounded_steps":v["no_query_robust_authorized_native_steps"]}
