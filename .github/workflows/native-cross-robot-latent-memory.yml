@@ -20,6 +20,7 @@ jobs:
     timeout-minutes: 55
     env:
       PYTHONUNBUFFERED: '1'
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -41,6 +42,10 @@ jobs:
           sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
           python -m pip install --upgrade pip
           python -m pip install -e .
+      - name: Install official xArm6 Robotiq URDF/model assets without interactive prompts
+        run: |
+          python -m mani_skill.utils.download_asset xarm6 -y --quiet
+          test -s "$HOME/.maniskill/data/robots/xarm6/xarm6_robotiq.urdf"
       - name: Execute both non-Panda robot embodiments without guessed action widths
         run: |
           set -o pipefail
