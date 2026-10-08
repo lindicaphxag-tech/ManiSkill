@@ -1,0 +1,97 @@
+name: Frozen independent PullCube-StackCube memory transfer
+
+on:
+  push:
+    branches:
+      - research/action-abi-independent-pull-stack-replication-v1
+  pull_request:
+    paths:
+      - '.github/workflows/action-abi-pull-stack-replication.yml'
+      - 'research/ACTION_ABI_PULL_STACK_PREREGISTERED_V1.json'
+      - 'research/frozen_ppo_target_memory.py'
+      - 'research/action_abi_pull_stack_aggregate.py'
+      - 'tests/test_action_abi_pull_stack_auditor.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prospective-protocol-and-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify preregistered document was not updated after freeze
+        run: |
+          test "$(git hash-object research/ACTION_ABI_PULL_STACK_PREREGISTERED_V1.json)" = "721509118c490f2e9a5a87a6570922b7106bfbea"
+          python -m py_compile research/frozen_ppo_target_memory.py
+      - name: Run full-denominator and null-result CPU evidence regression
+        run: |
+          python -m unittest discover -s tests -p 'test_action_abi_pull_stack_auditor.py' -v
+
+  real-physx-independent-task:
+    needs: prospective-protocol-and-audit
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      PYTHONUNBUFFERED: '1'
+      ABI_TASK: ${{ matrix.task }}
+      ABI_CHUNK: ${{ matrix.chunk }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official ManiSkill PhysX CPU runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Execute all five arms of frozen third-party PPO
+        run: |
+          set -o pipefail
+          python research/frozen_ppo_target_memory.py 2>&1 | tee "abi_task_${ABI_TASK}_chunk_${ABI_CHUNK}.log"
+          test -s "abi_independent_${ABI_TASK}_chunk_${ABI_CHUNK}.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: abi-original-${{ matrix.task }}-${{ matrix.chunk }}
+          path: |
+            abi_independent_*.json
+            abi_task_*.log
+
+  full-64-original-state-audit:
+    needs: real-physx-independent-task
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: abi-original-*
+          path: /tmp/action_abi_replay
+          merge-multiple: true
+      - name: Reconstruct every new task-state and all 5 arm comparisons
+        run: |
+          python -m research.action_abi_pull_stack_aggregate \
+            --input-dir /tmp/action_abi_replay \
+            --output abi_pull_stack_prospective_aggregate.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: full-64-state-two-new-task-frozen-ppo-audit
+          path: |
+            /tmp/action_abi_replay/*.json
+            abi_pull_stack_prospective_aggregate.json

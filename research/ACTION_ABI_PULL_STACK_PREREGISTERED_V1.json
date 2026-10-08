@@ -1,0 +1,70 @@
+{
+  "schema": "action_abi_pull_stack_prospective_replication_v1",
+  "status": "PREOUTCOME_PROTOCOL_FREEZE",
+  "date": "2026-10-09",
+  "purpose": "Test a fixed training-free controller target-memory compiler and state-blind bounded control on two INDEPENDENT previously untested ManiSkill task/checkpoint families, without tuning on observed outcomes.",
+  "source": "validation/heldout-pushcube-memory-projected-41001-41032",
+  "source_runner_blob_sha1": "f5f29324a06c73d0ca0c77d9dc3e2034ec4c98bb",
+  "source_primary_exposed_populations": [
+    "PickCube-v1 seeds 20001-20032 and 21001-21032",
+    "PushCube-v1 seeds 40001-40032 and 41001-41032"
+  ],
+  "independent_pretrained_model_hf_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+  "experiments": {
+    "pull_cube": {
+      "env": "PullCube-v1",
+      "checkpoint": "ppo/pull_cube_final_ckpt.pt",
+      "checkpoint_sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+      "seeds_inclusive": [
+        51001,
+        51032
+      ]
+    },
+    "stack_cube": {
+      "env": "StackCube-v1",
+      "checkpoint": "ppo/stack_cube_final_ckpt.pt",
+      "checkpoint_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c",
+      "seeds_inclusive": [
+        61001,
+        61032
+      ]
+    }
+  },
+  "common_design": {
+    "sim_backend": "physx_cpu",
+    "obs_mode": "state",
+    "n_envs": 1,
+    "horizon_steps": 50,
+    "reset_reconfiguration_freq": 1,
+    "source_control_mode": "pd_ee_delta_pose",
+    "target_control_mode": "pd_ee_target_delta_pose",
+    "arms": [
+      "source",
+      "memory",
+      "projected",
+      "stateless",
+      "naive"
+    ],
+    "stateless_control": "same decoder, rotation transform, bounded projection and source policy; ONLY previous target pose is replaced with achieved target EE pose",
+    "policy_frozen": true,
+    "checkpoint_integrity_verified_by_sha256": true,
+    "random_state_prospective_split": "four eight-seed chunks per task, exact ascending integers, full 32 denominator; no omissions or replacements",
+    "expected_record_counts": {
+      "tasks": 2,
+      "states_per_task": 32,
+      "total_task_state_episodes": 64,
+      "paired_arms_per_state": 5
+    },
+    "success_definition": "official ManiSkill info.success ever true during initial <=50 environment steps"
+  },
+  "gates": {
+    "source_competence_min_successes_per_task": 24,
+    "primary_projected_minus_stateless_net_success_minimum_per_competent_task": 6,
+    "positive_claims_require_complete_preregistered_cohort": true,
+    "negative_incompetent_or_null_must_be_reported": true,
+    "must_report_projected_only_stateless_only_discordance": true,
+    "must_report_source_naive_strict_and_projection_count": true
+  },
+  "exclusion": "No adaptation code, model weights, action scaling, projection threshold or policy architecture may be changed after outcome inspection; any compatibility failure is a disclosed negative feasibility result.",
+  "limits": "Third-party checkpoints evaluated by contributor in PhysX simulation; not real hardware, not external acceptance/adoption, no safety guarantee, no VLA or general method breakthrough without wider baseline comparison."
+}
