@@ -1,0 +1,33 @@
+name: Frozen PPO checkpoint CPU competence gate
+
+on:
+  push:
+    branches:
+      - validation/frozen-ppo-pickcube-cpu-20261008
+  workflow_dispatch:
+
+jobs:
+  frozen-policy-cpu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU physics environment
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Evaluate immutable published PPO on original control mode
+        run: python research/frozen_ppo_pickcube_gate.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frozen-ppo-pickcube-cpu-competence
+          path: frozen_ppo_gate.json
+          if-no-files-found: warn
