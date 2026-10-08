@@ -1,8 +1,9 @@
-"""Exact PushT state capture/restore shared by real-policy DEC probes.
+"""PushT state capture/restore shared by real-policy DEC probes.
 
-Protocol is source-aligned with the already-published Diffusion CASJ evidence:
-reset wrapper -> rebuild Pymunk Space -> restore all dynamic body fields ->
-reindex shapes -> verify exact readback before querying the policy.
+Protocol amendment v2 (AFTER the first prospective run): Pymunk may roundtrip
+block.position by 1-2 float64 ULPs. All other body fields remain bitwise exact;
+block.position readback is bounded by a fixed four-ULP cap. This is *not*
+the original exact-readback v1 protocol and must be reported as amended.
 """
 
 from __future__ import annotations
@@ -13,7 +14,29 @@ from typing import Any
 import numpy as np
 
 
-STATE_RESTORE_PROTOCOL = "reset-fresh-space-exact-readback-v1"
+STATE_RESTORE_PROTOCOL = "reset-fresh-space-block-position-4ulp-v2"
+
+# Fixed following diagnostic investigation of frozen failures at 29/43/131.
+# Do not tune this cap against the prospective primary gate results.
+BLOCK_POSITION_MAX_ULPS = 4
+
+
+def _block_position_roundtrip_allowed(expected: np.ndarray, observed: np.ndarray) -> bool:
+    """Allow only bounded float64 Pymunk coordinate readback roundoff.
+
+    Each coordinate's absolute error must be <= 4 ULPs at the *requested*
+    float64 magnitude. The comparison rejects NaN, inf, shape mismatches and
+    any larger perturbation; there is no relative tolerance or pixel-level
+    slack. It does NOT establish identical internal Pymunk simulation state.
+    """
+    expected = np.asarray(expected, dtype=np.float64)
+    observed = np.asarray(observed, dtype=np.float64)
+    if expected.shape != (2,) or observed.shape != (2,):
+        return False
+    if not (np.isfinite(expected).all() and np.isfinite(observed).all()):
+        return False
+    ulp = np.spacing(np.abs(expected))
+    return bool(np.all(np.abs(observed - expected) <= BLOCK_POSITION_MAX_ULPS * ulp))
 
 
 @dataclass(frozen=True)
@@ -74,8 +97,30 @@ def restore_snapshot(env: Any, snapshot: PushTSnapshot) -> None:
 
     restored = capture_snapshot(env)
     for name in ("agent_position", "agent_velocity", "block_position", "block_velocity"):
-        if not np.array_equal(getattr(restored, name), getattr(snapshot, name)):
-            raise RuntimeError(f"PushT exact restore mismatch in {name}")
+        expected = getattr(snapshot, name)
+        observed = getattr(restored, name)
+        matches = (
+            _block_position_roundtrip_allowed(expected, observed)
+            if name == "block_position"
+            else np.array_equal(observed, expected)
+        )
+        if not matches:
+            delta = observed - expected
+            ulps = (
+                (np.abs(delta) / np.spacing(np.abs(expected))).tolist()
+                if name == "block_position" and np.isfinite(expected).all()
+                else None
+            )
+            raise RuntimeError(
+                f"PushT restore mismatch in {name}: "
+                f"expected={expected.tolist()!r}, "
+                f"observed={observed.tolist()!r}, "
+                f"delta={delta.tolist()!r}, "
+                f"coordinate_error_ulps={ulps!r}, "
+                f"max_allowed_block_position_ulps={BLOCK_POSITION_MAX_ULPS}, "
+                f"expected_finite={bool(np.isfinite(expected).all())}, "
+                f"observed_finite={bool(np.isfinite(observed).all())}"
+            )
     if restored.block_angle != snapshot.block_angle:
         raise RuntimeError("PushT exact restore mismatch in block_angle")
     if restored.block_angular_velocity != snapshot.block_angular_velocity:

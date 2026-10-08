@@ -1,0 +1,112 @@
+name: EPRC Cross-Policy Prospective Bank V1
+# Frozen cases and thresholds live in cross_policy_prospective_bank_v1.json; do not tune after outcome.
+
+on:
+  pull_request:
+    paths:
+      - "research/eprc/real_policy/cross_policy_prospective_state.py"
+      - "research/eprc/real_policy/aggregate_cross_policy_prospective_bank.py"
+      - "research/eprc/evidence/cross_policy_prospective_bank_v1.json"
+      - "research/eprc/cross_policy_dec_gate.py"
+      - "tests/test_eprc_cross_policy_prospective_execution.py"
+      - "tests/test_eprc_pusht_restore_roundoff.py"
+      - "research/eprc/real_policy/pusht_exact_state.py"
+      - ".github/workflows/eprc-cross-policy-prospective-bank-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eprc-cross-policy-prospective-bank-v1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  state:
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        reset_seed: [17, 29, 43, 59, 71, 89, 101, 131, 151, 181]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install one frozen LeRobot PushT runtime
+        run: |
+          git clone -q https://github.com/huggingface/lerobot.git /tmp/lerobot
+          git -C /tmp/lerobot checkout -q 3c0a209f9fac4d2a57617e686a7f2a2309144ba2
+          sed -i 's/^pyav = ">=12.0.5"/av = ">=12.0.5"/' /tmp/lerobot/pyproject.toml
+          grep -q '^av = ">=12.0.5"' /tmp/lerobot/pyproject.toml
+          python -m pip install -q -e '/tmp/lerobot[pusht]'
+          python -m pip install -q --force-reinstall --no-deps 'pymunk==6.11.1'
+          python -c 'import packaging, pymunk; from packaging import version; assert version.parse("1.2.3") < version.parse("2.0.0"); assert hasattr(pymunk.Space, "add_collision_handler")'
+      - name: Execute frozen paired state
+        run: |
+          mkdir -p /tmp/eprc-cross-policy-bank
+          python research/eprc/real_policy/cross_policy_prospective_state.py \
+            --reset-seed ${{ matrix.reset_seed }} \
+            --output /tmp/eprc-cross-policy-bank/state-${{ matrix.reset_seed }}.json
+      - name: Validate no frozen state was rewritten
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          seed=int(os.environ["RESET_SEED"])
+          p=Path(f"/tmp/eprc-cross-policy-bank/state-{seed}.json")
+          d=json.loads(p.read_text())
+          assert d["reset_seed"] == seed
+          assert d["probe_epsilon"] == 0.125
+          assert d["physical_probe"] == [2.0, 2.0, 0.01]
+          assert d["randomness_seeds"] == [123, 456, 789]
+          assert d["heldouts"] == {
+              "A": [4.0, -2.0, 0.02],
+              "B": [-5.0, 3.0, -0.025],
+          }
+          assert len(d["pairs"]) == 2
+          for name in ("diffusion", "vqbet"):
+              assert d["policies"][name]["replicate_count"] == 3
+          print("validated frozen state", seed)
+          PY
+        env:
+          RESET_SEED: ${{ matrix.reset_seed }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cross-policy-state-${{ matrix.reset_seed }}
+          path: /tmp/eprc-cross-policy-bank/state-${{ matrix.reset_seed }}.json
+          if-no-files-found: error
+          retention-days: 30
+
+  aggregate:
+    needs: state
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -q numpy pytest
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: cross-policy-state-*
+          path: /tmp/eprc-cross-policy-bank
+          merge-multiple: true
+      - name: Verify frozen bank cardinality
+        run: |
+          test "$(find /tmp/eprc-cross-policy-bank -name 'state-*.json' | wc -l)" -eq 10
+          python -m pytest -q tests/test_eprc_cross_policy_prospective_execution.py tests/test_eprc_cross_policy_dec_gate.py tests/test_eprc_pusht_restore_roundoff.py
+      - name: Adjudicate frozen 20-case gate
+        run: |
+          python research/eprc/real_policy/aggregate_cross_policy_prospective_bank.py \
+            --input-dir /tmp/eprc-cross-policy-bank \
+            --output /tmp/eprc-cross-policy-bank/cross_policy_prospective_result_v1.json
+          cat /tmp/eprc-cross-policy-bank/cross_policy_prospective_result_v1.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eprc-cross-policy-prospective-bank-v1
+          path: /tmp/eprc-cross-policy-bank
+          if-no-files-found: error
+          retention-days: 30
