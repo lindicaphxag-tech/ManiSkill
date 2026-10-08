@@ -14,6 +14,22 @@ If the arm command might or might not have been executed, there are at least two
 
 The key question is **execution-evidence availability and the correct use of the observation budget**. Belief states, active queries, set membership, SO(3) midpoints and action adaptation are established areas. In particular, [ActionShift](https://github.com/Archerkattri/actionshift) already studies hidden action-interface beliefs, probes and delay-aware control; [SPACE](https://arxiv.org/abs/2606.24049) studies state-delta action adaptation across robots; [TAM](https://github.com/Dongwon-Son/TAM) uses history-conditioned torque compensation. Novelty of this specific combination, relative to these and earlier event-triggered estimation controllers, **has not yet been established by peer review**. It does NOT invent those underlying mechanisms.
 
+## New prospective equal-information-cost query timing falsifier
+
+**Stronger causal-mechanism challenge than the original 15-vs-64 target read comparison.** We precommitted an entirely NEW 64-reset-state cohort (PullCube 260001–260032; StackCube 270001–270032) and retained the exact original source PPO/controller/bounded-or-query code. As an eighth actual official PhysX controller arm, we introduced a **NON-ADAPTIVE, predeclared 1-of-every-4-seeds readback schedule**: read once at step 3 iff `seed % 4 == 0`, irrespective of geometry, task state, success or observed difficulty. That is precisely 16 target read calls total; the original adaptive controller ended up spending 17 calls.
+
+| Condition | Real native task completions | Privileged target decision reads |
+|---|---:|---:|
+| **Evidence-triggered bounded-or-one-read**, unchanged | **58/64** | **17** |
+| **Precommitted schedule**, same bounded controller otherwise | **47/64** | **16** |
+| Fixed mandatory one target read per condition | 60/64 | 64 |
+| Zero-readback bounded/refusal | 41/64 | 0 |
+| Optimistic ACK guess | 40/64 | 0 |
+
+**Per-seed task-result discordance:** 12 adaptive-only / 1 precommitted-only; 46 both / 5 neither. Exploratory **unadjusted** two-sided exact McNemar p=0.00341796875 on the 64 precommitted paired source-reset states. This is valuable evidence that the **WHEN of expensive evidence acquisition** matters in this one physical-simulator controller family, not merely that fewer readbacks can help. **Limitations:** calls differ by one, the control is a fixed periodic deterministic schedule rather than a truly random policy or competitive learned query agent, no power across hardware domains, and any multi-comparison inference requires adjustment. This does not establish a novel optimal stopping theorem or collision safety.
+
+[**Before-outcome seed/query allocation frozen in commit ee209f6**](https://github.com/lindicaphxag-tech/ManiSkill/commit/ee209f6bc80e2bb280f9b00e6a9bafc330bdc799) · [**eight successfully run genuine PhysX CI jobs**](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37833053629) · [**every original state and paired outcome with errors/limits**](CERTIFY_QUERY_PERIODIC_PLACEBO_64_ORIGINAL_RESULTS.md) · [**original full eight-file SHA audit and archive workflow**](../../.github/workflows/archive-query-periodic-placebo64.yml). **All contributor-operated, not endorsed by official ManiSkill/ActionShift.**
+
 ## Locked, state-disjoint physical-simulator outcomes
 
 | Original fixed protocol | PullCube | StackCube | Pooled tasks | Privileged target decision reads |
