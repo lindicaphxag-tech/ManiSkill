@@ -177,6 +177,33 @@ def gate(root: Path) -> dict[str, Any]:
     )
 
     cfg = run.get("config", {})
+    # A paired subset is chosen *after* seeing each arm's replay success.
+    # Preserve the original intention-to-replay denominator and every arm's
+    # conversion-success count, rather than showing selected training curves
+    # alone and implying an unbiased causal contrast.
+    replay_count = _strict_int(
+        cfg.get("replay_count"), "original requested replay_count", 1
+    )
+    if replay_count != len(pairing["requested_episode_seeds"]):
+        raise UnverifiablePolicyEvidence("original replay denominator mismatch")
+    replay_by_arm = {}
+    recorded_demos = run.get("demonstrations", {})
+    recorded_counts = run.get("pairing", {}).get("successful_converted_episodes", {})
+    for arm in active_arms:
+        outcome = pairing["arms"][arm]
+        successes = outcome["successful_count"]
+        if (
+            successes > replay_count
+            or recorded_demos.get(arm, {}).get("successful_episode_count") != successes
+            or recorded_counts.get(arm) != successes
+        ):
+            raise UnverifiablePolicyEvidence("arm-specific replay success denominator mismatch")
+        replay_by_arm[arm] = {
+            "original_replay_requested": replay_count,
+            "replay_successes": successes,
+            "source_episodes_excluded_from_training": replay_count - paired_count,
+            "success_rate": successes / replay_count,
+        }
     iters = _strict_int(cfg.get("total_iters"), "total_iters", 1)
     freq = _strict_int(cfg.get("eval_freq"), "eval_freq", 1)
     n = _strict_int(cfg.get("num_eval_episodes"), "num_eval_episodes", 2)
@@ -259,10 +286,12 @@ def gate(root: Path) -> dict[str, Any]:
     )
     return {
         "status": (
-            "descriptive_single_seed_factorial_training_only"
+            "descriptive_single_seed_posttreatment_selected_factorial_only"
             if is_factorial
             else "descriptive_single_seed_paired_training_only"
         ),
+        "replay_by_arm": replay_by_arm,
+        "selection_mechanism": "successful_source_seed_intersection_after_code_treatment",
         "experimental_design": (
             "frozen_2x2_converter_controller_factorial"
             if is_factorial else "historical_combined_change_pair"
@@ -278,11 +307,13 @@ def gate(root: Path) -> dict[str, Any]:
             "Authored run metadata and SHA-256 cannot establish independent execution authenticity.",
             "Single training seed and finite evaluation episodes: no statistical superiority claim.",
             (
-                "Four-arm contrasts separate source interventions algebraically but one "
-                "training seed does not support statistical significance or causal generalization."
+                "Factorial contrasts use the post-treatment survivor intersection. "
+                "If code treatment changes replay success, selected-subset comparisons "
+                "cannot estimate an unbiased effect over all source episodes."
                 if is_factorial
                 else "This two-arm design measures combined #1495+#1472 changes, not isolated PR #1495 effect."
             ),
+            "Only one optimizer seed: no statistical significance or population generalization.",
             "The reported success rate cannot prove real-robot deployment safety.",
             "This gate requires 100% completed paired training and complete TensorBoard metric steps.",
         ],
