@@ -1,0 +1,98 @@
+{
+  "schema": "certainty_or_query_precommitted_budget_matched_placebo_64_v1",
+  "precommit_status": "BEFORE_SEEING_ANY NEW TASK OUTCOMES",
+  "methods": "Frozen original PhysX seven-arm exact-source control; add one precisely defined eighth predeclared periodic (not adaptive) information readback baseline, no changes to original seven arms.",
+  "source_original_commit": "db4fe4dd9d09aaff67c5dcf12213ad737162282d",
+  "source_original_runner_blob": "1dc653cdc44e422c8340475ad00f828b3a41eb4f",
+  "source_robust_certifier_blob": "bb5fd155b7291fb127f94138fca321201c8271c3",
+  "checkpoint_hf_repo_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+  "tasks": {
+    "pull_cube": {
+      "env": "PullCube-v1",
+      "new_unique_seeds": [
+        260001,
+        260032
+      ],
+      "checkpoint_sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7"
+    },
+    "stack_cube": {
+      "env": "StackCube-v1",
+      "new_unique_seeds": [
+        270001,
+        270032
+      ],
+      "checkpoint_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+    }
+  },
+  "source_policy": "unchanged third-party pretrained frozen PPO (no training)",
+  "backend": "official ManiSkill native PhysX CPU",
+  "controller": "one Panda pd_ee_target_delta_pose source achieved-relative pd_ee_delta_pose",
+  "fault": "actually dispatch arm-only zero/hold action at simulator step index 2, unknown receipt; gripper unchanged",
+  "cohorts": {
+    "PullCube": 32,
+    "StackCube": 32
+  },
+  "predefined_8_episode_chunks": 4,
+  "unique_state_count": 64,
+  "precommitted_nonadaptive_query_placebo": {
+    "name": "fault_precommitted_seed_schedule_query",
+    "mechanism": "At the FIRST post-fault decision (step index 3), query the actual privileged controller target EXACTLY ONCE if and ONLY IF seed modulo 4 equals 0; otherwise never query and follow precisely the original bounded no-readback/refusal policy. The schedule is fixed independently of state, fault result, observed geometry, task reward and outcomes.",
+    "scheduled_queried_seed_count": 16,
+    "PullCube_queried_seeds": [
+      260004,
+      260008,
+      260012,
+      260016,
+      260020,
+      260024,
+      260028,
+      260032
+    ],
+    "StackCube_queried_seeds": [
+      270004,
+      270008,
+      270012,
+      270016,
+      270020,
+      270024,
+      270028,
+      270032
+    ],
+    "fairness": "approximately matched query budget to historical 15/64 adaptive reads; actual adaptive query count on new held-out episodes must be reported, not forced to 16; fixed protocol no post-hoc budget matching"
+  },
+  "arms": [
+    "source_no_fault",
+    "fault_oracle_private_target",
+    "fault_optimistic_unverified_ack",
+    "fault_strict_common_exact",
+    "fault_robust_two_history_without_query",
+    "fault_robust_then_single_privileged_query",
+    "fault_precommitted_seed_schedule_query",
+    "fault_always_single_privileged_query"
+  ],
+  "controller_bounds": {
+    "position_linf_m": 0.05,
+    "rotation_geodesic_rad": 0.05,
+    "max_privileged_readback_per_episode": 1
+  },
+  "required_per_seed_evidence": [
+    "all 64 unique seeded native success flags across eight arms",
+    "exact schedule readback ledger",
+    "real source policy competence and initial observation equality",
+    "all source/target fault reach",
+    "oracle unlimited reads clearly labeled -1",
+    "all action projection/refusal and target-bound checks",
+    "original artifact hashes, stdout and environment",
+    "paired discordance selective vs precommitted schedule"
+  ],
+  "must_keep_all_negative_results": true,
+  "scope_limitations": [
+    "One native simulated Panda controller family; not cross-robot transfer",
+    "physically held arm target not real ROS/network packet loss",
+    "privileged controller target getter is additional information",
+    "commanded-target geometry bound is not achieved-motion or collision safety",
+    "seed modulo 4 schedule is a non-adaptive precommitted control, not genuinely random sampling",
+    "finite 64 task seed episodes insufficient alone to prove general statistical advantage",
+    "a user fork merge is NOT external upstream acceptance"
+  ]
+}
