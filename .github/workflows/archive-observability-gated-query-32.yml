@@ -1,0 +1,129 @@
+name: Preserve all original selective-authority fresh32 PhysX results
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-observability-gated-query-32.yml'
+      - 'research/audit_observability_query_new32.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  audit-all-eight-original-shards-and-archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require eight successful real native PhysX source jobs even if original auditor job failed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37833095443 --jq .head_sha)" = "495238ed03e533805006119c7fafbf4905fc9dc0"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37833095443/jobs --jq '[.jobs[] | select(.name | startswith("actual-official-physx-six-arms")) | select(.conclusion == "success")] | length')" -eq 8
+          test "$(git hash-object research/audit_observability_query_new32.py)" = "29ed4eb431b4874c8eb3d0cc104b784098a46fa0"
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = "064bb46831b61af73ad445bc836326837ec5468f"
+      - name: Acquire all eight ORIGINAL unmodified real PhysX seed rows by exact recorded source identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/observability-source
+          for task in pull_cube stack_cube; do
+            for truth in applied_no_ack neutral_arm_delta_no_ack; do
+              for start in 0 4; do
+                name="frozen-observability-hybrid-source-${task}-${truth}-${start}"
+                dir="/tmp/observability-artifact-${task}-${truth}-${start}"
+                mkdir -p "$dir"
+                gh run download 37833095443 --repo "$GITHUB_REPOSITORY" --name "$name" --dir "$dir"
+                filename="hybrid_observability_query_${task}_${truth}_${start}_fresh4.json"
+                test "$(find "$dir" -name "$filename" -type f | wc -l)" -eq 1
+                cp "$(find "$dir" -name "$filename" -type f)" /tmp/observability-source/
+              done
+            done
+          done
+          test "$(find /tmp/observability-source -type f -name '*.json' | wc -l)" -eq 8
+      - name: Corrected SOURCE-ONLY full-denominator independent audit; no new policy executions
+        run: |
+          set -euo pipefail
+          python -m research.audit_observability_query_new32 \
+            --input-dir /tmp/observability-source \
+            --output /tmp/verified_authority_cost_audit.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('/tmp/verified_authority_cost_audit.json').read_text())
+          assert x['trial_conditions']==32
+          vals=list(x['results'].values())
+          assert len(vals)==8
+          assert all(v['paired_n']==4 and v['paired_fault_exposed']==4 for v in vals)
+          assert sum(v['hybrid_wrong_authorizations'] for v in vals)==0
+          assert sum(v['hybrid_classification_covered'] for v in vals)==21
+          assert sum(v['hybrid_selective_privileged_reads'] for v in vals)==11
+          for key,expected in [('achieved_probe_then_query',27),
+               ('privileged_once_after_probe',27),
+               ('achieved_probe_classifier',19),
+               ('blind_probe_optimistic',23)]:
+            assert sum(v['success'][key] for v in vals)==expected, key
+          print('PHYSX_ORIGINAL32_SOURCE_ONLY_INDEPENDENT_AUDIT_GREEN',
+              dict(total=32,hybrid_success=27,mandatory_success=27,
+                   selective_target_reads=11,mandatory_target_reads=32,
+                   wrong_confident=0,public_confident=21))
+          PY
+      - name: Preserve original evidence bytes on public main with SHA256 manifest, including negative scope
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/observability_gated_query_fresh32
+          mkdir -p "$dest"
+          cp /tmp/observability-source/*.json "$dest/"
+          cp /tmp/verified_authority_cost_audit.json "$dest/full_original_denominator_recomputed_audit.json"
+          (cd "$dest" && sha256sum ./*.json > SOURCE_SHA256SUMS)
+          cat > "$dest/README.md" <<'EOF'
+          # Selective authority based on publicly probed robot response — 32 original PhysX source states
+
+          Original actual eight PhysX shards: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37833095443
+          Exact physical source HEAD: 495238ed03e533805006119c7fafbf4905fc9dc0
+          PREOUTCOME protocol commit 9f4c70d8b0dd45045561dd91b2f0e372fa347135
+          Frozen external independent PullCube/StackCube PPO weights, genuine ManiSkill CPU PhysX,
+          actual command applied vs native 6D zero-arm delta delivered, ACK to adapter UNKNOWN.
+          One common physical zero-delta probe in every comparator, controller target never exposed
+          to empirical unique-label selection, 1 privileged target read only when evidence fails
+          to uniquely identify a previous commanded target; mandatory baseline always queries.
+
+          Eight original 4-state PhysX JSON bytes are copied UNMODIFIED. The original first
+          workflow's 8 genuine physics jobs were green but original audit had a SOURCE-ONLY
+          variable-shadowing error. The full independent recomputation herein corrects ONLY
+          the auditor; PPO, frozen error envelopes, goals, controller, seeds and physical results
+          remain unchanged. No retuned thresholds or repeated seeds are counted.
+
+          Original 32 task/truth episodes: hybrid 27/32 task success and mandatory once-read 27/32;
+          hybrid used 11 authoritative target reads, baseline used 32 (65.625 percent fewer);
+          the hybrid obtained 21 confident public-only labels, ZERO observed wrong in these 32.
+          No-private-read refuse-on-ambiguity arm succeeded 19/32; optimistic history succeeded
+          23/32. This is a descriptive paired-task fact on exactly two PPOs and a single Panda
+          controller mode family, not a population equivalence test or real hardware safety proof.
+
+          Historical response epsilon is an empirically trained model that already had a false
+          exclusion on a separate prospectively evaluated 32-condition cohort. These 32 source
+          episodes cannot prove perfect accuracy on future seeds, low-level collision/contact
+          safety, independent scientific reproduction, general active sensing theory or upstream
+          ManiSkill/ActionShift maintainer adoption.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dest"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'evidence: freeze native 32-state selective target readback response experiment'
+          for k in 1 2 3 4 5; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then exit 0; fi
+          done
+          echo 'Concurrent main updates prevented safe source archive'
+          exit 1
