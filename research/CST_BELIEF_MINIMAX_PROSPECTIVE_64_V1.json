@@ -1,0 +1,87 @@
+{
+  "schema": "cst_frozen_ppo_two_world_robust_action_20261009_v1",
+  "status": "PRECOMMITTED_BEFORE_EVALUATOR_IMPLEMENTATION",
+  "description": "Prospective zero-readback finite-set memory midpoint minimax action under unknown execution; never claim exact or safety when clipping",
+  "backend": "physx_cpu",
+  "model_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+  "models": {
+    "pull_cube": {
+      "task": "PullCube-v1",
+      "checkpoint": "ppo/pull_cube_final_ckpt.pt",
+      "sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+      "seed_ranges": [
+        [
+          96001,
+          96008
+        ],
+        [
+          96009,
+          96016
+        ]
+      ]
+    },
+    "stack_cube": {
+      "task": "StackCube-v1",
+      "checkpoint": "ppo/stack_cube_final_ckpt.pt",
+      "sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c",
+      "seed_ranges": [
+        [
+          97001,
+          97008
+        ],
+        [
+          97009,
+          97016
+        ]
+      ]
+    }
+  },
+  "conditions": [
+    "applied_no_ack",
+    "neutral_arm_delta_no_ack"
+  ],
+  "fault_step_zero_indexed": 2,
+  "cohort_count": 64,
+  "unique_seed_count": 32,
+  "per_task_condition_count": 16,
+  "observation": "policy state projection strips target_pose channel; no hidden target readback for robust midpoint decisions; controller may disclose target for oracle and exactly one readback comparator",
+  "arms": [
+    "source",
+    "oracle_live_memory",
+    "recovered_one_readback",
+    "optimistic_assume_applied",
+    "pessimistic_assume_neutral",
+    "fail_closed_stop",
+    "belief_minimax_zero_readback"
+  ],
+  "minimax_method": "After unknown ACK preserve both possible commanded-target poses; compute arithmetic midpoint of their translational components and SO(3) geodesic midpoint of rotations; convert desired achieved-relative source goal to a bounded destination action relative to midpoint. Propagate all hypotheses with the *same actually dispatched command* after fault; no private state or postfault target observation used to prune hypotheses. Mark all projected actions NON_EXACT. SO3 midpoint minimizes max geodesic distance between two rotations, but clipped action limits, controller dynamics and task rewards invalidate any general globally optimal recovery claim.",
+  "readback_budget": {
+    "robust": 0,
+    "optimistic": 0,
+    "pessimistic": 0,
+    "recovered": 1,
+    "oracle": "ongoing privileged"
+  },
+  "required_logs": [
+    "all 64 original per-seed conditions",
+    "task success from native info",
+    "fault application per arm",
+    "two belief hypothesis target-separation after fault",
+    "minimax command representability and NOT_EXACT",
+    "actual target vs hypothesis (audit only at end)",
+    "source PPO competence",
+    "frozen model SHA",
+    "both no-ack physical branches",
+    "original artifacts and stdout",
+    "exact Git blob precommit hash"
+  ],
+  "gates": {
+    "predeclared_task_case_count": 64,
+    "fault_reach_measured_separately": true,
+    "source_competence_min_per8": 4,
+    "no_exclusion_if_method_fails": true,
+    "zero_readback_robust_measured": true,
+    "task_success_not_collision_safety": true
+  },
+  "claim_limit": "Known additive root-frame Panda EE target controller only. This is simulated native target-hold rather than network packet loss. No hardware, learned VLA, independent scientific replication or proven cross-robot transport. Directly compare equal-zero-readback optimistic and pessimistic arms, and unequal-information one-readback/oracle. Preserve negative result."
+}

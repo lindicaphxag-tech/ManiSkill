@@ -1,0 +1,176 @@
+name: Archive original predeclared 64-state two-world minimax PhysX evidence
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/archive-belief-minimax-64-original.yml'
+      - 'research/audit_belief_minimax_64.py'
+      - 'research/CST_BELIEF_MINIMAX_PROSPECTIVE_64_V1.json'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-belief-minimax-64-original.yml'
+      - 'research/audit_belief_minimax_64.py'
+      - 'research/CST_BELIEF_MINIMAX_PROSPECTIVE_64_V1.json'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify-eight-original-sources:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify exact original source artifact hashes and 64-case protocol, destructive tampering tests
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/CST_BELIEF_MINIMAX_PROSPECTIVE_64_V1.json)" = "b5b2b03a45919d39aa37e38a20bf1ce2deb557a2"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37825781536 --jq .head_sha)" = "157c216deda38707a7f719368852d91964883d59"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37825781536 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11570699800 --jq .digest)" = "sha256:3ecc64b5f66042f3739ce1311de079e76084fef89c420fa73c9e1d8aad19b8a9"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11571381892 --jq .digest)" = "sha256:4a2fef2839c4a6c81451ddbf453e5c61c6d6714a17290ce20bc63e657a812d8f"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11571377018 --jq .digest)" = "sha256:b1a584c170c2d8e1ddb5f77128ecaf835a2d30807fda917727fb276ff17646c5"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11571555845 --jq .digest)" = "sha256:3384249d22d9767a7b0d333c966312d4a0039eee559ce1e47942438fd651a546"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11570758921 --jq .digest)" = "sha256:1e75a198bb20357200c9ac945537774ec7d9f5bae76af9acc84565423bc8c2a8"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11570844354 --jq .digest)" = "sha256:d1841514e7d4d7f4a04bc9d0e0cf43ddd7ae960c4c7f1d9a312e6ddeffa4dc81"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11571720650 --jq .digest)" = "sha256:2dc88320c78dd0eb8ed74b363ffbcf0a09a5411bf4560ab29a563d9c27ae3e2d"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11571940412 --jq .digest)" = "sha256:b34f149877178421c2a2c186bbbdd3a37f540f8a6967669fc0bcf9b5b4a74ad9"
+          mkdir -p /tmp/cst-minimax-artifacts /tmp/cst-minimax-exact
+          gh run download 37825781536 --repo "$GITHUB_REPOSITORY" --pattern "minimax-original-*" --dir /tmp/cst-minimax-artifacts
+          test -s "/tmp/cst-minimax-artifacts/minimax-original-pull_cube-applied_no_ack-chunk-0/belief_minimax_pull_cube_applied_no_ack_chunk0_fresh8.json" && cp "/tmp/cst-minimax-artifacts/minimax-original-pull_cube-applied_no_ack-chunk-0/belief_minimax_pull_cube_applied_no_ack_chunk0_fresh8.json" "/tmp/cst-minimax-exact/belief_minimax_pull_cube_applied_no_ack_chunk0_fresh8.json"
+          test -s "/tmp/cst-minimax-artifacts/minimax-original-pull_cube-applied_no_ack-chunk-1/belief_minimax_pull_cube_applied_no_ack_chunk1_fresh8.json" && cp "/tmp/cst-minimax-artifacts/minimax-original-pull_cube-applied_no_ack-chunk-1/belief_minimax_pull_cube_applied_no_ack_chunk1_fresh8.json" "/tmp/cst-minimax-exact/belief_minimax_pull_cube_applied_no_ack_chunk1_fresh8.json"
+          test -s "/tmp/cst-minimax-artifacts/minimax-original-pull_cube-neutral_arm_delta_no_ack-chunk-0/belief_minimax_pull_cube_neutral_arm_delta_no_ack_chunk0_fresh8.json" && cp "/tmp/cst-minimax-artifacts/minimax-original-pull_cube-neutral_arm_delta_no_ack-chunk-0/belief_minimax_pull_cube_neutral_arm_delta_no_ack_chunk0_fresh8.json" "/tmp/cst-minimax-exact/belief_minimax_pull_cube_neutral_arm_delta_no_ack_chunk0_fresh8.json"
+          test -s "/tmp/cst-minimax-artifacts/minimax-original-pull_cube-neutral_arm_delta_no_ack-chunk-1/belief_minimax_pull_cube_neutral_arm_delta_no_ack_chunk1_fresh8.json" && cp "/tmp/cst-minimax-artifacts/minimax-original-pull_cube-neutral_arm_delta_no_ack-chunk-1/belief_minimax_pull_cube_neutral_arm_delta_no_ack_chunk1_fresh8.json" "/tmp/cst-minimax-exact/belief_minimax_pull_cube_neutral_arm_delta_no_ack_chunk1_fresh8.json"
+          test -s "/tmp/cst-minimax-artifacts/minimax-original-stack_cube-applied_no_ack-chunk-0/belief_minimax_stack_cube_applied_no_ack_chunk0_fresh8.json" && cp "/tmp/cst-minimax-artifacts/minimax-original-stack_cube-applied_no_ack-chunk-0/belief_minimax_stack_cube_applied_no_ack_chunk0_fresh8.json" "/tmp/cst-minimax-exact/belief_minimax_stack_cube_applied_no_ack_chunk0_fresh8.json"
+          test -s "/tmp/cst-minimax-artifacts/minimax-original-stack_cube-applied_no_ack-chunk-1/belief_minimax_stack_cube_applied_no_ack_chunk1_fresh8.json" && cp "/tmp/cst-minimax-artifacts/minimax-original-stack_cube-applied_no_ack-chunk-1/belief_minimax_stack_cube_applied_no_ack_chunk1_fresh8.json" "/tmp/cst-minimax-exact/belief_minimax_stack_cube_applied_no_ack_chunk1_fresh8.json"
+          test -s "/tmp/cst-minimax-artifacts/minimax-original-stack_cube-neutral_arm_delta_no_ack-chunk-0/belief_minimax_stack_cube_neutral_arm_delta_no_ack_chunk0_fresh8.json" && cp "/tmp/cst-minimax-artifacts/minimax-original-stack_cube-neutral_arm_delta_no_ack-chunk-0/belief_minimax_stack_cube_neutral_arm_delta_no_ack_chunk0_fresh8.json" "/tmp/cst-minimax-exact/belief_minimax_stack_cube_neutral_arm_delta_no_ack_chunk0_fresh8.json"
+          test -s "/tmp/cst-minimax-artifacts/minimax-original-stack_cube-neutral_arm_delta_no_ack-chunk-1/belief_minimax_stack_cube_neutral_arm_delta_no_ack_chunk1_fresh8.json" && cp "/tmp/cst-minimax-artifacts/minimax-original-stack_cube-neutral_arm_delta_no_ack-chunk-1/belief_minimax_stack_cube_neutral_arm_delta_no_ack_chunk1_fresh8.json" "/tmp/cst-minimax-exact/belief_minimax_stack_cube_neutral_arm_delta_no_ack_chunk1_fresh8.json"
+          python -m research.audit_belief_minimax_64 --input-dir /tmp/cst-minimax-exact --output /tmp/cst-minimax-source-audit.json
+          python - <<'PY'
+          import json, shutil, tempfile
+          from pathlib import Path
+          from research.audit_belief_minimax_64 import audit
+          src=Path('/tmp/cst-minimax-exact')
+          assert audit(src)['source_cases']==64
+          files=sorted(src.glob('*.json')); assert len(files)==8
+          with tempfile.TemporaryDirectory() as tmp:
+              dst=Path(tmp)/'mutated'; shutil.copytree(src,dst)
+              (dst/files[0].name).unlink()
+              try: audit(dst); raise AssertionError('Missing file silently allowed')
+              except ValueError: pass
+          with tempfile.TemporaryDirectory() as tmp:
+              dst=Path(tmp)/'mutated'; shutil.copytree(src,dst)
+              f=dst/files[0].name; j=json.loads(f.read_text())
+              j['rows'][0]['seed']=j['rows'][1]['seed']; f.write_text(json.dumps(j))
+              try: audit(dst); raise AssertionError('Duplicate seed silently accepted')
+              except ValueError: pass
+          with tempfile.TemporaryDirectory() as tmp:
+              dst=Path(tmp)/'mutated'; shutil.copytree(src,dst)
+              f=dst/files[0].name; j=json.loads(f.read_text())
+              j['rows'][0]['success_once']['belief_minimax_zero_readback']=not j['rows'][0]['success_once']['belief_minimax_zero_readback']
+              f.write_text(json.dumps(j))
+              try: audit(dst); raise AssertionError('Source outcome tampering silently accepted')
+              except ValueError: pass
+          print('PASS original 64 source integrity and three destructive mutation tests')
+          PY
+  trusted-main-permanent-exact-byte-archive:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: verify-eight-original-sources
+    runs-on: ubuntu-latest
+    timeout-minutes: 19
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Recheck original source and every immutable artifact on trusted main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/CST_BELIEF_MINIMAX_PROSPECTIVE_64_V1.json)" = "b5b2b03a45919d39aa37e38a20bf1ce2deb557a2"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37825781536 --jq .head_sha)" = "157c216deda38707a7f719368852d91964883d59"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37825781536 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11570699800 --jq .digest)" = "sha256:3ecc64b5f66042f3739ce1311de079e76084fef89c420fa73c9e1d8aad19b8a9"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11571381892 --jq .digest)" = "sha256:4a2fef2839c4a6c81451ddbf453e5c61c6d6714a17290ce20bc63e657a812d8f"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11571377018 --jq .digest)" = "sha256:b1a584c170c2d8e1ddb5f77128ecaf835a2d30807fda917727fb276ff17646c5"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11571555845 --jq .digest)" = "sha256:3384249d22d9767a7b0d333c966312d4a0039eee559ce1e47942438fd651a546"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11570758921 --jq .digest)" = "sha256:1e75a198bb20357200c9ac945537774ec7d9f5bae76af9acc84565423bc8c2a8"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11570844354 --jq .digest)" = "sha256:d1841514e7d4d7f4a04bc9d0e0cf43ddd7ae960c4c7f1d9a312e6ddeffa4dc81"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11571720650 --jq .digest)" = "sha256:2dc88320c78dd0eb8ed74b363ffbcf0a09a5411bf4560ab29a563d9c27ae3e2d"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11571940412 --jq .digest)" = "sha256:b34f149877178421c2a2c186bbbdd3a37f540f8a6967669fc0bcf9b5b4a74ad9"
+          mkdir -p /tmp/cst-minimax-artifacts /tmp/cst-minimax-exact
+          gh run download 37825781536 --repo "$GITHUB_REPOSITORY" --pattern "minimax-original-*" --dir /tmp/cst-minimax-artifacts
+          test -s "/tmp/cst-minimax-artifacts/minimax-original-pull_cube-applied_no_ack-chunk-0/belief_minimax_pull_cube_applied_no_ack_chunk0_fresh8.json" && cp "/tmp/cst-minimax-artifacts/minimax-original-pull_cube-applied_no_ack-chunk-0/belief_minimax_pull_cube_applied_no_ack_chunk0_fresh8.json" "/tmp/cst-minimax-exact/belief_minimax_pull_cube_applied_no_ack_chunk0_fresh8.json"
+          test -s "/tmp/cst-minimax-artifacts/minimax-original-pull_cube-applied_no_ack-chunk-1/belief_minimax_pull_cube_applied_no_ack_chunk1_fresh8.json" && cp "/tmp/cst-minimax-artifacts/minimax-original-pull_cube-applied_no_ack-chunk-1/belief_minimax_pull_cube_applied_no_ack_chunk1_fresh8.json" "/tmp/cst-minimax-exact/belief_minimax_pull_cube_applied_no_ack_chunk1_fresh8.json"
+          test -s "/tmp/cst-minimax-artifacts/minimax-original-pull_cube-neutral_arm_delta_no_ack-chunk-0/belief_minimax_pull_cube_neutral_arm_delta_no_ack_chunk0_fresh8.json" && cp "/tmp/cst-minimax-artifacts/minimax-original-pull_cube-neutral_arm_delta_no_ack-chunk-0/belief_minimax_pull_cube_neutral_arm_delta_no_ack_chunk0_fresh8.json" "/tmp/cst-minimax-exact/belief_minimax_pull_cube_neutral_arm_delta_no_ack_chunk0_fresh8.json"
+          test -s "/tmp/cst-minimax-artifacts/minimax-original-pull_cube-neutral_arm_delta_no_ack-chunk-1/belief_minimax_pull_cube_neutral_arm_delta_no_ack_chunk1_fresh8.json" && cp "/tmp/cst-minimax-artifacts/minimax-original-pull_cube-neutral_arm_delta_no_ack-chunk-1/belief_minimax_pull_cube_neutral_arm_delta_no_ack_chunk1_fresh8.json" "/tmp/cst-minimax-exact/belief_minimax_pull_cube_neutral_arm_delta_no_ack_chunk1_fresh8.json"
+          test -s "/tmp/cst-minimax-artifacts/minimax-original-stack_cube-applied_no_ack-chunk-0/belief_minimax_stack_cube_applied_no_ack_chunk0_fresh8.json" && cp "/tmp/cst-minimax-artifacts/minimax-original-stack_cube-applied_no_ack-chunk-0/belief_minimax_stack_cube_applied_no_ack_chunk0_fresh8.json" "/tmp/cst-minimax-exact/belief_minimax_stack_cube_applied_no_ack_chunk0_fresh8.json"
+          test -s "/tmp/cst-minimax-artifacts/minimax-original-stack_cube-applied_no_ack-chunk-1/belief_minimax_stack_cube_applied_no_ack_chunk1_fresh8.json" && cp "/tmp/cst-minimax-artifacts/minimax-original-stack_cube-applied_no_ack-chunk-1/belief_minimax_stack_cube_applied_no_ack_chunk1_fresh8.json" "/tmp/cst-minimax-exact/belief_minimax_stack_cube_applied_no_ack_chunk1_fresh8.json"
+          test -s "/tmp/cst-minimax-artifacts/minimax-original-stack_cube-neutral_arm_delta_no_ack-chunk-0/belief_minimax_stack_cube_neutral_arm_delta_no_ack_chunk0_fresh8.json" && cp "/tmp/cst-minimax-artifacts/minimax-original-stack_cube-neutral_arm_delta_no_ack-chunk-0/belief_minimax_stack_cube_neutral_arm_delta_no_ack_chunk0_fresh8.json" "/tmp/cst-minimax-exact/belief_minimax_stack_cube_neutral_arm_delta_no_ack_chunk0_fresh8.json"
+          test -s "/tmp/cst-minimax-artifacts/minimax-original-stack_cube-neutral_arm_delta_no_ack-chunk-1/belief_minimax_stack_cube_neutral_arm_delta_no_ack_chunk1_fresh8.json" && cp "/tmp/cst-minimax-artifacts/minimax-original-stack_cube-neutral_arm_delta_no_ack-chunk-1/belief_minimax_stack_cube_neutral_arm_delta_no_ack_chunk1_fresh8.json" "/tmp/cst-minimax-exact/belief_minimax_stack_cube_neutral_arm_delta_no_ack_chunk1_fresh8.json"
+          python -m research.audit_belief_minimax_64 --input-dir /tmp/cst-minimax-exact --output /tmp/cst-minimax-source-audit.json
+          python - <<'PY'
+          import json, shutil, tempfile
+          from pathlib import Path
+          from research.audit_belief_minimax_64 import audit
+          src=Path('/tmp/cst-minimax-exact')
+          assert audit(src)['source_cases']==64
+          files=sorted(src.glob('*.json')); assert len(files)==8
+          with tempfile.TemporaryDirectory() as tmp:
+              dst=Path(tmp)/'mutated'; shutil.copytree(src,dst)
+              (dst/files[0].name).unlink()
+              try: audit(dst); raise AssertionError('Missing file silently allowed')
+              except ValueError: pass
+          with tempfile.TemporaryDirectory() as tmp:
+              dst=Path(tmp)/'mutated'; shutil.copytree(src,dst)
+              f=dst/files[0].name; j=json.loads(f.read_text())
+              j['rows'][0]['seed']=j['rows'][1]['seed']; f.write_text(json.dumps(j))
+              try: audit(dst); raise AssertionError('Duplicate seed silently accepted')
+              except ValueError: pass
+          with tempfile.TemporaryDirectory() as tmp:
+              dst=Path(tmp)/'mutated'; shutil.copytree(src,dst)
+              f=dst/files[0].name; j=json.loads(f.read_text())
+              j['rows'][0]['success_once']['belief_minimax_zero_readback']=not j['rows'][0]['success_once']['belief_minimax_zero_readback']
+              f.write_text(json.dumps(j))
+              try: audit(dst); raise AssertionError('Source outcome tampering silently accepted')
+              except ValueError: pass
+          print('PASS original 64 source integrity and three destructive mutation tests')
+          PY
+      - name: Commit original eight raw JSONs and individual byte hashes
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/belief_minimax_prospective_64_96001_97016
+          mkdir -p "$dest"
+          cp /tmp/cst-minimax-exact/*.json "$dest/"
+          (cd "$dest" && sha256sum *.json > SHA256SUMS && sha256sum -c SHA256SUMS)
+          printf '%s\n' \
+            '# 64 originally predeclared Panda PhysX unknown-ACK two-world cases' \
+            '' \
+            'Eight original JSON files copied BYTE FOR BYTE from successful original source run 37825781536 (commit 157c216deda38707a7f719368852d91964883d59).' \
+            'Prereg protocol frozen before runner at 495e76e5d95ca0c309449f544b9c61c727b4bd22; Git blob b5b2b03a45919d39aa37e38a20bf1ce2deb557a2.' \
+            'Includes 32 unique task seeds, each tested in applied and neutral-held unknown ACK conditions, 64 total task×seed×fault records; do not claim 64 independent reset states.' \
+            'Original success: zero-readback midpoint 43/64, optimistic 48/64, pessimistic 43/64; privileged one-readback 62/64; strict refusal 0/64.' \
+            'Negative result intentionally preserved: geometrically centered belief does not outperform simple same-information no-readback strategies in pooled task outcome.' \
+            'Evidence is contributor-run simulated controller target hold, not real network loss, cross-robot frozen policy transfer, independent replication or hardware safety.' \
+            'Original source artifact checksums/digests and provenance are pinned by .github/workflows/archive-belief-minimax-64-original.yml.' \
+            'Run: python -m research.audit_belief_minimax_64 --input-dir research/frozen_policy_transfer/evidence/belief_minimax_prospective_64_96001_97016 --output /tmp/minimax-check.json' \
+            > "$dest/README.md"
+          python -m research.audit_belief_minimax_64 --input-dir "$dest" --output /tmp/minimax-permanent-audit.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dest"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'evidence: preserve eight exact original 64-case unknown-execution minimax trial JSONs'
+          git pull --rebase origin main
+          git push origin HEAD:main
