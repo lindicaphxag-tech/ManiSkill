@@ -433,6 +433,42 @@ try:
         ]
         for arm, _, _ in arms
     }
+    # PRE-SELECTION FINITE-SOURCE REPLAY OUTCOMES. Save the intention-to-replay
+    # population and all 4 arms BEFORE intersecting successful trajectories.
+    # The record survives missing common training demos or a later GPU crash.
+    replay_itt_record = {
+        "schema": "maniskill-source-episode-itt-v1",
+        "interpretation": "descriptive source-seed paired replay only; not training",
+        "source_dataset": {
+            key: raw_dataset_record[key]
+            for key in ("repository", "revision", "path", "sha256", "size_bytes")
+        },
+        "original_source_episodes": [
+            {"episode_id": int(item["episode_id"]), "episode_seed": int(item["episode_seed"])}
+            for item in selected_episodes
+        ],
+        "original_source_seed_sha256": hashlib.sha256(
+            json.dumps(source_seed_order, separators=(",", ":")).encode("utf-8")
+        ).hexdigest(),
+        "arms": [
+            {
+                "arm": arm,
+                "source_commit": checkout_sha,
+                "controller_overlay_commit": overlay_sha,
+                "successful_episode_seeds": arm_success_seeds[arm],
+                "successful_seed_sha256": hashlib.sha256(
+                    json.dumps(arm_success_seeds[arm], separators=(",", ":")).encode("utf-8")
+                ).hexdigest(),
+            }
+            for arm, checkout_sha, overlay_sha in arms
+        ],
+    }
+    (OUTPUT / "replay_intention_to_treat.json").write_text(
+        json.dumps(replay_itt_record, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    run_record["replay_itt_file"] = "replay_intention_to_treat.json"
+
     common_seeds = [
         seed for seed in source_seed_order
         if all(seed in prepared_arms[arm]["indexed_episodes"] for arm, _, _ in arms)
@@ -604,6 +640,11 @@ finally:
         "pairing_evidence": (
             "pairing_evidence.json"
             if (OUTPUT / "pairing_evidence.json").is_file()
+            else None
+        ),
+        "replay_intention_to_treat": (
+            "replay_intention_to_treat.json"
+            if (OUTPUT / "replay_intention_to_treat.json").is_file()
             else None
         ),
         "raw_demos_exported": False,
