@@ -97,12 +97,12 @@ def rollout_one(actor,seed):
                 if name=="compiled":
                     new_arm=compile_pd_ee_delta_to_absolute_pose(
                         source_arm,current_arm(controllers[name]),native)
-                    canonical_dict=controllers["source"].to_action_dict(native)
+                    canonical_dict=controllers["source"].to_action_dict(native.squeeze(0))
                     canon_gripper=canonical_dict["gripper"]
                     target_action=controllers[name].from_action_dict(
-                        {"arm":new_arm.to(canon_gripper.device),
-                         "gripper":canon_gripper}
-                    )
+                        {"arm":new_arm.reshape(-1).to(canon_gripper.device),
+                         "gripper":canon_gripper.reshape(-1)}
+                    ).reshape(1,-1)
                 elif name=="naive":
                     # Wrong action ABI: raw normalized delta interpreted as
                     # absolute EE pose by destination controller.
