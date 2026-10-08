@@ -1,0 +1,68 @@
+{
+  "title": "Pre-outcome action-history observer evaluation on frozen PPO",
+  "protocol_id": "ABI-HISTORY-OBS-V1-20261009",
+  "frozen_before_first_experiment": true,
+  "source_repository": "lindicaphxag-tech/ManiSkill",
+  "policy_source": "kattri15/actionshift-baselines",
+  "policy_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+  "training_performed": false,
+  "simulator": "ManiSkill PhysX CPU, official task flags, one policy per task, 50 steps each",
+  "tasks": {
+    "pull_cube": {
+      "id": "PullCube-v1",
+      "seeds": [
+        62001,
+        62002,
+        62003,
+        62004,
+        62005,
+        62006,
+        62007,
+        62008
+      ],
+      "model_sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7"
+    },
+    "stack_cube": {
+      "id": "StackCube-v1",
+      "seeds": [
+        72001,
+        72002,
+        72003,
+        72004,
+        72005,
+        72006,
+        72007,
+        72008
+      ],
+      "model_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+    }
+  },
+  "arms": [
+    "source",
+    "memory",
+    "projected",
+    "observer",
+    "stateless",
+    "naive"
+  ],
+  "primary_question": "Does an action-only, acknowledgement-gated target observer reproduce actual target-memory conditioned transfer without reading _target_pose or get_state during decision making?",
+  "exactness_definition": "Projected non-exact actions do not represent the exact policy physical target; do not report as equivalent or safe.",
+  "observer_condition": "Per episode reset from achieved end-effector pose, then forward integrate each acknowledged target-native command using documented root aligned target delta semantics.",
+  "refusal_condition": "Action outside normalized representable set, unsupported controller ABI, stale ACK, in-flight ambiguity, unknown delivery or missing reset: fail closed, do not silently extrapolate.",
+  "audit_condition": "After entire trajectory is finished, compare reconstructed and live target pose; position max error <= 3e-5 m and SO(3) relative angle <= 3e-4 rad; fail on breach.",
+  "primary_outcomes": [
+    "per-seed official success flags for observer vs live-memory vs state-blind",
+    "paired discordant successes",
+    "final target memory error",
+    "non-exact projection count",
+    "refusals and unknown-command handling"
+  ],
+  "predeclared_interpretation": "Equivalence of observer and live memory, if seen, establishes an implementation-specific controller recurrence reconstruction, not generalization or top-conference novelty. If not seen, preserve all failures and do not tune seeds.",
+  "risk": "Unknown controller-side clipping, altered state semantics or delayed action consumption can invalidate reconstruction. The controller-side state getter is used for endpoint audit only, after the complete closed-loop trial.",
+  "scope_limitations": [
+    "only Panda root_translation:root_aligned_body_rotation ABI",
+    "one public frozen PPO each for two tasks",
+    "owner-run simulation, not independent outside validation",
+    "no robotics safety certification or real robot claim"
+  ]
+}
