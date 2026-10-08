@@ -32,3 +32,17 @@ jobs:
         run: |
           python -m py_compile research/frozen_policy_transfer/review/verify_stateful_abi.py
           python research/frozen_policy_transfer/review/verify_stateful_abi.py
+          python -m unittest discover -s research/frozen_policy_transfer/review -p test_paired_query_stats.py -v
+          python research/frozen_policy_transfer/review/paired_query_stats.py --output /tmp/original_new64_paired_query_stats.json
+          python - <<'PY'
+          import json
+          r=json.load(open('/tmp/original_new64_paired_query_stats.json'))
+          assert r['n']==64 and r['n_trained_policies']==2
+          assert r['selective_privileged_decision_reads']==15
+          assert r['mandatory_privileged_decision_reads']==64
+          assert r['selective_success']==60 and r['mandatory_success']==57
+          assert r['exact_two_sided_discordant_sign_test_p']==0.453125
+          assert r['paired_risk_difference_95pct_joint_exact_conservative_ci'][0]<0
+          assert r['paired_risk_difference_95pct_joint_exact_conservative_ci'][1]>0
+          print('PASS: source-pinned paired inference, no unsupported noninferiority claim')
+          PY
