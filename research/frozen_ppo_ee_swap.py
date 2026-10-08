@@ -22,7 +22,7 @@ from frozen_ppo_pickcube_gate import (
 )
 import hashlib
 
-SEEDS=tuple(range(10001,10033))
+SEEDS=(10014,)
 MAX_STEPS=50
 
 
@@ -88,12 +88,18 @@ def rollout_one(actor,seed):
 
         controllers={name:env.unwrapped.agent.controller for name,env in envs.items()}
         source_arm=current_arm(controllers["source"])
+        detailed_trace=[]
         completed={k:False for k in envs}
         for t in range(MAX_STEPS):
+            before_obs={name:observations[name].detach().cpu().numpy().reshape(-1).copy()
+                        for name in ("source","compiled")}
+            inputs={}
+            issued={}
             for name in envs:
                 if completed[name]:
                     continue
                 native=get_policy_action(actor,observations[name])
+                inputs[name]=native.detach().cpu().numpy().reshape(-1).tolist()
                 if name=="compiled":
                     new_arm=compile_pd_ee_delta_to_absolute_pose(
                         source_arm,current_arm(controllers[name]),native)
@@ -110,6 +116,7 @@ def rollout_one(actor,seed):
                 else:
                     target_action=native
 
+                issued[name]=target_action.detach().cpu().numpy().reshape(-1).tolist()
                 observations[name],_,terminated,truncated,info=envs[name].step(target_action)
                 success=info.get("success") if isinstance(info,dict) else None
                 if success is None:
@@ -117,9 +124,29 @@ def rollout_one(actor,seed):
                 report["success_once"][name]=report["success_once"].get(name,False) or _bool_value(success)
                 report["episode_steps"][name]=t+1
                 completed[name] = _bool_value(terminated) or _bool_value(truncated)
+            qref=envs["source"].unwrapped.agent.robot.get_qpos().detach().cpu().numpy().reshape(-1)
+            qdst=envs["compiled"].unwrapped.agent.robot.get_qpos().detach().cpu().numpy().reshape(-1)
+            ee_src=envs["source"].unwrapped.agent.tcp.pose.p.detach().cpu().numpy().reshape(-1)
+            ee_dst=envs["compiled"].unwrapped.agent.tcp.pose.p.detach().cpu().numpy().reshape(-1)
+            obs_diff=float(np.max(np.abs(before_obs["source"]-before_obs["compiled"])))
+            trace_entry={"step":t+1,
+                        "source_completed":completed["source"],
+                        "compiled_completed":completed["compiled"],
+                        "source_success_once":report["success_once"].get("source",False),
+                        "compiled_success_once":report["success_once"].get("compiled",False),
+                        "prestep_obs_max_abs_diff":obs_diff,
+                        "policy_input_action_source":inputs.get("source"),
+                        "policy_input_action_compiled":inputs.get("compiled"),
+                        "issued_action_source":issued.get("source"),
+                        "issued_action_compiled":issued.get("compiled"),
+                        "robot_joint_qpos_max_abs_diff":float(np.max(np.abs(qref-qdst))),
+                        "tcp_position_l2_diff":float(np.linalg.norm(ee_src-ee_dst))}
+            detailed_trace.append(trace_entry)
+            print("FROZEN_10014_DIAGNOSTIC_STEP",json.dumps(trace_entry,sort_keys=True))
             if all(completed.values()):
                 break
-        print("FROZEN_PPO_SWAP_EPISODE",json.dumps(report,sort_keys=True))
+        report["detailed_trace"]=detailed_trace
+        print("FROZEN_PPO_SWAP_EPISODE",json.dumps({k:v for k,v in report.items() if k!="detailed_trace"},sort_keys=True))
         return report
     finally:
         for env in envs.values():
@@ -154,6 +181,7 @@ def main():
             "denominator":len(SEEDS),
             "interpretation":"exploratory; must require competent source before claiming a migration benefit"}
     Path("frozen_ppo_controller_swap.json").write_text(json.dumps(result,indent=2))
+    Path("seed10014_diagnostic.json").write_text(json.dumps(runs[0]["detailed_trace"],indent=2))
     print("FROZEN_PPO_SWAP_SUMMARY",json.dumps({
         "source":outcomes["source"],"compiled":outcomes["compiled"],
         "naive":outcomes["naive"],"episodes":len(SEEDS)
