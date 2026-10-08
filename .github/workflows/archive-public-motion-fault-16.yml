@@ -99,4 +99,12 @@ jobs:
           git add "$dest"
           if git diff --cached --quiet; then echo "Already archived"; exit 0; fi
           git commit -m 'evidence: preserve original 16 source-pinned public-motion PhysX fault worlds'
-          git push origin HEAD:main
+          # The active research fork has simultaneous evidence commits. Rebase
+          # against the CURRENT public main without editing frozen data bytes.
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then exit 0; fi
+            echo "Concurrent non-fast-forward push, retrying without altering source files: $attempt"
+          done
+          echo 'Unable to archive after bounded concurrency retries'
+          exit 1
