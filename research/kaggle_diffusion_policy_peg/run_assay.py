@@ -98,6 +98,20 @@ if SMOKE_MODE:
         ),
     )
 
+if FACTORIAL_REPLAY_MODE:
+    # A frozen 32-source-episode replication, independently replayed in every
+    # cell; skip DP training altogether and preserve failure/zero cells.
+    CONFIG.update(
+        requested_num_demos=32,
+        replay_count=32,
+        minimum_paired_demos=16,
+        measurement_deviation=(
+            "32-episode CPU-only four-cell replay replication (no policy "
+            "training); exact shared source seeds and complete negative "
+            "outcomes are retained rather than filtered out."
+        ),
+    )
+
 started = time.time()
 OUTPUT.mkdir(parents=True, exist_ok=True)
 run_record = {
