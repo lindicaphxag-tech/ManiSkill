@@ -64,7 +64,9 @@ class TransportResult:
 
 
 def _numbers(values: Sequence[float], name: str) -> tuple[float, ...]:
-    if not values:
+    # NumPy arrays and other valid sequence types do not define scalar truth.
+    # Inspect their length, never their (ambiguous) boolean interpretation.
+    if len(values) == 0:
         raise ValueError(f"{name} must be nonempty")
     out = tuple(float(v) for v in values)
     if not all(isfinite(v) for v in out):
