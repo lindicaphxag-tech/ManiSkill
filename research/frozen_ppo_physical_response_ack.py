@@ -20,6 +20,7 @@ import frozen_ppo_action_history_observer as original
 from frozen_ppo_observer_policy import REPO, _actor
 from action_abi_history_observer import ActionHistoryObserver
 from frozen_ppo_unknown_ack_recovery import pose_record, target_record, as_pose, discrepancy
+from physical_response_classifier import pure_classification
 
 TASK=os.environ["ABI_TASK"]
 FAULT=os.environ["ABI_FAULT"]
@@ -49,30 +50,6 @@ def make_observer(arm):
                             normalize_action=c.normalize_action)
     x.reset(pose_record(arm))
     return x
-
-
-def pure_classification(observed_xyz,held_xyz,applied_xyz,*,margin=MARGIN_M):
-    """No controller object and no hidden target read. Selection by distance.
-
-    A confident but incorrect label counts as wrong *authorization*; task
-    success cannot erase a false historical hypothesis.
-    """
-    p=np.asarray(observed_xyz,dtype=np.float64)
-    held=np.asarray(held_xyz,dtype=np.float64)
-    applied=np.asarray(applied_xyz,dtype=np.float64)
-    if any(x.shape!=(3,) or not np.all(np.isfinite(x)) for x in (p,held,applied)):
-        raise ValueError("Finite XYZ-only evidence required")
-    if not (np.isfinite(margin) and margin>0):
-        raise ValueError("Positive independent observation margin required")
-    dh=float(np.linalg.norm(p-held))
-    da=float(np.linalg.norm(p-applied))
-    separation=float(np.linalg.norm(held-applied))
-    advantage=abs(dh-da)
-    label=(None if separation<=margin or advantage<margin else
-           "applied" if da<dh else "held")
-    return dict(label=label,hold_distance_m=dh,applied_distance_m=da,
-                target_separation_m=separation,decision_margin_m=advantage,
-                evidence_type="achieved_EE_xyz_after_one_native_zero_arm_delta")
 
 
 def actual_xyz(arm):
