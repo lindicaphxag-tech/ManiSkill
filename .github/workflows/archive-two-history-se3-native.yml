@@ -1,0 +1,144 @@
+name: Archive preregistered two-history SE3 PhysX evidence
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/archive-two-history-se3-native.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify-source-no-write:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify successful original frozen native physics source identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37826452395 --jq .head_sha)" = "673969d6b57c34edf15bdbb30c14ff990dd659f4"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37826452395 --jq .conclusion)" = success
+      - name: Download unchanged original robot-target JSON and log
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/twohistory
+          gh run download 37826452395 --repo "$GITHUB_REPOSITORY" --name original-two-history-SE3-four-native-task-counterfactuals --dir /tmp/twohistory
+          test "$(find /tmp/twohistory -maxdepth 1 -type f | wc -l)" -eq 2
+      - name: Check prepublished raw SHA256 and full original task identities
+        run: |
+          cd /tmp/twohistory
+          printf '%s\n' \
+            'f3ab43cc10b4780692f3b8dc28f8dcfb505d92098b43bb86e36bd19c5f01ab42  two_history_se3_native_real_physx.json' \
+            '70f6e770154acd5f6d0ab74739f169d73200117804a8e691144939a5e383d3a2  two_history_se3_native.log' | sha256sum -c -
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          q=json.loads(Path('two_history_se3_native_real_physx.json').read_text())
+          assert q['real_native_physx_controlled_cases']==4
+          assert q['two_worlds_per_case']==2
+          assert q['robot_hardware_safety_certified'] is False
+          assert [(r['task'],r['seed']) for r in q['results']]==[
+            ('PickCube-v1',13077),('PushCube-v1',14088),
+            ('PullCube-v1',15099),('StackCube-v1',16110)]
+          for r in q['results']:
+              assert r['pre_action_robot_states_identical']
+              assert r['different_hidden_targets_created_by_official_controller_set_state']
+              assert r['minimax_bound_position_inf_m']<=.0101
+              assert r['minimax_bound_rotation_geodesic_rad']<=.0151
+              for k in ('world_A_observed_errors_position_inf_m_and_rotation_rad',
+                        'world_B_observed_errors_position_inf_m_and_rotation_rad'):
+                  assert r[k][0]<=.0101 and r[k][1]<=.0151
+              assert r['actual_policy_task_success_measured'] is False
+              assert r['unknown_ACK_in_actual_robot_emulated'] is False
+          print('Verified all four original real native two-history SE3 setpoint witnesses')
+          PY
+  persist-on-trusted-main-only:
+    needs: verify-source-no-write
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify successful original frozen native physics source identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37826452395 --jq .head_sha)" = "673969d6b57c34edf15bdbb30c14ff990dd659f4"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37826452395 --jq .conclusion)" = success
+      - name: Download unchanged original robot-target JSON and log
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/twohistory
+          gh run download 37826452395 --repo "$GITHUB_REPOSITORY" --name original-two-history-SE3-four-native-task-counterfactuals --dir /tmp/twohistory
+          test "$(find /tmp/twohistory -maxdepth 1 -type f | wc -l)" -eq 2
+      - name: Check prepublished raw SHA256 and full original task identities
+        run: |
+          cd /tmp/twohistory
+          printf '%s\n' \
+            'f3ab43cc10b4780692f3b8dc28f8dcfb505d92098b43bb86e36bd19c5f01ab42  two_history_se3_native_real_physx.json' \
+            '70f6e770154acd5f6d0ab74739f169d73200117804a8e691144939a5e383d3a2  two_history_se3_native.log' | sha256sum -c -
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          q=json.loads(Path('two_history_se3_native_real_physx.json').read_text())
+          assert q['real_native_physx_controlled_cases']==4
+          assert q['two_worlds_per_case']==2
+          assert q['robot_hardware_safety_certified'] is False
+          assert [(r['task'],r['seed']) for r in q['results']]==[
+            ('PickCube-v1',13077),('PushCube-v1',14088),
+            ('PullCube-v1',15099),('StackCube-v1',16110)]
+          for r in q['results']:
+              assert r['pre_action_robot_states_identical']
+              assert r['different_hidden_targets_created_by_official_controller_set_state']
+              assert r['minimax_bound_position_inf_m']<=.0101
+              assert r['minimax_bound_rotation_geodesic_rad']<=.0151
+              for k in ('world_A_observed_errors_position_inf_m_and_rotation_rad',
+                        'world_B_observed_errors_position_inf_m_and_rotation_rad'):
+                  assert r[k][0]<=.0101 and r[k][1]<=.0151
+              assert r['actual_policy_task_success_measured'] is False
+              assert r['unknown_ACK_in_actual_robot_emulated'] is False
+          print('Verified all four original real native two-history SE3 setpoint witnesses')
+          PY
+      - name: Preserve unchanged original JSON/log alongside scope and provenance
+        run: |
+          set -euo pipefail
+          folder=research/latent_memory_native_evidence/two_history_se3_v1
+          mkdir -p "$folder"
+          cp /tmp/twohistory/two_history_se3_native_real_physx.json "$folder/"
+          cp /tmp/twohistory/two_history_se3_native.log "$folder/"
+          cat > "$folder/README.md" <<'EOF'
+          # Genuine ManiSkill PhysX two-history SE3 bounded common-command replay
+          Frozen protocol commit 54613544ddd0bcffe248b495574e63244d10bdf5, before original runner.
+          Successful source run 37826452395, original head 673969d6b57c34edf15bdbb30c14ff990dd659f4.
+          Both original JSON/logs copied BYTE-IDENTICALLY after fixed SHA-256 verification in archive-two-history-se3-native.yml.
+          Task pairs PickCube 13077, PushCube 14088, PullCube 15099, StackCube 16110, two actual native controllers per task.
+          Controlled +2cm target-position/+0.03rad target-orientation hidden-state shift.
+          Common native action achieved <=.0101m worst-case commanded-position error and <=.0151rad worst-case commanded-orientation error.
+          Six negative/trust/representation checks were part of preregistered experiment.
+          Standard Chebyshev/geodesic minimax math, NOT an original new theorem.
+          NO actual unknown-ACK packet fault, real hardware safety, true target sensor attestation, task success, or third-party independent reproduction claimed.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$folder"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'evidence: archive four original two-history bounded SE3 physics records'
+          git push origin HEAD:main
