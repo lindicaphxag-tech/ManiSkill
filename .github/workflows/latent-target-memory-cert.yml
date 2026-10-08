@@ -1,0 +1,37 @@
+name: Latent target memory minimax proof regression
+
+on:
+  push:
+    branches:
+      - research/latent-target-memory-minimax-certificate-v1
+  pull_request:
+    paths:
+      - 'research/latent_target_memory_cert.py'
+      - 'research/LATENT_MEMORY_MINIMAX_CERTIFICATE_V1.md'
+      - 'tests/test_latent_target_memory_cert.py'
+      - '.github/workflows/latent-target-memory-cert.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-setpoint-optimization-and-refusal:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.11', '3.13']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Exact CPU-only witness, minimax property tests and fail-closed gates
+        run: |
+          python -m unittest discover -s tests -p 'test_latent_target_memory_cert.py' -v
+      - name: Validate source compiles without GPU/ML dependencies
+        run: |
+          python -m py_compile research/latent_target_memory_cert.py
