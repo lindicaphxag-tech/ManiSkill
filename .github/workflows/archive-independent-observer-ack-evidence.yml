@@ -1,0 +1,125 @@
+name: Preserve independent observer and real ACK recovery source evidence
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-independent-observer-ack-evidence.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  source-pinned-permanent-archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require original complete successful fixed-head physical simulator jobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37821114043 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37821114043 --jq .head_sha)" = "b872af768f4e4dd9c77df495b8f932605e29bb60"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37822693649 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37822693649 --jq .head_sha)" = "46c16f56235c68a6823450ae9823ae44e32125b0"
+      - name: Fetch original complete-denominator JSON artifacts without rewriting source bytes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/original-observer /tmp/original-ack
+          gh run download 37821114043 --repo "$GITHUB_REPOSITORY" \
+            --name complete-independent-history-64-originals \
+            --dir /tmp/original-observer
+          gh run download 37822693649 --repo "$GITHUB_REPOSITORY" \
+            --name complete-physical-ack-loss-recovery-evidence \
+            --dir /tmp/original-ack
+      - name: Independently verify original task denominator, source identities, and no-cherry-pick outcomes
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('/tmp/original-observer')
+          q=Path('/tmp/original-ack')
+          observer=json.loads((p/'independent-history-64-aggregate.json').read_text())
+          ack=json.loads((q/'ack-loss-physx-full-aggregate.json').read_text())
+          frozen={
+              'pull_cube':(83001,{'source':30,'projected':30,'observer':30,'stateless':11,'naive':11}),
+              'stack_cube':(93001,{'source':27,'projected':27,'observer':27,'stateless':0,'naive':0})
+          }
+          for task,(first,expected) in frozen.items():
+              rows=observer['results'][task]['original_episode_records']
+              assert len(rows)==32 and [r['seed'] for r in rows]==list(range(first,first+32))
+              assert all(sum(bool(r.get('success_once',{}).get(k,False)) for r in rows)==v
+                         for k,v in expected.items())
+              assert all(observer['results'][task]['success'][k]==v for k,v in expected.items())
+              assert observer['results'][task]['evidence_gate']=='MATCHED'
+              for part in range(4):
+                  f=p/f'independent_observer_{task}_{part}.json'
+                  src=json.loads(f.read_text())
+                  expected_seeds=list(range(first+8*part,first+8*part+8))
+                  assert src['seed_list']==expected_seeds
+                  assert [x['seed'] for x in src['episodes']]==expected_seeds
+          for task,first,blind in [('pull_cube',85001,5),('stack_cube',95001,0)]:
+              row=ack['results'][task]
+              samples=row['original_episode_rows']
+              assert [s['seed'] for s in samples]==list(range(first,first+8))
+              assert len(samples)==8 and row['fault_reached_n']==8
+              assert row['success']['observer']==row['success']['projected']==row['success']['source']==8
+              assert row['success']['stateless']==blind
+              assert row['matched_success']==8
+              assert row['predeclared_gate']=='SUPPORTED_WITH_PRIVILEGED_RESYNC'
+              assert all(s['ack_loss_fault']['triggered'] and s['ack_loss_fault']['further_action_was_refused']
+                         and s['ack_loss_fault']['authoritative_target_reads_for_recovery']==1
+                         for s in samples)
+              origin=json.loads((q/f'ack_loss_physx_resync_{task}_8.json').read_text())
+              assert [s['seed'] for s in origin['episodes']]==list(range(first,first+8))
+          print('PASS: 64 independently reconstructed observer states and 16 real fault/recovery states, all original task outcomes')
+          PY
+      - name: Preserve unmodified source JSONs in publicly inspectable repository evidence archive
+        run: |
+          set -euo pipefail
+          root=research/frozen_policy_transfer/evidence
+          observer="$root/independent_history_observer_64"
+          ack="$root/physical_ack_loss_resync_16"
+          mkdir -p "$observer" "$ack"
+          cp /tmp/original-observer/independent_observer_*.json "$observer/"
+          cp /tmp/original-observer/independent-history-64-aggregate.json "$observer/"
+          cp /tmp/original-ack/ack_loss_physx_resync_*.json "$ack/"
+          cp /tmp/original-ack/ack-loss-physx-full-aggregate.json "$ack/"
+          ( cd "$observer" && sha256sum ./*.json > source_sha256.txt )
+          ( cd "$ack" && sha256sum ./*.json > source_sha256.txt )
+          cat > "$observer/README.md" <<'EOF'
+          # Independent action-history observer, 64 original PhysX task states
+          Source: GitHub Actions 37821114043, fixed head b872af768f4e4dd9c77df495b8f932605e29bb60.
+          PullCube 83001–83032: frozen PPO source/live-memory/independent-observer 30/32; matched memory-blind projection 11/32.
+          StackCube 93001–93032: source/live-memory/independent-observer 27/32; matched memory-blind projection 0/32.
+          Two independently written target-state recurrences matched binary outcomes on every seed. Not independent external adoption.
+          All source JSONs are byte-for-byte copies of the exact completed original source artifacts; hashes recorded.
+          Sim-only, controller-known, trusted reset and delivered/acknowledged actions. No broad-robot safety or trained VLA claim.
+          EOF
+          cat > "$ack/README.md" <<'EOF'
+          # Real PhysX frozen PPO unknown-ACK and single authoritative readback recovery
+          Source: GitHub Actions 37822693649, fixed head 46c16f56235c68a6823450ae9823ae44e32125b0.
+          Pre-outcome protocol: research/ACK_LOSS_PHYSX_RESYNC_PRECOMMIT_V1.json in original branch.
+          PullCube 85001–85008: source/live-memory/recovered-observer 8/8; matched memory-blind projection 5/8.
+          StackCube 95001–95008: source/live-memory/recovered-observer 8/8; matched memory-blind projection 0/8.
+          In all 16 states an action physically executed, its acknowledgement to the observer was made unknown,
+          the observer refused further action, and a SINGLE privileged native target-state readback resynchronized it.
+          This IS NOT physical actuator packet-loss recovery, autonomous sensing, independent external replication,
+          a robotics safety guarantee, or evidence that unknown delivery can be resolved without new information.
+          Source JSON bytes are copied unchanged; manifest hashes are recorded.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$observer" "$ack"
+          if git diff --cached --quiet; then
+            echo 'Already source-pinned, verified and archived'
+            exit 0
+          fi
+          git commit -m 'evidence: archive 64 independent observer and 16 real lost-ACK recovery outcomes'
+          git push origin HEAD:main
