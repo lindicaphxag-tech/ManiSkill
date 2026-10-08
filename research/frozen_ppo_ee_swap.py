@@ -22,7 +22,7 @@ from frozen_ppo_pickcube_gate import (
 )
 import hashlib
 
-SEEDS=tuple(range(10001,10033))
+SEEDS=(10014,10014,10014,*range(10001,10015),10014)
 MAX_STEPS=50
 
 
@@ -77,6 +77,11 @@ def rollout_one(actor,seed):
         observations={}
         for key,env in envs.items():
             observations[key],_=env.reset(seed=seed)
+        # Source setup fingerprint: the same integer reset seed must not
+        # be presumed to identify a scene if upstream global RNGs differ.
+        input_tensor=observations["source"].detach().cpu().contiguous().numpy()
+        report["initial_source_obs_sha256"]=hashlib.sha256(input_tensor.tobytes()).hexdigest()
+        report["initial_source_obs_first10"]=input_tensor.reshape(-1)[:10].tolist()
         shape={k:tuple(v.shape) for k,v in observations.items()}
         if len(set(shape.values()))!=1:
             raise RuntimeError("Mismatch observation ABI: "+str(shape))
@@ -152,7 +157,7 @@ def main():
                                  "naive":"pd_ee_pose"},
             "backend":"physx_cpu","episodes":runs,"success_count":outcomes,
             "denominator":len(SEEDS),
-            "interpretation":"exploratory; must require competent source before claiming a migration benefit"}
+            "interpretation":"post-hoc reset-order audit, not a new holdout or model comparison"}
     Path("frozen_ppo_controller_swap.json").write_text(json.dumps(result,indent=2))
     print("FROZEN_PPO_SWAP_SUMMARY",json.dumps({
         "source":outcomes["source"],"compiled":outcomes["compiled"],
