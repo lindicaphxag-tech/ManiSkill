@@ -1,0 +1,39 @@
+name: CST public frozen PPO three-task CPU competence gates
+on:
+  push:
+    branches:
+      - validation/cst-multitask-frozen-ppo-competence-20261008
+  workflow_dispatch:
+jobs:
+  frozen-task:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [push_cube, pull_cube, stack_cube]
+    env:
+      CST_TASK: ${{ matrix.task }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install official CPU simulator
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Evaluate hash-pinned frozen PPO, no training
+        run: |
+          set -o pipefail
+          python research/frozen_ppo_multitask_gate.py 2>&1 | tee competence.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frozen-ppo-${{ matrix.task }}-competence
+          path: |
+            frozen_ppo_competence_*.json
+            competence.log
