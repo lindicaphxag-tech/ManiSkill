@@ -7,6 +7,7 @@ their OWN current observations (closed-loop). No training or updates.
 This is an exploratory CI, not a pre-declared clinical safety guarantee.
 """
 import json
+import hashlib
 from pathlib import Path
 
 import gymnasium as gym
@@ -22,7 +23,7 @@ from frozen_ppo_pickcube_gate import (
 )
 import hashlib
 
-SEEDS=(10014,)
+SEEDS=(10014,10014,10014,10014)
 MAX_STEPS=50
 
 
@@ -86,6 +87,10 @@ def rollout_one(actor,seed):
             if diff>5e-4:
                 raise RuntimeError("Different initial physics/goal observation; result invalid "+str(diff))
 
+        import hashlib as _hashlib
+        initial_numpy=observations["source"].detach().cpu().numpy().astype(np.float32)
+        report["initial_obs_sha256"]=_hashlib.sha256(initial_numpy.tobytes()).hexdigest()
+        report["initial_obs_head10"]=initial_numpy.reshape(-1)[:10].astype(float).tolist()
         controllers={name:env.unwrapped.agent.controller for name,env in envs.items()}
         source_arm=current_arm(controllers["source"])
         detailed_trace=[]
@@ -181,7 +186,7 @@ def main():
             "denominator":len(SEEDS),
             "interpretation":"exploratory; must require competent source before claiming a migration benefit"}
     Path("frozen_ppo_controller_swap.json").write_text(json.dumps(result,indent=2))
-    Path("seed10014_diagnostic.json").write_text(json.dumps(runs[0]["detailed_trace"],indent=2))
+    Path("seed10014_diagnostic.json").write_text(json.dumps(runs,indent=2))
     print("FROZEN_PPO_SWAP_SUMMARY",json.dumps({
         "source":outcomes["source"],"compiled":outcomes["compiled"],
         "naive":outcomes["naive"],"episodes":len(SEEDS)
