@@ -21,6 +21,10 @@ NO_QUERY = "fault_robust_two_history_without_query"
 OPTIMISTIC = "fault_optimistic_unverified_ack"
 COMPARATORS = (MANDATORY, NO_QUERY, OPTIMISTIC)
 EXPECTED_SHA_FILE = "SHA256SUMS"
+# Pre-existing, already-public original source SHA256SUMS Git blob (not a new
+# manifest fingerprint calculated after these audit results were viewed).
+# Replacing BOTH the original result JSON and its manifest must fail closed.
+ORIGINAL_SOURCE_MANIFEST_GIT_BLOB = "64c3b913a9afbdfbcd374f176c484ee7b6576f93"
 EXPECTED_FILES = tuple(
     f"bounded_query_holdout_{task}_chunk{chunk}_original8.json"
     for task in MODELS for chunk in range(4)
@@ -28,7 +32,13 @@ EXPECTED_FILES = tuple(
 
 
 def verify_original_sha256(directory: Path) -> dict[str, str]:
-    raw = (directory / EXPECTED_SHA_FILE).read_text("ascii").splitlines()
+    manifest = (directory / EXPECTED_SHA_FILE).read_bytes()
+    original_blob = hashlib.sha1(
+        b"blob " + str(len(manifest)).encode("ascii") + bytes([0]) + manifest
+    ).hexdigest()
+    if original_blob != ORIGINAL_SOURCE_MANIFEST_GIT_BLOB:
+        raise ValueError("Pinned original experiment SHA256SUMS manifest changed")
+    raw = manifest.decode("ascii").splitlines()
     if len(raw) != len(EXPECTED_FILES):
         raise ValueError("Eight unmodified source SHA-256 entries required")
     found = {}

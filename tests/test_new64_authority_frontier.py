@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import shutil
 import tempfile
@@ -100,7 +101,29 @@ class FullPhysXOriginalArchiveTest(unittest.TestCase):
                 verify_original_sha256(local)
             expected=(local/"SHA256SUMS").read_text()
             (local/"SHA256SUMS").write_text(expected+"f"*64+"  imaginary_new_patient.json\n")
-            with self.assertRaisesRegex(ValueError,"Eight unmodified"):
+            with self.assertRaisesRegex(ValueError,"Pinned original experiment SHA256SUMS"):
+                verify_original_sha256(local)
+
+    def test_corrupted_source_and_coordinated_manifest_rewrite_cannot_pass(self):
+        # An unanchored checksum file proves only that the current two files
+        # agree, not that they match what was originally publicly archived.
+        # Deliberately alter BOTH sources and the corresponding digest.
+        with tempfile.TemporaryDirectory() as t:
+            local=Path(t)
+            shutil.copyfile(ROOT/"SHA256SUMS",local/"SHA256SUMS")
+            for name in EXPECTED_FILES:
+                shutil.copyfile(ROOT/name,local/name)
+            first=local/EXPECTED_FILES[0]
+            original=first.read_bytes()
+            original_sha=hashlib.sha256(original).hexdigest()
+            first.write_bytes(original+b"\\n")
+            new_sha=hashlib.sha256(first.read_bytes()).hexdigest()
+            manifest=local/"SHA256SUMS"
+            assert original_sha in manifest.read_text()
+            manifest.write_text(manifest.read_text().replace(original_sha,new_sha))
+            # A mutable SHA manifest would now accept the forged JSON.
+            # The earlier publicly committed Git blob identity MUST reject.
+            with self.assertRaisesRegex(ValueError,"Pinned original experiment SHA256SUMS"):
                 verify_original_sha256(local)
 
     def test_forged_info_cost_and_fake_arm_success_refused(self):
