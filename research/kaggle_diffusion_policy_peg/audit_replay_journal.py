@@ -95,8 +95,14 @@ def audit_replay_journal(root: Path) -> dict:
             or not set(successes).issubset(source_set)
             or successes != [s for s in seeds if s in set(successes)]
             or record.get("successful_count") != len(successes)
+            or record.get("full_source_census") is not True
+            or type(record.get("failed_count")) is not int
+            or record["failed_count"] != len(seeds)-len(successes)
+            or record.get("log_file") != f"replay_{arm.name}.log"
         ):
-            raise UnverifiableReplayEvidence("corrupt, reordered or foreign per-arm replay seeds")
+            raise UnverifiableReplayEvidence(
+                "corrupt, reordered, incomplete or foreign per-arm replay census"
+            )
         arm_successes[arm.name] = successes
         partial[arm.name] = {
             "status": "COMPLETED",
