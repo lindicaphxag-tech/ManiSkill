@@ -520,8 +520,19 @@ try:
         arm_demo_dir = DEMO_ROOT / "converted" / arm / "PegInsertionSide-v1" / "motionplanning"
         arm_demo_dir.mkdir(parents=True, exist_ok=True)
         arm_raw_path = arm_demo_dir / "trajectory.h5"
-        shutil.copy2(raw_demo_path, arm_raw_path)
-        shutil.copy2(raw_meta_path, arm_raw_path.with_suffix(".json"))
+        if FACTORIAL_REPLAY_MODE and source_offset:
+            from slice_source_cohort import materialize_cohort
+            source_proof = materialize_cohort(
+                raw_demo_path, raw_meta_path, arm_raw_path,
+                first_index=source_offset, count=CONFIG["replay_count"],
+            )
+            expected_seeds = [int(ep["episode_seed"]) for ep in selected_episodes]
+            if source_proof["original_source_episode_seeds"] != expected_seeds:
+                raise RuntimeError("physically sliced HDF5 uses the wrong original source seeds")
+            run_record.setdefault("source_materialization", {})[arm] = source_proof
+        else:
+            shutil.copy2(raw_demo_path, arm_raw_path)
+            shutil.copy2(raw_meta_path, arm_raw_path.with_suffix(".json"))
         run_stream([
             sys.executable, "-m", "mani_skill.trajectory.replay_trajectory",
             "--traj-path", str(arm_raw_path), "--use-first-env-state",
