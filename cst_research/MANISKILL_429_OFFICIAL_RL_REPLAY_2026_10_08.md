@@ -96,3 +96,30 @@ changes or any universal formal guarantee.
 
 External CST maintained adoption remains **0** until an upstream merge or
 independent use occurs.
+
+
+## Extended 16-episode validation — reported conservatively
+
+A separate three-arm ablation was initiated with identical official
+PickCube-v1 `pd_joint_delta_pos` source data on CPU, with
+source SHA256
+`b05851319021c290ed5e5055c03c776b434af5c9af98e13db2ab9159752b89c8`.
+
+The first public run:
+https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37713457042
+
+- Untouched upstream: **TypeError**, no valid success denominator.
+- Full semantic patch: **7/16 successful demos saved (43.75%)**.
+- One-line tensor-conversion-only branch: did not finish because it
+  exposed a second 2D-vs-1D tensor shape failure. It cannot be scored as
+  zero task success, nor used for a fair effect-size comparison.
+- A type-and-shape-only baseline retaining the original wrong target
+  controller chart was then prepared in a **separate** follow-up run:
+  https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37713849790
+  (not classified as a valid comparator until the run finishes and its
+  full logs are checked).
+
+Until a valid type/shape-only baseline finishes, we may claim that the
+full semantic patch removes real execution errors and completes 7/16
+official-data CPU replays, **not** that semantic re-encoding causally
+raises task success by 43.75 percentage points.
