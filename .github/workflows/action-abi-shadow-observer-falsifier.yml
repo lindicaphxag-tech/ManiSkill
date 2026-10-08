@@ -1,0 +1,96 @@
+name: Frozen new-cohort shadow target-memory observability falsifier
+
+on:
+  push:
+    branches:
+      - research/action-abi-shadow-observer-falsifier-20261009
+  pull_request:
+    paths:
+      - '.github/workflows/action-abi-shadow-observer-falsifier.yml'
+      - 'research/ACTION_ABI_SHADOW_OBSERVER_PREREG_V1.json'
+      - 'research/frozen_ppo_target_memory.py'
+      - 'research/action_abi_shadow_aggregate.py'
+      - 'tests/test_action_abi_shadow_observer_auditor.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  protocol-and-adversarial-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile exact frozen source runner and verify protocol identity
+        run: |
+          test "$(git hash-object research/ACTION_ABI_SHADOW_OBSERVER_PREREG_V1.json)" = "285a7457e4aa05240b970e5550bcf06942535ceb"
+          python -m py_compile research/frozen_ppo_target_memory.py research/action_abi_shadow_aggregate.py
+      - name: Test prospective 64-state null, missing, swapped-weight and result-forgery refusals
+        run: python -m unittest discover -s tests -p 'test_action_abi_shadow_observer_auditor.py' -v
+
+  genuine-physx-observer:
+    needs: protocol-and-adversarial-audit
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    env:
+      PYTHONUNBUFFERED: '1'
+      ABI_TASK: ${{ matrix.task }}
+      ABI_CHUNK: ${{ matrix.chunk }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install existing pinned PhysX CPU runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Execute six frozen policy/controller arms on all preregistered seeds
+        run: |
+          set -o pipefail
+          python research/frozen_ppo_target_memory.py 2>&1 | tee "abi_shadow_${ABI_TASK}_chunk_${ABI_CHUNK}.log"
+          test -s "abi_shadow_${ABI_TASK}_chunk_${ABI_CHUNK}.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: abi-shadow-${d}{{ matrix.task }}-${d}{{ matrix.chunk }}
+          path: |
+            abi_shadow_*.json
+            abi_shadow_*.log
+
+  all-64-shadow-observer-audit:
+    needs: genuine-physx-observer
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: abi-shadow-*
+          path: /tmp/shadow-64
+          merge-multiple: true
+      - name: Independently reaggregate all six-arm source outcome and reconstruction errors
+        run: |
+          python -m research.action_abi_shadow_aggregate \
+            --input-dir /tmp/shadow-64 \
+            --output /tmp/shadow-64-full-aggregate.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: all-64-source-state-shadow-observer-falsifier
+          path: |
+            /tmp/shadow-64/*.json
+            /tmp/shadow-64-full-aggregate.json
