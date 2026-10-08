@@ -53,8 +53,20 @@ def test_adapter_executes_four_queries_per_seed_and_stops_early():
     assert not result.deterministic_safety_guarantee
 
 
-def test_confirming_distinct_means_prevents_transfer():
+def test_insufficient_evidence_for_distinctness_still_abstains_at_full_budget():
+    # 0.16 maps to a 0.08 mean central-secant discrepancy. The fixed
+    # simultaneous uncertainty ball is too wide to separate tau=0.02.
+    # Do NOT relax the mathematical decision boundary to make this pass.
     result=run(sampler(contrast=.16),total=1024,tau=.02,remainder=0)
+    assert result.status is ProbeExecutionStatus.ABSTAIN_QUERY_BUDGET
+    assert result.charged_policy_forward_queries == 1024
+    assert not result.allows_actual_policy_transfer
+
+
+def test_confirming_distinct_means_prevents_transfer():
+    # A genuinely larger mean contrast is resolvable under the SAME
+    # budget/confidence/coordinate bounds: no threshold or budget change.
+    result=run(sampler(contrast=.20),total=1024,tau=.02,remainder=0)
     assert result.status is ProbeExecutionStatus.DO_NOT_TRANSFER_DISTINCT
     assert not result.allows_actual_policy_transfer
     assert result.latest_diagnostic.lower_mean_response_gap > .02
