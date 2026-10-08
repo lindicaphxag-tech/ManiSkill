@@ -1,0 +1,33 @@
+name: External reviewer source-evidence verification (stdlib, no physics)
+
+on:
+  push:
+    branches:
+      - review/independent-stateful-abi-reproduction-20261009
+  pull_request:
+    paths:
+      - 'research/frozen_policy_transfer/review/**'
+      - 'research/frozen_policy_transfer/evidence/**'
+      - '.github/workflows/review-stateful-abi-evidence.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-source-evidence:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.13']
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Run source-pinned full-denominator reviewer check with standard library only
+        run: |
+          python -m py_compile research/frozen_policy_transfer/review/verify_stateful_abi.py
+          python research/frozen_policy_transfer/review/verify_stateful_abi.py
