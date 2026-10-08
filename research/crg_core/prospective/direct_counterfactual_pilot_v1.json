@@ -1,0 +1,72 @@
+{
+  "schema": "crg-direct-counterfactual-policy-response-pilot-v1",
+  "status": "FROZEN_BEFORE_RUNNER_OR_OUTCOMES",
+  "date_frozen": "2026-10-09",
+  "objective": "measure requested full-state counterfactual action response without any Jacobian or central-secant approximation",
+  "interpretation": "diagnostic stochastic mean first-action response only; no physical safety or statistical authorization without hard controller output proof",
+  "state_seeds": [
+    311,
+    313,
+    317,
+    331,
+    337
+  ],
+  "physically_requested_block_deltas": {
+    "A": [
+      4,
+      -2,
+      0.02
+    ],
+    "B": [
+      -5,
+      3,
+      -0.025
+    ]
+  },
+  "action_chart": "PushT absolute_xy physical first action; no silent clipping",
+  "policy_rng_seed_split": {
+    "decision_only": [
+      911,
+      977,
+      997
+    ],
+    "independent_audit_only": [
+      1009,
+      1013,
+      1019
+    ]
+  },
+  "per_state_target_queries": "2 requests x (3 decision + 3 audit) seed pairs x 4 policy first actions = 48",
+  "expected_state_total": 5,
+  "expected_policy_first_action_calls": 240,
+  "probe_definition": "z_seed=[f_diffusion(s+h,seed)-f_diffusion(s,seed)]-[f_vqbet(s+h,seed)-f_vqbet(s,seed)]",
+  "exact_state_contract": "restore original PushT snapshot before each shifted-block observation; agent and target baseline remain frozen; no environment.step during probe",
+  "response_tolerance_abs_xy": 1,
+  "familywise_error_budget": 0.1,
+  "hard_controller_action_bounds": null,
+  "trusted_bounds_consequence": "REJECT_UNTRUSTED_BOUND / zero certified policy transfers. A Gym action_space declaration is NOT proof policy outputs or simulator actions are clipped.",
+  "sources": {
+    "source_repo": "lindicaphxag-tech/ManiSkill",
+    "frozen_source_sha": "8207ac01c56e75ccee19cba0e75eb0978cde37b2",
+    "lerobot_sha": "3c0a209f9fac4d2a57617e686a7f2a2309144ba2",
+    "pusht_dependency": "gym-pusht>=0.1.5 as in pinned LeRobot pyproject; resolved installed wheel/version must be recorded; absent exact immutable runtime means provenance limitation",
+    "diffusion_model": "lerobot/diffusion_pusht",
+    "diffusion_revision": "d3d143b0342488252497853815b27ce3c0384c6b",
+    "vqbet_model": "lerobot/vqbet_pusht",
+    "vqbet_revision": "390e5e4c079c880b22e873dad53ecfac706bc78a"
+  },
+  "preregistered_primary_outcomes": [
+    "complete_5_of_5_states",
+    "total_policy_first_action_queries_equals_240",
+    "screen_mean_gap_per_state_and_request",
+    "independent_audit_mean_gap_per_state_and_request",
+    "screen_to_audit_abs_gap_delta",
+    "certified_transfer_authorizations_always_0_without_hard_action_bounds"
+  ],
+  "frozen_outcome_labels": [
+    "DESCRIPTIVE_NO_TRUSTED_BOUND",
+    "EXPERIMENT_INCOMPLETE"
+  ],
+  "stop_rule": "No missing state or A/B pair may be excluded or replaced. Experiment incomplete if fewer than 5 valid state outputs. No post-result modification of thresholds or hidden state substitutions.",
+  "comparison_limitations": "Direct target observations are counterfactual-oracle access; do not compare query budget or performance to methods denied such oracle access. Six stochastic draws do not establish ground truth. This is not closed-loop rollout success."
+}
