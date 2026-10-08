@@ -55,15 +55,31 @@ def validate_output(raw, task, fault, expected_seeds):
             raise ValueError("Missing or invalid native success flag")
         for a in arms:
             scores[a]+=int(vals[a])
-        if (any(r.get("fault_reached",{}).get(a) is not True for a in arms[1:])
-            or any(r.get("readback_queries",{}).get(a)!=(1 if a=="recovered_one_readback" else -1 if a=="oracle_live_memory" else 0) for a in arms[1:])):
-            raise ValueError("Incomplete source fault or false information-budget disclosure")
+        reached=r.get("fault_reached",{})
+        reads=r.get("readback_queries",{})
+        for a in arms[1:]:
+            if type(reached.get(a)) is not bool:
+                raise ValueError("Fault-injection outcome must be explicitly True/False")
+            expected=(-1 if a=="oracle_live_memory" else
+                      1 if a=="recovered_one_readback" and reached[a] else 0)
+            if reads.get(a)!=expected:
+                raise ValueError("Target-read budget is inconsistent with actual fault exposure")
+        # A fresh independent seed may terminate BEFORE step 2. This is an
+        # INJECTION FAILURE, never a method success/failure. Retain the row,
+        # label the non-exposure and keep it in the complete trial denominator.
+        recovery_reached=reached["recovered_one_readback"]
         err=r.get("resync_position_error_m")
-        if not isinstance(err,(int,float)) or not math.isfinite(err) or err>3e-5 or err<0:
-            raise ValueError("One-read target-state evidence invalid")
-        if (r.get("steps",{}).get("fail_closed_stop")!=3
-            or "fail_closed_stop" not in r.get("refusals",{})):
-            raise ValueError("Stop arm incorrectly continued to act")
+        if recovery_reached:
+            if not isinstance(err,(int,float)) or not math.isfinite(err) or err>3e-5 or err<0:
+                raise ValueError("Attested single target readback invalid")
+        elif err is not None:
+            raise ValueError("Pretend resync measured despite no injected fault")
+        if reached["fail_closed_stop"]:
+            if (r.get("steps",{}).get("fail_closed_stop")!=3
+                or "fail_closed_stop" not in r.get("refusals",{})):
+                raise ValueError("Fail-stop controller improperly continued after ACK loss")
+        elif "fail_closed_stop" in r.get("refusals",{}):
+            raise ValueError("Stop arm claims ACK refusal before ACK loss")
     if scores!=raw.get("success_count"):
         raise ValueError("Summary does not match the full actual seed rows")
     return scores
@@ -99,6 +115,12 @@ def run(task: str, fault: str, first_seed: int, count: int, output_dir: Path):
     original["original_method_preoutcome_freeze"]=original_frozen_commit
     original["sample_provenance"]="researcher-selected AFTER original pre-registration; NOT original frozen cohorts"
     original["new_seed_selection"]=dict(first_seed=first_seed,n=count,source="GitHub Actions workflow_dispatch user inputs")
+    original["injection_exposure_by_arm"]={
+        a:sum(int(r["fault_reached"][a]) for r in original["rows"])
+        for a in ("oracle_live_memory","recovered_one_readback","optimistic_assume_applied",
+                  "pessimistic_assume_neutral","fail_closed_stop")
+    }
+    original["injection_failure_definition"]="preplanned step 2 not reached due task termination; preserve entire row and do NOT count it as evidence of a recovery method failing"
     original["method_runner_sha256"]=source_sha
     original["execution"]=dict(
         gh_repository=os.environ.get("GITHUB_REPOSITORY"),
