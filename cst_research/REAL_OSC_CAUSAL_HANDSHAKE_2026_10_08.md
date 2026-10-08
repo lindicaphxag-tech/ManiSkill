@@ -123,3 +123,37 @@ same-controller negative control.
 These are **intervention sensitivity measurements**, not an estimated
 policy success-rate delta, not a statistical confidence interval over
 independent scenes, and not external adoption.
+
+
+## Synthetic HDF5 integration + same-controller negative control
+
+CI: https://github.com/lindicaphxag-tech/robomimic/actions/runs/37706383227
+
+Full CPU suite: **5 passed in 25.32s** (fixed robosuite 1.5.2 /
+MuJoCo 3.3.0).
+
+A synthetic 8-step HDF5 episode was generated with the **real Panda OSC**
+controller. The test then executed robomimic's actual
+`RobomimicDeltaActionConverter.convert_demo` and
+`convert_actions` implementations against real simulator snapshots.
+Only the heavy initialization-time training/metadata modules were replaced by
+narrow test doubles.
+
+Result: `ROBOMIMIC_HDF5_REAL_OSC_PASS steps=8
+native_error_max=1.639314e-15 saturation_count=0`.
+
+This is an actual HDF5 parser + converter-method integration test, **not**
+validation of the entire robomimic CLI, multiprocessing writer, external
+public dataset, or learned policy success rate.
+
+The negative control uses two **identical** delta-OSC controller types in
+separate Panda/Lift simulator instances. It found:
+
+- independently initialized `geom_size` difference `0.001805384`;
+- maximum full-scene qpos difference `0.002626427`;
+- maximum arm-joint qpos difference `9.537e-8`;
+- maximum actuator control difference `1.458e-5`.
+
+Thus full-scene differences between independent simulated environments
+are **confounded by model geometry**. They cannot automatically be
+attributed to a controller-interface migration.
