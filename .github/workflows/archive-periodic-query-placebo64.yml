@@ -1,0 +1,156 @@
+name: Permanently preserve original near-matched-query timing placebo64
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-periodic-query-placebo64.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  readonly-source-hash-and-64state-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reject later source commits and missing first successful PhysX run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37833053629 --jq .head_sha)" = "e23909a43b8d9aeb4dba5b46e8f9c9845993cb57"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37833053629 --jq .conclusion)" = success
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37833053629 --jq .run_attempt)" = 1
+          test "$(git hash-object research/CERTIFY_QUERY_PERIODIC_PLACEBO_64_PREDECLARED_V1.json)" = "fc6c52c227f68c351b4f5637069672eae62a2e62"
+      - name: Download exactly eight original first-run independent task shards
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/query_placebo_original_raw /tmp/query_placebo_original_flat
+          gh run download 37833053629 --repo "$GITHUB_REPOSITORY" --pattern 'query-placebo-original-*' --dir /tmp/query_placebo_original_raw
+          find /tmp/query_placebo_original_raw -type f -name '*original8.json' -exec cp {} /tmp/query_placebo_original_flat/ \;
+          test "$(find /tmp/query_placebo_original_flat -maxdepth 1 -type f -name '*.json' | wc -l)" -eq 8
+          cat > /tmp/query_placebo_original_flat/ORIGINAL_SHA256SUMS <<'SOURCES_END'
+          4c9df220089372fdb656e3eb384bec190684ea59d76018f4bcc3e61f113540d1  query_placebo_pull_cube_chunk0_original8.json
+          d9e165ed47f0dd8b0a166312631bbbba90a82d6dc3e3c1ea0f14d841f9e2659e  query_placebo_pull_cube_chunk1_original8.json
+          b4239b4121fe3fcfb805bf0feadf67f87194fda74ba4d5fd03beb7a906d741eb  query_placebo_pull_cube_chunk2_original8.json
+          fd1394138b6b4fc5dc9c4a1ed74a9ecaac64e507307db56150d8e7982bef0a8c  query_placebo_pull_cube_chunk3_original8.json
+          0e248380295e4ed4190f9aa12e2d0f2421eafd2fc033d690af85d6f5ea1d8fa4  query_placebo_stack_cube_chunk0_original8.json
+          5551378a6033986f360c30a9bc8b8b59c272634514c0d5709057235766964a41  query_placebo_stack_cube_chunk1_original8.json
+          48176703192a33e94359177290b4076cbcb3424e61df14e4b844afc4c058072f  query_placebo_stack_cube_chunk2_original8.json
+          723629a8dc339901870c7e32644e86a2c66814582986ca53937d2492f19b2854  query_placebo_stack_cube_chunk3_original8.json
+          SOURCES_END
+          cd /tmp/query_placebo_original_flat
+          sha256sum -c ORIGINAL_SHA256SUMS
+      - name: Independent full 64 original-state and hidden-readback-budget audit
+        run: |
+          python -m research.audit_certify_query_periodic_placebo64 --input-dir /tmp/query_placebo_original_flat --output /tmp/query_placebo_original_aggregate.json
+          python - <<'PY'
+          import json
+          q=json.load(open('/tmp/query_placebo_original_aggregate.json'))
+          s=q['native_task_success']
+          assert q['original_new_distinct_seeds']==64
+          assert s['fault_robust_then_single_privileged_query']==58
+          assert s['fault_precommitted_seed_schedule_query']==47
+          assert s['fault_always_single_privileged_query']==60
+          assert s['fault_robust_two_history_without_query']==41
+          assert q['adaptive_target_decision_reads']==17
+          assert q['periodic_nonadaptive_target_decision_reads']==16
+          assert q['adaptive_vs_periodic']['adaptive_only']==12
+          assert q['adaptive_vs_periodic']['comparator_only']==1
+          assert abs(q['adaptive_vs_periodic']['exact_two_sided_p_unadjusted_exploratory']-0.00341796875)<1e-12
+          print('PASS source-pinned 8 original PhysX shards: 58/64 with 17 adaptive reads vs 47/64 with 16 fixed schedule reads, paired 12:1')
+          PY
+  trusted-main-preserve-original-evidence:
+    needs: readonly-source-hash-and-64state-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reject later source commits and missing first successful PhysX run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37833053629 --jq .head_sha)" = "e23909a43b8d9aeb4dba5b46e8f9c9845993cb57"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37833053629 --jq .conclusion)" = success
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37833053629 --jq .run_attempt)" = 1
+          test "$(git hash-object research/CERTIFY_QUERY_PERIODIC_PLACEBO_64_PREDECLARED_V1.json)" = "fc6c52c227f68c351b4f5637069672eae62a2e62"
+      - name: Download exactly eight original first-run independent task shards
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/query_placebo_original_raw /tmp/query_placebo_original_flat
+          gh run download 37833053629 --repo "$GITHUB_REPOSITORY" --pattern 'query-placebo-original-*' --dir /tmp/query_placebo_original_raw
+          find /tmp/query_placebo_original_raw -type f -name '*original8.json' -exec cp {} /tmp/query_placebo_original_flat/ \;
+          test "$(find /tmp/query_placebo_original_flat -maxdepth 1 -type f -name '*.json' | wc -l)" -eq 8
+          cat > /tmp/query_placebo_original_flat/ORIGINAL_SHA256SUMS <<'SOURCES_END'
+          4c9df220089372fdb656e3eb384bec190684ea59d76018f4bcc3e61f113540d1  query_placebo_pull_cube_chunk0_original8.json
+          d9e165ed47f0dd8b0a166312631bbbba90a82d6dc3e3c1ea0f14d841f9e2659e  query_placebo_pull_cube_chunk1_original8.json
+          b4239b4121fe3fcfb805bf0feadf67f87194fda74ba4d5fd03beb7a906d741eb  query_placebo_pull_cube_chunk2_original8.json
+          fd1394138b6b4fc5dc9c4a1ed74a9ecaac64e507307db56150d8e7982bef0a8c  query_placebo_pull_cube_chunk3_original8.json
+          0e248380295e4ed4190f9aa12e2d0f2421eafd2fc033d690af85d6f5ea1d8fa4  query_placebo_stack_cube_chunk0_original8.json
+          5551378a6033986f360c30a9bc8b8b59c272634514c0d5709057235766964a41  query_placebo_stack_cube_chunk1_original8.json
+          48176703192a33e94359177290b4076cbcb3424e61df14e4b844afc4c058072f  query_placebo_stack_cube_chunk2_original8.json
+          723629a8dc339901870c7e32644e86a2c66814582986ca53937d2492f19b2854  query_placebo_stack_cube_chunk3_original8.json
+          SOURCES_END
+          cd /tmp/query_placebo_original_flat
+          sha256sum -c ORIGINAL_SHA256SUMS
+      - name: Independent full 64 original-state and hidden-readback-budget audit
+        run: |
+          python -m research.audit_certify_query_periodic_placebo64 --input-dir /tmp/query_placebo_original_flat --output /tmp/query_placebo_original_aggregate.json
+          python - <<'PY'
+          import json
+          q=json.load(open('/tmp/query_placebo_original_aggregate.json'))
+          s=q['native_task_success']
+          assert q['original_new_distinct_seeds']==64
+          assert s['fault_robust_then_single_privileged_query']==58
+          assert s['fault_precommitted_seed_schedule_query']==47
+          assert s['fault_always_single_privileged_query']==60
+          assert s['fault_robust_two_history_without_query']==41
+          assert q['adaptive_target_decision_reads']==17
+          assert q['periodic_nonadaptive_target_decision_reads']==16
+          assert q['adaptive_vs_periodic']['adaptive_only']==12
+          assert q['adaptive_vs_periodic']['comparator_only']==1
+          assert abs(q['adaptive_vs_periodic']['exact_two_sided_p_unadjusted_exploratory']-0.00341796875)<1e-12
+          print('PASS source-pinned 8 original PhysX shards: 58/64 with 17 adaptive reads vs 47/64 with 16 fixed schedule reads, paired 12:1')
+          PY
+      - name: Commit byte-identical first-run 8 original PhysX JSONs
+        run: |
+          set -euo pipefail
+          dst=research/frozen_policy_transfer/evidence/periodic_query_placebo_new64_260001_270032
+          mkdir -p "$dst"
+          cp /tmp/query_placebo_original_flat/*.json /tmp/query_placebo_original_flat/ORIGINAL_SHA256SUMS "$dst/"
+          cp /tmp/query_placebo_original_aggregate.json "$dst/first_run_recomputed_64state_audit.json"
+          cat > "$dst/README.md" <<'EOF'
+          # Original prospective fixed-time near-query-budget benchmark
+          Source: original official ManiSkill PhysX run 37833053629, exact head e23909a43b8d9aeb4dba5b46e8f9c9845993cb57.
+          The seed schedules and frozen method were locked BEFORE original outcomes at research/CERTIFY_QUERY_PERIODIC_PLACEBO_64_PREDECLARED_V1.json, SHA-1 blob fc6c52c227f68c351b4f5637069672eae62a2e62.
+          Two different published frozen PPOs, new PullCube seeds 260001–260032 and new StackCube seeds 270001–270032; eight complete original 8-state shards unchanged and sha256-pinned.
+          Evidence-triggered bounded action then optional privileged query: 58/64 successes, 17 controller-target decision-time private reads.
+          Fixed no-task-feedback placebo schedule (query iff seed mod 4 == 0): 47/64 successes, 16 reads.
+          Matched reset-state exclusive wins: selective 12 vs periodic 1. Exact conditional paired McNemar p=0.00341796875 is exploratory, assumes suitable sampling/exchangeability and is NOT multiplicity-adjusted. Read budgets are near matched, NOT strictly equal.
+          Mandatory 1-read fault recovery 60/64 (64 reads); bounded 0-read 41/64. No real ACK transport, hardware collision/contact safety, external independent adoption, or general VLA robustness is demonstrated.
+          Original source artifacts in this directory are NOT independent cross-lab reproduction and are not pooled with earlier new64 seeds as one single heldout run.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dst"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'evidence: permanently preserve original 64 near-budget query timing placebo task episodes'
+          git push origin HEAD:main
