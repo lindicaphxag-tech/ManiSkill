@@ -221,3 +221,37 @@ passed 27 adversarial artifact checks × 3 Python versions using
 The single maintainer code-contract question above still stands independently
 of this training evidence. This packet is updated on the owner's fork only; it
 was not posted again to the upstream PR.
+
+
+## Source-frozen negative evidence and stronger replay provenance (2026-10-08)
+
+A source-exact-head **GitHub CPU** control experiment was attempted against
+`69facfaafaa0ef233d36ef19e6cd9a0f03532ee0`.
+
+- 13 converter unit tests passed against the exact upstream checkout.
+- [First CPU Vulkan attempt](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37720313380)
+  showed a misleading **green** job due to a Python-to-`tee` shell
+  pipeline without `pipefail`; the Python simulator initialization
+  actually failed. This workflow defect has been corrected.
+- [Strict render-disabled attempt](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37720554116)
+  is properly **red**: `render_backend="none"` bypassed the Vulkan
+  `RenderSystem`, but the actual PickCube scene then attempted a
+  `sapien.render.RenderMaterial`, yielding
+  `RuntimeError: failed to find a rendering device`.
+- Hence these GitHub CPU actions do **not** supply any genuine task rollout,
+  PegInsertionSide Diffusion Policy success rate, or replacement for
+  the previous Kaggle graphics-capable native-controller results.
+
+Separately, the [source-frozen four-arm Peg DP protocol](https://github.com/lindicaphxag-tech/ManiSkill/blob/research/native-delta-pose-assay/research/kaggle_diffusion_policy_peg/FACTORIAL_REVIEWER_PROTOCOL.md)
+now precommits the **original episode population before intervention**,
+uses upstream `replay_trajectory --allow-failure` to keep failed
+converted trajectories, and persists each arm's original-denominator
+replay success and failure labels independently. A complete source-census
+guard rejects missing/unknown episodes; a zero-success arm remains
+**0/N measured**, whereas an interrupted arm remains **UNKNOWN**.
+This fixes result-dependent missingness in the experimental infrastructure,
+but **no new policy training curve is available**.
+
+The immediate upstream review question remains the concrete signed-action
+mapper contract. Policy-level adoption or efficacy is not asserted from
+these author-generated CPU tests or experimental scripts.
