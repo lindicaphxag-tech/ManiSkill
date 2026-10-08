@@ -3,6 +3,7 @@ import numpy as np
 
 from executable_osc_migration import (
     MigrationOutcome,
+    OSCMigrationRollbackError,
     compile_and_apply_osc_posture_handshake,
     digest_mjcf,
 )
@@ -108,3 +109,65 @@ def test_invalid_and_nonfinite_contracts_are_refused():
     src, dst = _pair()
     dst.kd[0] = float("nan")
     assert _run(src, dst).outcome is MigrationOutcome.REFUSED
+
+
+def test_partially_written_bad_state_rolls_back_exactly():
+    src, dst = _pair()
+
+    class CorruptOnce(StubOSC):
+        calls = 0
+
+        def update_initial_joints(self, initial):
+            self.calls += 1
+            if self.calls == 1:
+                self.initial_joint = np.asarray(initial, dtype=float) + 0.01
+            else:
+                super().update_initial_joints(initial)
+
+    bad = CorruptOnce(input_type="absolute", initial_joint=dst.initial_joint)
+    original = bad.initial_joint.copy()
+    cert = _run(src, bad)
+    assert cert.outcome is MigrationOutcome.REFUSED
+    assert "rolled back" in cert.reason
+    assert bad.calls == 2
+    np.testing.assert_array_equal(bad.initial_joint, original)
+
+
+def test_partially_applied_controller_exception_still_rolls_back():
+    src, dst = _pair()
+
+    class PartialWriteException(StubOSC):
+        calls = 0
+
+        def update_initial_joints(self, initial):
+            self.calls += 1
+            super().update_initial_joints(initial)
+            if self.calls == 1:
+                raise RuntimeError("device write partially applied")
+
+    bad = PartialWriteException(input_type="absolute", initial_joint=dst.initial_joint)
+    original = bad.initial_joint.copy()
+    cert = _run(src, bad)
+    assert cert.outcome is MigrationOutcome.REFUSED
+    np.testing.assert_array_equal(bad.initial_joint, original)
+
+
+def test_failed_rollback_raises_and_prevents_false_refusal_certificate():
+    import pytest
+    src, dst = _pair()
+
+    class NeverRetainsRequestedReference(StubOSC):
+        def update_initial_joints(self, initial):
+            self.initial_joint = np.asarray(initial, dtype=float) + 0.1
+
+    bad = NeverRetainsRequestedReference(input_type="absolute", initial_joint=dst.initial_joint)
+    with pytest.raises(OSCMigrationRollbackError, match="quarantined"):
+        _run(src, bad)
+
+
+def test_reject_invalid_digest_without_touching_controller():
+    src, dst = _pair()
+    original = dst.initial_joint.copy()
+    cert = _run(src, dst, model_src="g"*64)
+    assert cert.outcome is MigrationOutcome.REFUSED
+    np.testing.assert_array_equal(dst.initial_joint, original)
