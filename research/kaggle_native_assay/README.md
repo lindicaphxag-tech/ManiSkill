@@ -28,9 +28,15 @@ closing cleanly on Python 3.11.
 - The reproduction shims address headless rendering, Gymnasium 1.2
   terminal-info layout and process cleanup **only within the isolated
   assay**; they are not part of the two-file upstream PR.
-- A four-cell converter × controller replay experiment is separately
-  being tested. Its empirical results must not be inferred from
-  this two-cell pipeline.
+- The follow-up **full four-cell official replay** is complete:
+  [public SUCCESS run 37715587885](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37715587885).
+  Of eight fixed source demos per arm, **baseline 6/8; current #1495 alone
+  6/8; exact #1472 alone 0/8; combined #1495 + #1472 6/8**. Full four-way
+  successful-seed intersection is **zero**. Thus the combined repair
+  restores compatibility with #1472 in this small cohort, but cannot be
+  called a statistically replicated learned-policy improvement.
+  See [the archived 2×2 results](../kaggle_diffusion_policy_peg/README.md).
+  The converter-only arm is no better than baseline on this outcome.
 
 This evidence is linked here because this README is already referenced by
 the upstream maintainer-facing discussion, avoiding repeated comment spam.
