@@ -1,6 +1,11 @@
-# ManiSkill #429 — minimal official upstream PR draft (ready for user submission)
+# ManiSkill #429 — minimal official upstream PR draft (AFTER maintainer approval)
 
-**Open the official PR with this one-click compare:**
+**Do not submit yet.** ManiSkill's CONTRIBUTING.md explicitly requires
+maintainer approval in the issue before opening a PR. The user has already
+posted the technical diagnosis but no maintainer has approved this specific
+patch. First post the official-data evidence follow-up and ask for a thumbs-up.
+
+**Once approved, open the official PR with this compare:**
 https://github.com/mani-skill/ManiSkill/compare/main...lindicaphxag-tech:ManiSkill:fix/joint-delta-to-joint-pos-pr?expand=1
 
 Suggested title:
