@@ -1,0 +1,72 @@
+{
+  "schema": "abi_ack_loss_physical_resync_prospective_v1",
+  "created_date": "2026-10-09",
+  "freeze_status": "PREOUTCOME_LOCK_BEFORE_RUNNER",
+  "experiment_kind": "original author-operated ManiSkill PhysX frozen PPO intervention",
+  "source_unchanged_commit": "0865e6d50ec30d6a069e2d7dfee1f9be834c2c21",
+  "source_unchanged_blobs": {
+    "research/action_abi_history_observer.py": "2aa52e477c202386fb6a7e43586d246026b6041d",
+    "research/frozen_ppo_action_history_observer.py": "c0999d7a1da8e370f635a0d7bb8378e4a93020dd",
+    "research/frozen_ppo_observer_policy.py": "0393fab23466b66508c4288722538c44103afc29"
+  },
+  "checkpoint_repo": "kattri15/actionshift-baselines",
+  "checkpoint_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+  "tasks": {
+    "pull_cube": {
+      "env": "PullCube-v1",
+      "seeds": [
+        85001,
+        85002,
+        85003,
+        85004,
+        85005,
+        85006,
+        85007,
+        85008
+      ],
+      "checkpoint_sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7"
+    },
+    "stack_cube": {
+      "env": "StackCube-v1",
+      "seeds": [
+        95001,
+        95002,
+        95003,
+        95004,
+        95005,
+        95006,
+        95007,
+        95008
+      ],
+      "checkpoint_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+    }
+  },
+  "physics": "physx_cpu",
+  "horizon": 50,
+  "task_episodes": 16,
+  "intervention": "During the third acknowledged native action of the independent observer arm (if reached), allow actual env.step to execute, replace only its delivered acknowledgment with unknown, check that the observer fails closed, then obtain exactly one authoritative native controller commanded target readback and reset the observer estimate before the next frozen policy decision.",
+  "baselines": "The original six arms run on identical per-task seed and PPO checkpoint: source, exact-or-refuse, live-memory bounded projection, observer-with-injected-loss-and-resync, state-blind bounded projection, naive direct copy.",
+  "primary_questions": [
+    "Does the acknowledged-command memory observer refuse further action after injected unknown delivery?",
+    "Can a single trusted target-state readback resynchronize it without retraining or per-step private reads?",
+    "After resynchronization, does it preserve paired frozen PPO task success against live-memory bounded projection?"
+  ],
+  "full_denominator": "All 16 seeds, including failed source task and fault trigger not reached, remain in results.",
+  "predeclared_gate": {
+    "fault_trigger_step_index_zero_based": 2,
+    "on_trigger_require_exactly_one_ack_unknown_and_observer_refusal": true,
+    "on_trigger_require_exactly_one_trusted_resync_read": true,
+    "post_resync_target_position_error_at_most_m": 0.00003,
+    "post_resync_target_rotation_error_at_most_rad": 0.0003,
+    "observer_vs_live_episode_agreement_min_per_task": 6,
+    "source_competence_min_per_task": 5
+  },
+  "hard_limitations": [
+    "Trusted private target readback is used once for recovery; this is not autonomous recovery without privileged information.",
+    "The action did execute physically; only the acknowledgment was erased. This does not model actual dropped/reordered actuator commands.",
+    "The refusal observation is a software guard, not a demonstrated collision safety guarantee.",
+    "The simulator, robot and controller ABI are still Panda root-aligned EE target accumulation; this is not cross-robot deployment.",
+    "No independent outside reproduction or newly trained model."
+  ],
+  "report": "Report all 16 original records, each trigger, refusal, resync and live-paired discordance, all approximations, and source checkpoint identity; avoid generic safety claims."
+}
