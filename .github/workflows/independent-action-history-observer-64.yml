@@ -1,0 +1,90 @@
+name: Frozen independent action-history observer 64-state replication
+
+on:
+  push:
+    branches:
+      - validation/independent-history-observer-redacted-64-20261009
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  protocol-freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assert original observer/controller/policy method is untouched
+        run: |
+          git diff --exit-code 0865e6d50ec30d6a069e2d7dfee1f9be834c2c21 HEAD -- \
+            research/action_abi_history_observer.py \
+            research/frozen_ppo_action_history_observer.py \
+            research/frozen_ppo_observer_policy.py
+          python -m py_compile \
+            research/independent_action_history_64_run.py \
+            research/independent_action_history_64_audit.py
+          test -s research/INDEPENDENT_HISTORY_OBSERVER_REDACTED_64_PREREG_20261009.json
+          test -s research/INDEPENDENT_OBSERVER_64_PREOUTCOME_AMENDMENT.json
+
+  real-physx:
+    needs: protocol-freeze
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    env:
+      PYTHONUNBUFFERED: '1'
+      ABI_TASK: ${{ matrix.task }}
+      ABI_CHUNK: ${{ matrix.chunk }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install ManiSkill PhysX CPU and original frozen policy client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Execute all six frozen arms on exactly eight registered task states
+        run: |
+          set -o pipefail
+          python research/independent_action_history_64_run.py 2>&1 | tee "independent_history_${ABI_TASK}_${ABI_CHUNK}.log"
+          test -s "independent_observer_${ABI_TASK}_${ABI_CHUNK}.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: independent-history-${{ matrix.task }}-${{ matrix.chunk }}
+          path: |
+            independent_observer_*.json
+            independent_history_*.log
+
+  complete-denominator-audit:
+    if: always()
+    needs: [protocol-freeze, real-physx]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: independent-history-*
+          path: /tmp/independent-history-64
+          merge-multiple: true
+      - name: Audit exactly 64 original episodes, both models, paired outcomes and target errors
+        run: |
+          python research/independent_action_history_64_audit.py \
+            /tmp/independent-history-64 \
+            /tmp/independent-history-64-aggregate.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: complete-independent-history-64-originals
+          path: |
+            /tmp/independent-history-64/*.json
+            /tmp/independent-history-64-aggregate.json
