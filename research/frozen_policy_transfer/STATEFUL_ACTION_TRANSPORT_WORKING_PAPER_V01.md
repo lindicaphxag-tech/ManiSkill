@@ -125,6 +125,34 @@ A distinct native joint-target audit on **Fetch (7 arm joints, 13 native action 
 
 These auxiliary source-controlled studies establish some chart and observability assumptions of the proposed compiler. They do not measure actual force, collision clearance, unsafe stopping distance or hardware tracking.
 
+## 5A. Prospective public-only evidence: a partial substitute for private target reads
+
+The previous results demonstrated a query-cost tradeoff only when the interface was allowed to read the actual privileged controller target under ambiguity. A stronger claim—that the unknown ACK itself can be inferred confidently from *public achieved motion*—requires an independently calibrated response model, not just a simulator producing two counterfactual worlds with separable trajectories.
+
+We therefore prospectively tested a **fixed, training-seed-separated** empirical public-proprioception classifier, with its error envelope and outcomes declared before testing any new source reset seeds. The estimator uses only pre/post common native zero-arm-delta probe achieved XYZ and the two action-history-derived candidate target XYZ points; it declares one history only when a fixed per-task model-response envelope fits exactly one candidate. When both fit, it abstains; when neither fits, it explicitly reports an empirical model falsification. No private controller target is read by this classifier during a decision. The response envelope was calibrated from only four *previous* training reset seeds per task and is **not a hardware-certified dynamic bound**.
+
+| Native PhysX outcome, two fault truths, 32 fresh source conditions | Value |
+|---|---:|
+| Confident hypothesis decisions using public achieved XYZ | 24/32 |
+| Confident decisions with wrong executed/held label | **0/24 observed** |
+| Abstentions / refuse cases | 8/32 |
+| Of those, true history excluded by fitted empirical motion envelope | **1 (StackCube, seed 170104, actually applied)** |
+| Public-only classifier task successes | 22/32 |
+| Privileged-once-after-probe task successes (unequal information) | 30/32 |
+| Blind optimistic task successes | 24/32 |
+| Blind pessimistic task successes | 25/32 |
+| Original source no-fault reference task successes | 28/32 |
+
+Both fault truths (actual arm action applied versus neutral arm delta physically executed without ACK) were tested on each of eight fresh PullCube and eight fresh StackCube reset seeds, yielding **32 task-truth conditions and only two frozen policies**. The original fixed empirical envelope came exclusively from historical seeds 140001–140004 (PullCube) and 150001–150004 (StackCube), while the new population used 160101–160108 and 170101–170108. The source manifest/analysis retained all eight original four-state groups and all simulator failures without exclusion.
+
+**Confidence is conditional.** Zero wrong decisions on 24 *selected accepted* cases does not prove reliable delivery classification. If confident accepted trials were iid Bernoulli samples from a fixed distribution, a one-sided exact 95% upper limit on the unknown accepted-case error probability is `1-0.05^(1/24) ≈ 0.1173` (11.73%), and a two-sided 95% Clopper–Pearson upper limit is `1-0.025^(1/24) ≈ 0.1425` (14.25%). Seed/task clustering and the acceptance-selection mechanism weaken any across-task or real-world extrapolation. The one **excluded true hypothesis** is a direct empirical-model counterexample; its refusal is a measured benefit of failing closed, not proof that calibration guarantees include the truth.
+
+**Scientific verdict:** the new sensor-only classifier is a viable **abstention-sensitive diagnostic** for this particular public-motion test and misses fewer hidden histories than the earlier naive nearest-target heuristic, but **it does not beat the optimistic or pessimistic no-private-read comparator in task completion and is markedly below the once-privileged comparator**. Combining it with the selective-bound decision policy is an *untested research hypothesis*, not a retrospective success that may be folded into the 60/64 task claim. It will need a new, source-frozen evaluation with explicit inclusion of all ambiguous and model-invalid inputs, not post-hoc tuning on these 32 outcomes.
+
+- [Prospective fixed classifier and task/seed/calibration precommit](https://github.com/lindicaphxag-tech/ManiSkill/blob/main/research/EMPIRICAL_RESPONSE_NEW32_FROZEN_BEFORE_RUN_V1.json).
+- [All eight independent genuine PhysX new-condition jobs and full audit](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37832214332).
+- [Production public-only classifier source](https://github.com/lindicaphxag-tech/ManiSkill/blob/main/research/empirical_probe_response_classifier.py).
+- [Complete source-fixed evidence and raw logs](https://github.com/lindicaphxag-tech/ManiSkill/tree/main/research/frozen_policy_transfer/evidence/public_response_empirical_prospective_new32).
 ## 6. Relation to prior work and novelty vetoes
 
 ActionShift (Attri, 2026) already isolates hidden compositional action-interface contracts—permutation, sign, scale, reference frame, target convention, gripper mapping and lag—and implements belief/probe and learned adapter baselines. Its released PPO checkpoints are the *external task policies used in this study*, not inventions or retrained backbones of this paper. Its active probe methods have not been evaluated in a matched-information head-to-head under our exact ambiguous acknowledgement fault; accordingly no claim of superiority over ActionShift's belief adaptation can be made.
