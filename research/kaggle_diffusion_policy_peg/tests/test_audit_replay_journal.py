@@ -54,6 +54,9 @@ class ReplayJournalTests(unittest.TestCase):
             "arm": arm_name, "source_commit": spec.source_commit,
             "controller_overlay_commit": spec.controller_overlay_commit,
             "production_tree": "a"*40,
+            "converted_hdf5_sha256": "b"*64,
+            "converted_metadata_sha256": "c"*64,
+            "native_outcome_verifier": "RecordEpisode HDF5 terminal success matches JSON",
             "source_population_sha256": _digest(self.seeds),
             "successful_episode_seeds": successes,
             "successful_count": len(successes),
@@ -137,6 +140,22 @@ class ReplayJournalTests(unittest.TestCase):
         data["failed_count"] = 0
         self._write(path, data)
         self.rejected("incomplete or foreign")
+
+    def test_arm_missing_native_replay_artifact_sha_refused(self):
+        self.all_arms()
+        path = self.root / "per_arm_replay" / f"{FACTORIAL[0].name}.json"
+        record = json.loads(path.read_text())
+        record["converted_hdf5_sha256"] = "unsigned"
+        self._write(path, record)
+        self.rejected("corrupt, reordered, incomplete")
+
+    def test_arm_no_hdf5_terminal_crosscheck_refused(self):
+        self.all_arms()
+        path = self.root / "per_arm_replay" / f"{FACTORIAL[0].name}.json"
+        record = json.loads(path.read_text())
+        record.pop("native_outcome_verifier")
+        self._write(path, record)
+        self.rejected("corrupt, reordered, incomplete")
 
     def test_contradictory_completed_census_refused(self):
         self.all_arms()
