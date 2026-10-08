@@ -1,0 +1,101 @@
+name: Prospective stateful action ABI memory ablation
+
+on:
+  push:
+    branches:
+      - research/stateful-abi-memory-causal-ablation-v1
+  pull_request:
+    paths:
+      - 'research/STATEFUL_ABI_MEMORY_ABLATION_FROZEN_V1.json'
+      - 'research/frozen_ppo_target_memory.py'
+      - 'research/stateful_abi_memory_aggregate.py'
+      - 'tests/test_stateful_abi_memory_ablation_audit.py'
+      - '.github/workflows/validate-frozen-ppo-stateful-ablation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-and-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify protocol content is identical to pre-run freeze
+        run: |
+          test "$(git hash-object research/STATEFUL_ABI_MEMORY_ABLATION_FROZEN_V1.json)" = 'bec1bad6d17c0c0782958fd0be540c24fb35b7f2'
+          python - <<'PY'
+          import json
+          p=json.load(open('research/STATEFUL_ABI_MEMORY_ABLATION_FROZEN_V1.json'))
+          assert p['prospective_unseen_seed_range_inclusive']==[22001,22032]
+          assert p['precommitted_gates']['memory_information_mechanism_support_min_net_paired_successes']==6
+          PY
+      - name: Run CPU audit controls, including null and tampered outcomes
+        run: |
+          python -m unittest discover -s tests -p 'test_stateful_abi_memory_ablation_audit.py' -v
+          python -m py_compile research/frozen_ppo_target_memory.py
+
+  prospective-physx:
+    needs: source-and-audit
+    strategy:
+      fail-fast: false
+      matrix:
+        chunk: [0, 1, 2, 3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      PYTHONUNBUFFERED: '1'
+      ABI_CHUNK: ${{ matrix.chunk }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official simulator and pinned policy client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Run all five paired real-controller arms on exactly eight frozen seeds
+        run: |
+          set -o pipefail
+          python research/frozen_ppo_target_memory.py 2>&1 | tee "stateful_abi_memory_chunk_${ABI_CHUNK}.log"
+          test -s "stateful_abi_memory_ablation_chunk_${ABI_CHUNK}.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stateful-abi-memory-chunk-${{ matrix.chunk }}
+          path: |
+            stateful_abi_memory_ablation_chunk_*.json
+            stateful_abi_memory_chunk_*.log
+
+  preregistered-aggregate:
+    needs: prospective-physx
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: stateful-abi-memory-chunk-*
+          path: /tmp/stateful_abi_memory_originals
+          merge-multiple: true
+      - name: Reconstruct complete full-denominator source-seed outcome
+        run: |
+          python -m research.stateful_abi_memory_aggregate \
+            --input-dir /tmp/stateful_abi_memory_originals \
+            --output stateful_abi_memory_ablation_aggregate.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: complete-stateful-abi-memory-causal-ablation-32-originals
+          path: |
+            /tmp/stateful_abi_memory_originals/*.json
+            stateful_abi_memory_ablation_aggregate.json
