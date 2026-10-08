@@ -1,0 +1,54 @@
+name: Prospective frozen PPO uncertain-delivery PhysX fault
+
+on:
+  pull_request:
+    paths:
+      - 'research/frozen_ppo_unknown_ack_fault.py'
+      - 'research/CST_FAULT_ACK_PREDECLARED_V1.json'
+      - 'research/action_abi_uncertain_delivery_belief.py'
+      - '.github/workflows/cst-frozen-ppo-unknown-ack-fault.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preregistered-two-task-physx:
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify pre-outcome fault freeze and python syntax
+        run: |
+          python -m py_compile research/frozen_ppo_unknown_ack_fault.py
+          test "$(git hash-object research/CST_FAULT_ACK_PREDECLARED_V1.json)" = "592bb7df53e4b5e79f2e228e9cc56050b648708e"
+      - name: Install PhysX CPU and original frozen PPO dependency
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+          python -m pip freeze > cst_fault_ack_pip_freeze.txt
+      - name: Execute full six-arm real PhysX fault experiment (8 fresh seeds)
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/frozen_ppo_unknown_ack_fault.py 2>&1 | tee "cst_fault_ack_${ABI_TASK}.log"
+          test -s "cst_fault_ack_${ABI_TASK}_8.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: real-physx-frozen-ppo-fault-${{ matrix.task }}
+          path: |
+            cst_fault_ack_*.json
+            cst_fault_ack_*.log
+            cst_fault_ack_pip_freeze.txt
