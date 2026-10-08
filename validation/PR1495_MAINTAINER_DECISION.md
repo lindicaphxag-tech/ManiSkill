@@ -142,3 +142,36 @@ It does **not** establish:
 
 All evidence here is self-authored public evidence until a maintainer or third
 party independently validates or retains the patch.
+
+
+## Maintainer's actual policy-evidence request — status and zero-survivorship-bias correction
+
+The request in [ManiSkill issue #1138](https://github.com/mani-skill/ManiSkill/issues/1138)
+is specifically for **PegInsertionSide Diffusion Policy training curves / W&B
+results**, following a reported PickCube action-conversion issue.
+The current PR is **not** claimed to have passed this policy-evidence gate.
+The corrected private Kaggle v4 has no publicly archived audited training
+metrics on this branch.
+
+The earlier public v3 archive reported original demo replay counts of
+**90/100** (baseline) and **91/100** (both PR changes) with common-survivor
+set size 90, then failed before the first policy optimizer update due to
+a NumPy evaluation compatibility error. This is *not* a one-point improvement
+in learned-policy success and not an attributable #1495 gain; the v3
+archive also lacks complete original-seed-per-arm data needed to independently
+audit every discordance.
+
+To enable a real and falsifiable maintainer experiment rather than selected
+success curves, the author prepared:
+[full four-cell source-pinned factorial runner and protocol](https://github.com/lindicaphxag-tech/ManiSkill/blob/research/native-delta-pose-assay/research/kaggle_diffusion_policy_peg/FACTORIAL_REVIEWER_PROTOCOL.md).
+It treats baseline, converter-only, controller-only and combined source trees
+separately and preserves **every originally requested replay outcome before**
+the selected-success demonstration intersection. Public
+[CI 37717263530](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37717263530)
+passed 27 adversarial artifact checks × 3 Python versions using
+**synthetic unit test fixtures** only. This is experimental-readiness evidence,
+**not** completed GPU training or an external reviewer evaluation.
+
+The single maintainer code-contract question above still stands independently
+of this training evidence. This packet is updated on the owner's fork only; it
+was not posted again to the upstream PR.
