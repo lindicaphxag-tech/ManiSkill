@@ -98,6 +98,19 @@ if SMOKE_MODE:
         ),
     )
 
+if FACTORIAL_REPLAY_MODE:
+    # Frozen first-32 expansion from the previous, successful first-eight run.
+    # Episodes 0..7 are development exposed; 8..31 are the held-out slice.
+    CONFIG.update(
+        requested_num_demos=32,
+        replay_count=32,
+        minimum_paired_demos=16,
+        measurement_deviation=(
+            "Predeclared exact 2x2, source-seed-paired demonstration replay: "
+            "first eight development-exposed, next 24 held out. No policy training."
+        ),
+    )
+
 started = time.time()
 OUTPUT.mkdir(parents=True, exist_ok=True)
 run_record = {
@@ -630,6 +643,15 @@ try:
         (OUTPUT / "factorial_replay.json").write_text(
             json.dumps(factorial, indent=2, sort_keys=True) + "\n", encoding="utf-8"
         )
+        from audit_factorial_32 import audit as audit_frozen_factorial
+        audit = audit_frozen_factorial(factorial)
+        (OUTPUT / "factorial_32_audit.json").write_text(
+            json.dumps(audit, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        print(json.dumps({
+            "frozen_holdout": audit["replication_holdout"],
+            "development_exposed": audit["development_exposed"],
+        }, sort_keys=True), flush=True)
         run_record["factorial_replay"] = factorial
         run_record["demonstrations"] = demonstrations
         run_record["status"] = "passed"
