@@ -19,13 +19,16 @@ from frozen_ppo_pickcube_gate import (
     _actor, _bool_value, REPO, FILENAME, EXPECTED,
 )
 
-SEEDS=tuple(range(30001,30033))
+FILENAME="ppo/push_cube_final_ckpt.pt"
+EXPECTED="a4a02198b309e73cb877959079023d967d5f63ec78380de9703a10c9efafc0cf"
+POLICY_OBS_DIM=0
+SEEDS=tuple(range(40001,40033))
 STEPS=50
 TOL=1e-5
 
 
 def env(mode):
-    return gym.make("PickCube-v1",num_envs=1,obs_mode="state",
+    return gym.make("PushCube-v1",num_envs=1,obs_mode="state",
                     sim_backend="physx_cpu",reconfiguration_freq=1,
                     control_mode=mode,disable_env_checker=True)
 
@@ -93,6 +96,8 @@ def _project_policy_observation(flat_observation, environment):
     Do not merely truncate: preserve all task.extra coordinates.
     """
     obs=torch.as_tensor(flat_observation)
+    if POLICY_OBS_DIM <=0:
+        raise RuntimeError("Source policy observation ABI not initialized")
     if obs.ndim != 2 or obs.shape[0] != 1:
         raise RuntimeError("Unexpected state observation batch shape")
     agent=environment.unwrapped.agent
@@ -104,18 +109,18 @@ def _project_policy_observation(flat_observation, environment):
         if memory is None:
             raise RuntimeError("Controller target memory missing: refuse projection")
         memory=torch.as_tensor(memory,device=obs.device,dtype=obs.dtype)
-        if memory.shape[-1]!=7 or obs.shape[-1]!=49:
+        if memory.shape[-1]!=7 or obs.shape[-1]!=POLICY_OBS_DIM+7:
             raise RuntimeError("Target observation ABI changed; cannot project")
         offset=nq+nv
         actual=obs[:,offset:offset+7]
         if not torch.allclose(actual,memory,atol=1e-5,rtol=0):
             raise RuntimeError("Observation controller-state slice mismatches live target memory")
         converted=torch.cat([obs[:,:offset],obs[:,offset+7:]],dim=1)
-        if converted.shape[-1]!=42:
-            raise RuntimeError("Projected observation ABI is not source policy's 42D input")
+        if converted.shape[-1]!=POLICY_OBS_DIM:
+            raise RuntimeError("Projected observation ABI does not match exact frozen source network input")
         return converted
-    if obs.shape[-1]!=42:
-        raise RuntimeError("Source observation ABI is not 42D")
+    if obs.shape[-1]!=POLICY_OBS_DIM:
+        raise RuntimeError("Source observation ABI differs from frozen network input width")
     return obs
 
 
@@ -196,6 +201,7 @@ def trial(policy, seed):
 
 
 def main():
+    global POLICY_OBS_DIM
     file=Path(hf_hub_download(repo_id=REPO,filename=FILENAME))
     sha=hashlib.sha256(file.read_bytes()).hexdigest()
     if sha!=EXPECTED:
@@ -203,6 +209,8 @@ def main():
     env0=env("pd_ee_delta_pose")
     try:
         observation,_=env0.reset(seed=SEEDS[0])
+        POLICY_OBS_DIM=int(observation.shape[-1])
+        print("PUSH_CUBE_SOURCE_ABI",{"policy_obs":POLICY_OBS_DIM,"checkpoint":EXPECTED,"mode":"pd_ee_delta_pose"})
         actor=_actor(torch.load(file,map_location="cpu",weights_only=True),
                      int(observation.shape[-1]),7)
     finally:
