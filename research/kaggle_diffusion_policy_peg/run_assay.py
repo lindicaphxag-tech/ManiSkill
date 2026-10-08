@@ -24,6 +24,9 @@ import zipfile
 from pathlib import Path
 
 SMOKE_MODE = os.environ.get("SEMREPAIR_DP_SMOKE", "0") == "1"
+FACTORIAL_REPLAY_MODE = os.environ.get("SEMREPAIR_DP_FACTORIAL_REPLAY", "0") == "1"
+if FACTORIAL_REPLAY_MODE and not SMOKE_MODE:
+    raise RuntimeError("Factorial replay is a CPU smoke-only research mode")
 WORK = (
     Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "semrepair_dp_smoke"
     if SMOKE_MODE
@@ -306,7 +309,7 @@ def index_converted_episodes(demo_path: Path) -> dict[int, dict]:
             if source_key not in h5_file:
                 raise RuntimeError(f"Converted metadata points to missing HDF5 key {source_key}")
             result[seed] = {"source_key": source_key, "metadata": episode}
-    if not result:
+    if not result and not FACTORIAL_REPLAY_MODE:
         raise RuntimeError(f"No successful converted demonstrations found in {demo_path}")
     return result
 
@@ -454,10 +457,20 @@ try:
     inventory = [str(p.relative_to(DEMO_ROOT)) for p in DEMO_ROOT.rglob("*") if p.is_file()]
     (OUTPUT / "dataset_inventory.json").write_text(json.dumps(inventory, indent=2) + "\n", encoding="utf-8")
 
-    arms = [
-        ("upstream_baseline", BASE, None),
-        ("combined_pr1495_pr1472", CONVERSION, CONTROLLER),
-    ]
+    arms = (
+        [
+            ("upstream_baseline", BASE, None),
+            ("converter_only_pr1495", CONVERSION, None),
+            ("controller_only_pr1472", BASE, CONTROLLER),
+            ("combined_pr1495_pr1472", CONVERSION, CONTROLLER),
+        ]
+        if FACTORIAL_REPLAY_MODE else [
+            ("upstream_baseline", BASE, None),
+            ("combined_pr1495_pr1472", CONVERSION, CONTROLLER),
+        ]
+    )
+    run_record["arms"] = [arm for arm, _, _ in arms]
+    run_record["factorial_replay_only"] = FACTORIAL_REPLAY_MODE
     all_scalars: list[dict] = []
     run_summaries = []
     demonstrations = {}
@@ -502,16 +515,27 @@ try:
         ], OUTPUT / "dataset.log", cwd=REPO)
         demo_path = arm_demo_dir / DEMO_NAME
         meta_path = demo_path.with_suffix(".json")
-        if not demo_path.is_file() or not meta_path.is_file():
-            raise FileNotFoundError(f"Arm-specific replay output missing: {demo_path}")
-        meta_data = json.loads(meta_path.read_text(encoding="utf-8"))
-        indexed_episodes = index_converted_episodes(demo_path)
+        if demo_path.is_file() and meta_path.is_file():
+            meta_data = json.loads(meta_path.read_text(encoding="utf-8"))
+            indexed_episodes = index_converted_episodes(demo_path)
+            dataset_sha = sha256(demo_path)
+            metadata_sha = sha256(meta_path)
+        elif FACTORIAL_REPLAY_MODE and not demo_path.exists() and not meta_path.exists():
+            # The official replay tool can save no dataset when a single-defect
+            # controller produces zero successful trajectories. Preserve this
+            # as a genuine non-trainable outcome, not as missing-at-random.
+            meta_data = {"episodes": []}
+            indexed_episodes = {}
+            dataset_sha = None
+            metadata_sha = None
+        else:
+            raise FileNotFoundError(f"Partially missing arm replay output: {demo_path}")
         demonstrations[arm] = {
             "source": "haosulab/ManiSkill_Demonstrations PegInsertionSide-v1 official download",
             "replay_source_commit": start_commit,
             "filename": DEMO_NAME,
-            "sha256": sha256(demo_path),
-            "metadata_sha256": sha256(meta_path),
+            "sha256": dataset_sha,
+            "metadata_sha256": metadata_sha,
             "episode_count": len(meta_data.get("episodes", [])),
             "successful_episode_count": len(indexed_episodes),
             "raw_data_exported": False,
@@ -541,6 +565,80 @@ try:
         seed for seed in source_seed_order
         if all(seed in prepared_arms[arm]["indexed_episodes"] for arm, _, _ in arms)
     ]
+    if FACTORIAL_REPLAY_MODE:
+        # The 2x2 cell success pattern itself is the measured evidence.
+        # No recovered demo from another cell is reused for a failed cell.
+        # A zero four-way overlap is a valid non-trainable factorial outcome.
+        cell_matrix = [
+            {
+                "source_seed": seed,
+                **{
+                    arm: bool(seed in prepared_arms[arm]["indexed_episodes"])
+                    for arm, _, _ in arms
+                }
+            }
+            for seed in source_seed_order
+        ]
+        pairwise = {
+            f"{left}|{right}": {
+                "intersection_count": sum(
+                    seed in prepared_arms[left]["indexed_episodes"]
+                    and seed in prepared_arms[right]["indexed_episodes"]
+                    for seed in source_seed_order
+                ),
+                "source_seed_sha256": hashlib.sha256(
+                    json.dumps(
+                        [seed for seed in source_seed_order
+                         if seed in prepared_arms[left]["indexed_episodes"]
+                         and seed in prepared_arms[right]["indexed_episodes"]],
+                        separators=(",", ":"),
+                    ).encode("utf-8")
+                ).hexdigest(),
+            }
+            for i, (left, _, _) in enumerate(arms)
+            for right, _, _ in arms[i + 1:]
+        }
+        factorial = {
+            "schema_version": 1,
+            "status": "factorial_replay_completed_not_policy_training",
+            "source_dataset_revision": DEMO_DATASET_REVISION,
+            "source_dataset_sha256": DEMO_ARCHIVE_SHA256,
+            "baseline_code_sha": BASE,
+            "converter_code_sha": CONVERSION,
+            "controller_code_sha": CONTROLLER,
+            "sample_size": len(source_seed_order),
+            "source_seed_matrix": cell_matrix,
+            "per_arm_success_count": {
+                arm: len(prepared_arms[arm]["indexed_episodes"])
+                for arm, _, _ in arms
+            },
+            "pairwise": pairwise,
+            "four_way_intersection_count": len(common_seeds),
+            "four_way_intersection_source_seed_sha256": hashlib.sha256(
+                json.dumps(common_seeds, separators=(",", ":")).encode("utf-8")
+            ).hexdigest(),
+            "trainable_four_way_factorial": (
+                len(common_seeds) >= CONFIG["minimum_paired_demos"]
+            ),
+            "authorities": "converter and controller are independent 2x2 factors",
+            "claim_boundary": (
+                "This reports official demonstration replay success only, "
+                "not learned-policy success, physical task reward superiority, "
+                "or an independent maintainer adoption."
+            ),
+        }
+        (OUTPUT / "factorial_replay.json").write_text(
+            json.dumps(factorial, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        run_record["factorial_replay"] = factorial
+        run_record["demonstrations"] = demonstrations
+        run_record["status"] = "passed"
+        print(json.dumps({
+            "factorial_success": factorial["per_arm_success_count"],
+            "four_way_intersection_count": len(common_seeds),
+            "note": factorial["claim_boundary"]
+        }, sort_keys=True), flush=True)
+        raise SystemExit(0)
     if len(common_seeds) < CONFIG["minimum_paired_demos"]:
         raise RuntimeError(
             f"Only {len(common_seeds)} source-seed-matched successful demos survived both replays; "
@@ -696,7 +794,12 @@ finally:
     (OUTPUT / "experiment_log.json").write_text(json.dumps(run_record, indent=2) + "\n", encoding="utf-8")
     (OUTPUT / "artifacts_manifest.json").write_text(json.dumps({
         "experiment_log": "experiment_log.json",
-        "run_summaries": "run_summaries.json",
+        "run_summaries": (
+            "run_summaries.json" if (OUTPUT / "run_summaries.json").exists() else None
+        ),
+        "factorial_replay": (
+            "factorial_replay.json" if (OUTPUT / "factorial_replay.json").exists() else None
+        ),
         "metrics_jsonl": "metrics.jsonl",
         "metrics_csv": "metrics.csv",
         "event_files_directory": "events/",
