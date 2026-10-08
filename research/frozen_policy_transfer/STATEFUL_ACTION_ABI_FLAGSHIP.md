@@ -8,11 +8,11 @@
 
 ## 1. The actual algorithmic object
 
-The source policy is trained under \`pd_ee_delta_pose\`, i.e. intended displacement from the *achieved* end-effector pose. The destination \`pd_ee_target_delta_pose\` interprets a nominally similar displacement from its *previous commanded controller target*. These are different stateful action ABIs even when vector shape, dtype and legal numeric ranges coincide.
+The source policy is trained under `pd_ee_delta_pose`, i.e. intended displacement from the *achieved* end-effector pose. The destination `pd_ee_target_delta_pose` interprets a nominally similar displacement from its *previous commanded controller target*. These are different stateful action ABIs even when vector shape, dtype and legal numeric ranges coincide.
 
-Given source action \`a_t\`, current achieved end-effector pose \`X_t\`, and destination controller's previous commanded target \`G_{t-1}\`, the compiler constructs the source's physical goal and solves the inverse destination command:
+Given source action `a_t`, current achieved end-effector pose `X_t`, and destination controller's previous commanded target `G_{t-1}`, the compiler constructs the source's physical goal and solves the inverse destination command:
 
-\`\`\`text
+```text
 source policy action a_t
         | exact source chart/normalization
         v
@@ -27,15 +27,15 @@ destination-native action = encode_target(G_{t-1}^{-1} ∘ desired target)
                                    or bounded PROJECTION (NOT_EXACT)
         v
 unchanged frozen policy, official destination PhysX rollout
-\`\`\`
+```
 
 The destination observation is also checked against actual controller state and projected back onto the original trained policy's observation ABI; the PPO weights never change. A bounded projection changes the desired physical command and is **never** mislabelled an exact geometric equivalence or a robot safety proof.
 
-The matched **memory-blind intervention** retains the same frozen PPO, intended source physical goal, destination conversion, scaling and clipping, but replaces \`G_{t-1}\` by \`X_t\` *inside the inverse map*. The real destination controller still uses its true previous target. This isolates the value of correct target-history information **within this controller implementation**.
+The matched **memory-blind intervention** retains the same frozen PPO, intended source physical goal, destination conversion, scaling and clipping, but replaces `G_{t-1}` by `X_t` *inside the inverse map*. The real destination controller still uses its true previous target. This isolates the value of correct target-history information **within this controller implementation**.
 
 ## 2. Actual four-task closed-loop findings
 
-All rows refer to original official \`info["success"]\` task outcomes (up to 50 physical simulation steps) and **32 predefined source/task seeds per task**. The five arms are **paired within each seed**, not 5× independent samples. Every task uses a different public PPO checkpoint, with unchanged frozen weights.
+All rows refer to original official `info["success"]` task outcomes (up to 50 physical simulation steps) and **32 predefined source/task seeds per task**. The five arms are **paired within each seed**, not 5× independent samples. Every task uses a different public PPO checkpoint, with unchanged frozen weights.
 
 | Native task / original task-state cohort | Source PPO | Direct action copy | Exact-only or refuse | Live target memory + bounded projection | Memory-blind + SAME bounded conversion | Exclusive wins, live vs blind |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -60,11 +60,11 @@ For the *two never-before-evaluated task/checkpoint families*, the frozen [proto
 | [Pull+Stack protocol and 9 source JSON SHA-256 values](https://github.com/lindicaphxag-tech/ManiSkill/blob/research/action-abi-independent-pull-stack-replication-v1/research/ACTION_ABI_PULL_STACK_PROSPECTIVE_RESULT_V1.md) | Fixed cohort, signed model identities, raw source commitments, nonexact steps, failures | Proof that a future edited file equals its original without rehashing |
 | [Permanent PullCube/StackCube nine-file source archive](https://github.com/lindicaphxag-tech/ManiSkill/tree/main/research/frozen_policy_transfer/evidence/pull_stack_new_task_64) | All nine original JSON bytes are now present on main after the [trusted-main archival commit](https://github.com/lindicaphxag-tech/ManiSkill/commit/45a81af78cb8fbd358f8aab7a0e0a2d417f46d0f), with SHA256 gates in [PR #60](https://github.com/lindicaphxag-tech/ManiSkill/pull/60) | Byte-level audit is not an independent rerun of the simulator or source-policy generalization |
 
-**Repeat the exact source-run experiment, not a posthoc compressed summary.** The prior source commit \`9ffa86c6d3a86d2cee44b6e13c560033a8b373cf\` has the executable \`research/frozen_ppo_target_memory.py\`, four frozen chunks per new task, and the independent standard-library \`research/action_abi_pull_stack_aggregate.py\`.
+**Repeat the exact source-run experiment, not a posthoc compressed summary.** The prior source commit `9ffa86c6d3a86d2cee44b6e13c560033a8b373cf` has the executable `research/frozen_ppo_target_memory.py`, four frozen chunks per new task, and the independent standard-library `research/action_abi_pull_stack_aggregate.py`.
 
 After installing the original pinned ManiSkill runtime and external frozen checkpoints (the published Actions [workflow](https://github.com/lindicaphxag-tech/ManiSkill/blob/9ffa86c6d3a86d2cee44b6e13c560033a8b373cf/.github/workflows/action-abi-pull-stack-replication.yml) is the authoritative environment recipe), an independent reproducer can execute one original eight-seed subset from the repo root:
 
-\`\`\`bash
+```bash
 git checkout 9ffa86c6d3a86d2cee44b6e13c560033a8b373cf
 ABI_TASK=pull_cube ABI_CHUNK=0 python research/frozen_ppo_target_memory.py
 # For all original 64 task states, run task=pull_cube/stack_cube,
@@ -72,7 +72,7 @@ ABI_TASK=pull_cube ABI_CHUNK=0 python research/frozen_ppo_target_memory.py
 python -m research.action_abi_pull_stack_aggregate \
   --input-dir <directory-with-eight-original-jsons> \
   --output audit.json
-\`\`\`
+```
 
 Reusing the same seed numbers is a **code replication**, not an independent seed generalization. New seeds should be frozen *before running* and reported with every negative/aborted episode. Exact external checkpoint IDs and hashes are in the [protocol](https://github.com/lindicaphxag-tech/ManiSkill/blob/582e39206cedf3565217514b1fdc1872c1cffae7/research/ACTION_ABI_PULL_STACK_PREREGISTERED_V1.json).
 
