@@ -1,0 +1,101 @@
+name: ManiSkill 429 official delta-to-absolute replay A/B
+
+on:
+  push:
+    branches:
+      - validation/mani429-official-replay-20261008
+  workflow_dispatch:
+
+jobs:
+  official-pickcube:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      MUJOCO_GL: osmesa
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install headless physics dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+      - name: Download official PickCube demonstration archive
+        run: |
+          python -m mani_skill.utils.download_demo PickCube-v1 --quiet
+          find "$HOME/.maniskill/demos/PickCube-v1" -maxdepth 3 -name '*.json' -o -name '*.h5' | head -35
+      - name: Prepare pinned real RL-demonstration episodes
+        run: |
+          python - <<'PY'
+          import json, os, pathlib, shutil
+          root=pathlib.Path.home()/".maniskill/demos/PickCube-v1"
+          candidates=[p for p in root.rglob("trajectory.h5") if "rl" in p.parts]
+          if not candidates:
+              raise RuntimeError("Official PickCube archive has no RL trajectory.h5; do not substitute synthetic data")
+          src=candidates[0]
+          meta=json.loads(src.with_suffix(".json").read_text())
+          modes={}
+          for episode in meta["episodes"]:
+              m=episode.get("control_mode", "missing")
+              modes[m]=modes.get(m,0)+1
+          print("OFFICIAL_SOURCE", src, "EPISODES", len(meta["episodes"]), "MODES",modes)
+          if modes.get("pd_joint_delta_pos",0)<4:
+              raise RuntimeError("Need at least four official pd_joint_delta_pos episodes for valid A/B")
+          # Use same exact source bytes for both branches of the comparison.
+          for name in ("baseline","patched"):
+              target=pathlib.Path("replay_input")/name
+              target.mkdir(parents=True,exist_ok=True)
+              shutil.copy2(src,target/"trajectory.h5")
+              shutil.copy2(src.with_suffix(".json"),target/"trajectory.json")
+          PY
+      - name: Replay first 8 official policy-generated episodes with upstream baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          git show origin/main:mani_skill/trajectory/utils/actions/conversion.py > mani_skill/trajectory/utils/actions/conversion.py
+          python -m mani_skill.trajectory.replay_trajectory \
+            --traj-path replay_input/baseline/trajectory.h5 \
+            --target-control-mode pd_joint_pos \
+            --obs-mode none --sim-backend physx_cpu \
+            --use-first-env-state --save-traj --count 8 \
+            2>&1 | tee baseline_replay.log
+      - name: Replay identical official episodes with corrected converter
+        shell: bash
+        run: |
+          set -euo pipefail
+          git show HEAD:mani_skill/trajectory/utils/actions/conversion.py > mani_skill/trajectory/utils/actions/conversion.py
+          python -m mani_skill.trajectory.replay_trajectory \
+            --traj-path replay_input/patched/trajectory.h5 \
+            --target-control-mode pd_joint_pos \
+            --obs-mode none --sim-backend physx_cpu \
+            --use-first-env-state --save-traj --count 8 \
+            2>&1 | tee patched_replay.log
+      - name: Record without hiding negative results
+        if: always()
+        run: |
+          python - <<'PY'
+          import json, pathlib, re
+          report={"task":"PickCube-v1","source":"ManiSkill official RL demonstrations","target":"pd_joint_pos","backend":"physx_cpu","count_requested":8}
+          for variant in ("baseline","patched"):
+              p=pathlib.Path(variant+"_replay.log")
+              text=p.read_text(errors="replace") if p.exists() else ""
+              found=re.search(r"Replayed\s+(\d+)\s+episodes,\s+(\d+)/(\d+)=",text)
+              report[variant]={"summary_found":bool(found),"episodes":int(found.group(1)) if found else None,"successful":int(found.group(2)) if found else None,"log_file":str(p)}
+          pathlib.Path("comparison.json").write_text(json.dumps(report,indent=2))
+          print("REPLAY_AB_COMPARISON",json.dumps(report))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mani429-official-replay-ab
+          path: |
+            baseline_replay.log
+            patched_replay.log
+            comparison.json
+          if-no-files-found: warn
