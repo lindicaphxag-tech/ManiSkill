@@ -1,4 +1,4 @@
-> **Independent contributor's research fork — not the official ManiSkill project.** The original project's README begins below. Changes under \`research/frozen_policy_transfer/\` are owned and evaluated by this fork's contributor; no ManiSkill maintainer endorsement is implied.
+> **Independent contributor's research fork — not the official ManiSkill project.** The original project's README begins below. Changes under `research/frozen_policy_transfer/` are owned and evaluated by this fork's contributor; no ManiSkill maintainer endorsement is implied.
 
 ### Research flagship: stateful controller action-ABI transfer without PPO retraining
 
