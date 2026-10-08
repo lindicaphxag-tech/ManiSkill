@@ -1,0 +1,42 @@
+name: Locked 100-199 holdout protocol sanity
+
+on:
+  push:
+    branches: [validation/dp-peg-factorial-heldout-100-199-v1]
+    paths:
+      - "research/kaggle_diffusion_policy_peg/run_assay.py"
+      - ".github/workflows/validate-dp-peg-heldout-syntax.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  protocol-static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile heldout runner without downloading/training
+        run: python -m py_compile research/kaggle_diffusion_policy_peg/run_assay.py
+      - name: Check immutable holdout and two source-code factors
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          source=Path("research/kaggle_diffusion_policy_peg/run_assay.py").read_text()
+          required=[
+            'FACTORIAL_SAMPLE_OFFSET',
+            'FACTORIAL_SAMPLE_SIZE != 100',
+            'source_offset:source_offset + CONFIG["replay_count"]',
+            '"original_source_episode_indices": run_record["source_episode_indices"]',
+            '"converter_only_pr1495"',
+            '"controller_only_pr1472"',
+            '"combined_pr1495_pr1472"',
+            'raise ValueError("Locked holdout must use 100 source episodes at offset 100")',
+          ]
+          missing=[v for v in required if v not in source]
+          assert not missing, missing
+          print("Locked offset100/length100 2x2 holdout: static protocol pass")
+          PY
