@@ -137,7 +137,7 @@ jobs:
           # These are descriptive preregistered result-classification rules:
           # Failures are REPORTED, never filtered or hidden by exit-code tuning.
           gates={
-             'original_policy_competence_both_tasks':a['source_competent_min_5'] and b['source_competent_min_5'],
+             'original_policy_competence_both_tasks':a['source_competent_min_10'] and b['source_competent_min_10'],
              'selective_noninferiority_margin_two_of_32':total[arms[1]]>=total[arms[2]]-2,
              'selective_privileged_readback_saving_at_least_eight':mandatory_reads-selective_reads>=8,
              'zero_query_mechanistic_net_success_gain_at_least_five':total[arms[0]]-total[arms[3]]>=5
