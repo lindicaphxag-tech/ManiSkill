@@ -1,0 +1,90 @@
+{
+  "schema": "bounded_or_query_two_actual_fault_truths_32_v1",
+  "frozen_before_runner_implementation": true,
+  "date": "2026-10-09",
+  "question": "Does fixed-budget selective target readback preserve task success and reduce information cost when either the original native controller action really executes or an all-zero native arm delta executes but the ACK is unknown?",
+  "previous_related_study": "16 state neutral_arm_delta_no_ack only; source commit 7799ede89dc04c2db0ce1379ff4563d553e97a03; result 15/16 success robust-query vs 15/16 mandatory-query and 4 vs 16 target reads; not fresh proof in both worlds",
+  "protocol_source_commit": "7799ede89dc04c2db0ce1379ff4563d553e97a03",
+  "source_method_blobs": {
+    "research/UNKNOWN_ACK_BOUNDED_QUERY_FROZEN_V1.json": "36f01321c7f5502f3cc0b188d5201f1c2cedb131",
+    "research/frozen_ppo_ack_bounded_query.py": "1dc653cdc44e422c8340475ad00f828b3a41eb4f"
+  },
+  "preregistered_seeds": {
+    "pull_cube": {
+      "task": "PullCube-v1",
+      "seeds": [
+        142001,
+        142002,
+        142003,
+        142004,
+        142005,
+        142006,
+        142007,
+        142008
+      ],
+      "checkpoint_sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7"
+    },
+    "stack_cube": {
+      "task": "StackCube-v1",
+      "seeds": [
+        152001,
+        152002,
+        152003,
+        152004,
+        152005,
+        152006,
+        152007,
+        152008
+      ],
+      "checkpoint_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+    }
+  },
+  "published_checkpoint_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+  "conditions": [
+    "applied_no_ack",
+    "neutral_arm_delta_no_ack"
+  ],
+  "physical_fault_at_step_index_0based": 2,
+  "physical_arm_truth": {
+    "applied_no_ack": "Deliver intended converted native arm action to actual simulator controller; observation of delivery to adapter becomes UNKNOWN",
+    "neutral_arm_delta_no_ack": "Replace intended native arm command with all-zero arm delta; retain source gripper; actual simulator env.step executes; adapter sees UNKNOWN"
+  },
+  "frozen_existing_method_params": {
+    "position_inf_m": 0.05,
+    "rotation_geodesic_rad": 0.05,
+    "one_authoritative_read_budget": 1
+  },
+  "method_comparators": [
+    "source_no_fault",
+    "fault_oracle_private_target",
+    "fault_optimistic_unverified_ack",
+    "fault_strict_common_exact",
+    "fault_robust_two_history_without_query",
+    "fault_robust_then_single_privileged_query",
+    "fault_always_single_privileged_query"
+  ],
+  "method_scope": "Identical unchanged previous runner algorithm and robust confidence thresholds, except predeclared seed sets, condition switch and protocol/result identity. Absolutely no parameter learning or outcome-dependent tuning.",
+  "denominator": "2 frozen externally pretrained PPOs x 8 unique previously unused seeds/task x 2 paired fault truths = 32 task-truth state conditions",
+  "primary_readouts": [
+    "success_once for each controller arm across all 32 conditions",
+    "per-world and pooled selective versus mandatory privileged controller target reads",
+    "zero-query robust bounded setpoint authorization counts and refusals",
+    "paired-task success discordance versus optimistic, no-query bounded and mandatory-query",
+    "full condition reach, mixed/failure cases and exact frozen checkpoint identity"
+  ],
+  "primary_criteria": {
+    "no_exclusion": true,
+    "validate_source_competence_per_task_truth_count8_at_least": 5,
+    "pass_requires_success_rate_selective_no_less_than_always_on_both_fault_truths": false,
+    "report_no_claim_if_selective_has_any_unique_failure": true,
+    "report_any_false_authorized_setpoint_violation": true
+  },
+  "limitations": [
+    "Simulation of delivered or all-zero controller arm action with unknown ACK, not actual network reorder/delay/real robot",
+    "One privileged controller target read is used by selective arm on refusal and always arm after fault; no public camera perception, no sensor-free claim",
+    "Setpoint position/rotation tolerance is not trajectory safety, contact forces or collision",
+    "Identical frozen method and two controller-task families still share Panda controller ABI",
+    "True physics state and controller implementation known by experimenter; independent out-of-repository replication absent",
+    "Neither midpoint, conditional certificate nor active information gating is an invented general theorem"
+  ]
+}
