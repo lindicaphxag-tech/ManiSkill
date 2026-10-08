@@ -19,7 +19,7 @@ from frozen_ppo_pickcube_gate import (
     _actor, _bool_value, REPO, FILENAME, EXPECTED,
 )
 
-SEEDS=(42,270,429,2026)
+SEEDS=tuple(range(18001,18033))
 STEPS=50
 TOL=1e-5
 
