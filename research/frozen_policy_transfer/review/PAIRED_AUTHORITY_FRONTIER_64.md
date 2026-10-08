@@ -23,6 +23,8 @@ python -m research.frozen_policy_transfer.review.authority_frontier_64 \
 
 Unlike reading just markdown, the verifier checks the `SHA256SUMS` of all **eight original JSON files**; reuses the source-frozen full-denominator independent audit of official frozen checkpoint hashes, complete reset-seed identity, all seven actual PhysX control-arm success flags and decision-readback accounting; then reports 32 PullCube and 32 StackCube **paired** outcomes separately before showing the pooled (but only two-model) 64-state description.
 
+**Additional immutable manifest witness:** the verifier also checks that the `SHA256SUMS` manifest itself equals the previously public source Git blob `64c3b913a9afbdfbcd374f176c484ee7b6576f93`, which was present in the original archive before this retrospective statistical audit. A destructive regression changes one JSON and recomputes its manifest entry to keep the pair internally consistent: that attack must still fail. This prevents treating a mutable pair of files as an independently immutable scientific record.
+
 Original native creator: [eight real simulator jobs, completed](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37828426195). The code gives all duplicate/replaced/missing-shard, forged success/readback and incorrect sampling-counter negatives the same fatal error as a corrupted source artifact. **Running the verifier is NOT independent re-execution of PhysX.**
 
 ## Original 64-state, *same-seed paired* results
