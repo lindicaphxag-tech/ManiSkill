@@ -37,6 +37,10 @@ The one-read method has an **additional information advantage** over optimistic/
 
 If a fresh task finishes before the planned fault, **the fault did not occur**. Do not quietly exclude its seed or call it a recovery success. The validation reports failures rather than removing them.
 
+## Original checkpoint and competing baseline credit
+
+The frozen third-party PPO weights are openly released as [ActionShift baseline checkpoints](https://huggingface.co/kattri15/actionshift-baselines), associated with [Archerkattri/actionshift](https://github.com/Archerkattri/actionshift), which **already** implements a broader online hidden-action-interface benchmark (including active probes, belief adapters, action delay, PPO and Diffusion Policy). The PPO weights and the broad idea of adapting hidden action contracts are **not original to this repository**. This fork's narrower empirical question concerns **applied-vs-omitted command truth when action acknowledgement is untrustworthy**, target-history observability and the cost of a trusted readback. Meaningful new claims must be compared against ActionShift's belief/probe methods under the same fault cases and an equal information / online compute budget. This one-click reproduction does NOT by itself perform that independent head-to-head comparison.
+
 ## External-falsification request
 
 An outside researcher can share THEIR run + unmodified JSON and the exact checked-out commit in the [open independent reproduction challenge](https://github.com/lindicaphxag-tech/kaggle/issues/67). Outside researchers' **negative** results are as scientifically valuable as successful ones. Forking alone or an author-owned Actions run does NOT constitute independent scientific replication.
