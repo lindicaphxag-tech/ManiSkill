@@ -54,6 +54,10 @@ jobs:
           test "$SEMREPAIR_DP_FACTORIAL_SAMPLE_SIZE" = "100"
           python -m py_compile research/kaggle_diffusion_policy_peg/run_assay.py
           grep -q 'source_offset:source_offset + CONFIG\["replay_count"\]' research/kaggle_diffusion_policy_peg/run_assay.py
+      - name: Test exact source trajectory slicing before expensive replay
+        run: |
+          python -m pip install h5py
+          python research/kaggle_diffusion_policy_peg/slice_source_cohort.py
       - name: Replay all four exact-code factor cells and freeze source-seed matrix
         shell: bash
         run: |
