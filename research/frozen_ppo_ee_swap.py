@@ -21,8 +21,9 @@ from frozen_ppo_pickcube_gate import (
     EXPECTED, FILENAME, REPO, _actor, _bool_value
 )
 import hashlib
+import random
 
-SEEDS=tuple(range(10001,10033))
+SEEDS=(10014,)*8
 MAX_STEPS=50
 
 
@@ -65,18 +66,39 @@ def compile_pd_ee_delta_to_absolute_pose(source_arm, destination_arm, native):
     return arm
 
 
+_AUDIT_CALLS=0
+
 def rollout_one(actor,seed):
+    global _AUDIT_CALLS
+    _AUDIT_CALLS += 1
+    # First four replicates preserve ambient RNG, latter four explicitly
+    # reset Python/NumPy/Torch before scene construction.
+    reseed = _AUDIT_CALLS > 4
+    if reseed:
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.set_num_threads(1)
     envs={
         "source":make_env("pd_ee_delta_pose"),
         "compiled":make_env("pd_ee_pose"),
         "naive":make_env("pd_ee_pose"),
     }
-    report={"seed":seed,"max_steps":MAX_STEPS,"success_once":{},
+    report={"seed":seed,"audit_repeat":_AUDIT_CALLS,"global_rng_reseeded":reseed,
+            "max_steps":MAX_STEPS,"success_once":{},
             "initial_obs_maxdiff":{},"episode_steps":{}}
     try:
         observations={}
         for key,env in envs.items():
             observations[key],_=env.reset(seed=seed)
+        report["initial_observation_sha256"]={
+            k:hashlib.sha256(v.detach().cpu().numpy().tobytes()).hexdigest()
+            for k,v in observations.items()
+        }
+        report["initial_observation_values"]={
+            k:v.detach().cpu().numpy().reshape(-1).tolist()
+            for k,v in observations.items() if k=="source"
+        }
         shape={k:tuple(v.shape) for k,v in observations.items()}
         if len(set(shape.values()))!=1:
             raise RuntimeError("Mismatch observation ABI: "+str(shape))
@@ -143,6 +165,17 @@ def main():
         env.close()
 
     runs=[rollout_one(net,s) for s in SEEDS]
+    for mode in (False,True):
+        group=[r for r in runs if r["global_rng_reseeded"] is mode]
+        print("SEED_REPRO_AUDIT",json.dumps({
+            "mode":"global_seed" if mode else "ambient_rng",
+            "repeat_count":len(group),
+            "unique_init_observations":len(set(r["initial_observation_sha256"]["source"] for r in group)),
+            "source_success":[r["success_once"].get("source",False) for r in group],
+            "compiled_success":[r["success_once"].get("compiled",False) for r in group],
+            "source_steps":[r["episode_steps"].get("source") for r in group],
+            "compiled_steps":[r["episode_steps"].get("compiled") for r in group],
+        },sort_keys=True))
     outcomes={name:sum(r["success_once"].get(name,False) for r in runs)
               for name in ("source","compiled","naive")}
     result={"checkpoint_repo":REPO,"checkpoint":FILENAME,
