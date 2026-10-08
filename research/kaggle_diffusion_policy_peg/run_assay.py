@@ -33,7 +33,10 @@ REPO = WORK / "ManiSkill"
 OUTPUT = WORK / "assay_output"
 DEMO_ROOT = WORK / "demos"
 # State-based evaluation uses PhysX CPU.  The smoke mode disables rendering.
-os.environ["MANISKILL_RENDER_BACKEND"] = "cpu"
+# For state-only CPU smoke, ManiSkill documents 'none' as disabling
+# rendering; 'cpu' instead requests a SAPIEN render device named 'cpu'
+# which can be unsupported even when Mesa Lavapipe exposes Vulkan.
+os.environ["MANISKILL_RENDER_BACKEND"] = "none" if SMOKE_MODE else "cpu"
 BASE = "62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3"
 CONVERSION = (
     "69facfaafaa0ef233d36ef19e6cd9a0f03532ee0"
