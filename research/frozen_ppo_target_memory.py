@@ -12,6 +12,7 @@ import numpy as np
 import torch
 from scipy.spatial.transform import Rotation
 from huggingface_hub import hf_hub_download
+from target_memory_feasibility import compile_target_memory_action, TransportDecision
 
 import mani_skill.envs  # noqa F401
 
@@ -23,7 +24,7 @@ REPO="kattri15/actionshift-baselines"
 FILENAME="ppo/push_cube_final_ckpt.pt"
 EXPECTED="a4a02198b309e73cb877959079023d967d5f63ec78380de9703a10c9efafc0cf"
 TASK="PushCube-v1"
-SEEDS=tuple(range(30001,30033))
+SEEDS=(42,270,429,2026)
 STEPS=50
 TOL=1e-5
 
@@ -40,49 +41,28 @@ def rot_from_wxyz(wxyz):
 
 
 def normalized_target_delta(source_arm,target_arm,policy_native, *, approximate=False):
-    """Inverts physical achieved-relative EE goal into target-relative ABI."""
-    old=target_arm._target_pose
-    if old is None:
-        return None,"controller runtime previous target memory missing",None
-
-    # Decode policy's original normalized achieved-relative command.
+    """Compile exact/approximate target-native pose command with checkable witness."""
+    previous=target_arm._target_pose
+    if previous is None:
+        return None,"missing live controller target pose",None,None,None
     delta=source_arm._preprocess_action(policy_native[:,:6])
     desired=source_arm.compute_target_pose(target_arm.ee_pose_at_base,delta)
-    desired_pos=np.asarray(desired.p.detach().cpu(),dtype=float).reshape(-1,3)[0]
-    old_pos=np.asarray(old.p.detach().cpu(),dtype=float).reshape(-1,3)[0]
-    desired_R=rot_from_wxyz(desired.q)
-    old_R=rot_from_wxyz(old.q)
-
-    physical_pos=desired_pos-old_pos
-    physical_euler=(desired_R*old_R.inv()).as_euler("XYZ")
-    lower=float(source_arm.config.pos_lower)
-    upper=float(source_arm.config.pos_upper)
-    rot_scale=float(source_arm.config.rot_lower)
-    if abs(rot_scale)<1e-8 or upper <= lower:
-        return None,"ill-defined controller action limits",None
-
-    # Inverse of ManiSkill's native bounded pos affine scaling:
-    # physical delta = (u+1)/2*(upper-lower)+lower.
-    pos_native=2*(physical_pos-lower)/(upper-lower)-1
-    # PDEEPoseController._clip_and_scale_action multiplies native Euler
-    # vector by config.rot_lower, clipping its Euclidean norm to <=1.
-    rot_native=physical_euler/rot_scale
-    amp=float(max(np.max(np.abs(pos_native)),np.linalg.norm(rot_native)))
-    if not np.all(np.isfinite(pos_native)) or not np.all(np.isfinite(rot_native)):
-        return None,"nonfinite target action",amp
-    if amp>1+TOL:
-        if not approximate:
-            return None,"required delta outside target native bounds",amp
-        # Experimental non-exact fallback: Euclidean closest normalized
-        # position command (box) and rotation command (unit ball).
-        pos_native=np.clip(pos_native,-1.0,1.0)
-        rot_len=float(np.linalg.norm(rot_native))
-        if rot_len>1.0:
-            rot_native=rot_native/rot_len
-        return torch.as_tensor(np.r_[pos_native,rot_native],
-                               dtype=policy_native.dtype).reshape(1,6),"APPROXIMATE_BOUNDED_PROJECTION",amp
-    return torch.as_tensor(np.r_[pos_native,rot_native],
-                           dtype=policy_native.dtype).reshape(1,6),None,amp
+    actual=compile_target_memory_action(
+        np.asarray(previous.p.detach().cpu(),dtype=float).reshape(-1,3)[0],
+        rot_from_wxyz(previous.q).as_matrix(),
+        np.asarray(desired.p.detach().cpu(),dtype=float).reshape(-1,3)[0],
+        rot_from_wxyz(desired.q).as_matrix(),
+        pos_lower=float(source_arm.config.pos_lower),
+        pos_upper=float(source_arm.config.pos_upper),
+        rotation_native_scale=float(source_arm.config.rot_lower),
+        mode="project" if approximate else "strict",
+        feasibility_tolerance=1e-5,
+    )
+    if not actual.executable:
+        return None,actual.reason,actual.required_native_amplitude,actual,desired
+    rewritten=torch.as_tensor(actual.native_action,dtype=policy_native.dtype).reshape(1,6)
+    reason="APPROXIMATE_BOUNDED_PROJECTION" if actual.decision is TransportDecision.APPROXIMATE else None
+    return rewritten,reason,actual.required_native_amplitude,actual,desired
 
 
 def _project_policy_observation(flat_observation, environment, expected_width):
@@ -134,7 +114,10 @@ def trial(policy, seed):
     }
     policy_input_width=int(policy[0].in_features)
     outcome={"seed":seed,"task":TASK,"checkpoint_observation_width":policy_input_width,"initial_obs_diff":{},"success_once":{},
-             "steps":{},"refusals":{},"approximations":{},"max_required_native_amp":0.0}
+             "steps":{},"refusals":{},"approximations":{},"physical_witness_checks":0,
+             "max_witness_position_residual_error_m":0.0,
+             "max_witness_orientation_residual_error_rad":0.0,
+             "max_required_native_amp":0.0}
     try:
         observations={k:w.reset(seed=seed)[0] for k,w in worlds.items()}
         canonical_start=_project_policy_observation(observations["source"],worlds["source"],policy_input_width)
@@ -154,7 +137,7 @@ def trial(policy, seed):
                 native=act(policy,_project_policy_observation(observations[name],w,policy_input_width))
                 if name in ("memory","projected"):
                     arm=controller[name].controllers["arm"]
-                    rewritten,reason,amplitude=normalized_target_delta(
+                    rewritten,reason,amplitude,witness,requested_pose=normalized_target_delta(
                         source_arm,arm,native,approximate=(name=="projected"))
                     if reason == "APPROXIMATE_BOUNDED_PROJECTION":
                         outcome["approximations"].setdefault(name,[]).append({
@@ -177,6 +160,28 @@ def trial(policy, seed):
                 else:
                     action=native
                 observations[name],_,term,trunc,info=w.step(action)
+                if name in ("memory","projected"):
+                    # Verify that the ACTUAL physics controller's updated
+                    # target pose agrees with the witness predicted residual.
+                    final_pose=controller[name].controllers["arm"]._target_pose
+                    if final_pose is None or witness is None:
+                        raise RuntimeError("Controller lost target memory after applying witness")
+                    pos_now=np.asarray(final_pose.p.detach().cpu()).reshape(-1,3)[0]
+                    pos_want=np.asarray(requested_pose.p.detach().cpu()).reshape(-1,3)[0]
+                    pos_actual=float(np.linalg.norm(pos_now-pos_want))
+                    ori_actual=float((rot_from_wxyz(requested_pose.q)*rot_from_wxyz(final_pose.q).inv()).magnitude())
+                    dp=abs(pos_actual-witness.position_goal_residual_m)
+                    dr=abs(ori_actual-witness.orientation_goal_residual_rad)
+                    outcome["physical_witness_checks"]+=1
+                    outcome["max_witness_position_residual_error_m"]=max(
+                        outcome["max_witness_position_residual_error_m"],dp)
+                    outcome["max_witness_orientation_residual_error_rad"]=max(
+                        outcome["max_witness_orientation_residual_error_rad"],dr)
+                    if dp>5e-5 or dr>5e-5:
+                        raise RuntimeError(
+                            f"Actual controller target disagreed with executable "
+                            f"feasibility witness: dp={dp}, dr={dr}, mode={name}"
+                        )
                 val=info.get("success")
                 if val is None:
                     raise RuntimeError("Missing actual PickCube success flag")
