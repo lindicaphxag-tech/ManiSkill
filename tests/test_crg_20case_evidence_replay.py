@@ -4,7 +4,7 @@ import json
 import pytest
 
 from research.crg_core.evidence.pusht_cross_policy_20case_v2.replay import (
-    replay, load_groups, ROOT
+    replay, ROOT
 )
 
 
