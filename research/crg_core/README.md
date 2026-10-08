@@ -107,3 +107,8 @@ cp research/crg_core/replication_example.json result.json
 python -m research.crg_core.seal_replication result.json
 python -m research.crg_core.replication_record result.json
 ```
+
+
+## Arithmetic-only third-party proof check
+
+For robust `CERTIFIED_IMPOSSIBLE` outputs, the [independent proof checker](INDEPENDENT_PROOF_CHECK.md) accepts a trusted claim packet separately from an untrusted normal-only witness. It recomputes the support-function separation inequality without a policy runtime or optimizer, and explicitly reports `external_experiment_verified=false`. It cannot certify the empirical uncertainty bound or source provenance.
