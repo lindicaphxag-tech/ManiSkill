@@ -1,0 +1,442 @@
+{
+  "checkpoint_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c",
+  "public_pretrained": true,
+  "training_performed": false,
+  "backend": "physx_cpu",
+  "controller_contracts": {
+    "source": "pd_ee_delta_pose achieved-relative",
+    "memory": "pd_ee_target_delta_pose with live previous-target inversion",
+    "projected": "pd_ee_target_delta_pose with live goal memory + bounded projection",
+    "stateless": "pd_ee_target_delta_pose with achieved-pose substitute + same bounded projection",
+    "observer": "pd_ee_target_delta_pose with action-only reconstructed target + same bounded projection",
+    "naive": "pd_ee_target_delta_pose direct-copy"
+  },
+  "success_count": {
+    "source": 8,
+    "memory": 3,
+    "projected": 8,
+    "observer": 8,
+    "stateless": 0,
+    "naive": 0
+  },
+  "refused_episodes": 5,
+  "episodes": [
+    {
+      "seed": 93009,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "observer": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": true,
+        "projected": true,
+        "observer": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 30,
+        "memory": 30,
+        "projected": 30,
+        "observer": 30,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {},
+      "approximations": {},
+      "max_required_native_amp": 1.000000556265392,
+      "observer_end_target_error": {
+        "max_position_abs": 2.980232233218416e-08,
+        "rotation_rad": 3.4378505069753436e-07
+      }
+    },
+    {
+      "seed": 93010,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "observer": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "observer": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 12,
+        "memory": 5,
+        "projected": 11,
+        "observer": 11,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {
+        "memory": {
+          "step": 5,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.042085662484169
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 5,
+            "required_native_amp": 1.042085662484169,
+            "exactness": "NOT_EXACT"
+          },
+          {
+            "step": 7,
+            "required_native_amp": 1.1473513599995337,
+            "exactness": "NOT_EXACT"
+          }
+        ],
+        "observer": [
+          {
+            "step": 5,
+            "required_native_amp": 1.042085736989975,
+            "exactness": "NOT_EXACT"
+          },
+          {
+            "step": 7,
+            "required_native_amp": 1.1473578326408087,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.1473578326408087,
+      "observer_end_target_error": {
+        "max_position_abs": 8.19563864690176e-09,
+        "rotation_rad": 2.718873248372582e-07
+      }
+    },
+    {
+      "seed": 93011,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "observer": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "observer": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 10,
+        "memory": 4,
+        "projected": 10,
+        "observer": 10,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {
+        "memory": {
+          "step": 4,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.1911782063543797
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 4,
+            "required_native_amp": 1.1911782063543797,
+            "exactness": "NOT_EXACT"
+          }
+        ],
+        "observer": [
+          {
+            "step": 4,
+            "required_native_amp": 1.1911785043776035,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.1911785043776035,
+      "observer_end_target_error": {
+        "max_position_abs": 8.94069669687969e-09,
+        "rotation_rad": 1.2380447943138375e-07
+      }
+    },
+    {
+      "seed": 93012,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "observer": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": true,
+        "projected": true,
+        "observer": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 12,
+        "memory": 13,
+        "projected": 13,
+        "observer": 13,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {},
+      "approximations": {},
+      "max_required_native_amp": 1.000000238418579,
+      "observer_end_target_error": {
+        "max_position_abs": 2.384185793236071e-08,
+        "rotation_rad": 4.345195179446342e-08
+      }
+    },
+    {
+      "seed": 93013,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "observer": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": true,
+        "projected": true,
+        "observer": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 12,
+        "memory": 12,
+        "projected": 12,
+        "observer": 12,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {},
+      "approximations": {},
+      "max_required_native_amp": 1.00000109801713,
+      "observer_end_target_error": {
+        "max_position_abs": 2.421438688449129e-09,
+        "rotation_rad": 1.9427570442298144e-07
+      }
+    },
+    {
+      "seed": 93014,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "observer": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "observer": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 18,
+        "memory": 7,
+        "projected": 19,
+        "observer": 19,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {
+        "memory": {
+          "step": 7,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.4028137922286987
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 7,
+            "required_native_amp": 1.4028137922286987,
+            "exactness": "NOT_EXACT"
+          }
+        ],
+        "observer": [
+          {
+            "step": 7,
+            "required_native_amp": 1.4028136432170868,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.4028137922286987,
+      "observer_end_target_error": {
+        "max_position_abs": 1.6763806454100916e-09,
+        "rotation_rad": 1.6352668107325693e-07
+      }
+    },
+    {
+      "seed": 93015,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "observer": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "observer": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 13,
+        "memory": 4,
+        "projected": 14,
+        "observer": 14,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {
+        "memory": {
+          "step": 4,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.1044155433773994
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 4,
+            "required_native_amp": 1.1044155433773994,
+            "exactness": "NOT_EXACT"
+          },
+          {
+            "step": 6,
+            "required_native_amp": 1.0326003002657955,
+            "exactness": "NOT_EXACT"
+          }
+        ],
+        "observer": [
+          {
+            "step": 4,
+            "required_native_amp": 1.1044111847877502,
+            "exactness": "NOT_EXACT"
+          },
+          {
+            "step": 6,
+            "required_native_amp": 1.032591789852813,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.1044155433773994,
+      "observer_end_target_error": {
+        "max_position_abs": 7.450580707946131e-10,
+        "rotation_rad": 1.8745726394579223e-07
+      }
+    },
+    {
+      "seed": 93016,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "observer": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "observer": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 12,
+        "memory": 5,
+        "projected": 12,
+        "observer": 12,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {
+        "memory": {
+          "step": 5,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.3720162212848663
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 5,
+            "required_native_amp": 1.3720162212848663,
+            "exactness": "NOT_EXACT"
+          },
+          {
+            "step": 7,
+            "required_native_amp": 1.074484329164391,
+            "exactness": "NOT_EXACT"
+          }
+        ],
+        "observer": [
+          {
+            "step": 5,
+            "required_native_amp": 1.3720091432332993,
+            "exactness": "NOT_EXACT"
+          },
+          {
+            "step": 7,
+            "required_native_amp": 1.074469668459046,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.3720162212848663,
+      "observer_end_target_error": {
+        "max_position_abs": 2.384185793236071e-08,
+        "rotation_rad": 6.955226984989121e-07
+      }
+    }
+  ],
+  "task": "StackCube-v1",
+  "protocol": "research/ACTION_ABI_HISTORY_OBSERVER_PREDECLARED_V1.json",
+  "hf_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+  "seed_chunk": "1",
+  "seed_list": [
+    93009,
+    93010,
+    93011,
+    93012,
+    93013,
+    93014,
+    93015,
+    93016
+  ],
+  "all_preregistered_seeds": [
+    93009,
+    93016
+  ]
+}

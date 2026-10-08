@@ -1,0 +1,412 @@
+{
+  "checkpoint_sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+  "public_pretrained": true,
+  "training_performed": false,
+  "backend": "physx_cpu",
+  "controller_contracts": {
+    "source": "pd_ee_delta_pose achieved-relative",
+    "memory": "pd_ee_target_delta_pose with live previous-target inversion",
+    "projected": "pd_ee_target_delta_pose with live goal memory + bounded projection",
+    "stateless": "pd_ee_target_delta_pose with achieved-pose substitute + same bounded projection",
+    "observer": "pd_ee_target_delta_pose with action-only reconstructed target + same bounded projection",
+    "naive": "pd_ee_target_delta_pose direct-copy"
+  },
+  "success_count": {
+    "source": 7,
+    "memory": 2,
+    "projected": 7,
+    "observer": 7,
+    "stateless": 1,
+    "naive": 1
+  },
+  "refused_episodes": 5,
+  "episodes": [
+    {
+      "seed": 83009,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "observer": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": true,
+        "projected": true,
+        "observer": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 8,
+        "memory": 8,
+        "projected": 8,
+        "observer": 8,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {},
+      "approximations": {},
+      "max_required_native_amp": 1.000000238418579,
+      "observer_end_target_error": {
+        "max_position_abs": 2.384185793236071e-08,
+        "rotation_rad": 2.6613185781919008e-08
+      }
+    },
+    {
+      "seed": 83010,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "observer": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "observer": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 8,
+        "memory": 6,
+        "projected": 8,
+        "observer": 8,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {
+        "memory": {
+          "step": 6,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.0569953918457031
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 6,
+            "required_native_amp": 1.0569953918457031,
+            "exactness": "NOT_EXACT"
+          }
+        ],
+        "observer": [
+          {
+            "step": 6,
+            "required_native_amp": 1.0569912940263748,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.0569953918457031,
+      "observer_end_target_error": {
+        "max_position_abs": 2.384185793236071e-08,
+        "rotation_rad": 3.019234732102391e-08
+      }
+    },
+    {
+      "seed": 83011,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "observer": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "observer": true,
+        "stateless": true,
+        "naive": true
+      },
+      "steps": {
+        "source": 6,
+        "memory": 4,
+        "projected": 6,
+        "observer": 6,
+        "stateless": 6,
+        "naive": 6
+      },
+      "refusals": {
+        "memory": {
+          "step": 4,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.5844535082578655
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 4,
+            "required_native_amp": 1.5844535082578655,
+            "exactness": "NOT_EXACT"
+          }
+        ],
+        "observer": [
+          {
+            "step": 4,
+            "required_native_amp": 1.5844518691301341,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.5844535082578655,
+      "observer_end_target_error": {
+        "max_position_abs": 7.450580569168253e-10,
+        "rotation_rad": 1.4446888870571813e-08
+      }
+    },
+    {
+      "seed": 83012,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "observer": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": true,
+        "projected": true,
+        "observer": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 9,
+        "memory": 9,
+        "projected": 9,
+        "observer": 9,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {},
+      "approximations": {},
+      "max_required_native_amp": 1.000000238418579,
+      "observer_end_target_error": {
+        "max_position_abs": 2.384185793236071e-08,
+        "rotation_rad": 2.3014010188892877e-08
+      }
+    },
+    {
+      "seed": 83013,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "observer": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "observer": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 8,
+        "memory": 6,
+        "projected": 8,
+        "observer": 8,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {
+        "memory": {
+          "step": 6,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.3247445970773697
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 6,
+            "required_native_amp": 1.3247445970773697,
+            "exactness": "NOT_EXACT"
+          }
+        ],
+        "observer": [
+          {
+            "step": 6,
+            "required_native_amp": 1.3247363455593586,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.3247445970773697,
+      "observer_end_target_error": {
+        "max_position_abs": 2.384185793236071e-08,
+        "rotation_rad": 5.2185981619128695e-09
+      }
+    },
+    {
+      "seed": 83014,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "observer": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "observer": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 6,
+        "memory": 4,
+        "projected": 6,
+        "observer": 6,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {
+        "memory": {
+          "step": 4,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.1958811432123184
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 4,
+            "required_native_amp": 1.1958811432123184,
+            "exactness": "NOT_EXACT"
+          }
+        ],
+        "observer": [
+          {
+            "step": 4,
+            "required_native_amp": 1.1958839930593967,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.1958839930593967,
+      "observer_end_target_error": {
+        "max_position_abs": 4.4703483415009515e-09,
+        "rotation_rad": 1.1377899605298072e-08
+      }
+    },
+    {
+      "seed": 83015,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "observer": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": true,
+        "memory": false,
+        "projected": true,
+        "observer": true,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 6,
+        "memory": 4,
+        "projected": 6,
+        "observer": 6,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {
+        "memory": {
+          "step": 4,
+          "reason": "required delta outside target native bounds",
+          "required_amp": 1.579256802797317
+        }
+      },
+      "approximations": {
+        "projected": [
+          {
+            "step": 4,
+            "required_native_amp": 1.579256802797317,
+            "exactness": "NOT_EXACT"
+          }
+        ],
+        "observer": [
+          {
+            "step": 4,
+            "required_native_amp": 1.57925471663475,
+            "exactness": "NOT_EXACT"
+          }
+        ]
+      },
+      "max_required_native_amp": 1.579256802797317,
+      "observer_end_target_error": {
+        "max_position_abs": 4.470348355378739e-09,
+        "rotation_rad": 1.412040276835655e-08
+      }
+    },
+    {
+      "seed": 83016,
+      "initial_obs_diff": {
+        "memory": 0.0,
+        "projected": 0.0,
+        "observer": 0.0,
+        "stateless": 0.0,
+        "naive": 0.0
+      },
+      "success_once": {
+        "source": false,
+        "memory": false,
+        "projected": false,
+        "observer": false,
+        "stateless": false,
+        "naive": false
+      },
+      "steps": {
+        "source": 50,
+        "memory": 50,
+        "projected": 50,
+        "observer": 50,
+        "stateless": 50,
+        "naive": 50
+      },
+      "refusals": {},
+      "approximations": {},
+      "max_required_native_amp": 1.000000238418579,
+      "observer_end_target_error": {
+        "max_position_abs": 2.384185793236071e-08,
+        "rotation_rad": 8.045384680680944e-08
+      }
+    }
+  ],
+  "task": "PullCube-v1",
+  "protocol": "research/ACTION_ABI_HISTORY_OBSERVER_PREDECLARED_V1.json",
+  "hf_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+  "seed_chunk": "1",
+  "seed_list": [
+    83009,
+    83010,
+    83011,
+    83012,
+    83013,
+    83014,
+    83015,
+    83016
+  ],
+  "all_preregistered_seeds": [
+    83009,
+    83016
+  ]
+}
