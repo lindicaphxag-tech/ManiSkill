@@ -1,0 +1,92 @@
+name: External one-click selective-query seven-arm genuine PhysX replication
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Frozen released PPO and task"
+        required: true
+        type: choice
+        default: pull_cube
+        options: [pull_cube, stack_cube]
+      first_seed:
+        description: "First of exactly EIGHT NEW and consecutively selected seeds (>=200001)"
+        required: true
+        type: number
+        default: 200001
+  push:
+    branches: [feature/external-selective-query-oneclick-20261009]
+    paths:
+      - 'research/external_selective_query_replication.py'
+      - '.github/workflows/external-selective-query-physx.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  source-identity-and-corruption-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      SELECT_TASK: ${{ github.event_name == 'workflow_dispatch' && inputs.task || 'pull_cube' }}
+      SELECT_SEED: ${{ github.event_name == 'workflow_dispatch' && inputs.first_seed || 200001 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Frozen source SHA, seven-arm protocol and destructively tested source audit
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/frozen_ppo_ack_bounded_query.py)" = "1dc653cdc44e422c8340475ad00f828b3a41eb4f"
+          test "$(git hash-object research/two_history_se3_robust.py)" = "bb5fd155b7291fb127f94138fca321201c8271c3"
+          python -m py_compile research/external_selective_query_replication.py
+          python research/external_selective_query_replication.py --self-test
+          python -c 'import sys;sys.path.insert(0,"research"); from external_selective_query_replication import validated; import os; assert len(validated(os.environ["SELECT_TASK"],int(os.environ["SELECT_SEED"])))==8'
+
+  actual-unmodified-seven-arm-physx:
+    needs: source-identity-and-corruption-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    env:
+      SELECT_TASK: ${{ github.event_name == 'workflow_dispatch' && inputs.task || 'pull_cube' }}
+      SELECT_SEED: ${{ github.event_name == 'workflow_dispatch' && inputs.first_seed || 200001 }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install ManiSkill real PhysX CPU and released frozen PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Freeze the FLAWED or SUCCESSFUL exact experiment provenance BEFORE outcomes
+        run: |
+          mkdir -p external_selective_artifacts
+          git rev-parse HEAD > external_selective_artifacts/fork_source_git_commit.txt
+          git hash-object research/frozen_ppo_ack_bounded_query.py > external_selective_artifacts/pinned_method_blob.txt
+          git hash-object research/two_history_se3_robust.py > external_selective_artifacts/pinned_certifier_blob.txt
+          python -m pip freeze --all > external_selective_artifacts/python_environment.freeze.txt
+          printf 'task=%s first_seed=%s count=8 no_training=true fault=native_target_hold_at_step2 not_real_network_loss=true github_actor=%s github_repository=%s\n' "$SELECT_TASK" "$SELECT_SEED" "$GITHUB_ACTOR" "$GITHUB_REPOSITORY" > external_selective_artifacts/preoutcome_environment.txt
+      - name: Actually execute all original seven physical-controller policy worlds on eight new states
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/external_selective_query_replication.py \
+            --task "$SELECT_TASK" --first-seed "$SELECT_SEED" \
+            --output-dir external_selective_artifacts \
+            2>&1 | tee external_selective_artifacts/complete_native_physx.log
+          test -s "external_selective_artifacts/result_summary.json"
+          test -s "external_selective_artifacts/external_selective_${SELECT_TASK}_${SELECT_SEED}_8original.json"
+      - name: Preserve original result/exception and exact SHA256 evidence
+        if: always()
+        run: |
+          (cd external_selective_artifacts && sha256sum *.json *.txt *.log > SHA256SUMS) || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: independently-runnable-seven-arm-original-physx
+          path: external_selective_artifacts/
+          retention-days: 90
