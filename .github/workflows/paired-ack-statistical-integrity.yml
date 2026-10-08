@@ -1,0 +1,39 @@
+name: Frozen original task-paired statistics and authority-cost proof
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'research/frozen_policy_transfer/review/paired_impact_statistics.py'
+      - 'tests/test_paired_impact_statistics.py'
+      - '.github/workflows/paired-ack-statistical-integrity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  no-pseudoreplication:
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.13']
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Verify real original source SHA and all six counterfactual audit regressions
+        run: |
+          python -m unittest discover -s tests -p test_paired_impact_statistics.py -v
+      - name: Generate paired exact-statistic record, do not claim noninferiority
+        run: |
+          python -m research.frozen_policy_transfer.review.paired_impact_statistics \
+            --aggregate research/frozen_policy_transfer/evidence/unknown_ack_bounded_query_16/original_ack_bounded_query_16_aggregate.json \
+            --output original_16_exact_paired_source_stats.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: original-16state-task-paired-exact-statistics-${{ matrix.python }}
+          path: original_16_exact_paired_source_stats.json
