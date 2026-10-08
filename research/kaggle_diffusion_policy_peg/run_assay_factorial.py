@@ -551,6 +551,14 @@ try:
                 "arm": arm, "source_commit": start_commit,
                 "controller_overlay_commit": extra_commit,
                 "production_tree": tree,
+                # These point to the REAL upstream replay output artifacts
+                # that were checked at every terminal success/failure step.
+                # The author-controlled digests help a third party reproduce
+                # source-level differences from the frozen public demos;
+                # they are not external attestation of how the run executed.
+                "converted_hdf5_sha256": sha256(demo_path),
+                "converted_metadata_sha256": sha256(meta_path),
+                "native_outcome_verifier": "RecordEpisode HDF5 terminal success matches JSON",
                 "source_population_sha256": original_population["source_episode_seeds_sha256"],
                 "successful_episode_seeds": completed_seeds,
                 "successful_count": len(completed_seeds),
