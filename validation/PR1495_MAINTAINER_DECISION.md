@@ -284,3 +284,40 @@ but **no new policy training curve is available**.
 The immediate upstream review question remains the concrete signed-action
 mapper contract. Policy-level adoption or efficacy is not asserted from
 these author-generated CPU tests or experimental scripts.
+
+
+## New 2026-10-08 reproducibility boundary: native HDF5 bytes vs manifest-only evidence
+
+A substantial evidence-integrity gap was identified and fixed in the
+**separate experimental assay**, not in upstream PR #1495 source.
+Previously, the four-cell artifact gate checked that the declared
+HDF5/JSON SHA-256 strings looked structurally valid but did not reopen
+the original native files. A hypothetical forged 64-hex-character digest
+could therefore pass the manifest-level gate without any matching
+trajectory bytes.
+
+The new frozen
+[ManiSkill Peg native-evidence capsule v0.2](https://github.com/lindicaphxag-tech/ManiSkill/tree/peg-native-evidence-v0.2/research/kaggle_diffusion_policy_peg)
+(SHA `a5c0232bc9a0a9a979b2acab12cbe220022851d0`) adds an
+**independently implemented four-arm native HDF5/JSON file auditor**.
+It requires exact real files under their original source-arm directory,
+re-hashes the actual bytes, validates every source episode against the
+original population, checks the HDF5 terminal success (and complete
+boolean success time-series) against the JSON label, and separately
+reconciles the four-arm replay journal. A missing native trajectory,
+wrong hash, dropped failed episode, unknown arm or JSON/HDF5 disagreement
+is refused.
+
+[Public CI 37751401827](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37751401827)
+passed **63 tests on each of Python 3.10/3.12/3.13** (new HDF5 tests use
+synthetic tiny HDF5). The repo's [methodology](https://github.com/lindicaphxag-tech/ManiSkill/blob/peg-native-evidence-v0.2/research/kaggle_diffusion_policy_peg/FACTORIAL_REVIEWER_PROTOCOL.md)
+states precisely how independent reviewers can re-open the four actual
+native replay files, *if real runs are provided*.
+
+**No raw four-cell Peg policy-performance curves exist as public
+artifacts and no source-exact native training/robot rollout success
+is claimed.** HDF5 fixture tests are not performance results and
+authored hashes do not establish third-party attestation. The
+maintainer's most useful immediate question remains the acceptability
+of probing the real signed PDEEPoseController scale vs restricting
+#1495 to the quaternion-to-XYZ fix.
