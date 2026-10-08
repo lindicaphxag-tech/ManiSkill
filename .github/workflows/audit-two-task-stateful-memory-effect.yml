@@ -1,0 +1,82 @@
+name: Independent two-task stateful-target-memory effect audit
+
+on:
+  push:
+    branches:
+      - evidence/paired-memory-mechanism-cross-task-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  two-task-mechanism-reconstruction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: lindicaphxag-tech/lindicaphxag-tech
+          ref: d69627a01c97505d27376ba288f107d4cd753ab0
+          path: frozen-profile-evidence
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Independently reconstruct all original 64 PhysX episode pairs
+        run: |
+          set -o pipefail
+          python frozen-profile-evidence/research/frozen_policy_transfer/state_memory_mechanism.py | tee audited_two_task_memory_ablation.json
+      - name: Red-team evidence: deny seed loss, changed controller identity and forged task count
+        run: |
+          python - <<'PY'
+          import importlib.util
+          import json
+          from pathlib import Path
+
+          root=Path("frozen-profile-evidence/research/frozen_policy_transfer")
+          spec=importlib.util.spec_from_file_location("state_memory_mechanism", root/"state_memory_mechanism.py")
+          m=importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(m)
+          d=json.loads(Path("audited_two_task_memory_ablation.json").read_text())
+          by={x["task"]:x for x in d["results"]}
+          assert len(by)==2
+          assert by["PickCube"]["n_paired_orig_episode_seeds"]==32
+          assert [by["PickCube"][k] for k in ("full_only","blind_only","both","neither")]==[27,0,4,1]
+          assert by["PickCube"]["memory_ablation_margin_preregistered"] is True
+          assert [by["PushCube"][k] for k in ("full_only","blind_only","both","neither")]==[11,2,18,1]
+          assert by["PushCube"]["memory_ablation_margin_preregistered"] is False
+          assert abs(by["PickCube"]["unadjusted_exact_two_sided_mcnemar_p"] - 1.4901161193847656e-8)<1e-15
+          assert abs(by["PushCube"]["unadjusted_exact_two_sided_mcnemar_p"] - 0.0224609375)<1e-14
+
+          original={}
+          for task,cfg in m.PRECOMMITTED.items():
+              path=cfg["file"]
+              raw=json.loads(path.read_text())
+              original[task]=raw
+              assert m.reconstruct(task,raw)["n_paired_orig_episode_seeds"]==32
+              attacks=[
+                  ("source changed",lambda x:x["source"].update({"run_id":-1})),
+                  ("missing source",lambda x:x["rows"].pop()),
+                  ("duplicate seed",lambda x:x["rows"][1].update({"seed":x["rows"][0]["seed"]})),
+                  ("forced successes",lambda x:x["rows"][0]["success_once"].update({"projected":"true"})),
+                  ("misleading totals",lambda x:x[("paired_successes" if task=="PickCube" else "count_success")].update({"projected":0})),
+              ]
+              for label,attack in attacks:
+                  import copy
+                  corrupted=copy.deepcopy(raw)
+                  attack(corrupted)
+                  try:
+                      m.reconstruct(task,corrupted)
+                  except ValueError:
+                      pass
+                  else:
+                      raise AssertionError(f"{task} accepted tampering: {label}")
+          print("10 cross-task adversarial evidence mutations rejected; both 32-seed mechanisms reconstructed")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-frozen-two-task-live-controller-memory-analysis
+          path: audited_two_task_memory_ablation.json
+          if-no-files-found: error
