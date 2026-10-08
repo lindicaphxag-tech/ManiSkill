@@ -11,7 +11,7 @@
 - External trigger queue: [EXTERNAL_TRIGGER_QUEUE_2026_10_06.md](EXTERNAL_TRIGGER_QUEUE_2026_10_06.md)
 - **Real paired Panda/Lift causal and full-scene replay:** [REAL_OSC_CAUSAL_HANDSHAKE_2026_10_08.md](REAL_OSC_CAUSAL_HANDSHAKE_2026_10_08.md) ([8/8 full public CI](https://github.com/lindicaphxag-tech/robomimic/actions/runs/37706956215))
 
-Latest full public suite: **81 passed in 2.91s**. External maintained adoption: **0**.
+Latest full public suite: **90 passed in 1.87s**. External maintained adoption: **0**.
 
 Question:
 
@@ -164,7 +164,7 @@ This is cross-stack validation, not external adoption.
 
 ### 5. Causal deployability of action chunks
 
-CST distinguishes a trace that can be converted after rollout from a controller migration that can be executed online. If a whole action chunk is emitted at query time but a target native action for future step t needs the future measured state or controller-owned target at t, exact conversion cannot be precomputed. CST therefore returns PRECOMPUTABLE, REQUIRES_STEP_HOOK, EXECUTABLE_WITH_STEP_HOOK, or REFUSE_MISSING_RUNTIME_STATE. The latest full public suite contains 81 passing tests.
+CST distinguishes a trace that can be converted after rollout from a controller migration that can be executed online. If a whole action chunk is emitted at query time but a target native action for future step t needs the future measured state or controller-owned target at t, exact conversion cannot be precomputed. CST therefore returns PRECOMPUTABLE, REQUIRES_STEP_HOOK, EXECUTABLE_WITH_STEP_HOOK, or REFUSE_MISSING_RUNTIME_STATE. The latest full public suite contains 90 passing tests.
 
 ## Bounded LeRobot -> current-state JIT migration
 
@@ -178,7 +178,7 @@ A pinned LeRobot source implementation is used as the source semantics. With rel
 
 The key point is causal: the target current-state reference for future steps does not exist when the source chunk is emitted, so exact migration must be performed at execution time rather than by copying or precomputing the whole target chunk.
 
-Latest complete public research suite: **81 tests passed**.
+Latest complete public research suite: **90 tests passed**.
 
 ## robomimic / robosuite second stack
 
@@ -209,3 +209,26 @@ The staged converter covers the controller layouts used by the existing
 robomimic script for robosuite <=1.4.1 and >=1.5. It is not yet an upstream PR,
 because the connected GitHub integration cannot create a user fork of
 robomimic and upstream issue-comment writes return 403.
+
+
+## Executable state-complete OSC handshake (new)
+
+The executable mechanism lives in
+[`executable_osc_migration.py`](executable_osc_migration.py), with
+[`test_executable_osc_migration.py`](test_executable_osc_migration.py).
+
+For the **narrow supported pair** (robosuite fixed-impedance,
+achieved-goal, non-interpolated OSC delta -> OSC absolute), it:
+1. refuses different model-provenance fingerprints, gains, joint
+   dimensions/states, reference frames, or unsupported controller memory;
+2. copies the controller-owned nullspace `initial_joint` into the target
+   using its native update method;
+3. checks and records the transferred state, otherwise refuses.
+
+The caller-supplied common-MJCF digest is a *provenance assertion*, not a
+proof of identical MuJoCo solver state. The resulting certificate refers to
+the **posture-reference handshake only**, not universal policy safety.
+
+Public entire suite: [90 passed](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37709468190).
+Latest same-MJCF real OSC physics run:
+[8 tests passed](https://github.com/lindicaphxag-tech/robomimic/actions/runs/37706956215).
