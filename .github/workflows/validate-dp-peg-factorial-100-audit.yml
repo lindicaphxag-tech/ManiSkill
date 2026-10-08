@@ -1,0 +1,42 @@
+name: Independent integrity audit — frozen 100-demo ManiSkill 2x2
+
+on:
+  push:
+    branches: [validation/dp-peg-factorial-100-audit-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit-frozen-factorial-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile independent source-seed auditor
+        run: python -m py_compile research/kaggle_diffusion_policy_peg/audit_factorial_replay.py
+      - name: Verify six falsifying mutations are rejected
+        run: python research/kaggle_diffusion_policy_peg/audit_factorial_replay.py --self-test
+      - name: Retrieve immutable 100-demo factorial artifact from successful run
+        uses: actions/download-artifact@v4
+        with:
+          name: dp-peg-factorial-100-replay
+          repository: lindicaphxag-tech/ManiSkill
+          run-id: 37719545972
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: original_artifact
+      - name: Derive all counts, pairwise discordances and SHA256 consistency
+        run: |
+          python research/kaggle_diffusion_policy_peg/audit_factorial_replay.py \
+            --search original_artifact --expected-size 100 \
+            --output verified_factorial_100_report.json
+      - name: Archive derived audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: factorial-100-independent-ledger-audit
+          path: verified_factorial_100_report.json
+          if-no-files-found: error
