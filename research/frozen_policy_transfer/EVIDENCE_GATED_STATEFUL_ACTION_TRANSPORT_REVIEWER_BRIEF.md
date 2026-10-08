@@ -38,6 +38,19 @@ For an attested controller transition `F`, known candidate previous targets `H_t
 - [Public-motion two-world original real PhysX run](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37826808073).
 - **Actual new-seed simulator runner:** [External one-click ACK-fault frozen PPO replication](../../.github/workflows/external-ack-frozen-ppo-replication.yml). On a third-party fork: GitHub Actions → select `workflow_dispatch` → choose task, fault truth, and fresh seed interval → preserve complete JSON/artifacts. The workflow's author-run CI passing does **not** prove an outside lab has reproduced anything.
 
+### New preregistered generalization and a decisive failure witness (source completed)
+
+**Same held-action-fault truth, new 64 reset states.** [Original eight PhysX jobs #37828426195](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37828426195) produce 60/64 selective-query successes with 15 privileged controller-state reads; compulsory one-read succeeds 57/64 using 64 reads, robust zero-read 47/64, and optimistic zero-read 42/64. These are original chunk-statistic sums, not new third-party reexecution.
+
+**Both ACTUAL fault truths, 32 task-truth conditions.** [Original four-way PhysX run and completed independent denominator audit #37828787703](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37828787703) report selective 28/32 versus compulsory one-read 29/32, spending 10 versus 32 target reads. The paired success discordance is 1 selective-only, 2 compulsory-only, 27 both succeed and 2 both fail. **The method is information-efficient, but it DOES NOT guarantee preservation of task success under both truths.**
+
+- PullCube command applied/neutral held: 8/8 and 8/8 selective, 8/8 and 8/8 compulsory.
+- StackCube command applied: selective 6/8, compulsory 7/8. Under neutral held: both 6/8.
+- **Falsifier, not to hide:** StackCube seed `152001`, command actually applied, selective method authorizes **47** common bounded target commands, spends **zero** target reads and *fails* the task; compulsory one-read succeeds. This disproves any claim that a 5cm/0.05rad **controller-command target** certificate alone implies contact-manipulation task success.
+- **No false independence:** the neutral-held conditions `142001–142008` and `152001–152008` share reset-seed identities with the 64-state study. Both remain inspectable, but overlapping rows are never pooled as extra independent observations. [Overlap disclosure committed to the source branch](https://github.com/lindicaphxag-tech/ManiSkill/blob/research/robust-or-query-two-truth-32-20261009/research/TWO_TRUTH_32_OVERLAP_DISCLOSURE_BEFORE_RESULTS.json).
+
+The more defensible claim is a **measured information-cost / outcome-quality frontier** for a known controller and task—not a new geometric theorem, proved safe policy transfer or a universal dominating method.
+
 ### Mandatory external falsifiers before claiming a strong general method
 
 1. **Both physical fault truths:** command actually executed and neutral-delta replacement, on entirely fresh seed cohorts, with the same frozen 5 cm/0.05 rad command-setpoint tolerance and seven-arm controls. [Preregistered 32-condition protocol](https://github.com/lindicaphxag-tech/ManiSkill/blob/research/robust-or-query-two-truth-32-20261009/research/ACK_BOUNDED_QUERY_TWO_TRUTH_32_PRECOMMIT_V1.json); as of authoring, no final result is claimed.
