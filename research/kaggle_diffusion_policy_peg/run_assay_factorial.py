@@ -431,12 +431,38 @@ try:
             "-c", CONFIG["control_mode"], "-o", "state", "--save-traj",
             "--num-envs", "10", "-b", CONFIG["sim_backend"],
             "--count", str(CONFIG["replay_count"]),
+            # Native ManiSkill flag: persist failed converted trajectories
+            # too. Do NOT conflate the replay CLI's saved count with success.
+            "--allow-failure",
         ], OUTPUT / f"replay_{arm}.log", cwd=REPO)
         demo_path = arm_demo_dir / DEMO_NAME
         meta_path = demo_path.with_suffix(".json")
         if not demo_path.is_file() or not meta_path.is_file():
             raise FileNotFoundError(f"Arm-specific replay output missing: {demo_path}")
         meta_data = json.loads(meta_path.read_text(encoding="utf-8"))
+        # This protocol requests all source episodes, INCLUDING failure
+        # trajectories. A missing or duplicate row is UNKNOWN, not a
+        # measured zero. Fail before advertising population-level effects.
+        replay_rows = meta_data.get("episodes", [])
+        replay_seeds = []
+        for row in replay_rows:
+            if (
+                "episode_seed" not in row
+                or type(row["episode_seed"]) is not int
+                or type(row.get("success")) is not bool
+            ):
+                raise RuntimeError(
+                    f"{arm}: incomplete replay metadata or missing binary success label"
+                )
+            replay_seeds.append(row["episode_seed"])
+        if (
+            len(replay_seeds) != len(source_seed_order)
+            or len(set(replay_seeds)) != len(replay_seeds)
+            or set(replay_seeds) != set(source_seed_order)
+        ):
+            raise RuntimeError(
+                f"{arm}: allow-failure replay omitted or duplicated a precommitted source episode"
+            )
         indexed_episodes = index_converted_episodes(demo_path)
         demonstrations[arm] = {
             "source": "haosulab/ManiSkill_Demonstrations PegInsertionSide-v1 official download",
@@ -446,6 +472,8 @@ try:
             "metadata_sha256": sha256(meta_path),
             "episode_count": len(meta_data.get("episodes", [])),
             "successful_episode_count": len(indexed_episodes),
+            "failed_episode_count": len(source_seed_order) - len(indexed_episodes),
+            "full_original_source_population_returned": True,
             "raw_data_exported": False,
         }
         prepared_arms[arm] = {
@@ -473,6 +501,8 @@ try:
                 "source_population_sha256": original_population["source_episode_seeds_sha256"],
                 "successful_episode_seeds": completed_seeds,
                 "successful_count": len(completed_seeds),
+                "failed_count": len(source_seed_order) - len(completed_seeds),
+                "full_source_census": True,
                 "replay_status": "completed",
                 "log_file": f"replay_{arm}.log",
             }, sort_keys=True, indent=2) + "\n",
