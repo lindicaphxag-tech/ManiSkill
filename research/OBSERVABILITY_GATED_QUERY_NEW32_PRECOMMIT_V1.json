@@ -1,0 +1,98 @@
+{
+  "schema": "achieved_public_motion_selective_authority_fresh32_v1",
+  "date": "2026-10-09",
+  "status": "FROZEN_BEFORE_HYBRID_RUNNER_AND_OUTCOMES",
+  "motivation": "The original public nearest-target classifier was wrong with confidence 15/32; a retrospective response envelope could abstain but has no prospective guarantee. This is a follow-up method designed after observing initial ongoing pilot shards. It must be tested on a fully NEW seed cohort; never pool with pilot.",
+  "base_frozen_protocol": "research/EMPIRICAL_RESPONSE_NEW32_FROZEN_BEFORE_RUN_V1.json",
+  "model_immutable_parameters": {
+    "alpha_min": 0,
+    "alpha_max": 1,
+    "eps_pull_cube_m": 0.006944262561376447,
+    "eps_stack_cube_m": 0.00719087965534261,
+    "historical_training_only": {
+      "pull_cube": [
+        140001,
+        140002,
+        140003,
+        140004
+      ],
+      "stack_cube": [
+        150001,
+        150002,
+        150003,
+        150004
+      ]
+    },
+    "model_not_physically_attested": true,
+    "pilot_knowledge_disclosure": "The separate first-prospective cohort 160101-160108 and 170101-170108 had already partially reported results before this hybrid method was proposed. This second experiment is an explicitly informed follow-up, not a fully blind independent confirmation of the research question."
+  },
+  "external_released_frozen_models": {
+    "revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+    "pull_cube_sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+    "stack_cube_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+  },
+  "new_original_task_reset_states": {
+    "pull_cube": [
+      180101,
+      180102,
+      180103,
+      180104,
+      180105,
+      180106,
+      180107,
+      180108
+    ],
+    "stack_cube": [
+      190101,
+      190102,
+      190103,
+      190104,
+      190105,
+      190106,
+      190107,
+      190108
+    ]
+  },
+  "fault_truths": [
+    "applied_no_ack",
+    "neutral_arm_delta_no_ack"
+  ],
+  "n_total_task_fault_conditions": 32,
+  "fault_step": 2,
+  "common_public_probe_step": 3,
+  "five_plus_one_comparators": [
+    "source_pause_no_fault",
+    "blind_probe_optimistic",
+    "blind_probe_pessimistic",
+    "achieved_probe_classifier",
+    "achieved_probe_then_query",
+    "privileged_once_after_probe"
+  ],
+  "hybrid_action_rule": [
+    "Use only achieved pre- and post-one-native-zero-delta probe XYZ and both action-history computed hidden-target hypotheses",
+    "Unique candidate consistent with fixed historical empirical response error envelope => carry this candidate forward with ZERO authoritative target reads",
+    "Two candidates consistent OR neither consistent => issue EXACTLY ONE authoritative controller-target read at the probe boundary and resume with returned target",
+    "Never reinterpret true execution-truth label as a decision input; stop/abstain if privileged read is unavailable",
+    "Same source actor, controller chart, native probe intervention, gripper, horizon and seed as the mandatory-query arm"
+  ],
+  "readbacks": {
+    "pure_public": 0,
+    "selective_public_plus_query_max_per_trial": 1,
+    "mandatory_privileged_at_probe": 1,
+    "source_and_optimistic_and_pessimistic": 0
+  },
+  "study_gates": {
+    "all_32_original_source_episodes_kept": true,
+    "no_wrong_confident_history_authorizations_for_hybrid_is_required_to_claim_success": true,
+    "hybrid_max_difference_from_mandatory_task_success": -2,
+    "hybrid_must_save_at_least_8_privileged_reads_vs_mandatory_for_efficiency_claim": true,
+    "report_exact_per_seed_paired_success_discordance_and_every_false_positive": true,
+    "all_failures_keep_and_no_seeds_or_response_epsilon_tuned": true
+  },
+  "claim_limits": [
+    "Not an externally attested safety response model and no guarantee of zero false history labels",
+    "Original physical manipulations only official ManiSkill Panda controller, no real hardware",
+    "One native arm control may physically alter future contact trajectories even if hidden state classified correctly",
+    "Third party validation and academic reviewer adoption remain unproven"
+  ]
+}
