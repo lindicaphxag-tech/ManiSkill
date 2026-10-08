@@ -19,7 +19,7 @@ from huggingface_hub import hf_hub_download
 from mani_skill.utils.structs import Pose
 
 import frozen_ppo_action_history_observer as original
-from action_abi_history_observer import ActionHistoryObserver, TargetPose
+from research.action_abi_history_observer import ActionHistoryObserver, TargetPose
 from frozen_ppo_observer_policy import _actor, REPO
 
 TASK = os.environ["ABI_TASK"]
