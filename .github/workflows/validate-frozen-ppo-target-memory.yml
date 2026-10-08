@@ -1,0 +1,37 @@
+name: Frozen PPO stateful target-memory controller-swap smoke
+
+on:
+  push:
+    branches:
+      - validation/frozen-ppo-target-memory-20261008
+  workflow_dispatch:
+
+jobs:
+  real-frozen-policy-target-memory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install simulator
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Execute frozen learned-policy target-memory translation
+        run: |
+          set -o pipefail
+          python research/frozen_ppo_target_memory.py 2>&1 | tee frozen_ppo_target_memory.log
+          test -s frozen_ppo_target_memory.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frozen-ppo-target-memory-three-arm
+          path: |
+            frozen_ppo_target_memory.json
+            frozen_ppo_target_memory.log
