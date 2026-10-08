@@ -1,0 +1,142 @@
+name: ManiSkill 429 type-only vs semantic correction official replay
+
+on:
+  push:
+    branches:
+      - validation/mani429-type-vs-semantics-20261008
+  workflow_dispatch:
+
+jobs:
+  official-rl-controlled-ablation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 38
+    env:
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install headless PhysX CPU
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+      - name: Fetch official original PickCube RL demos and prepare identical inputs
+        run: |
+          python -m mani_skill.utils.download_demo PickCube-v1 --quiet
+          python - <<'PY'
+          import hashlib, json, pathlib, shutil
+          root=pathlib.Path.home()/".maniskill/demos/PickCube-v1"
+          candidates=sorted(
+              p for p in root.rglob("*.h5")
+              if "rl" in p.parts
+              and "pd_joint_delta_pos" in p.name
+              and p.with_suffix(".json").is_file()
+          )
+          assert candidates, "Must use real official pd_joint_delta_pos RL data"
+          src=candidates[0]
+          info=json.loads(src.with_suffix(".json").read_text())
+          assert len(info["episodes"])>=16
+          assert all(ep["control_mode"]=="pd_joint_delta_pos" for ep in info["episodes"][:16])
+          sha=hashlib.sha256(src.read_bytes()).hexdigest()
+          print("OFFICIAL_SOURCE",str(src),"EPISODES",len(info["episodes"]),"SHA256",sha)
+          for arm in ("untouched","type_only","semantic_fix"):
+              target=pathlib.Path("control_ablation_inputs")/arm
+              target.mkdir(parents=True,exist_ok=True)
+              shutil.copy2(src,target/"trajectory.h5")
+              shutil.copy2(src.with_suffix(".json"),target/"trajectory.json")
+          PY
+      - name: Untouched main (expected NumPy/Torch TypeError; recorded not masked)
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          git show origin/main:mani_skill/trajectory/utils/actions/conversion.py > mani_skill/trajectory/utils/actions/conversion.py
+          python -m mani_skill.trajectory.replay_trajectory \
+            --traj-path control_ablation_inputs/untouched/trajectory.h5 \
+            --target-control-mode pd_joint_pos \
+            --obs-mode none --sim-backend physx_cpu \
+            --use-first-env-state --save-traj --count 16 \
+            2>&1 | tee untouched.log
+      - name: Fix only NumPy vs PyTorch type mismatch; preserve WRONG target action chart
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          git show origin/main:mani_skill/trajectory/utils/actions/conversion.py > mani_skill/trajectory/utils/actions/conversion.py
+          python - <<'PY'
+          from pathlib import Path
+          p=Path("mani_skill/trajectory/utils/actions/conversion.py")
+          text=p.read_text()
+          old='delta_qpos = gym_utils.clip_and_scale_action(ori_action_dict["arm"], low, high)'
+          new='delta_qpos = gym_utils.clip_and_scale_action(torch.as_tensor(ori_action_dict["arm"], dtype=ori_arm_controller.qpos.dtype, device=ori_arm_controller.qpos.device), low, high)'
+          assert text.count(old)==1, "baseline did not match the intended one-line type fix"
+          p.write_text(text.replace(old,new))
+          print("TYPE_ONLY_PATCH",new)
+          PY
+          python -m mani_skill.trajectory.replay_trajectory \
+            --traj-path control_ablation_inputs/type_only/trajectory.h5 \
+            --target-control-mode pd_joint_pos \
+            --obs-mode none --sim-backend physx_cpu \
+            --use-first-env-state --save-traj --count 16 \
+            2>&1 | tee type_only.log
+      - name: Full source-delta decode and target-native chart encoding
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          git show HEAD:mani_skill/trajectory/utils/actions/conversion.py > mani_skill/trajectory/utils/actions/conversion.py
+          python -m mani_skill.trajectory.replay_trajectory \
+            --traj-path control_ablation_inputs/semantic_fix/trajectory.h5 \
+            --target-control-mode pd_joint_pos \
+            --obs-mode none --sim-backend physx_cpu \
+            --use-first-env-state --save-traj --count 16 \
+            2>&1 | tee semantic_fix.log
+      - name: Publish controlled ablation and fail on absent experimental results
+        if: always()
+        run: |
+          python - <<'PY'
+          import json, pathlib, re
+          report={
+              "task":"PickCube-v1",
+              "source":"official ManiSkill RL demos, pd_joint_delta_pos, original PhysX CUDA",
+              "replay_backend":"physx_cpu",
+              "count_requested":16,
+              "arm_definition":{
+                  "untouched":"main: no modifications",
+                  "type_only":"main + one-line NumPy->Torch conversion ONLY",
+                  "semantic_fix":"submitted two-file production branch"
+              },
+          }
+          for arm in ("untouched","type_only","semantic_fix"):
+              p=pathlib.Path(arm+".log")
+              raw=p.read_text(errors="replace") if p.exists() else ""
+              hits=list(re.finditer(r"Replayed\s+(\d+)\s+episodes,\s+(\d+)/(\d+)=", raw))
+              last=hits[-1] if hits else None
+              failed_ids=[int(x) for x in re.findall(r"Episode\s+(\d+)\s+is not replayed successfully",raw)]
+              report[arm]=dict(
+                  finished=bool(last),
+                  attempted=int(last.group(1)) if last else None,
+                  success=int(last.group(2)) if last else None,
+                  errors=[str(x) for x in re.findall(r"(?:TypeError|RuntimeError|ValueError):[^\n]+",raw)][-3:],
+                  failed_episode_ids=failed_ids,
+              )
+          pathlib.Path("three_arm_comparison.json").write_text(json.dumps(report,indent=2))
+          print("OFFICIAL_RL_THREE_ARM",json.dumps(report))
+          if not report["type_only"]["finished"] or not report["semantic_fix"]["finished"]:
+              raise RuntimeError("Three-arm control inconclusive: one valid ablation arm did not finish")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mani429-real-rl-three-arm-ablation
+          path: |
+            untouched.log
+            type_only.log
+            semantic_fix.log
+            three_arm_comparison.json
+          if-no-files-found: warn
