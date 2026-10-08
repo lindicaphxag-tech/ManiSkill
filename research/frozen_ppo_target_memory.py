@@ -20,10 +20,10 @@ from frozen_ppo_pickcube_gate import (
 )
 
 REPO="kattri15/actionshift-baselines"
-FILENAME="ppo/push_cube_final_ckpt.pt"
-EXPECTED="a4a02198b309e73cb877959079023d967d5f63ec78380de9703a10c9efafc0cf"
-TASK="PushCube-v1"
-SEEDS=tuple(range(30001,30033))
+FILENAME="ppo/stack_cube_final_ckpt.pt"
+EXPECTED="e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+TASK="StackCube-v1"
+SEEDS=tuple(range(50001,50033))
 STEPS=50
 TOL=1e-5
 
