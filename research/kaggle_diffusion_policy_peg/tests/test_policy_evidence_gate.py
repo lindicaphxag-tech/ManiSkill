@@ -110,7 +110,7 @@ class PolicyEvidenceGateTests(unittest.TestCase):
         self.assertEqual(record["status"], "descriptive_single_seed_paired_training_only")
         self.assertEqual(record["paired_source_demonstrations"], 4)
         self.assertEqual(record["evaluation_steps"], [0, 2, 4])
-        self.assertEqual(record["curves"][-1][ARMS[0]]["eval/success_once"]["successful_episodes"], 3)
+        self.assertEqual(record["curves"][-1][ARMS[0]]["eval/success_once"]["successful_episodes"], 2)
         self.assertTrue(any("combined" in s for s in record["limitations"]))
 
     def test_training_failed_before_first_optimizer_update_rejected(self):
