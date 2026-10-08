@@ -2,6 +2,8 @@
 
 ### Representative research: bounded action or selective target readback
 
+**[Start here: canonical Certify-or-Query reviewer decision map — algorithm, 16/64 true PhysX trials, matched baselines, two damaging negative controls, exact SHA evidence, and externally runnable 7-arm replication](research/frozen_policy_transfer/CERTIFY_OR_QUERY_FLAGSHIP_REVIEW.md).** This is **author-operated research on a single Panda controller**, not official upstream adoption or hardware safety. [External one-click seven-arm workflow](.github/workflows/external-selective-query-physx.yml).
+
 **Independent reviewer?** Start with the [source-integrity audit and one-click NEW-seed real PhysX replication guide](research/frozen_policy_transfer/INDEPENDENT_REPLICATION_QUICKSTART.md). A new run on your own fork is more meaningful than author-operated CI. Please share failures and counterexamples, not just successful replications.
 
 
