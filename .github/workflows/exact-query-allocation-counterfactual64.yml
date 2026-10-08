@@ -1,0 +1,57 @@
+name: Exact posthoc 64-state query-allocation schedule distribution
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'research/query_placebo_exact_allocation_analysis.py'
+      - '.github/workflows/exact-query-allocation-counterfactual64.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-finite-population-randomization-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Revalidate all byte-archived actual PhysX source outcomes
+        run: |
+          python -m research.audit_certify_query_periodic_placebo64 \
+             --input-dir research/frozen_policy_transfer/evidence/certify_query_periodic_placebo_new64_260001_270032 \
+             --output /tmp/original_64_source_audit.json
+          (cd research/frozen_policy_transfer/evidence/certify_query_periodic_placebo_new64_260001_270032 && sha256sum -c SHA256SUMS)
+      - name: Exactly enumerate all 17-query allocations, and task-stratified 3/14 query schedules
+        run: |
+          python -m research.query_placebo_exact_allocation_analysis \
+             --input-dir research/frozen_policy_transfer/evidence/certify_query_periodic_placebo_new64_260001_270032 \
+             --output exact_original_64_allocation_distribution.json
+      - name: Validate full distributions, potential outcome mass and measured counterexamples
+        run: |
+          python - <<'PY'
+          import json,math
+          from pathlib import Path
+          d=json.loads(Path('exact_original_64_allocation_distribution.json').read_text())
+          assert d['actual_unique_reset_states']==64
+          assert d['actual_adaptive_task_success']==58
+          assert d['actual_adaptive_query_reads']==17
+          assert d['all_64_periodic_arm_reconstructed_correctly_from_two_physically_measured_potential_outcomes']
+          assert len(d['original_17_read_trajectory_mismatches_with_simple_immediate_read_or_no_read_mixture'])==2
+          a=d['retrospective_uniform_fixed_17_read_all64_schedule_distribution']
+          assert int(a['selection_population_exact_integer'])==math.comb(64,17)
+          assert sum(map(int,a['success_distribution_integer_coefficients'].values()))==math.comb(64,17)
+          b=d['retrospective_uniform_fixed_17_read_TASK_STRATIFIED_3pull_14stack_schedule_distribution']
+          assert int(b['selection_population_exact_integer'])==math.comb(32,3)*math.comb(32,14)
+          assert sum(map(int,b['success_distribution_integer_coefficients'].values()))==math.comb(32,3)*math.comb(32,14)
+          print('PASS two intact adaptive trajectory effects, exact exhaustive query-allocation populations; POSTHOC only')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: retrospective-exact-allocation-original-64
+          path: exact_original_64_allocation_distribution.json
+          retention-days: 90
