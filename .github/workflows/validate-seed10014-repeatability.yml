@@ -1,0 +1,37 @@
+name: Seed 10014 reproducibility audit frozen PPO
+
+on:
+  push:
+    branches:
+      - validation/seed10014-repeatability-20261009
+  workflow_dispatch:
+
+jobs:
+  repeated-physx-cpu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install true ManiSkill PhysX CPU
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Run exactly 12 fresh triples of seed 10014
+        run: |
+          set -o pipefail
+          python research/frozen_ppo_seed10014_repeat.py 2>&1 | tee repeated10014.log
+          test -s seed10014_repeatability.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: seed10014-frozen-ppo-repeated-execution
+          path: |
+            seed10014_repeatability.json
+            repeated10014.log
