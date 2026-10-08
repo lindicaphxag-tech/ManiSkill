@@ -22,6 +22,7 @@ jobs:
       - name: Compile exact-source cohort auditor
         run: |
           python -m py_compile research/kaggle_diffusion_policy_peg/audit_factorial_replay.py
+          python -m py_compile research/kaggle_diffusion_policy_peg/audit_crosscohort_seed_overlap.py
       - name: Self-test adversarially corrupted source-seed evidence
         run: |
           python research/kaggle_diffusion_policy_peg/audit_factorial_replay.py --self-test
@@ -34,6 +35,20 @@ jobs:
           name: dp-peg-heldout-fixed-v2
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: frozen_heldout_artifact
+      - name: Download ORIGINAL first-cohort 0-99 source-seed ledger
+        uses: actions/download-artifact@v4
+        with:
+          repository: lindicaphxag-tech/ManiSkill
+          run-id: 37719545972
+          name: dp-peg-factorial-100-replay
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: frozen_first_artifact
+      - name: Reconcile duplicate original source seeds across the two 100-episode cohorts
+        run: |
+          python research/kaggle_diffusion_policy_peg/audit_crosscohort_seed_overlap.py \
+            --first frozen_first_artifact \
+            --holdout frozen_heldout_artifact \
+            --output audited_two_cohorts_seed_disjoint.json
       - name: Audit actual original 100-199 HDF5 source groups and seeds
         run: |
           python research/kaggle_diffusion_policy_peg/audit_factorial_replay.py \
@@ -48,5 +63,7 @@ jobs:
         if: always()
         with:
           name: verified-real-hdf5-holdout-100-199
-          path: audited_true_heldout_100_199.json
+          path: |
+            audited_true_heldout_100_199.json
+            audited_two_cohorts_seed_disjoint.json
           if-no-files-found: warn
