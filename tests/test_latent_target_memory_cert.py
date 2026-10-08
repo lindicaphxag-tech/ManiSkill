@@ -119,6 +119,31 @@ class TestLatentMemoryTransport(unittest.TestCase):
         )
         self.assertAlmostEqual(b-a,width_before)
 
+    def test_numpy_like_sequences_with_ambiguous_truth_are_supported(self):
+        # Regression: NumPy arrays raise when converted to a scalar bool;
+        # the native robot control path supplies exactly this shape.
+        class NumpyLike:
+            def __init__(self, entries):
+                self.entries = tuple(entries)
+            def __len__(self):
+                return len(self.entries)
+            def __iter__(self):
+                return iter(self.entries)
+            def __bool__(self):
+                raise ValueError("Truth value of an array is ambiguous")
+        width = unavoidable_indistinguishable_history_error(
+            NumpyLike((0., 0., 0.)), NumpyLike((.02, 0., 0.))
+        )
+        self.assertAlmostEqual(width, 0.01)
+        result = certify_box_memory_transport(req(
+            d=NumpyLike((0.1,)),
+            ml=NumpyLike((0.,)), mh=NumpyLike((.2,)),
+            al=NumpyLike((-1.,)), ah=NumpyLike((1.,)),
+            eps=.11
+        ))
+        self.assertTrue(result.may_dispatch)
+        self.assertAlmostEqual(result.optimal_worst_case_setpoint_error, .1)
+
     def test_numerical_boundary_fails_closed(self):
         r=certify_box_memory_transport(req(eps=0.0))
         self.assertFalse(r.may_dispatch)
