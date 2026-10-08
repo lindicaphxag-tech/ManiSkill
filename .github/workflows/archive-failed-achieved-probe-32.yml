@@ -1,0 +1,112 @@
+name: Preserve original negative 32-state public-probe PhysX evidence
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-failed-achieved-probe-32.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require original preregistered successful PhysX run and exact source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37829529190 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37829529190 --jq .head_sha)" = "1200105601326dce541cebdd037770472300b0b8"
+          test "$(git hash-object research/audit_physical_response_32.py)" = "ba4894be8d64a2d8f6f3ab9f8f309b85b200d944"
+      - name: Retrieve 8 ORIGINAL complete-PhysX trial shards; never rerun or select seeds
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/probe-original
+          gh run download 37829529190 --repo "$GITHUB_REPOSITORY" \
+            --name original-32-causal-physical-probe-full-audit \
+            --dir /tmp/probe-original
+          ls -lh /tmp/probe-original
+      - name: Recompute all false confident authorizations before archival
+        run: |
+          set -euo pipefail
+          python -m research.audit_physical_response_32 \
+            --input-dir /tmp/probe-original \
+            --output /tmp/new_probe32_audit.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('/tmp/new_probe32_audit.json').read_text())
+          assert d['trial_conditions']==32
+          q=list(d['results'].items())
+          assert len(q)==8
+          assert sum(v['classifier_covered'] for _,v in q)==32
+          assert sum(v['classifier_wrong_authorizations'] for _,v in q)==15
+          assert sum(v['classifier_wrong_authorizations'] for k,v in q if 'neutral_arm_delta_no_ack' in k)==0
+          assert sum(v['classifier_wrong_authorizations'] for k,v in q if 'applied_no_ack' in k)==15
+          def score(arm):
+              return sum(v['success'][arm] for _,v in q)
+          assert score('achieved_probe_classifier')==19
+          assert score('blind_probe_optimistic')==21
+          assert score('privileged_once_after_probe')==28
+          assert all(v['paired_n']==4 and v['paired_fault_exposed']==4 for _,v in q)
+          print('NEGATIVE_RESULT_CONFIRMED',
+                dict(n=32,wrong=15,public_heuristic=19,optimistic=21,privileged=28))
+          old=list(Path('/tmp/probe-original').glob('*audit*.json'))
+          assert len(old)==1
+          assert json.loads(old[0].read_text())==d
+          PY
+      - name: Archive original source JSON unchanged with immutable hashes
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/public_response_ack_probe_32_negative
+          mkdir -p "$dest"
+          cp /tmp/probe-original/physical_response_*_fresh4.json "$dest/"
+          cp /tmp/probe-original/*audit*.json "$dest/full_original_source_audit.json"
+          (cd "$dest" && sha256sum ./*.json > SOURCE_SHA256SUMS)
+          cat > "$dest/README.md" <<'EOF'
+          # Important NEGATIVE result — original 32 public-EE physical-probe worlds
+
+          Original source: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37829529190
+          Exact executing source head: 1200105601326dce541cebdd037770472300b0b8
+          Frozen preregistration: research/PHYSICAL_RESPONSE_ACK_PROSPECTIVE_V1.json
+          Eight 4-seed original JSON shards + original 32-state source audit are BYTE-UNCHANGED.
+          The external frozen third-party PPOs and the official native ManiSkill PhysX ran on
+          PullCube/StackCube, both actual executed/no-executed arm-command worlds.
+
+          The simple achieved-end-effector position nearest-previous-target classifier
+          confidently chose the WRONG hidden controller history 15/32 times: all 15 were
+          real applied commands whose ACK was unavailable. It never abstained on these
+          source trials. Blind classifier succeeded on 19/32 native tasks, optimistic
+          same-probe baseline 21/32, one-authoritative-read ceiling 28/32.
+          Task success is NOT the hidden-state inference accuracy metric.
+
+          This falsifies the naive inference that public achieved position closeness
+          to commanded targets proves previous target memory after ONE no-op probe.
+          It does NOT imply all no-private-read system identification is impossible.
+          A separately written conditional set-membership certification requires
+          independently calibrated response dynamics and should refuse unsupported
+          assumptions; it has NOT been validated on real physics here.
+
+          The 32 fault/truth cases reuse task seeds across TWO physical truths;
+          they are not 32 independent pretrained model policies or outside lab trials.
+          No real robot, no TCP packet-loss, no camera-only perception, no safety claim.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dest"
+          if git diff --cached --quiet; then echo 'already archived'; exit 0; fi
+          git commit -m 'evidence: preserve original 32 state negative probe result and source SHA manifest'
+          for i in 1 2 3 4 5; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then exit 0; fi
+          done
+          exit 1
