@@ -38,6 +38,46 @@ Version 4 of the corrected paired-assay kernel includes this evaluation shim: it
 
 Version 4 was submitted on 2026-10-08 after version 3 exposed the NumPy metric mismatch. Unlike the earlier, invalid `maniskill-dp-peg-1495-1472` version 4, this corrected runner replays demonstrations independently under both source trees, intersects the successful trajectories by source `episode_seed`, and trains both arms on the resulting paired set. At 2026-10-07 19:43 UTC, Kaggle reported this corrected kernel as `RUNNING`; no v4 metrics or output artifacts were available. The live status alone is not evidence of progress or a successful run. Do not interpret v4 as policy evidence until the final logs and result manifest are retrieved and audited.
 
+## 2026-10-08: exact four-cell converter × controller replay (no omitted cells)
+
+**[Public GitHub Actions #37715587885 — SUCCESS](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37715587885)**, exact runner commit
+`cf289614b8fc7780e65e76f0eb39a387c7b98825`, Python 3.11,
+state observations, official `PegInsertionSide-v1` / `physx_cpu` demos.
+[Raw experiment log and source-seed matrix (artifact #11523253779)](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37715587885/artifacts/11523253779).
+
+This is **a full 2×2 independently replayed action-conversion experiment**,
+not four differently labeled copies of one preconverted dataset. Each cell
+starts from the same eight official **raw-source** demonstrations and switches
+to its exact converter/controller code tree **before** replay. Hash/source
+identity and per-seed success flags are recorded.
+
+| Converter | Controller | Official source demos | Saved after replay |
+|---|---|---:|---:|
+| frozen base at `62ff3a5` | frozen base | 8 | **6 (75%)** |
+| current #1495 at `69facfaa` | frozen base | 8 | **6 (75%)** |
+| frozen base | exact #1472 `eed9be1` | 8 | **0 (0%)** |
+| current #1495 | exact #1472 | 8 | **6 (75%)** |
+
+Crucially, the intersection of successfully converted demos across **all
+four cells is zero**. A strictly paired 4-cell learned-policy training
+experiment on *these eight raw demos* therefore has **no valid training
+sample**. We retain the entire failure cell and do not impute performance.
+
+What the result **supports**: the exact #1472 controller change on its own
+can break all these source-to-delta-pose replays; the current #1495 converter
+retains compatibility with both active controller mappings and restores
+the combined replay to the baseline 6/8 on this small frozen sample.
+
+What it **does not support**: that #1495 alone improves replay success
+(it did not here), that #1472 is harmful in all use cases, that this
+predicts learned-policy task performance, or that either upstream PR has
+been adopted by a maintainer.
+
+A distinct, previously successful **two-arm** source-seed-paired Diffusion
+Policy smoke is documented below. It trained for only two updates, evaluated
+for 20 steps, and yielded 0% task success in both arms: it must not be
+substituted for the unavailable four-cell learned-policy comparison.
+
 ## 2026-10-08: first successful paired official CPU Diffusion Policy pipeline
 
 **New independently inspectable public CI:**
