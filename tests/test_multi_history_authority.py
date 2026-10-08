@@ -3,6 +3,7 @@ import unittest
 import numpy as np
 from scipy.spatial.transform import Rotation
 from research.action_abi_history_observer import TargetPose, ActionHistoryObserver
+from research.action_abi_uncertain_delivery_belief import UncertainDeliveryBelief
 from research.multi_history_authority import (
     Authority, certify_multi_history_action,
 )
@@ -104,6 +105,31 @@ class MultiHistoryAuthorityTest(unittest.TestCase):
             with self.assertRaises(ValueError):certificate(values)
         with self.assertRaises(ValueError):certificate([pose(0),pose(.1)],pos_lower=(0,0,0),pos_upper=(0,0,0))
         with self.assertRaises(ValueError):certificate([pose(0),pose(.1)],position_budget_m=float("nan"))
+
+    def test_real_two_pending_command_tickets_expand_four_candidate_targets(self):
+        # This is the TRUE action-history state machine, not four handpicked
+        # example poses. Two independently ambiguous command deliveries yield
+        # four distinct physically possible destination target histories.
+        b=UncertainDeliveryBelief([-.2]*3,[.2]*3,.5,max_hypotheses=16)
+        b.reset(pose(0))
+        a1=[.6,0,0,0,0,0]
+        a2=[0,0,.2,0,0,0]
+        a3=[-.3,0,0,0,0,0]
+        t=b.prepare(a1)
+        b.acknowledge(t,applied=None)
+        self.assertEqual(len(b.hypotheses),2)
+        t=b.prepare(a2)
+        b.acknowledge(t,applied=True)
+        self.assertEqual(len(b.hypotheses),2)
+        t=b.prepare(a3)
+        b.acknowledge(t,applied=None)
+        self.assertEqual(len(b.hypotheses),4)
+        cert=certificate(tuple(b.hypotheses),position_budget_m=.11)
+        self.assertTrue(cert.authorized,cert)
+        self.assertEqual(cert.credible_history_count,4)
+        for h in b.hypotheses:
+            output=genuine_native_result(h,cert.command_normalized_6d)
+            self.assertLessEqual(np.max(np.abs(output.position)),cert.exact_position_radius_m+1e-8)
 
     def test_two_history_overlap_never_claims_new_global_so3_theorem(self):
         h=[pose(0,angle=-.05),pose(0,angle=.05)]
