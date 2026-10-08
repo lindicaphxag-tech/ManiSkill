@@ -1,0 +1,53 @@
+{
+  "schema": "latent_memory_native_joint_target_position_v1",
+  "date": "2026-10-09",
+  "freeze_before_runner": true,
+  "source_controller": "ManiSkill Panda PDJointPosController under pd_joint_target_delta_pos, no learned policy",
+  "tasks": [
+    [
+      "PickCube-v1",
+      1477
+    ],
+    [
+      "PushCube-v1",
+      2488
+    ],
+    [
+      "PullCube-v1",
+      3499
+    ],
+    [
+      "StackCube-v1",
+      4510
+    ]
+  ],
+  "controller_native_requirements": [
+    "PDJointPosController exact use_target and use_delta",
+    "controller action normalized",
+    "true 7-DOF arm joint drive target qpos memory",
+    "native physical action bounds read from action_space_low and action_space_high",
+    "qpos resets and target_qpos initialized by official controller"
+  ],
+  "desired_relative_joint_target_command_rad": [
+    0.006,
+    -0.004,
+    0.005,
+    -0.002,
+    0.003,
+    0.004,
+    -0.005
+  ],
+  "uncertainty_radius_rad": 0.001,
+  "robust_setpoint_error_budget_rad": 0.0015,
+  "max_actual_controller_target_prediction_error_rad": 0.0001,
+  "expected_worst_case_memory_error_rad": 0.001,
+  "negative_pre_dispatch_gates": [
+    "untrusted target_qpos",
+    "stale target_qpos",
+    "unverified additive controller",
+    "too wide memory uncertainty interval"
+  ],
+  "claim_bounds": "Only position-setpoint validity of true PDJointPosController; no task success, real robot, contact force, collision, human safety, rotation model or independent external testing.",
+  "samples_expected": 4,
+  "unknown_outcome_must_be_reported": true
+}
