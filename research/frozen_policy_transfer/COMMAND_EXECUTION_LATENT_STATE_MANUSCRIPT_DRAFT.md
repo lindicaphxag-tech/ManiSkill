@@ -100,6 +100,7 @@ The selective policy succeeds at the clean-source total in this cohort, **but th
 - [External independently selectable seed reproduction](EXTERNAL_FORK_ONE_CLICK_PHYSX.md)
 - [Persistent 32-condition original source](evidence/unknown_ack_prospective_32_94001_95008/)
 - [Persistent 64-state shadow observer source](evidence/shadow_observer_64_71001_81032/)
+- [Permanently archived original 32-state *negative* physical-response PhysX source: eight unmodified trial JSONs, original 32-row auditor, SHA256SUMS](evidence/physical_response_negative_32_140001_150008/). [Trusted post-merge source-byte archive audit](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37832249752) passed.
 - [New64 exact original results and raw source links](ROBUST_QUERY_NEW64_PROSPECTIVE_RESULTS.md)
 - [Independent falsification challenge](https://github.com/lindicaphxag-tech/kaggle/issues/67)
 - [Third-party frozen PPO/benchmark origin: ActionShift](https://github.com/Archerkattri/actionshift)
