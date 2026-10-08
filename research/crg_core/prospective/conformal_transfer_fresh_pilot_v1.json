@@ -1,0 +1,93 @@
+{
+  "schema": "crg-transfer-conformal-fresh-state-pilot-v1",
+  "design_status": "FROZEN_BEFORE_NEW_POLICY_EVALUATION",
+  "date_frozen": "2026-10-08",
+  "prior_seen_negative_bank_seeds": [
+    17,
+    29,
+    43,
+    59,
+    71,
+    89,
+    101,
+    131,
+    151,
+    181
+  ],
+  "calibration_state_seeds": [
+    211,
+    223,
+    227,
+    229,
+    233,
+    239,
+    241,
+    251,
+    257
+  ],
+  "test_state_seeds": [
+    263,
+    269,
+    271,
+    277
+  ],
+  "calibration_alpha": 0.1,
+  "marginal_coverage_target": 0.9,
+  "min_calibration_clusters": 9,
+  "physical_response_tolerance_abs_xy": 1,
+  "response_units": "PushT absolute_xy first-action coordinates",
+  "heldouts": {
+    "A": [
+      4,
+      -2,
+      0.02
+    ],
+    "B": [
+      -5,
+      3,
+      -0.025
+    ]
+  },
+  "support_scale": [
+    16,
+    16,
+    0.08
+  ],
+  "score": "max_AB(abs(||response_diffusion - response_vqbet|| - ||(Ghat_diffusion-Ghat_vqbet) normalized_support_heldout||))",
+  "calibration_unit": "restored environment state including both A and B heldouts",
+  "expected_state_total": 13,
+  "independent_test_states": 4,
+  "dependent_test_pairs": 8,
+  "checkpoint_runtime_source": {
+    "repo": "lindicaphxag-tech/ManiSkill",
+    "branch": "research/eprc-cross-policy-bank-v1-execution",
+    "exact_sha": "8207ac01c56e75ccee19cba0e75eb0978cde37b2",
+    "state_restore_protocol": "reset-fresh-space-block-position-4ulp-v2",
+    "lerobot_source_sha": "3c0a209f9fac4d2a57617e686a7f2a2309144ba2",
+    "diffusion_checkpoint": "d3d143b0342488252497853815b27ce3c0384c6b",
+    "vqbet_checkpoint": "390e5e4c079c880b22e873dad53ecfac706bc78a",
+    "randomness_seeds": [
+      123,
+      456,
+      789
+    ],
+    "finite_difference_epsilon": 0.125
+  },
+  "stable_gate": "both policy output 'stable' from fixed prior source; q95 cutoff 0.15; this is a heuristic proxy, not an independently verified locality bound",
+  "nominal_interval_method": "state-block split conformal; A/B max residual, n=9, k=9 at alpha=0.10",
+  "application_denom": "all four precommitted test states and all eight A/B requests, including invalid/rejected",
+  "primary_pilot_diagnostics": [
+    "complete_state_count",
+    "accepted_transfer_count",
+    "false_transfer_authorization_count",
+    "whole_state_empirical_coverage_count",
+    "total_policy_queries"
+  ],
+  "baselines": [
+    "unbounded_nominal_jacobian_point_without_rejection",
+    "always_abstain_zero_coverage"
+  ],
+  "decision_limitations": "not a confirmatory superiority test; exchangeability unverified; known A/B directions but entirely new state seeds; calibrated intervals are marginal, not per-action safety",
+  "early_stop_rule": "If any calibration/test state is missing, incomplete not reduced-n; if all eight test requests are rejected, call ZERO_UTILITY and do not claim risk improvement. No test-time threshold tuning.",
+  "no_external_replication_claim": true
+}
