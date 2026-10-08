@@ -98,6 +98,20 @@ if SMOKE_MODE:
         ),
     )
 
+if FACTORIAL_REPLAY_MODE:
+    # Prospective scale-up of the same full 2x2 design. Preserve the first 64
+    # official source episodes and the same exact source/repair commits.
+    # No optimizer or task-level success is claimed in this replay-only job.
+    CONFIG.update(
+        requested_num_demos=64,
+        replay_count=64,
+        minimum_paired_demos=4,
+        measurement_deviation=(
+            "Predeclared 64-source-demo, four-cell exact-source replay; "
+            "record every failure, no policy training or performance claim."
+        ),
+    )
+
 started = time.time()
 OUTPUT.mkdir(parents=True, exist_ok=True)
 run_record = {
