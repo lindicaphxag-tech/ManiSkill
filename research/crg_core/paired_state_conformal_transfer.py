@@ -57,9 +57,10 @@ def _predict_gap(pair: dict) -> float:
     if (
         a.ndim != 2 or b.shape != a.shape or h.ndim != 1
         or a.shape[1] != h.size or not a.size
-        or not (np.isfinite(a).all() and np.isfinite(b).all() and np.isfinite(h).all())
     ):
         raise ValueError("invalid, unaligned canonical physical support/response charts")
+    if not (np.isfinite(a).all() and np.isfinite(b).all() and np.isfinite(h).all()):
+        raise ValueError("nonfinite physical response map or intervention")
     val = float(np.linalg.norm((a-b) @ h))
     if not isfinite(val):
         raise ValueError("nonfinite predicted response disagreement")
