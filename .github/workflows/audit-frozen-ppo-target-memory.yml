@@ -1,0 +1,59 @@
+name: Audit frozen PPO target-memory exactness tradeoff
+
+on:
+  push:
+    branches: [evidence/frozen-ppo-unique-seed-audit-v1]
+  pull_request:
+    paths:
+      - "research/kaggle_diffusion_policy_peg/audit_frozen_ppo_target_memory.py"
+      - ".github/workflows/audit-frozen-ppo-target-memory.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  independent-original-traces:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile author-independent numerical checker
+        run: python -m py_compile research/kaggle_diffusion_policy_peg/audit_frozen_ppo_target_memory.py
+      - name: Reject forged success / projected exactness / seed counts
+        run: python research/kaggle_diffusion_policy_peg/audit_frozen_ppo_target_memory.py --self-test
+      - name: Download exact frozen 32 unique-seed physical experiment
+        uses: actions/download-artifact@v4
+        with:
+          repository: lindicaphxag-tech/ManiSkill
+          run-id: 37809892720
+          name: frozen-ppo-target-memory-three-arm
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: raw-32
+      - name: Download exact frozen 48 unique-seed physical experiment
+        uses: actions/download-artifact@v4
+        with:
+          repository: lindicaphxag-tech/ManiSkill
+          run-id: 37809684134
+          name: frozen-ppo-target-memory-three-arm
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: raw-48
+      - name: Independently reconstruct both exact / approximate / refusal outcomes
+        run: |
+          python research/kaggle_diffusion_policy_peg/audit_frozen_ppo_target_memory.py \
+            --cohort disjoint_seed32 --artifact-dir raw-32 \
+            | tee verified_memory_32.json
+          python research/kaggle_diffusion_policy_peg/audit_frozen_ppo_target_memory.py \
+            --cohort fixed_seed48 --artifact-dir raw-48 \
+            | tee verified_memory_48.json
+      - name: Publish audited evidence without changing original raw traces
+        uses: actions/upload-artifact@v4
+        with:
+          name: independently-audited-frozen-ppo-memory-results
+          path: |
+            verified_memory_32.json
+            verified_memory_48.json
+          if-no-files-found: error
