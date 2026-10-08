@@ -1,0 +1,57 @@
+name: Exact-source retry one stalled original physical-response PhysX shard
+on:
+  push:
+    branches:
+      - validation/physical-response-stack-applied0-exact-retry-20261009
+
+permissions:
+  contents: read
+
+jobs:
+  same-method-same-seeds-stalled-shard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    env:
+      PYTHONUNBUFFERED: '1'
+      ABI_TASK: stack_cube
+      ABI_FAULT: applied_no_ack
+      ABI_START: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact original source / pre-outcome protocol identities
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/frozen_ppo_physical_response_ack.py)" = "06a6cc465c4f0cd896ddc6e761f291c1e8287417"
+          test "$(git hash-object research/PHYSICAL_RESPONSE_ACK_PROSPECTIVE_V1.json)" = "de2109c36cbb767ee1a4af11c981f1256ed60eac"
+          python -m py_compile research/frozen_ppo_physical_response_ack.py
+          python -m unittest discover -s tests -p 'test_physical_response_32.py' -q
+      - name: Install real native ManiSkill CPU PhysX runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Re-run EXACT original StackCube applied-no-ack seed quartet
+        run: |
+          set -o pipefail
+          python research/frozen_ppo_physical_response_ack.py 2>&1 | tee physical_response_stack_cube_applied_no_ack_0.log
+          test -s physical_response_stack_cube_applied_no_ack_0_fresh4.json
+          python - <<'PY'
+          import json
+          from research.audit_physical_response_32 import validate_data
+          p='physical_response_stack_cube_applied_no_ack_0_fresh4.json'
+          row=json.load(open(p))
+          result=validate_data(row,'stack_cube','applied_no_ack',0)
+          assert row['seeds']==[150001,150002,150003,150004],row['seeds']
+          print("SAME_ORIGINAL_4_STATE_RETRY_CHECK",result)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: exact-stalled-shard-stack-applied-first4-original-physx
+          path: |
+            physical_response_stack_cube_applied_no_ack_0_fresh4.json
+            physical_response_stack_cube_applied_no_ack_0.log
