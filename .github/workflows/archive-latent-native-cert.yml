@@ -1,0 +1,137 @@
+name: Preserve four-task native memory setpoint audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-latent-native-cert.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify-original-source-readonly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Match original exact authorized PhysX producer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37819367912 --jq .head_sha)" = "2afeda7453e9fc0144cc43acbf2bb1c74b8e6c9e"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37819367912 --jq .conclusion)" = success
+      - name: Retrieve original JSON and complete simulator log unchanged
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/latent_native
+          gh run download 37819367912 --repo "$GITHUB_REPOSITORY" --name native-panda-four-task-latent-target-memory-cert-v1 --dir /tmp/latent_native
+          test "$(find /tmp/latent_native -maxdepth 1 -type f | wc -l)" -eq 2
+      - name: Check original artifact hashes and all native positions
+        run: |
+          set -euo pipefail
+          cd /tmp/latent_native
+          printf '%s\n'             '3545c9bf5b65a7c38af0f2c9825ac202a4a2ade9bd6c6a6aa94ee98157ffe5a3  latent_target_memory_native_contract_v1.json'             '5d9237c62ade960d1e8760d48f4b4d0fe9b59f0af83ca64cad64f403a22951a8  latent_target_memory_native_contract.log' | sha256sum -c -
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('/tmp/latent_native/latent_target_memory_native_contract_v1.json').read_text())
+          assert r['schema']=='latent_target_memory_native_contract_v1'
+          assert r['total_predeclared_cases']==4
+          assert r['real_robot_physical_safety_certified'] is False
+          assert [(v['task'],v['seed']) for v in r['records']]==[
+            ('PickCube-v1',2277),('PushCube-v1',3388),
+            ('PullCube-v1',4499),('StackCube-v1',5511)]
+          for item in r['records']:
+              assert item['actual_vs_additive_prediction_max_abs_m']<=1e-4
+              assert abs(item['minimax_worst_case_error_m']-.0015)<1e-8
+              assert item['task_success_measured'] is False
+              assert sorted(item['refusals_without_dispatch'])==sorted([
+                'not_attested','stale','wrong_controller','unobservable_radius'])
+          print('PASS original native 4-case source/target memory semantics and fail-closed refusal')
+          PY
+
+  archive-after-trusted-main:
+    needs: verify-original-source-readonly
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Match original exact authorized PhysX producer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37819367912 --jq .head_sha)" = "2afeda7453e9fc0144cc43acbf2bb1c74b8e6c9e"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37819367912 --jq .conclusion)" = success
+      - name: Retrieve original JSON and complete simulator log unchanged
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/latent_native
+          gh run download 37819367912 --repo "$GITHUB_REPOSITORY" --name native-panda-four-task-latent-target-memory-cert-v1 --dir /tmp/latent_native
+          test "$(find /tmp/latent_native -maxdepth 1 -type f | wc -l)" -eq 2
+      - name: Check original artifact hashes and all native positions
+        run: |
+          set -euo pipefail
+          cd /tmp/latent_native
+          printf '%s\n'             '3545c9bf5b65a7c38af0f2c9825ac202a4a2ade9bd6c6a6aa94ee98157ffe5a3  latent_target_memory_native_contract_v1.json'             '5d9237c62ade960d1e8760d48f4b4d0fe9b59f0af83ca64cad64f403a22951a8  latent_target_memory_native_contract.log' | sha256sum -c -
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('/tmp/latent_native/latent_target_memory_native_contract_v1.json').read_text())
+          assert r['schema']=='latent_target_memory_native_contract_v1'
+          assert r['total_predeclared_cases']==4
+          assert r['real_robot_physical_safety_certified'] is False
+          assert [(v['task'],v['seed']) for v in r['records']]==[
+            ('PickCube-v1',2277),('PushCube-v1',3388),
+            ('PullCube-v1',4499),('StackCube-v1',5511)]
+          for item in r['records']:
+              assert item['actual_vs_additive_prediction_max_abs_m']<=1e-4
+              assert abs(item['minimax_worst_case_error_m']-.0015)<1e-8
+              assert item['task_success_measured'] is False
+              assert sorted(item['refusals_without_dispatch'])==sorted([
+                'not_attested','stale','wrong_controller','unobservable_radius'])
+          print('PASS original native 4-case source/target memory semantics and fail-closed refusal')
+          PY
+      - name: Commit byte-identical evidence with clear validity scope
+        run: |
+          set -euo pipefail
+          dst=research/latent_memory_native_evidence/v1
+          mkdir -p "$dst"
+          cp /tmp/latent_native/latent_target_memory_native_contract_v1.json "$dst/"
+          cp /tmp/latent_native/latent_target_memory_native_contract.log "$dst/"
+          cat > "$dst/README.md" <<'EOF'
+          # Controller-command setpoint verification (not robotic safety)
+          Official successful PhysX workflow 37819367912, source commit 2afeda7453e9fc0144cc43acbf2bb1c74b8e6c9e.
+          Preregistered four task-state cases from research/LATENT_MEMORY_NATIVE_PRECOMMIT_V1.json.
+          Original JSON and original log are unmodified and hash-pinned by archive-latent-native-cert.yml.
+          Measured real native controller setpoint deviations ~1.62e-8 m at all four original cases, below the precommitted 1e-4 m.
+          The minimax mathematical interval error upper bound was 0.0015 m in every artificially configured, known-to-contain-truth scenario.
+          This does not establish physically obtainable signed memory bounds, real-robot execution/safety, SO(3), tracking error, contact risk or PPO task success.
+          External independent execution/adoption was zero at archival time.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dst"
+          if git diff --cached --quiet; then
+            echo 'Already archived exact originals'
+            exit 0
+          fi
+          git commit -m 'evidence: preserve four native Panda positional certificate witnesses'
+          git push origin HEAD:main
