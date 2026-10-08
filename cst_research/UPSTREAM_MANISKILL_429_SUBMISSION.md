@@ -1,77 +1,75 @@
-# ManiSkill #429 — minimal official upstream PR draft (AFTER maintainer approval)
+# ManiSkill #429 — reduced upstream submission after controlled RL ablation
 
-**Do not submit yet.** ManiSkill's CONTRIBUTING.md explicitly requires
-maintainer approval in the issue before opening a PR. The user has already
-posted the technical diagnosis but no maintainer has approved this specific
-patch. First post the official-data evidence follow-up and ask for a thumbs-up.
+**Contribution rule:** ManiSkill requests prior maintainer discussion and
+approval on the issue before submitting a PR. Do NOT open prematurely.
 
-**Once approved, open the official PR with this compare:**
-https://github.com/mani-skill/ManiSkill/compare/main...lindicaphxag-tech:ManiSkill:fix/joint-delta-to-joint-pos-pr?expand=1
+**Maintainer-review compare (after approval):**
+https://github.com/mani-skill/ManiSkill/compare/main...lindicaphxag-tech:ManiSkill:fix/429-numpy-tensor-replay-minimal?expand=1
 
-Suggested title:
-`Fix pd_joint_delta_pos -> pd_joint_pos replay semantics and NumPy action decoding`
+Suggested title: `fix(trajectory): accept NumPy pd_joint_delta_pos replay actions`
 
 ## Summary
 
-Closes a reproducible conversion bug reported in #429. The original
-`pd_joint_delta_pos -> pd_joint_pos` trajectory replay passes NumPy
-trajectory rows to a tensor-only scaling helper, and may also encode a
-physical joint target using the wrong target-controller action chart.
+Fix NumPy/PyTorch type and batch-shape handling in
+`from_pd_joint_delta_pos`, allowing official RL HDF5 demonstrations
+(`pd_joint_delta_pos`) to replay as `pd_joint_pos` on Panda.
 
-This two-file focused patch:
-- decodes source normalized delta actions into physical joint increments,
-  using source-controller bounds, without sending NumPy arrays through
-  tensor-only `clip_and_scale_action`;
-- computes `physical_target_qpos = source_current_qpos + physical_delta`;
-- encodes that target into the **destination** `PDJointPosController`
-  native action chart (normalized or physical), rather than passing
-  physical qpos directly as a normalized action;
-- keeps the change focused and adds deterministic conversion regression
-  tests.
+The source HDF5 action row is NumPy (shape `(7,)`) while
+`gym_utils.clip_and_scale_action` calls `torch.clip`. The source
+controller `qpos` is a batched tensor `(1,7)`. The patch:
+1. makes the action tensor explicit at the source controller's dtype/device;
+2. converts the scaled physical delta to a **1-D** NumPy array;
+3. reads the current source physical qpos as 1-D NumPy and sums physical
+   vectors before passing into the existing target PDJointPos action path.
 
-## Reproduction: actual official ManiSkill RL trajectories
+No new generic action-normalization abstraction. Panda's destination
+`pd_joint_pos` controller has `normalize_action=False`, so the
+original physical joint-position target semantics are already correct
+when the type/shape bug is fixed.
 
-The canonical publicly reproducible A/B run is:
+## Three-arm official data evidence
 
-https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37709660093
+Canonical workflow:
+https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37713849790
 
-Input: official `PickCube-v1` RL demonstration archive downloaded with
-ManiSkill's own `download_demo` utility. Its source file contains **997**
-`pd_joint_delta_pos` episodes. The A/B used the *same first eight source
-episodes*, copying identical input bytes into separate run directories,
-and replayed on the CPU backend.
+Official PickCube-v1 RL source HDF5 (997 episodes), SHA256
+`b05851319021c290ed5e5055c03c776b434af5c9af98e13db2ab9159752b89c8`.
+16 identically selected episodes; replay on PhysX CPU rather than source
+PhysX CUDA.
 
-- **Unmodified main:** raises
-  `TypeError: clip() received ... (numpy.ndarray, int, int)`
-  on the first replay, before producing a usable task success count.
-- **This patch:** replay finishes; **4/8 episodes saved (50%)**.
+| Approach | Outcome |
+|---|---|
+| Unmodified upstream | TypeError in first episode; not a valid success denominator |
+| Type + shape fix only | 7/16 successful demos saved (43.75%) |
+| Expanded source+destination semantic encoder | 7/16 successful demos saved (43.75%) |
 
-The source demonstrations were generated on **PhysX CUDA**, while
-GitHub Actions replays them with **PhysX CPU**. The remaining four failures
-must not be attributed to converter correctness without controlling this
-backend difference. The comparison shows crash removal and actual
-working CPU replay, **not** a baseline 0% vs patch 50% success-rate lift.
+Identical successful and unsuccessful episode identities between the latter
+two arms. This is why the minimal fix is now preferred for upstream review.
 
-The production converter blob in the actual official-data validation run
-matches the proposed PR branch exactly:
-`15d127773e502ee58a3a6c3ac600deced681bf3d`.
+The *same minimal implementation* has a focused CPU regression asserting
+input `[0.5,-0.5]` from `qpos=[0.2,-0.3]` produces
+`[0.25,-0.35]` physical joint position.
 
-Focused regression CI (also using identical production/test file blobs):
-https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37455293894
+Minimal-branch focused + real official replay CI:
+https://github.com/lindicaphxag-tech/ManiSkill/tree/validation/mani429-minimal-official-replay-20261008
 
-The A/B run has attached original/patch logs and machine-readable
-`comparison.json`.
+Do not mark the **minimal exact-blob** workflow green until its run completes.
+The previously completed three-arm ablation already establishes the
+type/shape-only implementation's task result.
 
-## Scope
+## Limitations
 
-This is a precise correctness fix for the supported source/target
-joint-position action charts. It does not claim exact replay for all
-controller families, simulation backends, or contact dynamics.
+- `pd_joint_pos` Panda default consumes physical qpos, not normalized target
+  actions. Therefore no additional output re-encoding improvement is claimed
+  under this default mode.
+- The issue author already mentioned a NumPy/Torch mismatch in 2024;
+  the bug itself is not presented as newly discovered.
+- Successful replay count is not baseline 0% -> new 43.75% because the
+  original baseline crashes before task outcomes exist.
+- Physical backend mismatch (source CUDA vs CPU replay) prevents attributing
+  remaining 9/16 failures to this fix without matched backend experiments.
 
-## AI assistance disclosure
+## AI assistance
 
-AI assistance was used to audit the source/target controller semantics,
-draft aspects of the patch and construct regression tests. The patch was
-verified against upstream source and the public official-data replay.
-
-Related issue: #429
+AI assistance was used for code/CI inspection, testing and drafting.
+The patch is deliberately limited to observed correctness failures.
