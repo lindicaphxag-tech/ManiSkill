@@ -160,6 +160,32 @@ def apply_controller_pr_overlay(commit: str) -> None:
         raise RuntimeError("#1472 test patch does not match the pinned Git blob")
     test_path.write_bytes(test_bytes)
 
+def apply_smoke_replay_renderer_override() -> str:
+    """Disable renderer at the actual official replay gym.make boundary.
+
+    MANISKILL_RENDER_BACKEND alone is insufficient: the trajectory replay path
+    copies raw dataset env kwargs and passes them directly to gym.make. This
+    isolated smoke adjustment prevents an unsupported SAPIEN "cpu" renderer
+    device from being selected even when Vulkan Lavapipe is present.
+    """
+    if not SMOKE_MODE:
+        raise RuntimeError("replay renderer override may only run in smoke mode")
+    replay_path = REPO / "mani_skill" / "trajectory" / "replay_trajectory.py"
+    source = replay_path.read_text(encoding="utf-8")
+    expected = '    env_kwargs["num_envs"] = args.num_envs\n'
+    if source.count(expected) != 1:
+        raise RuntimeError("Official replay render-boundary anchor changed")
+    override = (
+        expected
+        + '    env_kwargs["render_backend"] = "none"\n'
+        + '    ori_env_kwargs["render_backend"] = "none"\n'
+        + '    env_kwargs["render_mode"] = None\n'
+        + '    # Isolated CPU smoke adjustment; no upstream production change.\n'
+    )
+    replay_path.write_text(source.replace(expected, override), encoding="utf-8")
+    return sha256(replay_path)
+
+
 def apply_kaggle_worker_compatibility() -> str:
     """Use spawn/SAME_STEP workers and normalize NumPy evaluation metrics.
 
@@ -201,7 +227,7 @@ def apply_kaggle_worker_compatibility() -> str:
         )
         new_env_line = (
             '    env_kwargs = dict(control_mode=args.control_mode, reward_mode="sparse", '
-            'obs_mode="state", render_mode=None)'
+            'obs_mode="state", render_mode=None, render_backend="none")'
         )
         if train_source.count(old_env_line) != 1:
             raise RuntimeError("Unexpected state-policy render configuration")
@@ -409,6 +435,15 @@ try:
             subprocess.run(["git", "-C", str(REPO), "diff", "--cached", "--check"], check=True)
         subprocess.run(["git", "-C", str(REPO), "diff", "--check"], check=True)
         tree = git("write-tree")
+        if SMOKE_MODE:
+            override_digest = apply_smoke_replay_renderer_override()
+            run_record.setdefault("smoke_replay_overrides", {})[arm] = {
+                "official_replay_source_sha256": override_digest,
+                "render_backend": "none",
+                "render_mode": None,
+                "scope": "isolated smoke runtime only",
+            }
+
         # Regenerate state/action demonstrations under each source tree. PR #1495
         # and #1472 change conversion/controller semantics, so sharing one replayed dataset would
         # confound the treatment with a dataset encoded under the other arm.
