@@ -1,0 +1,64 @@
+{
+  "schema": "two_history_commanded_pose_minimax_v1",
+  "frozen_before_runner": true,
+  "date": "2026-10-09",
+  "question": "When ACK is unknown and two known possible controller previous target poses are both plausible, can one bounded SE(3) command provide a certified nonzero but bounded target error without privileged last-target readback or unconditional exact-only refusal?",
+  "task_and_seeds": [
+    [
+      "PickCube-v1",
+      13077
+    ],
+    [
+      "PushCube-v1",
+      14088
+    ],
+    [
+      "PullCube-v1",
+      15099
+    ],
+    [
+      "StackCube-v1",
+      16110
+    ]
+  ],
+  "official_target_controller": "Panda pd_ee_target_delta_pose; root_translation:root_aligned_body_rotation; actual controller.set_state replay; PhysX CPU",
+  "expected_worlds_per_task": 2,
+  "prescribed_difference_between_plausible_previous_targets": {
+    "position_m": [
+      0.02,
+      0,
+      0
+    ],
+    "root_aligned_rotation_rotvec_rad": [
+      0,
+      0,
+      0.03
+    ]
+  },
+  "same_common_desired_target_offset_from_A_m": [
+    0,
+    0,
+    0.005
+  ],
+  "same_common_desired_target_rotation_from_A": "identity",
+  "uncertainty_source": "controlled native state replay, not cryptographically attested sensor or natural command packet loss",
+  "position_error_budget_m": 0.0105,
+  "orientation_error_budget_rad": 0.0155,
+  "native_position_action_bound": "actual controller action_space_low/high, without tuning",
+  "native_rotation_action_bound": "actual rot_lower and native l2 rotation clipping; reject if norm>1",
+  "numeric_margin": 1e-9,
+  "native_expected_max_position_error_m": 0.0101,
+  "native_expected_max_orientation_error_rad": 0.0151,
+  "hard_gates": [
+    "all four original task/seed cases, both physical worlds, no omitted fail",
+    "identical achieved EE and robot joint pre-action states but distinct explicitly replayed commanded targets",
+    "the exact native physical action is common to the two worlds and issued via env.step, not manually update target after",
+    "controller root-translation and left-multiply root-aligned-body rotation are checked",
+    "both next target poses satisfy the prespecified position/rotation tolerance",
+    "all action tensor values stay within legal native translation box and rotation unit ball",
+    "no command on unattested or stale incomplete hypothesis set, unverified chart, unrepresentable rotation or inadequate budget",
+    "no task success, physical tracking, safety, real ACK loss, external replication or VLA claim"
+  ],
+  "theorem_scope": "For 2 fixed candidate previous target poses and left-composed SO(3) command without saturation, their geodesic midpoint permits worst-case orientation error exactly half their separation (for shortest geodesic); per-axis Cartesian interval midpoint+clipping minimizes maximum infinity position error. This is standard Chebyshev center / group geodesic geometry; novelty unproven.",
+  "interpretation": "A pass validates a strictly conditioned two-hypothesis common bounded setpoint command in 4 controlled native Panda task scenes; no natural fault recovery, no independent external execution, no safe robot control."
+}
