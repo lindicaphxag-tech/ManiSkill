@@ -32,7 +32,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -euo pipefail
+          set -euxo pipefail
           test "$(git hash-object research/ACTION_ABI_UNKNOWN_ACK_PHYSX_PREREG_V1.json)" = "3a7273c1a02d13c19e93e618c74fc7068938c7e9"
           test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37824078238 --jq .head_sha)" = "2ea6fabbd4e15ddd5623d51acd9f8874206fc003"
           test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37824078238 --jq .conclusion)" = "success"
@@ -71,7 +71,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -euo pipefail
+          set -euxo pipefail
           test "$(git hash-object research/ACTION_ABI_UNKNOWN_ACK_PHYSX_PREREG_V1.json)" = "3a7273c1a02d13c19e93e618c74fc7068938c7e9"
           test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37824078238 --jq .head_sha)" = "2ea6fabbd4e15ddd5623d51acd9f8874206fc003"
           test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37824078238 --jq .conclusion)" = "success"
