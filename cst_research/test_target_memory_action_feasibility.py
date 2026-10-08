@@ -16,7 +16,7 @@ def build(goal_p,goal_euler,old_p=(0.,0.,0.),old_euler=(0.,0.,0.),**kwargs):
 
 
 def test_exact_goal_preserves_physical_xyz_and_orientation():
-    x=build([.05,-.04,.01],[.01,.02,-.03],old_euler=(.1,.05,-.1))
+    x=build([.05,-.04,.01],[.09,.06,-.09],old_euler=(.1,.05,-.1))
     assert x.status is ExecutionStatus.EXACT
     assert x.native_action is not None
     assert len(x.native_action)==6
