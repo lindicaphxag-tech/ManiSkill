@@ -72,7 +72,7 @@ class ExternalReplayGuardTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_output(r,"pull_cube","applied_no_ack",[120001])
         r=record()
-        r["refusals"]={}
+        r["rows"][0]["refusals"]={}
         with self.assertRaises(ValueError):
             validate_output(r,"pull_cube","applied_no_ack",[120001])
 
