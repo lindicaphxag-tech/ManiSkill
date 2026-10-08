@@ -2,6 +2,44 @@
 
 **Scope.** We used the published, frozen [ActionShift PPO weights](https://github.com/Archerkattri/actionshift) in official ManiSkill PhysX CPU on PickCube, PushCube, PullCube and StackCube, with no policy updates. This packet concentrates on the strongest two-task **independent action-history observer** mechanism check plus a distinct **unknown-acknowledgement recovery** check.
 
+## 64 NEW-state bounded-or-query verifier (no GPU or simulator needed)
+
+**Current primary flagship evidence:** 64 fresh frozen-policy PhysX states
+with the identical locked source adapter and published ActionShift PPO weights.
+Two task families, **eight** unmodified permanent source JSONs, and
+**one independent zero-dependency statistical-accounting audit**.
+
+Run from the source repository root:
+
+```bash
+python research/frozen_policy_transfer/review/verify_stateful_abi.py
+```
+
+The same command now covers **three distinct datasets**, without pooling
+their participants, fixed seeds or study units: 64 original history-observer
+cases, 16 original ACK-recovery cases, **64 genuinely new bounded-or-query
+control cases**. Each has its own preserved raw source manifests.
+
+**Primary new64 results, author-run PhysX, not independent reproduction:**
+bounded-or-query **60/64**, compulsorily query **57/64**, zero-readback
+bounded **47/64**, optimistic execution **42/64**, exact-only **0/64**.
+Target readback during decisions **15** vs **64** (76.5625% fewer).
+The selective and mandatory arms had **5 vs 2** paired exclusive
+successes, not a statistically proven superiority claim. Action source
+and original SHA digests:
+[frozen results report](../ROBUST_QUERY_NEW64_PROSPECTIVE_RESULTS.md),
+[permanent 8-file original archive](../evidence/robust_query_new64_142001_152032),
+[successful independent Python 3.11/3.13 auditor CI](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37831125554).
+
+**Reproducibility caution:** the exact experimental runner Git blob
+`1dc653cdc44e422c8340475ad00f828b3a41eb4f` was also run again
+on the **same** earlier 16 seed states. All 16×7 paired success flags
+matched; PullCube original JSON was byte-identical, while StackCube
+had 107 floating-point last-bit differences (maximum absolute
+`2.220446049250313e-16`) and zero nonnumeric changes. The rerun is
+**not** a new prospective sample or independent lab test.
+[Source-pinned repeat verifier](../review/compare_original_rerun.py) ·
+[completed integrity workflow](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37830812480).
 ## Reproduce the original score accounting in one command (Python 3.11+)
 
 From the checkout root:
