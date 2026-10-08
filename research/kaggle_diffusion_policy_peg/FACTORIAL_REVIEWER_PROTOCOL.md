@@ -120,3 +120,75 @@ independent external reproduction is claimed.
 synthetic binary fixtures; **no four-arm Kaggle execution is claimed**.
 The pre-existing v3 archive lacks complete per-source-seed intersection
 evidence and cannot be retrospectively upgraded into this result.
+
+
+
+## Crash-consistent replay census v0.1 (source-level evidence, not GPU results)
+
+The previous four-cell runner unexpectedly failed **before producing an
+intervention census** if an arm replayed zero successful trajectories. This
+constituted *result-dependent missingness* precisely where the most severe
+negative treatment result could be hidden.
+
+The corrected runner now:
+
+1. Writes a source-population precommit with *all* original episode IDs and
+   episode seeds, public archive SHA, and all four source interventions,
+   **before the first replay**;
+2. Invokes the actual upstream ManiSkill replay CLI with
+   `--allow-failure` so failed converted trajectories are saved and retain
+   their source episode identity and success flag. This option changes the
+   replay CLI's "demos saved" count; that count is **not** used as the
+   successful-replay numerator;
+3. Rejects replay metadata missing any originally committed source
+   episode, a duplicated episode, or a non-boolean success result rather
+   than treating unknown episodes as measured failures;
+4. After each completed intervention, persists
+   `per_arm_replay/<arm>.json` with the exact source identity, measured
+   **successes AND failures out of the original denominator**, including
+   legitimately measured `0/N`; keeps `replay_<arm>.log` separately;
+5. Preserves the previous successes-only HDF5 intersection **solely for
+   selected-subset Diffusion Policy training**. It cannot be represented as
+   the full-source-population policy effect.
+
+A crash halfway through treatment leaves missing arms explicitly UNKNOWN.
+The independent
+[`audit_replay_journal.py`](audit_replay_journal.py)
+rejects unknown arms as a complete four-cell comparison; if all four are
+present, it cross-checks them against the separately written
+`replay_intention_to_treat.json` and reports finite-population paired
+replay rates, gain-only/harm-only episodes and intervention interaction.
+
+[Adversarial three-Python CPU CI](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37720656036)
+confirmed the zero-success and interrupted-execution cases (synthetic
+fixtures only). There are **no uploaded genuine four-cell replay results**
+to interpret yet.
+
+## Exact-head CPU native environment negative result
+
+A separate attempt checked out the actual public upstream #1495 commit
+`69facfaafaa0ef233d36ef19e6cd9a0f03532ee0` inside Actions and ran
+its **13 native conversion unit tests successfully**. This is *source
+testing*, not a task outcome.
+
+The first CPU-renderer attempt
+[run 37720313380](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37720313380)
+reported **false green** because a `tee` pipeline swallowed a Python
+exception. We corrected the workflow with `set -o pipefail` and an
+artifact-existence gate.
+
+The next attempt used ManiSkill's documented
+`render_backend="none"` option to bypass the Vulkan RenderSystem; its
+[run 37720554116](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37720554116)
+**failed correctly** when the built-in PickCube scene independently
+attempted to construct a `sapien.render.RenderMaterial` and SAPIEN
+reported `RuntimeError: failed to find a rendering device`. Installing a
+Mesa `llvmpipe` ICD in the earlier attempt was insufficient. No actual
+PhysX episode step, native PickCube score or learned-policy result was
+obtained from these CPU environment attempts.
+
+The negative CI is retained openly to prevent portraying a green unit
+test as an executable simulator result. Subsequent actual simulation
+requires a supported Vulkan rendering implementation, a special renderer
+workaround independently validated against production semantics, or
+Kaggle/another available graphics-capable environment.
