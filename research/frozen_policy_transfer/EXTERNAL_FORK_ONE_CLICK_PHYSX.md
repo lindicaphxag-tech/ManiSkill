@@ -1,4 +1,21 @@
-# Reproduce frozen PPO unknown-ACK PhysX faults in your own GitHub Actions
+# Latest external replica: SELECTIVE READBACK real frozen-PPO PhysX (seven arms)
+
+**This is the current primary fork-clickable original research replication.** It exercises seven *original unchanged* pretrained PPO/ManiSkill PhysX control arms, including **bounded correction / query only when the certificate fails**. It is **not** a simulation-free tally, research-independent evidence until another person's fork executes it, hardware safety, or real network packet loss.
+
+[**Open the real seven-arm workflow**](https://github.com/lindicaphxag-tech/ManiSkill/actions/workflows/external-selective-query-physx.yml) · [**Merged implementation PR #84**](https://github.com/lindicaphxag-tech/ManiSkill/pull/84) · [**Completed author-operated real seven-arm test**](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37831105250) · [**Exact 64-state paired authority audit #85**](https://github.com/lindicaphxag-tech/ManiSkill/blob/main/research/frozen_policy_transfer/review/PAIRED_AUTHORITY_FRONTIER_64.md)
+
+1. Fork `lindicaphxag-tech/ManiSkill` into your **own GitHub account**; enable Actions there.
+2. In your fork's Actions, select **External one-click selective-query seven-arm genuine PhysX replication** → *Run workflow*. Choose task `pull_cube` or `stack_cube`. Choose eight **investigator-registered** consecutive seed IDs (for example first seed **250001**). Do **not** present original author-operated `pull_cube` 200001–200008 as a fresh seed-disjoint confirmatory sample; rerunning those is instead direct reproducibility.
+3. The fork runner pins original method and certifier Git blob identity, downloads original third-party pretrained ActionShift PPO weights, runs real original CPU PhysX for every arm including failures, and publishes one SHA-stamped full original JSON plus method/source hash, package environment and `GITHUB_ACTOR` / `GITHUB_REPOSITORY`. The author-run full native demo **passed** but does not prove outside lab adoption.
+4. Report all successes, failures, refusals and queries, and link the **actual run URL from your own fork**. If you find a counterexample or a model/dependency failure, include it rather than excluding the corresponding seed. The author has *not* verified independent outside reruns.
+
+**Original best-supported finding:** [64 distinct *previously* held-out state seeds, two frozen policies](ROBUST_QUERY_NEW64_PROSPECTIVE_RESULTS.md) yielded 60/64 selective success using 15 trusted controller-target reads, versus mandatory 57/64 using 64 reads; exact paired 5-vs-2 McNemar *p*=0.453125 does **not** prove higher task success. Relative to zero-readback robust continuation, 60/64 vs 47/64 is a difference in **information use**, so not equal-information method superiority. Reader can independently check all eight original archived JSON SHA digests and stats in <1 min with stock Python using [the paired-audit tool](review/PAIRED_AUTHORITY_FRONTIER_64.md), but that is not a rerun of simulator physics.
+
+---
+
+## Previous separate six-arm applied-vs-held ACK-truth workflow (legacy)
+
+The earlier material below describes **a different prior six-arm two-physical-truth experiment**; it is retained for reproducibility, but **does not test the current seven-arm selective-or-query candidate**, nor replace its original CI.
 
 This is a real frozen-policy ManiSkill PhysX simulator rerun, **not an offline re-aggregation**. The one-click entry lives in [the workflow](../../.github/workflows/external-ack-frozen-ppo-replication.yml).
 
