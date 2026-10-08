@@ -67,6 +67,7 @@ def execute_directional_probe_budget(
     common_physical_chart_verified: bool,
     controller_authority_verified: bool,
     transfer_only: bool = False,
+    confidence_method: str = "hoeffding",
 ) -> ProbeExecution:
     """Execute four forward passes for each paired seed and stop on evidence.
 
@@ -83,6 +84,8 @@ def execute_directional_probe_budget(
     even if a callback fails and its actual forward count is unknown.
     Real policy wrappers must additionally log actual model calls.
     """
+    if confidence_method not in ("hoeffding", "empirical_bernstein"):
+        raise ValueError("confidence_method must be hoeffding or empirical_bernstein")
     if not isinstance(max_policy_forward_queries, int) or max_policy_forward_queries < 4 or max_policy_forward_queries % 4:
         raise ValueError("fixed policy forward-query budget must be a positive multiple of four")
     if not isfinite(float(physical_response_tolerance)) or physical_response_tolerance < 0:
@@ -128,11 +131,16 @@ def execute_directional_probe_budget(
     # no sequence of observations could authorize, so spend ZERO queries.
     # Do not apply this optimization when distinct-response diagnosis matters.
     if transfer_only:
-        from research.crg_core.transfer_certifiability_preflight import (
-            inspect_transfer_budget_feasibility,
-        )
+        if confidence_method == "hoeffding":
+            from research.crg_core.transfer_certifiability_preflight import (
+                inspect_transfer_budget_feasibility as check_feasibility,
+            )
+        else:
+            from research.crg_core.variance_adaptive_paired_response import (
+                inspect_eb_transfer_budget_feasibility as check_feasibility,
+            )
 
-        preflight = inspect_transfer_budget_feasibility(
+        preflight = check_feasibility(
             trusted_action_lows=low,
             trusted_action_highs=high,
             probe_fraction=probe_fraction,
@@ -176,7 +184,14 @@ def execute_directional_probe_budget(
             return finish(ProbeExecutionStatus.REJECT_UNSUPPORTED_ASSUMPTIONS,
                           attempted, None, f"paired probe invalid: {error}")
         secants.append(z)
-        latest = inspect_directional_samples(
+        if confidence_method == "hoeffding":
+            inspector = inspect_directional_samples
+        else:
+            from research.crg_core.variance_adaptive_paired_response import (
+                inspect_empirical_bernstein_samples,
+            )
+            inspector = inspect_empirical_bernstein_samples
+        latest = inspector(
             np.asarray(secants),
             probe_fraction=probe_fraction,
             action_coordinate_span_a=high-low,
