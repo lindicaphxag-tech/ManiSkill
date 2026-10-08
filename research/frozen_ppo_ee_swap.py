@@ -7,6 +7,7 @@ their OWN current observations (closed-loop). No training or updates.
 This is an exploratory CI, not a pre-declared clinical safety guarantee.
 """
 import json
+import os
 from pathlib import Path
 
 import gymnasium as gym
@@ -22,7 +23,7 @@ from frozen_ppo_pickcube_gate import (
 )
 import hashlib
 
-SEEDS=(10014,10014,10014,*range(10001,10015),10014)
+SEEDS=(10014,) if os.environ.get("CST_SINGLE_SEED") == "1" else (10014,10014,10014,*range(10001,10015),10014)
 MAX_STEPS=50
 
 
