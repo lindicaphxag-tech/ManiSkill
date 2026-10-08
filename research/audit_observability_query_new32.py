@@ -8,6 +8,23 @@ import math
 from pathlib import Path
 from research.empirical_probe_response_classifier import classify_empirical_public_response
 
+def _frozen_decision_equal(left,right):
+    # Compare all booleans, labels, keys, and access provenance EXACTLY.
+    # Source PhysX JSON numeric fields may show ULP-only variation across libm builds.
+    if type(left) is bool or type(right) is bool:
+        return type(left) is type(right) and left==right
+    if type(left) in (int,float) and type(right) in (int,float):
+        return math.isfinite(left) and math.isfinite(right) and math.isclose(
+            float(left),float(right),rel_tol=0,abs_tol=2e-11)
+    if isinstance(left,dict) and isinstance(right,dict):
+        return left.keys()==right.keys() and all(
+            _frozen_decision_equal(left[k],right[k]) for k in left)
+    if isinstance(left,(tuple,list)) and isinstance(right,(tuple,list)):
+        return len(left)==len(right) and all(
+            _frozen_decision_equal(x,y) for x,y in zip(left,right))
+    return type(left) is type(right) and left==right
+
+
 TASKS={"pull_cube":("PullCube-v1",180101,"74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7"),
        "stack_cube":("StackCube-v1",190101,"e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c")}
 FAULTS=("applied_no_ack","neutral_arm_delta_no_ack")
@@ -77,14 +94,14 @@ def validate_data(d,task,fault,start):
                 raise ValueError("Missing numerical evidence for unknown-ACK inference")
             if cls.get("label") not in ("held","applied",None):
                 raise ValueError("Unknown/non-fail-closed label")
-            probe=r["probe_positions"].get("achieved_probe_classifier")
+            public_probe_xyz_record=r["probe_positions"].get("achieved_probe_classifier")
             candidates=r.get("candidate_goal_positions",{})
-            if not probe or any(k not in candidates for k in ("held","applied")):
+            if not public_probe_xyz_record or any(k not in candidates for k in ("held","applied")):
                 raise ValueError("Missing public probe or both pre-fault history candidates")
             calculated=classify_empirical_public_response(
-                probe["achieved_pre_probe_xyz"],probe["achieved_post_probe_xyz"],
+                public_probe_xyz_record["achieved_pre_probe_xyz"],public_probe_xyz_record["achieved_post_probe_xyz"],
                 candidates["held"],candidates["applied"],task=task)
-            if cls!=calculated:
+            if not _frozen_decision_equal(cls,calculated):
                 raise ValueError("Submitted public-only history label or response evidence differs from frozen source calculator")
             truth_name="held" if fault=="neutral_arm_delta_no_ack" else "applied"
             if not cls[f"{truth_name}_compatible"]:
@@ -119,7 +136,7 @@ def validate_data(d,task,fault,start):
             calc=classify_empirical_public_response(
                 hobs["achieved_pre_probe_xyz"],hobs["achieved_post_probe_xyz"],
                 goals["held"],goals["applied"],task=task)
-            if hybrid!=calc:
+            if not _frozen_decision_equal(hybrid,calc):
                 raise ValueError("Hybrid source response model or history-selection logic is not frozen")
             unique=hybrid["label"] is not None
             hybrid_coverage+=int(unique)
