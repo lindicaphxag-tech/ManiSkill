@@ -1,0 +1,70 @@
+name: Prospective PUBLIC physical-response OR one private read native PhysX
+
+on:
+  pull_request:
+    paths:
+      - 'research/PHYSICAL_RESPONSE_OR_READ32_PREDECLARED_V1.json'
+      - 'research/frozen_ppo_public_response_or_query_new32.py'
+      - '.github/workflows/public-evidence-or-one-read-physx.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  six-native-physx-worlds-per-case:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        fault: [applied_no_ack, neutral_arm_delta_no_ack]
+        start: [0,4]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      ABI_FAULT: ${{ matrix.fault }}
+      ABI_START: ${{ matrix.start }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Protect independent preregistration and UNMODIFIED empirical public response model
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/PHYSICAL_RESPONSE_OR_READ32_PREDECLARED_V1.json)" = "bdcad7dff2fbe55ef7f1215f15adcda9d7372407"
+          test "$(git hash-object research/frozen_ppo_empirical_response_new32.py)" = "96f1baaceb87e98d7f7cdf5c3a092b80d7316b15"
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = "064bb46831b61af73ad445bc836326837ec5468f"
+          python -m py_compile research/frozen_ppo_public_response_or_query_new32.py research/empirical_probe_response_classifier.py
+          python - <<'PY'
+          import json
+          p=json.load(open('research/PHYSICAL_RESPONSE_OR_READ32_PREDECLARED_V1.json'))
+          assert p['total_task_seed_fault_conditions']==32
+          assert p['tasks']['pull_cube']['fresh_seed_range']==[180101,180108]
+          assert p['tasks']['stack_cube']['fresh_seed_range']==[190101,190108]
+          assert p['original_public_response_model_git_blob']=='064bb46831b61af73ad445bc836326837ec5468f'
+          assert p['observation_budget']['maximum_privileged_decision_reads_per_fault']==1
+          PY
+      - name: Install ManiSkill genuine CPU PhysX backend and pinned frozen public PPOs
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+          python -m pip freeze --all > public_or_read_environment.freeze.txt
+      - name: Step SIX independent physical controllers over four original task/fault conditions
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/frozen_ppo_public_response_or_query_new32.py 2>&1 | tee public_or_read_original_physx.log
+          test -s "public_or_read_${ABI_TASK}_${ABI_FAULT}_${ABI_START}_fresh4.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: public-or-read-native-${{ matrix.task }}-${{ matrix.fault }}-part-${{ matrix.start }}
+          path: |
+            public_or_read_*.json
+            public_or_read_original_physx.log
+            public_or_read_environment.freeze.txt
+          retention-days: 90
