@@ -102,7 +102,7 @@ def normalized_target_delta(source_arm,target_arm,policy_native, *, approximate=
                            dtype=policy_native.dtype).reshape(1,6),None,amp
 
 
-def _project_policy_observation(flat_observation, environment):
+def _project_policy_observation(flat_observation, environment, *, verify_memory=True):
     """Project target controller observations back into the source ABI.
 
     ManiSkill's state observation order is: agent.qpos, agent.qvel,
@@ -120,16 +120,20 @@ def _project_policy_observation(flat_observation, environment):
     nq=int(agent.robot.get_qpos().shape[-1])
     nv=int(agent.robot.get_qvel().shape[-1])
     if agent.controller.controllers["arm"].config.use_target:
-        memory=arm.get_state().get("target_pose")
-        if memory is None:
-            raise RuntimeError("Controller target memory missing: refuse projection")
-        memory=torch.as_tensor(memory,device=obs.device,dtype=obs.dtype)
-        if memory.shape[-1]!=7 or obs.shape[-1]!=POLICY_OBS_DIM+7:
+        if obs.shape[-1]!=POLICY_OBS_DIM+7:
             raise RuntimeError("Target observation ABI changed; cannot project")
         offset=nq+nv
-        actual=obs[:,offset:offset+7]
-        if not torch.allclose(actual,memory,atol=1e-5,rtol=0):
-            raise RuntimeError("Observation controller-state slice mismatches live target memory")
+        if verify_memory:
+            memory=arm.get_state().get("target_pose")
+            if memory is None:
+                raise RuntimeError("Controller target memory missing: refuse projection")
+            memory=torch.as_tensor(memory,device=obs.device,dtype=obs.dtype)
+            if memory.shape[-1]!=7:
+                raise RuntimeError("Target controller state ABI changed")
+            actual=obs[:,offset:offset+7]
+            if not torch.allclose(actual,memory,atol=1e-5,rtol=0):
+                raise RuntimeError("Observation controller-state slice mismatches live target memory")
+        # Observer arm strips the target field without ever inspecting its value.
         converted=torch.cat([obs[:,:offset],obs[:,offset+7:]],dim=1)
         if converted.shape[-1]!=POLICY_OBS_DIM:
             raise RuntimeError("Projected observation ABI does not match exact frozen source network input")
@@ -160,7 +164,7 @@ def trial(policy, seed):
         observations={k:w.reset(seed=seed)[0] for k,w in worlds.items()}
         canonical_start=_project_policy_observation(observations["source"],worlds["source"])
         for key in ("memory","projected","observer","stateless","naive"):
-            projected=_project_policy_observation(observations[key],worlds[key])
+            projected=_project_policy_observation(observations[key],worlds[key],verify_memory=(key!='observer'))
             diff=float(torch.max(torch.abs(canonical_start-projected)).item())
             outcome["initial_obs_diff"][key]=diff
             if diff>5e-4:
@@ -182,7 +186,7 @@ def trial(policy, seed):
             for name,w in worlds.items():
                 if done[name]:
                     continue
-                native=act(policy,_project_policy_observation(observations[name],w))
+                native=act(policy,_project_policy_observation(observations[name],w,verify_memory=(name!='observer')))
                 if name in ("memory","projected","stateless","observer"):
                     arm=controller[name].controllers["arm"]
                     if name=="observer":
