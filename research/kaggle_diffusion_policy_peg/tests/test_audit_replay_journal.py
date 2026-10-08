@@ -56,7 +56,11 @@ class ReplayJournalTests(unittest.TestCase):
             "production_tree": "a"*40,
             "source_population_sha256": _digest(self.seeds),
             "successful_episode_seeds": successes,
-            "successful_count": len(successes), "replay_status": "completed",
+            "successful_count": len(successes),
+            "failed_count": len(self.seeds) - len(successes),
+            "full_source_census": True,
+            "log_file": f"replay_{arm_name}.log",
+            "replay_status": "completed",
         }
         self._write(self.root / "per_arm_replay" / f"{arm_name}.json", data)
         return data
@@ -117,6 +121,22 @@ class ReplayJournalTests(unittest.TestCase):
         data["successful_episode_seeds"].reverse()
         self._write(path, data)
         self.rejected("corrupt, reordered")
+
+    def test_replay_successes_without_explicit_full_source_census_are_denied(self):
+        self.all_arms()
+        path = self.root / "per_arm_replay" / f"{FACTORIAL[1].name}.json"
+        data = json.loads(path.read_text())
+        data["full_source_census"] = False
+        self._write(path, data)
+        self.rejected("incomplete or foreign")
+
+    def test_reported_failure_total_must_match_all_original_episodes(self):
+        self.all_arms()
+        path = self.root / "per_arm_replay" / f"{FACTORIAL[0].name}.json"
+        data = json.loads(path.read_text())
+        data["failed_count"] = 0
+        self._write(path, data)
+        self.rejected("incomplete or foreign")
 
     def test_contradictory_completed_census_refused(self):
         self.all_arms()
