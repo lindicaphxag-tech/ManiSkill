@@ -1,0 +1,56 @@
+name: Preregistered public-motion fault separability — frozen PPO PhysX
+
+on:
+  push:
+    branches:
+      - research/visible-motion-fault-identifiability-20261009
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  protocol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify pre-outcome protocol and source compilation
+        run: |
+          test "$(git hash-object research/PUBLIC_MOTION_FAULT_IDENTIFIABILITY_PRECOMMIT_V1.json)" = "c603f22177f41275186d4a6ebdce5e3a0f3e405f"
+          python -m py_compile research/public_motion_fault_identifiability.py
+
+  real-physx-two-world:
+    needs: protocol
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      PYTHONUNBUFFERED: '1'
+      ABI_TASK: ${{ matrix.task }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official PhysX CPU and released PPO policy dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Run 8 predeclared frozen PPO paired physical command-fault worlds
+        run: |
+          set -o pipefail
+          python research/public_motion_fault_identifiability.py 2>&1 | tee "public_motion_fault_${ABI_TASK}.log"
+          test -s "public_motion_fault_${ABI_TASK}_8.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-public-motion-fault-${{ matrix.task }}
+          path: |
+            public_motion_fault_*.json
+            public_motion_fault_*.log
