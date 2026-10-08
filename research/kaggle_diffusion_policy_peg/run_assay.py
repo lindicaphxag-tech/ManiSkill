@@ -78,9 +78,9 @@ CONFIG = {
 }
 if SMOKE_MODE:
     CONFIG.update(
-        requested_num_demos=8,
+        requested_num_demos=(32 if FACTORIAL_REPLAY_MODE else 8),
         minimum_paired_demos=4,
-        replay_count=8,
+        replay_count=(32 if FACTORIAL_REPLAY_MODE else 8),
         max_episode_steps=20,
         total_iters=2,
         batch_size=32,
