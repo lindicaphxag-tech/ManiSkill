@@ -85,9 +85,6 @@ def experiment(task: str, ground_truth_mode: str, seed: int) -> dict:
         ):
             row.update(inferred_mode=REFUSE, reason="warmup outside translation cap")
             return row
-        if arm._target_pose is None and ground_truth_mode == "pd_ee_target_delta_pose":
-            row.update(inferred_mode=REFUSE, reason="target state not initialized")
-            return row
 
         # Standard full 7D Panda native controller action: 6D EE + gripper.
         warmup = torch.zeros((1, 7), dtype=torch.float32, device=arm.device)
