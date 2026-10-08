@@ -1,0 +1,61 @@
+name: Native latent memory controller contract audit
+
+on:
+  push:
+    branches:
+      - research/latent-target-memory-minimax-certificate-v1
+  pull_request:
+    paths:
+      - 'research/latent_target_memory_cert.py'
+      - 'research/verify_native_latent_memory_certificate.py'
+      - 'research/LATENT_MEMORY_NATIVE_PRECOMMIT_V1.json'
+      - '.github/workflows/native-latent-memory-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-physx-target-position-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install unmodified official PhysX CPU simulator/controller
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+      - name: Check frozen four tasks and independent target-memory certificate
+        run: |
+          set -o pipefail
+          python research/verify_native_latent_memory_certificate.py 2>&1 | tee latent_target_memory_native_contract.log
+          test -s latent_target_memory_native_contract_v1.json
+      - name: Enforce all original cases and no real-robot/safety exaggeration
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          record=json.loads(Path('latent_target_memory_native_contract_v1.json').read_text())
+          assert record['total_predeclared_cases']==4
+          assert record['real_robot_physical_safety_certified'] is False
+          assert [(q['task'],q['seed']) for q in record['records']]==[
+              ('PickCube-v1',2277),('PushCube-v1',3388),
+              ('PullCube-v1',4499),('StackCube-v1',5511)]
+          assert all(not q['task_success_measured'] for q in record['records'])
+          assert all(q['actual_vs_additive_prediction_max_abs_m'] <= .0001 for q in record['records'])
+          print('All four original PhysX controller contracts verified; no policy outcome implied')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-panda-four-task-latent-target-memory-cert-v1
+          path: |
+            latent_target_memory_native_contract_v1.json
+            latent_target_memory_native_contract.log
