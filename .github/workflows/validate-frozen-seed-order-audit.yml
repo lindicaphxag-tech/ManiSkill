@@ -1,0 +1,35 @@
+name: CST frozen PPO seed and execution-order reproducibility audit
+on:
+  push:
+    branches:
+      - validation/frozen-ppo-replay-order-audit-20261009
+  workflow_dispatch:
+jobs:
+  cpu-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU simulator
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Audit identical requested seeds in mixed execution order
+        run: |
+          set -o pipefail
+          python research/audit_frozen_seed_reproducibility.py 2>&1 | tee reproducibility.log
+          test -s seed_reproducibility_audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cst-seed-order-audit
+          path: |
+            reproducibility.log
+            seed_reproducibility_audit.json
