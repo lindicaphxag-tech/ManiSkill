@@ -24,9 +24,16 @@ from typing import Any
 BASE = "62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3"
 CONVERSION = "875ae4d8777678119b2f192ee186c6c15e6894d5"
 CONTROLLER = "eed9be164797d41540421bda8adb3840377d7087"
-from research.kaggle_diffusion_policy_peg.assay_design import (
-    FACTORIAL, assay_arms, four_cell_differences,
-)
+# Both `python -m research...` and the exact reviewer-facing script path
+# must work. A direct script launch only places this folder on sys.path.
+try:
+    from research.kaggle_diffusion_policy_peg.assay_design import (
+        FACTORIAL, assay_arms, four_cell_differences,
+    )
+except ModuleNotFoundError as exc:
+    if exc.name != "research":
+        raise
+    from assay_design import FACTORIAL, assay_arms, four_cell_differences
 
 ARMS = ("upstream_baseline", "combined_pr1495_pr1472")
 FACTORIAL_NAMES = tuple(a.name for a in FACTORIAL)
