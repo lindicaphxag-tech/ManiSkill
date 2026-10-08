@@ -5,6 +5,7 @@ translations rather than silently clipping and claiming exact transfer.
 """
 import hashlib
 import json
+import os
 from pathlib import Path
 
 import gymnasium as gym
@@ -19,16 +20,35 @@ from frozen_ppo_pickcube_gate import (
     _actor, _bool_value, REPO, FILENAME, EXPECTED,
 )
 
-FILENAME="ppo/push_cube_final_ckpt.pt"
-EXPECTED="a4a02198b309e73cb877959079023d967d5f63ec78380de9703a10c9efafc0cf"
+PUBLISHED_MODEL_REVISION="6bdeb28810330ab5425ccd629bb561c58a56ff85"
+TASKS={
+    "pull_cube":("PullCube-v1","ppo/pull_cube_final_ckpt.pt",
+                 "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",51001),
+    "stack_cube":("StackCube-v1","ppo/stack_cube_final_ckpt.pt",
+                  "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c",61001)
+}
+TASK=os.environ.get("ABI_TASK")
+if TASK not in TASKS:
+    raise ValueError("ABI_TASK must be pull_cube or stack_cube; no unregistered task")
+TASK_NAME,FILENAME,EXPECTED,FIRST_SEED=TASKS[TASK]
+ALL_SEEDS=tuple(range(FIRST_SEED,FIRST_SEED+32))
+CHUNK=os.environ.get("ABI_CHUNK")
+if CHUNK is None:
+    SEEDS=ALL_SEEDS
+else:
+    if CHUNK not in ("0","1","2","3"):
+        raise ValueError("ABI_CHUNK must be 0,1,2,3 or unset")
+    block=8*int(CHUNK)
+    SEEDS=ALL_SEEDS[block:block+8]
+OUTPUT_NAME=(f"abi_independent_{TASK}_chunk_{CHUNK}.json"
+             if CHUNK is not None else f"abi_independent_{TASK}_all.json")
 POLICY_OBS_DIM=0
-SEEDS=tuple(range(41001,41033))
 STEPS=50
 TOL=1e-5
 
 
 def env(mode):
-    return gym.make("PushCube-v1",num_envs=1,obs_mode="state",
+    return gym.make(TASK_NAME,num_envs=1,obs_mode="state",
                     sim_backend="physx_cpu",reconfiguration_freq=1,
                     control_mode=mode,disable_env_checker=True)
 
@@ -185,7 +205,7 @@ def trial(policy, seed):
                 observations[name],_,term,trunc,info=w.step(action)
                 val=info.get("success")
                 if val is None:
-                    raise RuntimeError("Missing actual PickCube success flag")
+                    raise RuntimeError(f"Missing actual {TASK_NAME} success flag")
                 outcome["success_once"][name]=(
                     outcome["success_once"].get(name,False) or _bool_value(val)
                 )
@@ -202,7 +222,7 @@ def trial(policy, seed):
 
 def main():
     global POLICY_OBS_DIM
-    file=Path(hf_hub_download(repo_id=REPO,filename=FILENAME))
+    file=Path(hf_hub_download(repo_id=REPO,filename=FILENAME,revision=PUBLISHED_MODEL_REVISION))
     sha=hashlib.sha256(file.read_bytes()).hexdigest()
     if sha!=EXPECTED:
         raise RuntimeError("Published frozen model hash changed")
@@ -228,7 +248,13 @@ def main():
              "stateless":"pd_ee_target_delta_pose with achieved-pose substitute + same bounded projection",
              "naive":"pd_ee_target_delta_pose direct-copy"},
           "success_count":counts,"refused_episodes":refusals,"episodes":records}
-    Path("frozen_ppo_target_memory.json").write_text(json.dumps(data,indent=2))
+    data["task"]=TASK_NAME
+    data["protocol"]="research/ACTION_ABI_PULL_STACK_PREREGISTERED_V1.json"
+    data["hf_revision"]=PUBLISHED_MODEL_REVISION
+    data["seed_chunk"]=CHUNK
+    data["seed_list"]=list(SEEDS)
+    data["all_preregistered_seeds"]=[FIRST_SEED,FIRST_SEED+31]
+    Path(OUTPUT_NAME).write_text(json.dumps(data,indent=2))
     print("FROZEN_TARGET_MEMORY_SUMMARY",json.dumps({
         "success":counts,"refused":refusals,
         "approximate_steps":{k:sum(len(x["approximations"].get(k,[])) for x in records)
