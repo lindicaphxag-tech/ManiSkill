@@ -7,6 +7,8 @@ directional_anytime_probes module. No duplicated new Hoeffding theorem.
 
 This controls conditional *mean response* decisions only; it does not
 certify stochastic single-action or robot collision safety.
+The opt-in transfer-only mode can refuse to spend queries when the existing
+certificate is mathematically impossible at the frozen budget.
 """
 from __future__ import annotations
 
@@ -29,6 +31,7 @@ class ProbeExecutionStatus(str, Enum):
     CONDITIONAL_MEAN_TRANSFER = "CONDITIONAL_MEAN_TRANSFER"
     DO_NOT_TRANSFER_DISTINCT = "DO_NOT_TRANSFER_DISTINCT"
     ABSTAIN_QUERY_BUDGET = "ABSTAIN_QUERY_BUDGET"
+    ABSTAIN_NO_POSSIBLE_TRANSFER_CERTIFICATE = "ABSTAIN_NO_POSSIBLE_TRANSFER_CERTIFICATE"
     REJECT_UNSUPPORTED_ASSUMPTIONS = "REJECT_UNSUPPORTED_ASSUMPTIONS"
 
 
@@ -63,6 +66,7 @@ def execute_directional_probe_budget(
     controller_bounds_verified: bool,
     common_physical_chart_verified: bool,
     controller_authority_verified: bool,
+    transfer_only: bool = False,
 ) -> ProbeExecution:
     """Execute four forward passes for each paired seed and stop on evidence.
 
@@ -118,6 +122,35 @@ def execute_directional_probe_budget(
         ))):
         return finish(ProbeExecutionStatus.REJECT_UNSUPPORTED_ASSUMPTIONS, (), None,
                       "independent seeds, physical bounds, authority or locality envelope not established")
+
+    # Only transfer authorization is useful in this optional mode.
+    # When even a zero mean cannot overcome the worst-case confidence radius,
+    # no sequence of observations could authorize, so spend ZERO queries.
+    # Do not apply this optimization when distinct-response diagnosis matters.
+    if transfer_only:
+        from research.crg_core.transfer_certifiability_preflight import (
+            inspect_transfer_budget_feasibility,
+        )
+
+        preflight = inspect_transfer_budget_feasibility(
+            trusted_action_lows=low,
+            trusted_action_highs=high,
+            probe_fraction=probe_fraction,
+            locality_remainder_bound=locality_remainder_bound,
+            physical_response_tolerance=physical_response_tolerance,
+            familywise_error_budget=familywise_error_budget,
+            max_policy_forward_queries=max_policy_forward_queries,
+        )
+        if not preflight.could_ever_authorize_with_budget:
+            return finish(
+                ProbeExecutionStatus.ABSTAIN_NO_POSSIBLE_TRANSFER_CERTIFICATE,
+                (), None,
+                "no stochastic mean data can authorize transfer within the "
+                f"fixed budget: best-case confidence upper bound "
+                f"{preflight.minimum_possible_upper_bound:.9g} exceeds "
+                f"tolerance {physical_response_tolerance:.9g}; "
+                "this does NOT mean the policies are dissimilar",
+            )
 
     secants = []
     attempted = []
