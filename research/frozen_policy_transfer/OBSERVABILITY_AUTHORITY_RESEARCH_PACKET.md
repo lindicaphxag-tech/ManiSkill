@@ -113,6 +113,19 @@ handled in any publication-quality related work:
   belief-space re-planning and information-seeking manipulation
   actions under partial observability.
 
+- [Banerjee et al., HRI 2026, *A Human-in-the-Loop Confidence-Aware
+  Failure Recovery Framework for Modular Robot Policies*]
+  (https://emprise.cs.cornell.edu/modularhil/) already determines
+  when costly human information requests improve recovery in modular
+  manipulation. Reducing query count under uncertainty in itself
+  is NOT original to this project; our current simulation instead
+  targets a very specific missing low-level **commanded-target ACK**
+  state variable and uses a privileged controller-state readback.
+- [MAGMA-GEN, CoRL 2026]
+  (https://magma-rob.github.io/magma-gen) develops recovery supervision
+  from counterfactual execution after ambiguous manipulation failures.
+  It reinforces why our native target-hold outcomes must NOT be
+  described as the first counterfactual robotic fault recovery.
 **Surviving focused hypothesis, not a verified novelty claim:**
 make the *robot action ABI's hidden previous commanded target* the
 explicit authority-bearing information state, with an exact native
