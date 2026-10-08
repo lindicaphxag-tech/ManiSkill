@@ -103,7 +103,7 @@ the existing robomimic delta->absolute script.
 
 Latest public run:
 
-`90 passed in 1.87s`
+`100 passed in 3.03s`
 
 ### ManiSkill contract matrix
 
@@ -237,7 +237,7 @@ block upstream PR/review writes and require manual UI submission.
 
 - Implementation: [fail-closed OSC handshake](executable_osc_migration.py)
   (`initial_joint` migration with explicit unsupported-mode refusals).
-- [90-test deterministic public suite](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37709468190).
+- [100-test deterministic public suite](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37709468190).
 - [8-test real Panda/Lift, same-MJCF controller swap with full-scene numerical negative control](https://github.com/lindicaphxag-tech/robomimic/actions/runs/37706956215).
 - External replication thread #77 has a new, falsifiable experimental
   update, including requests for *negative* reproductions.
@@ -248,3 +248,19 @@ block upstream PR/review writes and require manual UI submission.
 **Acceptance boundary:** No new external maintainer review/merge of this
 research line and no independent replay yet. This is not a certified
 hardware-safe policy migration.
+
+
+## Live goal-history transport
+
+- Goal-memory executable code:
+  [`desired_osc_online_transport.py`](desired_osc_online_transport.py).
+- Fail-closed missing-state and out-of-range refuse examples are included
+  in the **100-test** [research suite](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37714476522).
+- Real robosuite Panda/Lift and Stack six-trial state-complete
+  action adapter:
+  [15/15 physical tests](https://github.com/lindicaphxag-tech/robomimic/actions/runs/37713698317).
+- Online desired OSC has a separate
+  [17-test real validation](https://github.com/lindicaphxag-tech/robomimic/actions/runs/37714363692),
+  subject to initial-goal-alignment follow-up.
+- We do not claim frozen learned policy parity or independent
+  maintainer adoption from these author-run experiments.
