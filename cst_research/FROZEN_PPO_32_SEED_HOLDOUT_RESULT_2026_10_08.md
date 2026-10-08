@@ -1,0 +1,78 @@
+# Prospective disjoint 32-seed frozen PPO controller-swap holdout — final results
+
+**Canonical successful CI:** https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37716840505
+
+**Pre-registration (published before the run):**
+[FROZEN_PPO_32_SEED_HOLDOUT_PRE_REG_2026_10_08.md](FROZEN_PPO_32_SEED_HOLDOUT_PRE_REG_2026_10_08.md)
+
+**Exact public test source:**
+https://github.com/lindicaphxag-tech/ManiSkill/blob/validation/frozen-ppo-ee-controller-swap-holdout-20261008/research/frozen_ppo_ee_swap.py
+
+## Design and model provenance
+
+- External MIT PPO checkpoint (ActionShift publication):
+  `kattri15/actionshift-baselines/ppo/pick_cube_final_ckpt.pt`
+- SHA-256 `3e6c95d63a2132843323e24cf7ba962b8cf2610f04b2a5a43f3efb6fef8497a8`.
+- **Frozen neural actor**, no training or fine-tuning.
+- Official ManiSkill Panda / PickCube-v1, `obs_mode=state`,
+  PhysX CPU, 50-step maximum.
+- Three separately stepping *real simulator* environments, each with its
+  own source state observations: source `pd_ee_delta_pose`, destination
+  `pd_ee_pose` with semantic transform, and destination `pd_ee_pose`
+  with raw native-action copy.
+- **All 32 exact preselected unseen seeds, 10001–10032, were run**;
+  no seed omitted. Initial observations source-vs-target have
+  `initial_obs_maxdiff=0.0` for every episode.
+- The earlier 4 development seeds `42,270,429,2026` are **not part** of
+  these results and were not included in the denominator.
+
+## Frozen, unconditional results
+
+| Controller arm | Success / 32 | Fraction |
+|---|---:|---:|
+| Source `pd_ee_delta_pose` | **32/32** | 100% |
+| Compiled `pd_ee_pose` | **31/32** | 96.875% |
+| Naive raw action into `pd_ee_pose` | **0/32** | 0% |
+
+Paired `compiled - naive`: **31/32 episodes** (+96.875 percentage points).
+Paired `compiled - source`: **-1/32 episode** (-3.125 percentage points).
+
+**One genuine migration failure retained:** seed `10014`. The source PPO
+succeeded at step 31; the compiled destination did **not** reach success
+before the fixed 50-step horizon; the naive target also failed. No
+post-hoc seed filtering, threshold change, extra training, or dropped
+run was applied. Other 31 episodes succeeded under compiled target at
+the same step as the source controller in the public log.
+
+Source-vs-compiled discordant pairs: 1 source-only success, 0
+compiled-only successes.
+Compiled-vs-naive discordant pairs: 31 compiled-only successes, 0
+naive-only successes.
+
+The canonical run retains a machine-readable
+`frozen_ppo_controller_swap.json` artifact and 32
+`FROZEN_PPO_SWAP_EPISODE` log entries.
+
+## What this validates / scientific caveat
+
+This is now a **real frozen trained policy, closed-loop
+own-observation evaluation**, no longer a scripted-action toy example.
+It shows that using the correct physical target action chart can
+substantially outperform sending raw trained-policy outputs into an
+incompatible controller; the underlying action-chart principle is
+**already known in prior research**, so we do NOT claim a broad
+first-in-literature novelty.
+
+**The one seed-10014 failure falsifies any claim that a correct
+instantaneous action transformation universally preserves task success.**
+Potential contributors include physically different controller
+integration/IK, floating-point perturbation amplified by feedback and
+contact, and late-horizon nonlinear dynamics. These are hypotheses
+until directly tested; it cannot be attributed to hidden controller
+memory or action saturation on present evidence.
+
+Generalization still needs: a different task/policy, a held-out controller
+family, explicit memory-state transfer, long-term closed-loop robustness,
+nonrepresentability diagnostics, independently run reproduction, and
+an upstream maintainer review/merge. This is not hardware-safety evidence,
+not a formal guarantee, and not a top-conference paper acceptance.
