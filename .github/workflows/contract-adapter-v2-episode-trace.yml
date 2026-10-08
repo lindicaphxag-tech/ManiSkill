@@ -1,0 +1,62 @@
+name: Contract adapter v2 episode-1 protocol trace
+
+on:
+  push:
+    branches:
+      - "validation/maniskill1495-maintainer-request"
+    paths:
+      - "validation/pr1495/trace_contract_adapter_episode.py"
+      - "validation/pr1495/summarize_episode_trace.py"
+      - "validation/pr1495/run_episode8_protocol_trace.sh"
+      - ".github/workflows/contract-adapter-v2-episode-trace.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  episode-trace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install software Vulkan
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libegl1 mesa-vulkan-drivers vulkan-tools
+          LVP_ICD="$(find /usr/share/vulkan/icd.d -maxdepth 1 -type f -name 'lvp_icd*.json' | head -n1)"
+          test -n "$LVP_ICD"
+          echo "VK_ICD_FILENAMES=$LVP_ICD" >> "$GITHUB_ENV"
+          VK_ICD_FILENAMES="$LVP_ICD" vulkaninfo --summary
+
+      - name: Run exact-sha episode 8 trace
+        env:
+          TARGET_EPISODE: "1"
+          ROOT: ${{ github.workspace }}/.validation-contract-adapter-trace
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+        run: bash validation/pr1495/run_episode8_protocol_trace.sh
+
+      - name: Publish trace summary
+        if: always()
+        run: |
+          if [[ -f .validation-contract-adapter-trace/episode_trace_summary.json ]]; then
+            cat .validation-contract-adapter-trace/episode_trace_summary.json
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: contract-adapter-v2-episode-1-trace
+          path: |
+            .validation-contract-adapter-trace/current_main.json
+            .validation-contract-adapter-trace/contract_adapter_v2.json
+            .validation-contract-adapter-trace/contract_adapter_v2_controller_fixed.json
+            .validation-contract-adapter-trace/episode_trace_summary.json
+          if-no-files-found: warn
+          include-hidden-files: true

@@ -1,0 +1,55 @@
+name: Episode 8 repair-path margin
+
+on:
+  push:
+    branches:
+      - "validation/maniskill1495-maintainer-request"
+    paths:
+      - "validation/pr1495/scan_episode8_repair_path.py"
+      - "validation/pr1495/run_episode8_repair_path.sh"
+      - ".github/workflows/episode8-repair-path.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  repair-path:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install software Vulkan
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libegl1 mesa-vulkan-drivers vulkan-tools
+          LVP_ICD="$(find /usr/share/vulkan/icd.d -maxdepth 1 -type f -name 'lvp_icd*.json' | head -n1)"
+          test -n "$LVP_ICD"
+          echo "VK_ICD_FILENAMES=$LVP_ICD" >> "$GITHUB_ENV"
+          VK_ICD_FILENAMES="$LVP_ICD" vulkaninfo --summary
+
+      - name: Scan episode-8 repair path
+        env:
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+        run: bash validation/pr1495/run_episode8_repair_path.sh
+
+      - name: Publish path margin
+        if: always()
+        run: |
+          if [[ -f .validation-episode8-repair-path/episode8_repair_path.json ]]; then
+            cat .validation-episode8-repair-path/episode8_repair_path.json
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: episode8-repair-path-margin
+          path: .validation-episode8-repair-path/episode8_repair_path.json
+          if-no-files-found: warn
+          include-hidden-files: true

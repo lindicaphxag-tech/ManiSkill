@@ -1,0 +1,72 @@
+name: SemRepair exhaustive discordant trajectory effects
+
+on:
+  push:
+    branches:
+      - "validation/maniskill1495-maintainer-request"
+    paths:
+      - "validation/pr1495/run_discordant_trajectory_effects.sh"
+      - "validation/pr1495/summarize_trajectory_effect_certificate.py"
+      - "validation/pr1495/run_episode8_protocol_trace.sh"
+      - "validation/pr1495/trace_contract_adapter_episode.py"
+      - "validation/pr1495/summarize_episode_trace.py"
+      - ".github/workflows/semrepair-discordant-trajectory-effects.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  exhaustive-discordance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install software Vulkan
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libegl1 mesa-vulkan-drivers vulkan-tools
+          LVP_ICD="$(find /usr/share/vulkan/icd.d -maxdepth 1 -type f -name 'lvp_icd*.json' | head -n1)"
+          test -n "$LVP_ICD"
+          echo "VK_ICD_FILENAMES=$LVP_ICD" >> "$GITHUB_ENV"
+          VK_ICD_FILENAMES="$LVP_ICD" vulkaninfo --summary
+
+      - name: Trace every discordant source episode
+        env:
+          ROOT: ${{ github.workspace }}/.validation-trajectory-effects
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+        run: bash validation/pr1495/run_discordant_trajectory_effects.sh
+
+      - name: Publish trajectory-effect certificate
+        if: always()
+        run: |
+          if [[ -f .validation-trajectory-effects/trajectory_effect_certificate.json ]]; then
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path(".validation-trajectory-effects/trajectory_effect_certificate.json")
+          x=json.loads(p.read_text())
+          for e in x["episodes"]:
+              e.pop("material_divergence_window_main", None)
+              e.pop("material_divergence_window_candidate", None)
+          print(json.dumps(x,indent=2,sort_keys=True))
+          PY
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: semrepair-exhaustive-discordant-trajectory-effects
+          path: |
+            .validation-trajectory-effects/trajectory_effect_certificate.json
+            .validation-trajectory-effects/episode-1/*.json
+            .validation-trajectory-effects/episode-63/*.json
+            .validation-trajectory-effects/episode-96/*.json
+          if-no-files-found: warn
+          include-hidden-files: true

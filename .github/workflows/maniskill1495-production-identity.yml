@@ -1,0 +1,101 @@
+name: PR1495 exact production identity certificate
+
+on:
+  push:
+    branches:
+      - "validation/maniskill1495-maintainer-request"
+    paths:
+      - ".github/workflows/maniskill1495-production-identity.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  identity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Certify exact four-cell production interventions
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3"
+          CTRL="5a408084daab6f2b644bcd3e653df11228071d98"
+          CONV="8e6eb8cf28ebe7f0a1c32de7a2898ae814203109"
+          BOTH="c282bb1b7d80b506104de31e52c8aba5cdbb62d0"
+          UP1472="eed9be164797d41540421bda8adb3840377d7087"
+          UP1495="cdd6db713ffe7edc3e0df3abfab51ea5320c1c0b"
+          CONV_PATH="mani_skill/trajectory/utils/actions/conversion.py"
+          CTRL_PATH="mani_skill/agents/controllers/pd_ee_pose.py"
+
+          git remote add canonical https://github.com/mani-skill/ManiSkill.git || true
+          git fetch --no-tags canonical "$BASE" "$UP1472" "$UP1495"
+          git fetch --no-tags origin "$CTRL" "$CONV" "$BOTH"
+
+          blob() { git rev-parse "$1:$2"; }
+
+          base_conv="$(blob "$BASE" "$CONV_PATH")"
+          base_ctrl="$(blob "$BASE" "$CTRL_PATH")"
+          up_conv="$(blob "$UP1495" "$CONV_PATH")"
+          up_ctrl="$(blob "$UP1472" "$CTRL_PATH")"
+          conv_conv="$(blob "$CONV" "$CONV_PATH")"
+          conv_ctrl="$(blob "$CONV" "$CTRL_PATH")"
+          ctrl_conv="$(blob "$CTRL" "$CONV_PATH")"
+          ctrl_ctrl="$(blob "$CTRL" "$CTRL_PATH")"
+          both_conv="$(blob "$BOTH" "$CONV_PATH")"
+          both_ctrl="$(blob "$BOTH" "$CTRL_PATH")"
+
+          test "$conv_conv" = "$up_conv"
+          test "$both_conv" = "$up_conv"
+          test "$ctrl_ctrl" = "$up_ctrl"
+          test "$both_ctrl" = "$up_ctrl"
+          test "$conv_ctrl" = "$base_ctrl"
+          test "$ctrl_conv" = "$base_conv"
+
+          test "$(git diff --name-only "$BASE" "$CONV" | sort)" = "$CONV_PATH"
+          test "$(git diff --name-only "$BASE" "$CTRL" | sort)" = "$CTRL_PATH"
+          expected="$(printf '%s\n%s\n' "$CTRL_PATH" "$CONV_PATH" | sort)"
+          test "$(git diff --name-only "$BASE" "$BOTH" | sort)" = "$expected"
+
+          mkdir -p .validation-pr1495-identity
+          python - <<PY
+import json
+from pathlib import Path
+d = {
+  "schema_version": 1,
+  "base": "$BASE",
+  "upstream_pr_heads": {"1472": "$UP1472", "1495": "$UP1495"},
+  "factorial_commits": {
+    "old_old": "$BASE",
+    "controller_only": "$CTRL",
+    "converter_only": "$CONV",
+    "combined": "$BOTH",
+  },
+  "production_blobs": {
+    "conversion_base": "$base_conv",
+    "conversion_upstream_1495": "$up_conv",
+    "controller_base": "$base_ctrl",
+    "controller_upstream_1472": "$up_ctrl",
+  },
+  "checks": {
+    "converter_only_exact_upstream_1495_blob": True,
+    "controller_only_exact_upstream_1472_blob": True,
+    "combined_exact_both_upstream_blobs": True,
+    "single_cell_other_path_unchanged_from_base": True,
+    "production_diff_shapes_exact": True,
+  },
+  "claim_boundary": "Exact production identity certificate only; no execution, policy, maintainer-review, or adoption claim.",
+}
+Path(".validation-pr1495-identity/identity.json").write_text(json.dumps(d, indent=2, sort_keys=True) + "\n")
+print(json.dumps(d, indent=2, sort_keys=True))
+PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: "pr1495-exact-production-identity"
+          path: .validation-pr1495-identity/identity.json
+          include-hidden-files: true

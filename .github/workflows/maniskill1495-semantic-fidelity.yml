@@ -1,0 +1,47 @@
+name: PR1495 direct semantic fidelity
+
+on:
+  push:
+    branches:
+      - "validation/maniskill1495-maintainer-request"
+    paths:
+      - "validation/pr1495/measure_rotation_semantic_fidelity.py"
+      - "validation/pr1495/summarize_semantic_fidelity.py"
+      - "validation/pr1495/run_semantic_fidelity_matrix.sh"
+      - ".github/workflows/maniskill1495-semantic-fidelity.yml"
+
+  workflow_dispatch:
+
+jobs:
+  semantic-fidelity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install software Vulkan
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libegl1 mesa-vulkan-drivers vulkan-tools
+          LVP_ICD="$(find /usr/share/vulkan/icd.d -maxdepth 1 -type f -name 'lvp_icd*.json' | head -n1)"
+          test -n "$LVP_ICD"
+          echo "VK_ICD_FILENAMES=$LVP_ICD" >> "$GITHUB_ENV"
+          VK_ICD_FILENAMES="$LVP_ICD" vulkaninfo --summary
+      - name: Measure direct converter-controller semantic fidelity
+        env:
+          COUNT: "10"
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+        run: bash validation/pr1495/run_semantic_fidelity_matrix.sh
+      - name: Publish semantic fidelity
+        if: always()
+        run: |
+          test ! -f .validation-pr1495-semantic-fidelity/semantic_fidelity_matrix.json || cat .validation-pr1495-semantic-fidelity/semantic_fidelity_matrix.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr1495-direct-semantic-fidelity
+          path: .validation-pr1495-semantic-fidelity/*.json
+          if-no-files-found: error
+          include-hidden-files: true

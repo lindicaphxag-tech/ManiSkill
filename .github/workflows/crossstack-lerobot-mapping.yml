@@ -1,0 +1,44 @@
+name: Cross-stack LeRobot mapping compensation witness
+
+on:
+  push:
+    branches:
+      - "validation/maniskill1495-maintainer-request"
+    paths:
+      - "validation/crossstack/lerobot_mapping_compensation.py"
+      - "validation/crossstack/reproduce_lerobot_cpu.sh"
+      - ".github/workflows/crossstack-lerobot-mapping.yml"
+  pull_request:
+    paths:
+      - "validation/crossstack/lerobot_mapping_compensation.py"
+      - "validation/crossstack/reproduce_lerobot_cpu.sh"
+      - ".github/workflows/crossstack-lerobot-mapping.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  lerobot-mapping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Execute the exact public reproduction command
+        run: |
+          set -euxo pipefail
+          mkdir -p validation/crossstack/results
+          OUT="$PWD/validation/crossstack/results/lerobot_mapping_compensation.json" \
+            bash validation/crossstack/reproduce_lerobot_cpu.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crossstack-lerobot-mapping-compensation
+          path: validation/crossstack/results/lerobot_mapping_compensation.json
+          if-no-files-found: error

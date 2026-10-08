@@ -1,0 +1,52 @@
+name: Semantic execution decoupling curve
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - "validation/maniskill1495-maintainer-request"
+    paths:
+      - "validation/pr1495/SEMANTIC_EXECUTION_DECOUPLING_PROTOCOL.md"
+      - "validation/pr1495/run_semantic_execution_curve.sh"
+      - "validation/pr1495/summarize_semantic_execution_curve.py"
+      - ".github/workflows/semantic-execution-decoupling.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: semantic-execution-decoupling-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  curve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install software Vulkan
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libegl1 mesa-vulkan-drivers vulkan-tools
+          LVP_ICD="$(find /usr/share/vulkan/icd.d -maxdepth 1 -type f -name 'lvp_icd*.json' | head -n1)"
+          test -n "$LVP_ICD"
+          echo "VK_ICD_FILENAMES=$LVP_ICD" >> "$GITHUB_ENV"
+      - name: Run frozen semantic-execution curve
+        env:
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+          REPEATS: "5"
+          COUNT: "10"
+        run: bash validation/pr1495/run_semantic_execution_curve.sh
+      - name: Publish result
+        if: always()
+        run: |
+          test ! -f .validation-semantic-execution-curve/semantic_execution_curve.json ||             cat .validation-semantic-execution-curve/semantic_execution_curve.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: semantic-execution-decoupling-curve
+          path: .validation-semantic-execution-curve/semantic_execution_curve.json
+          if-no-files-found: warn

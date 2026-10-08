@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "artifact": "SemRepair public evidence provenance manifest",
+  "date": "2026-10-06",
+  "authorization_model": [
+    "implementation_identity",
+    "measurement_qualification",
+    "semantic_correctness",
+    "repair_interaction",
+    "execution_effect"
+  ],
+  "evidence": {
+    "maniskill_paired_semantic": {
+      "workflow_run": 37401619096,
+      "status": "established",
+      "implementation_scope": {
+        "baseline": "62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3",
+        "converter_repair": "cdd6db713ffe7edc3e0df3abfab51ea5320c1c0b",
+        "controller_repair": "eed9be164797d41540421bda8adb3840377d7087"
+      },
+      "supports": [
+        "paired converter-to-controller semantic interaction",
+        "strict compensating bundle on two frozen request corpora",
+        "episode-clustered mechanism inference"
+      ],
+      "does_not_support": [
+        "execution non-regression",
+        "policy improvement",
+        "upstream adoption"
+      ]
+    },
+    "maniskill_replay_repeatability": {
+      "workflow_run": 37407944746,
+      "artifact_id": 11388196816,
+      "artifact_sha256": "dc3452caed344a22db55716f77ea1b6d5d12baa89049ca7248a36a8721b9e3f1",
+      "status": "established",
+      "implementation_scope": {
+        "current_main": "107c9528b23b55bd276cf723c260a45ae7ce00ec",
+        "clean_adapter_v2": "bd0e4feae2491a0d433107210ce8c16b8e8fb69a"
+      },
+      "supports": [
+        "exact 5-repeat replay repeatability",
+        "current main 9/10 x5",
+        "clean adapter v2 8/10 x5",
+        "stable baseline-only episode 1 discordance",
+        "measurement repeatability qualification"
+      ],
+      "does_not_support": [
+        "cause of episode-1 regression",
+        "generalization to all environments",
+        "policy improvement"
+      ]
+    },
+    "maniskill_stable_episode1_divergence": {
+      "workflow_run": 37409297375,
+      "status": "established",
+      "implementation_scope": {
+        "current_main": "107c9528b23b55bd276cf723c260a45ae7ce00ec",
+        "clean_adapter_v2": "bd0e4feae2491a0d433107210ce8c16b8e8fb69a",
+        "controller_repair": "eed9be164797d41540421bda8adb3840377d7087"
+      },
+      "supports": [
+        "first physical-action divergence at call 0",
+        "first controller-state divergence at call 1",
+        "first request divergence at call 2",
+        "clean adapter physical-trace invariance to controller sign repair"
+      ],
+      "does_not_support": [
+        "causal sufficiency of call-0 difference",
+        "general robustness radius"
+      ]
+    },
+    "maniskill_measurement_qualification": {
+      "workflow_run": 37409249764,
+      "artifact_id": 11388857046,
+      "artifact_sha256": "b3f25c970da8870684f125b9b48447c2cd8929f9d088ce184fccf68d729b06fc",
+      "status": "established",
+      "supports": [
+        "ManiSkill replay channel measurement-qualified",
+        "LeRobot roundtrip-only channel rejected as non-identifying"
+      ],
+      "does_not_support": [
+        "repair authorization by itself"
+      ]
+    },
+    "lerobot_self_consistency_collision": {
+      "workflow_run": 37407845159,
+      "status": "established",
+      "upstream_scope": {
+        "repository": "huggingface/lerobot",
+        "sha": "8c920c4270460851cedd2737657584586d3dc66f",
+        "issue": 3863,
+        "fix_pr": 4111
+      },
+      "source_sha256": "1c99f2a66649579cf6536d1970f71172b0b50bcb8decd226a9aa8969c0b0f171",
+      "supports": [
+        "exact roundtrip can coexist with wrong forward semantics",
+        "repeatable but non-identifying self-consistency evidence"
+      ],
+      "does_not_support": [
+        "SemRepair upstream adoption",
+        "policy-performance impact"
+      ]
+    },
+    "maniskill_episode1_prefix_intervention": {
+      "workflow_run": 37410040182,
+      "artifact_id": 11387854817,
+      "artifact_sha256": "3022c8e0529f0224b963a95bc411a262d46ad1b68c659ee335f28007b3be706f",
+      "status": "invalid_endpoint",
+      "implementation_scope": {
+        "current_main": "107c9528b23b55bd276cf723c260a45ae7ce00ec",
+        "clean_adapter_v2": "bd0e4feae2491a0d433107210ce8c16b8e8fb69a"
+      },
+      "preregistered_protocol": "validation/pr1495/STABLE_EPISODE1_PREFIX_INTERVENTION_PROTOCOL.md",
+      "supports": [
+        "the first monkeypatch-based causal path failed its preregistered endpoint-equivalence check",
+        "full-main interposition did not reproduce the direct current-main endpoint"
+      ],
+      "does_not_support": [
+        "any causal-prefix sufficiency claim",
+        "claim that no prefix can recover success"
+      ]
+    }
+  },
+  "external_evidence_counts": {
+    "independent_semrepair_reproductions": 0,
+    "upstream_retained_semrepair_regressions": 0,
+    "upstream_retained_semrepair_fixes": 0,
+    "external_semrepair_citations": 0
+  },
+  "claim_boundary": "Only evidence with status=established may support the listed supports. Pending evidence cannot be promoted into a claim."
+}

@@ -1,0 +1,55 @@
+name: Causal endpoint regime audit
+
+on:
+  push:
+    branches:
+      - "validation/maniskill1495-maintainer-request"
+    paths:
+      - "validation/pr1495/run_endpoint_regime_audit.sh"
+      - "validation/pr1495/summarize_endpoint_regime_audit.py"
+      - ".github/workflows/causal-endpoint-regime-audit.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  endpoint-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install software Vulkan
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libegl1 mesa-vulkan-drivers vulkan-tools
+          LVP_ICD="$(find /usr/share/vulkan/icd.d -maxdepth 1 -type f -name 'lvp_icd*.json' | head -n1)"
+          test -n "$LVP_ICD"
+          echo "VK_ICD_FILENAMES=$LVP_ICD" >> "$GITHUB_ENV"
+          VK_ICD_FILENAMES="$LVP_ICD" vulkaninfo --summary
+
+      - name: Run endpoint-regime audit
+        env:
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+        run: bash validation/pr1495/run_endpoint_regime_audit.sh
+
+      - name: Publish endpoint audit
+        if: always()
+        run: |
+          if [[ -f .validation-endpoint-regime-audit/endpoint_regime_audit.json ]]; then
+            cat .validation-endpoint-regime-audit/endpoint_regime_audit.json
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: causal-endpoint-regime-audit
+          path: .validation-endpoint-regime-audit/endpoint_regime_audit.json
+          if-no-files-found: error
+          include-hidden-files: true

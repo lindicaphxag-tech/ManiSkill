@@ -1,0 +1,59 @@
+name: PR1495 official-demo representation differential
+
+on:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: "Official PegInsertionSide episodes to replay"
+        required: false
+        default: "10"
+  push:
+    branches:
+      - "validation/maniskill1495-maintainer-request"
+    paths:
+      - "validation/pr1495/analyze_demo_rotation_diff.py"
+      - "validation/pr1495/run_demo_rotation_diff.sh"
+      - ".github/workflows/maniskill1495-demo-differential.yml"
+
+jobs:
+  demo-differential:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install headless simulation prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libegl1 mesa-vulkan-drivers vulkan-tools
+          find /usr/share/vulkan/icd.d -maxdepth 1 -type f -print
+          LVP_ICD="$(find /usr/share/vulkan/icd.d -maxdepth 1 -type f -name 'lvp_icd*.json' | head -n1)"
+          test -n "$LVP_ICD"
+          echo "VK_ICD_FILENAMES=$LVP_ICD" >> "$GITHUB_ENV"
+          VK_ICD_FILENAMES="$LVP_ICD" vulkaninfo --summary
+
+      - name: Run paired official-demo conversion differential
+        env:
+          COUNT: ${{ inputs.count || '10' }}
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+        run: |
+          bash validation/pr1495/run_demo_rotation_diff.sh
+
+      - name: Publish summary
+        if: always()
+        run: |
+          if [[ -f .validation-pr1495-demo-diff/demo_rotation_diff.json ]]; then
+            cat .validation-pr1495-demo-diff/demo_rotation_diff.json
+          fi
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr1495-official-demo-rotation-differential
+          path: .validation-pr1495-demo-diff/demo_rotation_diff.json
+          if-no-files-found: warn

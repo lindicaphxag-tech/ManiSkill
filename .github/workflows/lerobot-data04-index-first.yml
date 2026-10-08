@@ -1,0 +1,74 @@
+name: LeRobot DATA-04 index-first patch validation
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - "validation/maniskill1495-maintainer-request"
+    paths:
+      - "validation/crossstack/lerobot_data04/**"
+      - ".github/workflows/lerobot-data04-index-first.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: lerobot-data04-index-first-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Checkout pinned LeRobot current main
+        run: |
+          git clone --filter=blob:none https://github.com/huggingface/lerobot.git lerobot-src
+          git -C lerobot-src checkout d40e8709cffb93644db66e30604ef50fdec003cb
+          test "$(git -C lerobot-src rev-parse HEAD)" = "d40e8709cffb93644db66e30604ef50fdec003cb"
+
+      - name: Apply anchor-checked DATA-04 prototype
+        run: |
+          python validation/crossstack/lerobot_data04/apply_data04_index_first_patch.py lerobot-src
+          git -C lerobot-src diff --check
+          git -C lerobot-src diff --             src/lerobot/datasets/video_utils.py             src/lerobot/datasets/dataset_reader.py
+
+      - name: Install LeRobot dataset test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e "./lerobot-src[dataset]"
+          python -m pip install pytest
+
+      - name: Compile patched production modules before pytest
+        run: |
+          python -m py_compile             lerobot-src/src/lerobot/datasets/video_utils.py             lerobot-src/src/lerobot/datasets/dataset_reader.py
+
+      - name: Run DATA-04 contract tests against patched LeRobot
+        env:
+          PYTHONPATH: ${{ github.workspace }}/lerobot-src
+        run: |
+          cp validation/crossstack/lerobot_data04/test_data04_index_first.py             lerobot-src/tests/datasets/test_data04_index_first.py
+          cd lerobot-src
+          python -m pytest -q tests/datasets/test_data04_index_first.py
+
+      - name: Compile patched production modules
+        run: |
+          python -m py_compile             lerobot-src/src/lerobot/datasets/video_utils.py             lerobot-src/src/lerobot/datasets/dataset_reader.py
+
+      - name: Export exact patch
+        run: |
+          mkdir -p validation/crossstack/results
+          git -C lerobot-src diff --binary >             validation/crossstack/results/lerobot-data04-index-first.patch
+          sha256sum validation/crossstack/results/lerobot-data04-index-first.patch             | tee validation/crossstack/results/lerobot-data04-index-first.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lerobot-data04-index-first-patch
+          path: validation/crossstack/results/lerobot-data04-index-first.*
+          if-no-files-found: error

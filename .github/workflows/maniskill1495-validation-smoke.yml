@@ -1,0 +1,61 @@
+name: PR1495 maintainer-request validation smoke
+
+on:
+  push:
+    branches:
+      - "validation/maniskill1495-maintainer-request"
+    paths:
+      - "validation/pr1495/**"
+      - ".github/workflows/maniskill1495-validation-smoke.yml"
+  pull_request:
+    paths:
+      - "validation/pr1495/**"
+      - ".github/workflows/maniskill1495-validation-smoke.yml"
+
+jobs:
+  protocol-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check shell syntax
+        run: |
+          bash -n validation/pr1495/run_peg_dp.sh
+          bash -n validation/pr1495/hf_job_entrypoint.sh
+
+      - name: Compile evidence summarizer
+        run: python -m py_compile validation/pr1495/summarize_tensorboard.py
+
+      - name: Validate online notebook JSON
+        run: python -m json.tool validation/pr1495/online_gpu.ipynb >/dev/null
+
+      - name: Verify frozen comparison identities
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path("validation/pr1495/run_peg_dp.sh").read_text()
+          required = {
+              "baseline": "62ff3a5896b4d5b4cf0ac4c8d79afe600c9404a3",
+              "fixed": "cdd6db713ffe7edc3e0df3abfab51ea5320c1c0b",
+              "env": "PegInsertionSide-v1",
+              "control": "pd_ee_delta_pose",
+              "iters": "100000",
+              "private_demo_root": "DEMO_ROOT=\"$WORK_ROOT/demos/$VARIANT-$TARGET_SHA\"",
+              "unconditional_replay": "rm -f \"$DEMO\" \"$DEMO_JSON\"",
+              "raw_hash": "\"raw_demo_sha256\"",
+              "converted_hash": "\"converted_demo_sha256\"",
+              "track_mode": "TRACK_MODE=\"${TRACK_MODE:-auto}\"",
+              "tb_fallback": "TRACK_MODE=\"tensorboard\"",
+          }
+          for key, value in required.items():
+              assert value in text, f"missing frozen {key}: {value}"
+          entrypoint = Path("validation/pr1495/hf_job_entrypoint.sh").read_text()
+          assert "7e3ee79fd50979c15bd9d234d4a120d04e05a7e3" in entrypoint
+          summary = Path("validation/pr1495/summarize_tensorboard.py").read_text()
+          assert '"series"' in summary
+          assert '"available_scalar_tags"' in summary
+          PY

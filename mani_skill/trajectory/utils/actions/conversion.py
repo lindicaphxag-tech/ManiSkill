@@ -1,11 +1,11 @@
 """Utilities to convert actions between different control modes. Note that this code is specifically designed for the Franka Panda robot arm, it is not guaranteed to work for other robots."""
+
 from typing import Union
 
 import numpy as np
 import sapien
 import torch
 from tqdm.auto import tqdm
-from transforms3d.quaternions import quat2axangle
 
 from mani_skill.agents.controllers import (
     PDEEPosController,
@@ -49,12 +49,24 @@ def qpos_to_pd_joint_vel(controller: PDJointVelController, qpos):
     return gym_utils.inv_scale_action(qvel, low, high)
 
 
-def compact_axis_angle_from_quaternion(quat: np.ndarray) -> np.ndarray:
-    theta, omega = quat2axangle(quat)
-    # - 2 * np.pi to make the angle symmetrical around 0
-    if omega > np.pi:
-        omega = omega - 2 * np.pi
-    return omega * theta
+def euler_xyz_from_quaternion(quat: np.ndarray) -> np.ndarray:
+    """Convert a quaternion to the XYZ Euler representation used by PDEEPoseController."""
+    quat = torch.as_tensor(quat)
+    matrix = rotation_conversions.quaternion_to_matrix(quat)
+    return rotation_conversions.matrix_to_euler_angles(matrix, "XYZ").cpu().numpy()
+
+
+def inverse_delta_to_pd_ee_euler(quat: np.ndarray) -> np.ndarray:
+    """Encode the desired relative rotation in PDEEPoseController's XYZ Euler convention.
+
+    The trajectory converter supplies ``current * target.inv()``, i.e. the
+    inverse of the desired relative rotation. Invert that quaternion, then
+    express the result in the XYZ Euler representation consumed by the pose
+    controller. Rotation-action scaling is a separate controller concern.
+    """
+    quat = torch.as_tensor(quat)
+    target_delta = rotation_conversions.quaternion_invert(quat)
+    return euler_xyz_from_quaternion(target_delta.numpy())
 
 
 def delta_pose_to_pd_ee_delta(
@@ -62,8 +74,10 @@ def delta_pose_to_pd_ee_delta(
     delta_pose: sapien.Pose,
     pos_only=False,
 ):
-    """
-    Given a delta pose, convert it to a PDEEPose/PDEEPos Controller action
+    """Convert a delta pose to a normalized PDEEPos/PDEEPose controller action.
+
+    PDEEPoseController interprets its rotational action as XYZ Euler angles, so
+    the quaternion must use that representation before action normalization.
     """
     # TODO (stao): update this code to be parallelized / use GPU
     assert isinstance(controller, PDEEPosController)
@@ -76,7 +90,7 @@ def delta_pose_to_pd_ee_delta(
         )
     delta_pose = np.r_[
         delta_pose.p,
-        compact_axis_angle_from_quaternion(delta_pose.q),
+        inverse_delta_to_pd_ee_euler(delta_pose.q),
     ]
     return gym_utils.inv_scale_action(delta_pose, low.cpu().numpy(), high.cpu().numpy())
 

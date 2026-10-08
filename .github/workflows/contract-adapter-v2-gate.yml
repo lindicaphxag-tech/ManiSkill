@@ -1,0 +1,55 @@
+name: Contract adapter v2 same-base gate
+
+on:
+  push:
+    branches:
+      - "validation/maniskill1495-maintainer-request"
+    paths:
+      - "validation/pr1495/run_contract_adapter_v2_gate.sh"
+      - "validation/pr1495/summarize_contract_adapter_v2.py"
+      - ".github/workflows/contract-adapter-v2-gate.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  same-base-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install software Vulkan
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libegl1 mesa-vulkan-drivers vulkan-tools
+          LVP_ICD="$(find /usr/share/vulkan/icd.d -maxdepth 1 -type f -name 'lvp_icd*.json' | head -n1)"
+          test -n "$LVP_ICD"
+          echo "VK_ICD_FILENAMES=$LVP_ICD" >> "$GITHUB_ENV"
+          VK_ICD_FILENAMES="$LVP_ICD" vulkaninfo --summary
+
+      - name: Run same-base controller-contract gate
+        env:
+          COUNT: "10"
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+        run: bash validation/pr1495/run_contract_adapter_v2_gate.sh
+
+      - name: Publish gate
+        if: always()
+        run: |
+          if [[ -f .validation-contract-adapter-v2/contract_adapter_v2_gate.json ]]; then
+            cat .validation-contract-adapter-v2/contract_adapter_v2_gate.json
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: contract-adapter-v2-same-base-gate
+          path: .validation-contract-adapter-v2/contract_adapter_v2_gate.json
+          if-no-files-found: warn

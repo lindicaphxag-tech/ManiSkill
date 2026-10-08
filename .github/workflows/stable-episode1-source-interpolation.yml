@@ -1,0 +1,51 @@
+name: Stable episode1 source-level repair-path interpolation
+
+on:
+  push:
+    branches:
+      - "validation/maniskill1495-maintainer-request"
+    paths:
+      - "validation/pr1495/build_source_interpolation_variant.py"
+      - "validation/pr1495/run_episode1_source_interpolation.sh"
+      - "validation/pr1495/summarize_episode1_source_interpolation.py"
+      - "validation/pr1495/STABLE_EPISODE1_SOURCE_INTERPOLATION_PROTOCOL.md"
+      - ".github/workflows/stable-episode1-source-interpolation.yml"
+  pull_request:
+    paths:
+      - "validation/pr1495/build_source_interpolation_variant.py"
+      - "validation/pr1495/run_episode1_source_interpolation.sh"
+      - "validation/pr1495/summarize_episode1_source_interpolation.py"
+      - "validation/pr1495/STABLE_EPISODE1_SOURCE_INTERPOLATION_PROTOCOL.md"
+      - ".github/workflows/stable-episode1-source-interpolation.yml"
+  workflow_dispatch:
+
+jobs:
+  interpolation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install software Vulkan
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libegl1 mesa-vulkan-drivers vulkan-tools
+          LVP_ICD="$(find /usr/share/vulkan/icd.d -maxdepth 1 -type f -name 'lvp_icd*.json' | head -n1)"
+          test -n "$LVP_ICD"
+          echo "VK_ICD_FILENAMES=$LVP_ICD" >> "$GITHUB_ENV"
+      - name: Run preregistered source-level interpolation
+        env:
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+        run: bash validation/pr1495/run_episode1_source_interpolation.sh
+      - name: Publish result
+        if: always()
+        run: |
+          test ! -f .validation-episode1-source-interpolation/source_interpolation.json || cat .validation-episode1-source-interpolation/source_interpolation.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stable-episode1-source-interpolation
+          path: .validation-episode1-source-interpolation/source_interpolation.json
+          if-no-files-found: warn
