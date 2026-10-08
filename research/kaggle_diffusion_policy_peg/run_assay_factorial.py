@@ -201,8 +201,8 @@ def index_converted_episodes(demo_path: Path) -> dict[int, dict]:
             if source_key not in h5_file:
                 raise RuntimeError(f"Converted metadata points to missing HDF5 key {source_key}")
             result[seed] = {"source_key": source_key, "metadata": episode}
-    if not result:
-        raise RuntimeError(f"No successful converted demonstrations found in {demo_path}")
+    # Zero successful conversions are meaningful intervention outcomes;
+    # preserve the 0/N full-source record even if no model can be trained.
     return result
 
 def write_paired_dataset(demo_path: Path, indexed_episodes: dict[int, dict], seeds: list[int]) -> Path:
@@ -395,7 +395,7 @@ try:
             "-c", CONFIG["control_mode"], "-o", "state", "--save-traj",
             "--num-envs", "10", "-b", CONFIG["sim_backend"],
             "--count", str(CONFIG["replay_count"]),
-        ], OUTPUT / "dataset.log", cwd=REPO)
+        ], OUTPUT / f"replay_{arm}.log", cwd=REPO)
         demo_path = arm_demo_dir / DEMO_NAME
         meta_path = demo_path.with_suffix(".json")
         if not demo_path.is_file() or not meta_path.is_file():
@@ -475,7 +475,7 @@ try:
     ]
     if len(common_seeds) < CONFIG["minimum_paired_demos"]:
         raise RuntimeError(
-            f"Only {len(common_seeds)} source-seed-matched successful demos survived both replays; "
+            f"Only {len(common_seeds)} source-seed-matched successful demos survived all four replays; "
             f"minimum is {CONFIG['minimum_paired_demos']}"
         )
     common_seed_sha256 = hashlib.sha256(
