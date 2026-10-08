@@ -1,0 +1,90 @@
+{
+  "schema": "unknown_ack_bounded_or_query_physx_v1",
+  "protocol_frozen_at": "2026-10-09",
+  "experiment": "Prospective genuine ManiSkill Panda PhysX frozen PPO same-seed comparison under one explicit target-arm hold and unknown ACK at t=2.",
+  "tasks": {
+    "pull_cube": {
+      "env": "PullCube-v1",
+      "seeds_inclusive": [
+        122001,
+        122008
+      ],
+      "checkpoint": "ppo/pull_cube_final_ckpt.pt",
+      "sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7"
+    },
+    "stack_cube": {
+      "env": "StackCube-v1",
+      "seeds_inclusive": [
+        132001,
+        132008
+      ],
+      "checkpoint": "ppo/stack_cube_final_ckpt.pt",
+      "sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+    }
+  },
+  "external_policy_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+  "sim_backend": "physx_cpu",
+  "horizon_steps": 50,
+  "control_mode_source": "pd_ee_delta_pose",
+  "control_mode_target": "pd_ee_target_delta_pose",
+  "frozen_policy_updates": 0,
+  "fault": {
+    "step_zero_indexed": 2,
+    "issue_native_zero_arm_delta_instead_of_policy_command": true,
+    "keep_original_gripper": true,
+    "advance_actual_physics": true,
+    "delivery_status_available_to_adapter": null,
+    "possible_delivery_hypotheses": [
+      "original desired command executed",
+      "zero native arm delta executed"
+    ],
+    "not_real_network_packet_loss": true
+  },
+  "arms": [
+    "source_no_fault",
+    "fault_oracle_private_target",
+    "fault_optimistic_unverified_ack",
+    "fault_strict_common_exact",
+    "fault_robust_two_history_without_query",
+    "fault_robust_then_single_privileged_query",
+    "fault_always_single_privileged_query"
+  ],
+  "robust_budgets": {
+    "worst_case_position_infinity_norm_m": 0.05,
+    "worst_case_rotation_geodesic_rad": 0.05,
+    "auth_numeric_guard": 1e-9,
+    "controller_rotation_native_l2_ball": 1,
+    "maximum_adaptive_privileged_reads": 1
+  },
+  "methods": {
+    "strict": "only common exact native target from all belief candidates, else count refusal as failure",
+    "robust_no_query": "compute common position/SO3 minimax action from both action-history hypotheses; issue only if trust, representability and both setpoint budgets pass; else refuse",
+    "robust_then_query": "attempt exactly same robust no-query; if refuses and unused one read remains, call controller true target readback ONCE, reset belief, then compute projected exact-memory target command",
+    "always_query": "take one privileged native controller target read after the uncertain fault, regardless of geometric ambiguity",
+    "optimistic": "assume requested action executed despite physically injected zero arm delta",
+    "oracle": "read actual privileged target memory throughout all decisions"
+  },
+  "gates": {
+    "complete_16_distinct_original_seed_state_pairs": true,
+    "all_fault_arms_fault_at_same_step_or_disclose_failure": true,
+    "source_competence_min_success_per_task": 5,
+    "all_seven_arm_success_flags_or_declared_refusal": true,
+    "per_trial_count_true_controller_queries_and_robust_authorizations": true,
+    "record_inexact_bounded_projection_events": true,
+    "zero_unverified_or_missing_ACK_used_as_true": true,
+    "no_posthoc_budget_tuning": true,
+    "all_negative_cases_preserved": true
+  },
+  "primary_outcome": "On each of the 16 prespecified states: true official info.success ever by horizon 50 for all seven paired arms, plus selective query count and robust/no-query authorization breakdown.",
+  "secondary_outcome": "Paired difference versus optimistic and mandatory single privileged readback; no effect-size significance claim beyond sample.",
+  "not_claimed": [
+    "true wireless packet drop",
+    "actual robot force/contact safety",
+    "unprivileged readback when privileged controller state used",
+    "independent external execution",
+    "cross-robot PPO task transfer",
+    "new SO3 minimax theorem",
+    "L8/L9 acceptance"
+  ],
+  "failure_must_be_published": true
+}
