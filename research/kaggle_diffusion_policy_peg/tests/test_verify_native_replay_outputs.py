@@ -177,9 +177,16 @@ class ActualNativeReplayVerificationTests(unittest.TestCase):
         self.successes[arm] = []
         self.create_native(arm)
         self.regenerate_ledgers()
+        # The independent intention-to-replay record must agree too; the
+        # original fixture had one success in this treatment arm.
+        original = json.loads(
+            (self.out / "replay_intention_to_treat.json").read_text()
+        )
+        record = next(r for r in original["arms"] if r["arm"] == arm)
+        record["successful_episode_seeds"] = []
+        record["successful_seed_sha256"] = _digest([])
+        self.write_json(self.out / "replay_intention_to_treat.json", original)
         value = verify_native_replay_outputs(self.out, self.native)
-        # The original precommit/journal comparison is still independent:
-        # update the second source-episode outcome track consistently.
         self.assertEqual(value["per_arm_native"][arm]["native_terminal_successes"], 0)
 
     def test_symlinked_original_native_file_refused(self):
