@@ -22,7 +22,7 @@ from frozen_ppo_pickcube_gate import (
 FILENAME="ppo/push_cube_final_ckpt.pt"
 EXPECTED="a4a02198b309e73cb877959079023d967d5f63ec78380de9703a10c9efafc0cf"
 POLICY_OBS_DIM=0
-SEEDS=tuple(range(40001,40033))
+SEEDS=tuple(range(41001,41033))
 STEPS=50
 TOL=1e-5
 
