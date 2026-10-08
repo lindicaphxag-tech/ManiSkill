@@ -1,5 +1,10 @@
 # Stateful action-interface transfer: reviewer reproduction packet
 
+**First choose what you want to check.** For a **simulator-free audit of authentic original PhysX evidence and honest paired statistics**, run the new [SHA-locked 64-state exact authority frontier](PAIRED_AUTHORITY_FRONTIER_64.md). For **actual new PhysX re-execution on YOUR fork**, use the now-merged [seven-arm selective-query workflow](../../../.github/workflows/external-selective-query-physx.yml) and the [one-click independent researcher guide](../EXTERNAL_FORK_ONE_CLICK_PHYSX.md). The latter is a *potential mechanism for third-party replication*; no independent outside run is claimed.
+
+**New rigorous negative-statistical finding:** original-source exactly matched 64 task states gave 5 selective-only and 2 mandatory-only wins (two-sided exact p=0.453125, **no significant superiority**) while preserving the observed 15-versus-64 privileged target reads. An optional readback informational advantage versus zero-query is disclosed and **does not** support equal-information superiority. [All original file hashes and eight destructive regression tests](PAIRED_AUTHORITY_FRONTIER_64.md) are reproducible without ManiSkill or external dependencies. [True source CI](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37828426195) · [Independent original-data accounting CI (Python 3.11 + 3.13)](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37831666978).
+
+
 **Scope.** We used the published, frozen [ActionShift PPO weights](https://github.com/Archerkattri/actionshift) in official ManiSkill PhysX CPU on PickCube, PushCube, PullCube and StackCube, with no policy updates. This packet concentrates on the strongest two-task **independent action-history observer** mechanism check plus a distinct **unknown-acknowledgement recovery** check.
 
 ## 64 NEW-state bounded-or-query verifier (no GPU or simulator needed)
