@@ -1,6 +1,6 @@
 # Command Execution as a Latent State: Evidence-Gated Target Memory for Frozen Robot Policies
 
-**Pre-submission research manuscript draft v0.3 · not peer reviewed, not accepted, no outside replication · 9 October 2026**
+**Pre-submission research manuscript draft v0.4 · not peer reviewed, not accepted, no outside replication · 9 October 2026**
 
 **Authors, affiliation, target venue, final title: intentionally not asserted in this code artifact.**
 
@@ -68,6 +68,39 @@ On the NEW 64 unique holdout reset states, preregistered before running the *unc
 The selective method makes **49 fewer privileged reads (76.5625% reduction)** than mandatory one-readback. Paired selective-versus-mandatory task outcomes have **five selective-only** and **two mandatory-only** successes. A two-sided exact McNemar/binomial comparison on these seven discordant states gives **p = 0.453125**: not evidence of a statistically significant task-success superiority claim. Versus no-query bounded there were **13 selective-only** and zero no-query-only successes, but additional target information is a confound rather than a fair equal-information advantage.
 
 The selective policy succeeds at the clean-source total in this cohort, **but those counts need not be the same per-seed successes or physical trajectories**. The two controller modes can differ in contacts, timing and bounded projections. There is no measured safety claim.
+
+### 4.1 Fully reproducible exact paired-state evidence and information frontier
+
+The raw-source analysis code has now been accepted into the default branch in [research PR #85](https://github.com/lindicaphxag-tech/ManiSkill/pull/85), with original SHA-256 checks for all eight physical-simulator output JSONs and an independent exact-source audit. The standalone verifier is in [the original 64-state reviewer capsule](review/PAIRED_AUTHORITY_FRONTIER_64.md); its [public Python 3.11/3.13 CI](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37831666978) reports **8/8 destructive and statistical tests passed** in both environments. This is source-authentic **retrospective analysis** of the registered new-seed execution, not a second independent simulator-run cohort.
+
+The adaptive and mandatory policies share the identical actual PhysX reset seed and original PPO at each task state. Their exact (2\times2) paired contingency is:
+
+| Matched trial classification | Count |
+|---|---:|
+| Both selective and mandatory succeed | 55 |
+| Selective succeeds, mandatory fails | 5 |
+| Mandatory succeeds, selective fails | 2 |
+| Both policies fail | 2 |
+
+There are 7 discordant observations. The **two-sided conditional exact paired p-value is 0.453125** and does not establish superiority or a prospective noninferiority margin. Per task, all **32 PullCube selective and mandatory outcomes succeed** (queries 2 selective versus 32 mandatory). On StackCube, the adaptive method succeeds in **28/32**, mandatory in **25/32** (13 selective reads versus 32 mandatory). Pooling the two source policies into 64 *robot platforms*, or treating seven alternative controllers as independent replications, would be pseudoreplication.
+
+The selective and zero-target-readback bounded policies likewise share each physical reset seed, with 47 both-success, 13 selective-only-success, 0 bounded-only-success and 4 both-fail pairs (conditional exploratory exact p=0.000244140625). **This is not an equal-information comparison:** when the source states cannot be jointly controlled within the declared bounded commanded-target tolerance, the adaptive policy may use an extra *privileged* target-state observation. This source-condition information access, not just an optimizer improvement, can explain its higher success.
+
+For a transparent source-cohort decision-cost sensitivity analysis, take unit reward per binary native task success and assign each privileged target-memory read cost \(\lambda\ge0\). The **empirical**, post-result sums are
+
+\[
+U_{\mathrm{adaptive}}(\lambda)=60-15\lambda,\qquad
+U_{\mathrm{always}}(\lambda)=57-64\lambda,\qquad
+U_{\mathrm{bounded\ only}}(\lambda)=47.
+\]
+
+In *these exact 64 source trials*, adaptive has greater aggregate reward and fewer target reads than mandatory for every nonnegative \(\lambda\), **but not per-seed outcome dominance** (two opposite-exclusive victories exist). Its observed reward advantage against never querying becomes negative for \(\lambda>13/15\), with different task-stratum breakpoints: Pull `(32-30)/2=1` and Stack `(28-17)/13≈0.846`. These crossings are computed from the observed cohort *after experiment completion* and therefore do not define an optimized controller or calibrated externally valid query-price threshold. A 95% uncertainty interval on read frequency is likewise descriptive, not an unobserved fault-risk guarantee.
+
+### 4.2 Exact external reproduction trigger and protected boundaries
+
+The newly [merged external one-click seven-arm workflow #84](https://github.com/lindicaphxag-tech/ManiSkill/pull/84) makes a **genuine independent PhysX task rerun technically possible**, not scientifically completed. An external researcher can [fork, run the original frozen PPO/official seven-controller suite, and pick previously untested seeds](EXTERNAL_FORK_ONE_CLICK_PHYSX.md), obtaining exact method Git blobs, SHA-256 verified released weights, source environment details, complete per-trial outcomes, all actual faults and information costs. The author-run workflow [37831105250](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37831105250) passed eight additional chosen PullCube seeds; this still belongs to the *same author*, and its seeds **200001–200008 should not be reused as fresh unseen seeds**. A separate outside investigator has not confirmed any part of the original closed-loop claim as of this manuscript revision.
+
+[ActionShift](https://github.com/Archerkattri/actionshift) and [ActionABI](https://github.com/Archerkattri/actionabi) already establish hidden action-contract adaptation and active-probe/equivalence-set baselines; the current author-operated intervention **does not directly beat** those state-of-the-art methods under a controlled common information, actuation, and simulator-cost budget. The original test uses only a known two-history command-target set; it is not evidence for arbitrary unobserved control-system model identification, learned simulator-free motor feedback inference, safety guarantees, or cross-robot task transfer. A genuinely new independent external comparison on the same two-truth physical fault family remains a required next experiment.
 
 ## 5. Negative and causal evidence
 
