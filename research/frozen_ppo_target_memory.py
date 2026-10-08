@@ -19,13 +19,17 @@ from frozen_ppo_pickcube_gate import (
     _actor, _bool_value, REPO, FILENAME, EXPECTED,
 )
 
-SEEDS=(42,270,429,2026)
+REPO="kattri15/actionshift-baselines"
+FILENAME="ppo/push_cube_final_ckpt.pt"
+EXPECTED="a4a02198b309e73cb877959079023d967d5f63ec78380de9703a10c9efafc0cf"
+TASK="PushCube-v1"
+SEEDS=tuple(range(30001,30033))
 STEPS=50
 TOL=1e-5
 
 
 def env(mode):
-    return gym.make("PickCube-v1",num_envs=1,obs_mode="state",
+    return gym.make(TASK,num_envs=1,obs_mode="state",
                     sim_backend="physx_cpu",reconfiguration_freq=1,
                     control_mode=mode,disable_env_checker=True)
 
@@ -81,7 +85,7 @@ def normalized_target_delta(source_arm,target_arm,policy_native, *, approximate=
                            dtype=policy_native.dtype).reshape(1,6),None,amp
 
 
-def _project_policy_observation(flat_observation, environment):
+def _project_policy_observation(flat_observation, environment, expected_width):
     """Project target controller observations back into the source ABI.
 
     ManiSkill's state observation order is: agent.qpos, agent.qvel,
@@ -101,18 +105,18 @@ def _project_policy_observation(flat_observation, environment):
         if memory is None:
             raise RuntimeError("Controller target memory missing: refuse projection")
         memory=torch.as_tensor(memory,device=obs.device,dtype=obs.dtype)
-        if memory.shape[-1]!=7 or obs.shape[-1]!=49:
+        if memory.shape[-1]!=7 or obs.shape[-1]!=expected_width+7:
             raise RuntimeError("Target observation ABI changed; cannot project")
         offset=nq+nv
         actual=obs[:,offset:offset+7]
         if not torch.allclose(actual,memory,atol=1e-5,rtol=0):
             raise RuntimeError("Observation controller-state slice mismatches live target memory")
         converted=torch.cat([obs[:,:offset],obs[:,offset+7:]],dim=1)
-        if converted.shape[-1]!=42:
-            raise RuntimeError("Projected observation ABI is not source policy's 42D input")
+        if converted.shape[-1]!=expected_width:
+            raise RuntimeError("Projected observation ABI does not equal original checkpoint input width")
         return converted
-    if obs.shape[-1]!=42:
-        raise RuntimeError("Source observation ABI is not 42D")
+    if obs.shape[-1]!=expected_width:
+        raise RuntimeError("Source observation ABI does not equal checkpoint input width")
     return obs
 
 
@@ -128,13 +132,14 @@ def trial(policy, seed):
         "projected":env("pd_ee_target_delta_pose"),
         "naive":env("pd_ee_target_delta_pose"),
     }
-    outcome={"seed":seed,"initial_obs_diff":{},"success_once":{},
+    policy_input_width=int(policy[0].in_features)
+    outcome={"seed":seed,"task":TASK,"checkpoint_observation_width":policy_input_width,"initial_obs_diff":{},"success_once":{},
              "steps":{},"refusals":{},"approximations":{},"max_required_native_amp":0.0}
     try:
         observations={k:w.reset(seed=seed)[0] for k,w in worlds.items()}
-        canonical_start=_project_policy_observation(observations["source"],worlds["source"])
+        canonical_start=_project_policy_observation(observations["source"],worlds["source"],policy_input_width)
         for key in ("memory","projected","naive"):
-            projected=_project_policy_observation(observations[key],worlds[key])
+            projected=_project_policy_observation(observations[key],worlds[key],policy_input_width)
             diff=float(torch.max(torch.abs(canonical_start-projected)).item())
             outcome["initial_obs_diff"][key]=diff
             if diff>5e-4:
@@ -146,7 +151,7 @@ def trial(policy, seed):
             for name,w in worlds.items():
                 if done[name]:
                     continue
-                native=act(policy,_project_policy_observation(observations[name],w))
+                native=act(policy,_project_policy_observation(observations[name],w,policy_input_width))
                 if name in ("memory","projected"):
                     arm=controller[name].controllers["arm"]
                     rewritten,reason,amplitude=normalized_target_delta(
@@ -205,7 +210,7 @@ def main():
     counts={key:sum(x["success_once"].get(key,False) for x in records)
             for key in ("source","memory","projected","naive")}
     refusals=sum("memory" in x["refusals"] for x in records)
-    data={"checkpoint_sha256":sha,"public_pretrained":True,
+    data={"task":TASK,"checkpoint_file":FILENAME,"checkpoint_sha256":sha,"public_pretrained":True,
           "training_performed":False,"backend":"physx_cpu",
           "controller_contracts":{
              "source":"pd_ee_delta_pose achieved-relative",
@@ -215,7 +220,7 @@ def main():
           "success_count":counts,"refused_episodes":refusals,"episodes":records}
     Path("frozen_ppo_target_memory.json").write_text(json.dumps(data,indent=2))
     print("FROZEN_TARGET_MEMORY_SUMMARY",json.dumps({
-        "success":counts,"refused":refusals,
+        "task":TASK,"success":counts,"refused":refusals,
         "approximate_steps":sum(len(x["approximations"].get("projected",[])) for x in records),
         "episodes":len(records)}))
 
