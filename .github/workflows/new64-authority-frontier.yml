@@ -1,0 +1,59 @@
+name: Exact original 64-state paired authority and query-cost audit
+
+on:
+  pull_request:
+    paths:
+      - "research/frozen_policy_transfer/review/authority_frontier_64.py"
+      - "tests/test_new64_authority_frontier.py"
+      - ".github/workflows/new64-authority-frontier.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-source-exact-stats:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Recompute eight unchanged PhysX JSONs, source hashes, paired uncertainty and authority/cost frontier
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_new64_authority_frontier.py -v
+          python -m research.frozen_policy_transfer.review.authority_frontier_64 \
+            --input-dir research/frozen_policy_transfer/evidence/robust_query_new64_142001_152032 \
+            --output "new64_authority_frontier_py${{ matrix.python-version }}.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("new64_authority_frontier_py${{ matrix.python-version }}.json")
+          result=json.loads(p.read_text())
+          v=result["pooled_64_state_descriptive"]
+          selective="fault_robust_then_single_privileged_query"
+          mandatory="fault_always_single_privileged_query"
+          assert result["original_audit"]["unique_original_seed_states"]==64
+          assert len(result["source_original_8_files_sha256"])==8
+          assert v["arm_success_counts"][selective]==60
+          assert v["arm_success_counts"][mandatory]==57
+          assert v["privileged_decision_readbacks"][selective]==15
+          assert v["privileged_decision_readbacks"][mandatory]==64
+          assert v["exact_paired_outcomes"][mandatory]["adaptive_only"]==5
+          assert v["exact_paired_outcomes"][mandatory]["comparison_only"]==2
+          assert v["exact_paired_outcomes"][mandatory]["two_sided_exploratory_exact_p"]==.453125
+          assert not v["noninferiority_statistically_established"]
+          assert not result["external_investigator_has_reproduced_physics"]
+          print("PASS immutable original 64 task-state raw records, paired exact inference and no external-replication claim")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frozen-64-real-physx-source-paired-authority-python-${{ matrix.python-version }}
+          path: new64_authority_frontier_py${{ matrix.python-version }}.json
+          if-no-files-found: error
+          retention-days: 60
