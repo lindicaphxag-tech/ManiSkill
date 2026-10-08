@@ -32,7 +32,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git hash-object research/PHYSICAL_RESPONSE_OR_READ32_PREDECLARED_V1.json)" = "bdcad7dff2fbe55ef7f1215f15adcda9d7372407"
-          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37834088246 --jq .head_sha)" = "f1423b307ed37c2e6413868d3213412424c6dc97"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37834088246 --jq .head_sha)" = "7bb403168cfa7501075974a042c538b40273706d"
           test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37834088246 --jq .conclusion)" = "success"
           test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11575141229 --jq .digest)" = "sha256:23bc95132925cbbc5ccd88c2cd00fd9437e3adf4afe52a87d31371bb9bf68695"
           test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11575580533 --jq .digest)" = "sha256:2c903ed05acc6d3af178630eb305d66772c9bdad126cdfd72f5ff995dc037040"
@@ -113,7 +113,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git hash-object research/PHYSICAL_RESPONSE_OR_READ32_PREDECLARED_V1.json)" = "bdcad7dff2fbe55ef7f1215f15adcda9d7372407"
-          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37834088246 --jq .head_sha)" = "f1423b307ed37c2e6413868d3213412424c6dc97"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37834088246 --jq .head_sha)" = "7bb403168cfa7501075974a042c538b40273706d"
           test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37834088246 --jq .conclusion)" = "success"
           test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11575141229 --jq .digest)" = "sha256:23bc95132925cbbc5ccd88c2cd00fd9437e3adf4afe52a87d31371bb9bf68695"
           test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11575580533 --jq .digest)" = "sha256:2c903ed05acc6d3af178630eb305d66772c9bdad126cdfd72f5ff995dc037040"
@@ -186,7 +186,7 @@ jobs:
           printf '%s\n' \
           '# 32 predeclared physical-response-or-one-read real ManiSkill PhysX original samples' \
           '' \
-          'Original native PhysX source run: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37834088246 ; exact original source head f1423b307ed37c2e6413868d3213412424c6dc97.' \
+          'Original native PhysX source run: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37834088246 ; exact original source head 7bb403168cfa7501075974a042c538b40273706d.' \
           'BEFORE trial implementation freeze: https://github.com/lindicaphxag-tech/ManiSkill/commit/fa17350711f6c2c7cffb4cfa2bb7f8289f3ee0c4 ; original prereg Git blob bdcad7dff2fbe55ef7f1215f15adcda9d7372407.' \
           'Eight original byte-identical JSONs, two physically possible execution truths per task×seed, 16 distinct reset states, 32 task×truth conditions. The original frozen pretrained PPO was not retrained.' \
           'Original complete result: empirical public physical evidence OR one privileged controller target read achieved 27/32 official task successes with 11 privileged reads; mandatory one target read 27/32 with 32 reads; public-only abstaining 19/32; optimistic 23/32.' \
