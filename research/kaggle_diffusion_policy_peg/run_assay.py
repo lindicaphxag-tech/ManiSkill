@@ -26,6 +26,13 @@ from pathlib import Path
 SMOKE_MODE = os.environ.get("SEMREPAIR_DP_SMOKE", "0") == "1"
 FACTORIAL_REPLAY_MODE = os.environ.get("SEMREPAIR_DP_FACTORIAL_REPLAY", "0") == "1"
 FACTORIAL_SAMPLE_SIZE = int(os.environ.get("SEMREPAIR_DP_FACTORIAL_SAMPLE_SIZE", "8"))
+FACTORIAL_SAMPLE_OFFSET = int(os.environ.get("SEMREPAIR_DP_FACTORIAL_OFFSET", "0"))
+if FACTORIAL_SAMPLE_OFFSET not in (0, 100):
+    raise ValueError("Only the preregistered offset 0 or disjoint offset 100 is admissible")
+if FACTORIAL_SAMPLE_OFFSET == 100 and (
+    not FACTORIAL_REPLAY_MODE or FACTORIAL_SAMPLE_SIZE != 100
+):
+    raise ValueError("Locked holdout must use 100 source episodes at offset 100")
 if FACTORIAL_SAMPLE_SIZE not in (8, 100):
     raise ValueError("Frozen factorial cohorts must be exactly 8 or 100 source demos")
 if FACTORIAL_REPLAY_MODE and not SMOKE_MODE:
@@ -435,7 +442,13 @@ try:
     if not raw_meta_path.is_file():
         raise FileNotFoundError(f"Official raw motion-planning metadata missing: {raw_meta_path}")
     raw_meta = json.loads(raw_meta_path.read_text(encoding="utf-8"))
-    selected_episodes = raw_meta.get("episodes", [])[:CONFIG["replay_count"]]
+    source_offset = FACTORIAL_SAMPLE_OFFSET if FACTORIAL_REPLAY_MODE else 0
+    raw_episodes = raw_meta.get("episodes", [])
+    selected_episodes = raw_episodes[source_offset:source_offset + CONFIG["replay_count"]]
+    run_record["source_episode_offset"] = source_offset
+    run_record["source_episode_indices"] = list(
+        range(source_offset, source_offset + CONFIG["replay_count"])
+    )
     if len(selected_episodes) != CONFIG["replay_count"]:
         raise RuntimeError(
             f"Expected at least {CONFIG['replay_count']} raw demonstrations, "
@@ -610,6 +623,8 @@ try:
             "converter_code_sha": CONVERSION,
             "controller_code_sha": CONTROLLER,
             "sample_size": len(source_seed_order),
+            "original_source_episode_offset": source_offset,
+            "original_source_episode_indices": run_record["source_episode_indices"],
             "source_seed_matrix": cell_matrix,
             "per_arm_success_count": {
                 arm: len(prepared_arms[arm]["indexed_episodes"])
