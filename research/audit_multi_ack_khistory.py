@@ -79,6 +79,26 @@ def audit(files:Path)->dict:
                     raise ValueError("Fault/probe event attribution falsified")
                 all_fault_events[n]+=len(events)
                 faults_reached[n]+=int(len(events)==2)
+            for n,events in row.get("certified_intent_suppressed_by_actual_fault",{}).items():
+                if n not in NAMES[1:] or not isinstance(events,list):
+                    raise ValueError("Certified intended-but-not-dispatched arm invalid")
+                physically_held={f["step"] for f in row.get("faults",{}).get(n,[])}
+                actually_audited={e.get("step") for e in
+                    row.get("robust_native_target_bound_checks",{}).get(n,[])}
+                for e in events:
+                    step=e.get("step")
+                    if (step not in (2,4) or step not in physically_held
+                        or step in actually_audited
+                        or e.get("certificate_was_for_requested_not_delivered_action") is not True
+                        or e.get("must_not_claim_bound_was_physically_executed") is not True):
+                        raise ValueError("False dispatched-certificate claim during actually suppressed physical command")
+            for n,details in row.get("robust_native_target_bound_checks",{}).items():
+                if n not in NAMES or not isinstance(details,list):
+                    raise ValueError("Unknown claimed certificate arm")
+                for e in details:
+                    physically_held={v["step"] for v in row.get("faults",{}).get(n,[])}
+                    if e.get("step") in physically_held:
+                        raise ValueError("Attempt to certify an injected, intentionally NOT-delivered native command")
             for n,details in row.get("candidate_history_count",{}).items():
                 if n not in NAMES or not isinstance(details,list):raise ValueError("Invalid belief history log")
                 for entry in details:
