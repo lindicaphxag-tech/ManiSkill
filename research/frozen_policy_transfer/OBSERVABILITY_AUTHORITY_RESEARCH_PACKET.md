@@ -89,6 +89,39 @@ A [separate draft set-valued ambiguous-ACK experiment](https://github.com/lindic
 
 **Still unproved and arguably required for a strong CoRL/RSS/ICRA method:** controller-implementation-independent diagnosis beyond published Panda charts; real dropped/delayed commands with online resynchronization and a fair learned/history-observer comparator; motion/actuator/force/contact safety metrics; predeclared fresh states beyond the current cohorts; independent researcher execution and documented upstream adoption. Early success cannot be presented as a general VLA controller repair.
 
+## Nearest-neighbor originality veto for information-authorized action
+
+The proposed **bounded common action versus selective privileged query**
+is **not** the first controller adaptation method, belief-set planning method,
+or principled selective-sensing method. Specific prior art that must be
+handled in any publication-quality related work:
+
+- [SPACE (2026)](https://arxiv.org/abs/2606.24049) already
+  learns robot-specific command adapters from desired Cartesian state
+  deltas with online adaptation across embodiments and shifting dynamics.
+  Our narrower target-memory condition should not be compared to
+  direct-action-copy alone when claiming superior adapter performance.
+- [Hibbard, Tanaka and Topcu, *Automatica* 2023]
+  (https://doi.org/10.1016/j.automatica.2023.111140) already studies
+  simultaneous perception/action decisions using invariant finite belief
+  sets. 'Query only when the belief is insufficient' is not a new idea.
+- [Jaulin, *Automatica* 2009]
+  (https://doi.org/10.1016/j.automatica.2008.06.013) establishes
+  robust set-membership estimation; interval posterior propagation and
+  min-max geometry alone do not establish a new estimation principle.
+- [Garrett et al., 2019](https://arxiv.org/abs/1911.04577) study
+  belief-space re-planning and information-seeking manipulation
+  actions under partial observability.
+
+**Surviving focused hypothesis, not a verified novelty claim:**
+make the *robot action ABI's hidden previous commanded target* the
+explicit authority-bearing information state, with an exact native
+root-control representation gate, ACK provenance, two-history bounded
+SO(3)/position setpoint error, and a budgeted privileged readback.
+Validate the joint effect with an equal-information/equal-readback
+budget source policy trial rather than presenting classical sensing
+or interval-control concepts as discoveries. Actual trajectory
+deviations, controller variants and outside replication remain required.
 ## External reproducibility request
 
 [Public replication/falsification issue](https://github.com/lindicaphxag-tech/kaggle/issues/67) asks independent researchers for exact source SHA, policy checkpoint SHA-256, runtime versions, fresh preregistered task seeds, **complete failures** and native controller state evidence. External replies and outside-run source traces—not additional author-owned PR merges—are the decisive next recognition event.
