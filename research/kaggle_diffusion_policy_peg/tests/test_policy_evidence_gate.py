@@ -5,21 +5,27 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
+from research.kaggle_diffusion_policy_peg.assay_design import (
+    FACTORIAL, assay_arms, four_cell_differences, verify_factorial_design,
+)
 from research.kaggle_diffusion_policy_peg.policy_evidence_gate import (
     ARMS, BASE, CONTROLLER, CONVERSION,
     UnverifiablePolicyEvidence, _source_seed_digest, gate,
 )
 
 
-def make_test_fixture(root: Path) -> None:
+def make_test_fixture(root: Path, *, factorial: bool = False) -> None:
+    specs = assay_arms("factorial" if factorial else "paired")
+    arms = tuple(spec.name for spec in specs)
     seeds = [11, 22, 33, 44]
     h = _source_seed_digest(seeds)
     run = {
         "status": "passed", "base_commit": BASE,
         "conversion_pr": {"head": CONVERSION},
         "controller_pr": {"head": CONTROLLER},
-        "arms": list(ARMS),
+        "arms": list(arms),
         "config": {
+            **({"experimental_design": "converter_x_controller_2x2_factorial"} if factorial else {}),
             "total_iters": 4, "eval_freq": 2, "num_eval_episodes": 20,
             "seed": 1, "minimum_paired_demos": 2,
             "effective_paired_num_demos": 4, "paired_source_seed_sha256": h,
@@ -40,7 +46,7 @@ def make_test_fixture(root: Path) -> None:
                 "successful_episode_seeds": seeds,
                 "successful_episode_seeds_sha256": h, "successful_count": 4,
             }
-            for arm in ARMS
+            for arm in arms
         },
     }
     summaries = [
@@ -51,9 +57,7 @@ def make_test_fixture(root: Path) -> None:
             "demo_sha256": "c" * 64,
             "paired_source_seed_sha256": h, "paired_num_demos": 4,
         }
-        for arm, commit, overlay in (
-            (ARMS[0], BASE, None), (ARMS[1], CONVERSION, CONTROLLER)
-        )
+        for arm, commit, overlay in (spec.source_tuple for spec in specs)
     ]
     for name, data in (
         ("artifacts_manifest.json", manifest),
@@ -63,9 +67,9 @@ def make_test_fixture(root: Path) -> None:
     ):
         (root / name).write_text(json.dumps(data), encoding="utf-8")
     rows = []
-    for arm in ARMS:
+    for index, arm in enumerate(arms):
         rows.append({"arm": arm, "tag": "losses/total_loss", "step": 4, "value": 0.5})
-        for step, success in ((0, 0), (2, 1), (4, 3)):
+        for step, success in ((0, index), (2, index + 1), (4, index + 2)):
             for tag in ("eval/success_once", "eval/success_at_end"):
                 rows.append({
                     "arm": arm, "tag": tag, "step": step,
@@ -162,6 +166,66 @@ class PolicyEvidenceGateTests(unittest.TestCase):
         record = gate(self.root)
         self.assertTrue(any("authenticity" in x for x in record["limitations"]))
         self.assertFalse(any("statistical superiority confirmed" in x for x in record["limitations"]))
+
+    def _factorial(self):
+        make_test_fixture(self.root, factorial=True)
+
+    def test_factorial_four_cell_curve_and_all_contrasts(self):
+        self._factorial()
+        verify_factorial_design(FACTORIAL)
+        result = gate(self.root)
+        self.assertEqual(result["status"], "descriptive_single_seed_factorial_training_only")
+        self.assertEqual(len(result["factorial_contrasts"]), 6)
+        self.assertEqual(len(result["curves"]), 3)
+        self.assertEqual(len(result["curves"][-1]), 5)  # 4 arms + step
+        values = {
+            name: result["curves"][-1][name]["eval/success_at_end"]["rate"]
+            for name in (spec.name for spec in FACTORIAL)
+        }
+        self.assertAlmostEqual(
+            result["factorial_contrasts"][-1]["descriptive_contrasts"]["difference_in_differences"],
+            four_cell_differences(values)["difference_in_differences"],
+        )
+        self.assertTrue(any("one training seed" in x for x in result["limitations"]))
+
+    def test_factorial_requires_all_four_source_treatments(self):
+        self._factorial()
+        self.mutate_json(
+            "run_summaries.json", lambda x: x.pop(2)
+        )
+        self.reject("incomplete frozen intervention cell set")
+
+    def test_factorial_rejects_reused_conversion_dataset_identity(self):
+        self._factorial()
+        self.mutate_json(
+            "run_summaries.json",
+            lambda x: x[2].update(paired_source_seed_sha256="f" * 64),
+        )
+        self.reject("trained arm differs from pinned paired seeds")
+
+    def test_factorial_refuses_wrong_controller_only_source(self):
+        self._factorial()
+        self.mutate_json(
+            "run_summaries.json", lambda x: x[2].update(source_commit=CONVERSION)
+        )
+        self.reject("source intervention identity wrong")
+
+    def test_factorial_rejects_missing_one_arm_metric_step(self):
+        self._factorial()
+        self.mutate_rows(
+            lambda rows: rows.__setitem__(
+                slice(None),
+                [
+                    x for x in rows
+                    if not (
+                        x["arm"] == FACTORIAL[2].name
+                        and x["tag"] == "eval/success_at_end"
+                        and x["step"] == 2
+                    )
+                ],
+            )
+        )
+        self.reject("incomplete or unmatched evaluation schedule")
 
 
 if __name__ == "__main__":
