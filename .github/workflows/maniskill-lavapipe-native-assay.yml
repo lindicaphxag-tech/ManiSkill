@@ -48,7 +48,9 @@ jobs:
         run: python -m pytest -q tests/test_action_conversion.py
       - name: Test real initialized production controller and PhysX CPU step
         run: |
+          set -o pipefail
           python /tmp/pr1495_native_smoke.py 2>&1 | tee native_controller_console.log
+          test -s native_cpu_controller_parity.json
       - name: Retain environment result or failure evidence
         if: always()
         uses: actions/upload-artifact@v4
