@@ -1,0 +1,58 @@
+name: Same-seed source-pinned PhysX reproducibility audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'research/frozen_policy_transfer/review/compare_original_rerun.py'
+      - '.github/workflows/compare-first-physx-vs-repeat.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  two-original-source-ledger-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check original FIRST and later source run SHA and successful audit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37826881229 --jq .head_sha)" = "db4fe4dd9d09aaff67c5dcf12213ad737162282d"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37828004254 --jq .head_sha)" = "7799ede89dc04c2db0ce1379ff4563d553e97a03"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37826881229 --jq .conclusion)" = success
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37828004254 --jq .conclusion)" = success
+      - name: Recover original SAME-SEED repeat (not a new state cohort)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ack-repeat
+          gh run download 37828004254 --repo "$GITHUB_REPOSITORY" --name original-ack-bounded-query-pull_cube --dir /tmp/ack-repeat
+          gh run download 37828004254 --repo "$GITHUB_REPOSITORY" --name original-ack-bounded-query-stack_cube --dir /tmp/ack-repeat
+          test -s /tmp/ack-repeat/unknown_ack_bounded_query_pull_cube_original8.json
+          test -s /tmp/ack-repeat/unknown_ack_bounded_query_stack_cube_original8.json
+      - name: Fail on all changed source flags, task denominators or provenance
+        run: |
+          python research/frozen_policy_transfer/review/compare_original_rerun.py --repeat-dir /tmp/ack-repeat --output repeat_stability_evidence.json
+          python - <<'PY'
+          import json
+          d=json.load(open("repeat_stability_evidence.json"))
+          assert d["new_sample_count"]==0
+          assert d["trials"]["pull_cube"]["changed_numeric_float_leaves"]==0
+          assert d["trials"]["stack_cube"]["changed_numeric_float_leaves"]==107
+          assert all(t["all_paired_official_success_flags_identical"] for t in d["trials"].values())
+          print("PASS two runs, same 16 original states, same entire paired success flags, 107 last-digit numeric differences")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: same-16-seed-repeat-numeric-honesty-audit
+          path: repeat_stability_evidence.json
