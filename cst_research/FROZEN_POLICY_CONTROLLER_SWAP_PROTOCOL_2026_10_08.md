@@ -76,3 +76,28 @@ Independent reproduction and maintainer acceptance remain separate
 requirements.
 
 External PR acceptance/merge on this research line remains **unconfirmed**.
+
+
+## Gate 0 result — completed after preregistration
+
+Canonical actual pretrained PPO competence run:
+https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37716172915
+
+- The published checkpoint's **SHA256 matched exactly**.
+- Official ManiSkill PPO actor ABI: `obs_dim=42`, `action_dim=7`.
+- **No gradient update / retraining**.
+- Four preselected PhysX CPU PickCube episode outcomes:
+  - seed 42: success in 13 steps;
+  - seed 270: success in 9 steps;
+  - seed 429: success in 13 steps;
+  - seed 2026: success in 10 steps.
+- Gate 0 competence: **4/4 successes** in this tiny, nonstatistical smoke.
+  As preregistered, the `>=2/4` source-competence gate was passed.
+
+Now eligible to interpret a same-checkpoint exploratory controller
+migration run, but success-rate precision remains very poor with only four
+episodes, and published PPO weights are by a **third-party author**.
+
+Controller-swap follow-up:
+https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37716301773
+(not assessed as successful until run completion).
