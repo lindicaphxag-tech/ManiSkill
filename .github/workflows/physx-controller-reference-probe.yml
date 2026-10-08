@@ -1,0 +1,71 @@
+name: Active controller-reference identification — public PhysX
+
+on:
+  push:
+    branches:
+      - research/blind-controller-state-probe-v1
+    paths:
+      - "research/blind_controller_probe/**"
+      - ".github/workflows/physx-controller-reference-probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  blind-physx-reference-probe:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    env:
+      PYTHONUNBUFFERED: "1"
+      OMP_NUM_THREADS: "2"
+      MKL_NUM_THREADS: "2"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Fail-closed classifier adversarial tests (no physics)
+        run: |
+          python -m unittest discover -s research/blind_controller_probe -p 'test_infer.py' -v
+      - name: Install real ManiSkill physics simulator
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+      - name: Probe exact precommitted 32 PhysX episodes (do not hide scientific failures)
+        run: |
+          set -o pipefail
+          python research/blind_controller_probe/physx_probe.py 2>&1 | tee blind_controller_probe_console.log
+          test -s blind_controller_probe_physx_24001_24008.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r = json.loads(Path("blind_controller_probe_physx_24001_24008.json").read_text())
+          assert len(r["rows"]) == 32
+          assert len(r["summary"]) == 4
+          assert all(v["n"] == 8 for v in r["summary"].values())
+          expected = [
+              (task, label, seed)
+              for task in ("PickCube-v1", "PushCube-v1")
+              for label in ("ACHIEVED_RELATIVE", "PREVIOUS_TARGET_RELATIVE")
+              for seed in range(24001, 24009)
+          ]
+          actual = [
+              (v["task"], v["ground_truth_outer_evaluator_only"], v["seed"])
+              for v in r["rows"]
+          ]
+          assert actual == expected, "missing/reordered/preselected original PhysX episodes"
+          # NOTE: an experimental scientific failure is archived, not
+          # converted into a green scientific success by CI.
+          print("Prospective scientific accept:", r["all_groups_precommitted_accept"])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: real-physx-unknown-controller-reference-32-episode-results
+          if-no-files-found: warn
+          path: |
+            blind_controller_probe_physx_24001_24008.json
+            blind_controller_probe_console.log
