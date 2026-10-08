@@ -1,0 +1,65 @@
+{
+  "schema": "robust_bounded_query_64_preregistered_held_ack_20261009_v1",
+  "status": "FROZEN_BEFORE_EXECUTION",
+  "original_method_exact_successful_ci_run": 37826881229,
+  "original_method_source_commit": "db4fe4dd9d09aaff67c5dcf12213ad737162282d",
+  "original_runner_git_blob": "1dc653cdc44e422c8340475ad00f828b3a41eb4f",
+  "original_certifier_git_blob": "bb5fd155b7291fb127f94138fca321201c8271c3",
+  "method_changes_permitted": false,
+  "readback_budget_or_controller_chart_changes_permitted": false,
+  "third_party_original_PPO_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+  "models": {
+    "pull_cube": {
+      "task": "PullCube-v1",
+      "checkpoint": "ppo/pull_cube_final_ckpt.pt",
+      "sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+      "seeds": [
+        142001,
+        142032
+      ]
+    },
+    "stack_cube": {
+      "task": "StackCube-v1",
+      "checkpoint": "ppo/stack_cube_final_ckpt.pt",
+      "sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c",
+      "seeds": [
+        152001,
+        152032
+      ]
+    }
+  },
+  "eight_job_chunks_each_eight": true,
+  "unique_seed_count": 64,
+  "task_family_count": 2,
+  "controller_families_count": 1,
+  "native_physics": "ManiSkill PhysX CPU, simulated native target hold at step index 2, policy gripper unchanged",
+  "comparison_arms": [
+    "source_no_fault",
+    "fault_oracle_private_target",
+    "fault_optimistic_unverified_ack",
+    "fault_strict_common_exact",
+    "fault_robust_two_history_without_query",
+    "fault_robust_then_single_privileged_query",
+    "fault_always_single_privileged_query"
+  ],
+  "primary_endpoints": [
+    "actual native 50-step task success per arm with all refusals retained",
+    "selective-query per trial vs fixed one-readback query",
+    "matched original seed resetting and fault reach",
+    "bounded action authorizations with source policy frozen",
+    "full 64 unique-seed holdout and all 8 original raw jsons"
+  ],
+  "fixed_budgets": {
+    "position_inf_m": 0.05,
+    "rotation_geodesic_rad": 0.05,
+    "maximum_selective_authoritative_target_reads": 1
+  },
+  "claim_gates": [
+    "Only claim beneficial query efficiency if selective same-or-higher success and fewer query reads than mandatory on these new unique 64 seeds",
+    "Compare separately Pull/Stack, do not claim cross-robot hardware",
+    "Compute paired binary discordances, partial effect uncertainty, and readback decision provenance",
+    "No post-outcome revisions to source method, threshold or seed denominator; all failure logs retained",
+    "Earlier 16-state findings are discovery cohort, new64 is independent new-seed validation though same contributor and robot code"
+  ],
+  "outside_limits": "Not true packet loss, real hardware, independent third-party reproduction, safe physical motion or a novel robust geometry theorem. Frozen third-party PPO is reused without retraining."
+}
