@@ -80,6 +80,27 @@ restored-state clusters**. A and B share the same DEC estimate, so
 treating all 20 as 20 independent state trials is pseudoreplication.
 With 10 clusters, cluster-resampling uncertainty is substantial.
 
+## Executed clustered sensitivity audit (post-hoc)
+
+The full frozen JSON replay passed public [CRG Core CI](https://github.com/lindicaphxag-tech/ManiSkill/pull/43/checks)
+with **33 tests passed** and reproduced all five original primary correlations
+to within 1e-10. The executed
+[clustered_sensitivity.json](./clustered_sensitivity.json) preserves:
+
+- DEC Spearman state-cluster bootstrap percentile interval (1,024 draws):
+  **[-0.3525, 0.5907]**;
+- DEC minus best frozen baseline Spearman: **-0.2023**;
+- state-cluster bootstrap interval for that margin: **[-0.7909, 0.3417]**;
+- one-sided whole-state A/B-block permutation Monte Carlo diagnostic:
+  **p=0.3070** (2,048 random permutations);
+- all **10 leave-one-state-out** estimates.
+
+All resampling/permutation numbers are **post-hoc exploratory**, not registered
+hypothesis tests. The small sample of ten independent states and the
+exchangeability assumption limit inferential power. A wide interval should
+not be reinterpreted as evidence of equivalence or of a successful repair
+method. The original prospective primary gate remains **FAILED**.
+
 ## What this result supports and does not support
 
 **Supports:** a complete public falsification of cross-policy DEC-distance
