@@ -1,6 +1,25 @@
 # PegInsertionSide — source-frozen 2×2 Diffusion Policy attribution protocol
 
-**Status 2026-10-08:** Code + unit tests only. No four-arm Kaggle job has been submitted by this repo, and **no four-arm policy performance has been measured**. The original two-arm corrected Kaggle v4 result is still not published in this repository.
+**Status 2026-10-08:** The first **official four-arm replay-only** execution
+[CI #37715587885](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37715587885)
+has completed (8 frozen source demos: baseline **6/8**, converter-only **6/8**,
+controller-only **0/8**, combined **6/8**). Its genuine source-seed matrix was
+separately downloaded and validated by
+[CI #37719750458](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37719750458).
+This is **demonstration conversion evidence, not four-arm Diffusion Policy
+training or policy success**.
+
+An enlarged exploratory [indices 0–99 official replay](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37719545972)
+is underway. It overlaps the original 0–7 cohort and is **not an independent
+held-out confirmation**. Before viewing its outcome, a disjoint next-cohort
+[indices 100–199 protocol](FROZEN_NEXT_COHORT_100_199.md) was locked.
+It must fail rather than silently substitute if insufficient raw episodes exist.
+
+The two-arm official CPU Diffusion Policy pipeline is now **completed**
+[CI #37713921020](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37713921020),
+but both arms recorded **0% success** after only two optimizer steps and
+two-episode short-horizon evaluations. Thus four-arm *trained-policy*
+performance is **still unestablished**.
 
 ## Why four cells are necessary
 
