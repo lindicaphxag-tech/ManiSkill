@@ -34,6 +34,22 @@ jobs:
           python research/frozen_policy_transfer/review/verify_stateful_abi.py
           python -m unittest discover -s research/frozen_policy_transfer/review -p test_paired_query_stats.py -v
           python research/frozen_policy_transfer/review/paired_query_stats.py --output /tmp/original_new64_paired_query_stats.json
+          python -m research.audit_certify_query_periodic_placebo64 --input-dir research/frozen_policy_transfer/evidence/periodic_query_placebo_new64_260001_270032 --output /tmp/periodic_placebo_audit64.json
+          python research/frozen_policy_transfer/review/one_extra_query_sensitivity.py --output /tmp/one_query_influence64.json
+          python - <<'PY'
+          import json
+          x=json.load(open('/tmp/periodic_placebo_audit64.json'))
+          y=json.load(open('/tmp/one_query_influence64.json'))
+          assert x['original_new_distinct_seeds']==64
+          assert x['adaptive_target_decision_reads']==17 and x['periodic_nonadaptive_target_decision_reads']==16
+          assert x['native_task_success']['fault_robust_then_single_privileged_query']==58
+          assert x['native_task_success']['fault_precommitted_seed_schedule_query']==47
+          assert x['adaptive_vs_periodic']['adaptive_only']==12 and x['adaptive_vs_periodic']['comparator_only']==1
+          assert y['remaining_worst_case_adaptive_success_min']==57
+          assert y['worst_conditional_unadjusted_p_after_1_worst_case_flip']<=0.012939453125+1e-12
+          assert y['status']=='THEORETICAL_SINGLE_EPISODE_INFLUENCE_NOT_SIMULATOR_RESULT'
+          print('PASS: new truly disjoint 64-state near-matched-budget 58 vs47, 12 vs1 paired, one-read sensitivity clearly not a new experiment')
+          PY
           python - <<'PY'
           import json
           r=json.load(open('/tmp/original_new64_paired_query_stats.json'))
