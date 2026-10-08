@@ -1,4 +1,5 @@
 """Synthetic fixtures only: no Kaggle training metrics are claimed here."""
+import ast
 import copy
 import json
 from pathlib import Path
@@ -169,6 +170,39 @@ class PolicyEvidenceGateTests(unittest.TestCase):
 
     def _factorial(self):
         make_test_fixture(self.root, factorial=True)
+
+    def test_factorial_gpu_runner_contains_exact_preassigned_source_matrix(self):
+        # Parse source without executing the GPU experiment. This catches
+        # drift between the frozen design specification and its runner.
+        script = Path(__file__).resolve().parents[1] / "run_assay_factorial.py"
+        tree = ast.parse(script.read_text(encoding="utf-8"))
+        arm_assignments = [
+            node for node in ast.walk(tree)
+            if isinstance(node, ast.Assign)
+            and any(
+                isinstance(target, ast.Name) and target.id == "arms"
+                for target in node.targets
+            )
+        ]
+        self.assertEqual(len(arm_assignments), 1)
+        assignments = []
+        symbols = {"BASE": BASE, "CONVERSION": CONVERSION, "CONTROLLER": CONTROLLER}
+        for item in arm_assignments[0].value.elts:
+            values = []
+            for value in item.elts:
+                if isinstance(value, ast.Constant):
+                    values.append(value.value)
+                else:
+                    self.assertIsInstance(value, ast.Name)
+                    values.append(symbols[value.id])
+            assignments.append(tuple(values))
+        self.assertEqual(
+            tuple(assignments), tuple(spec.source_tuple for spec in FACTORIAL)
+        )
+        self.assertIn(
+            'OUTPUT = WORK / "assay_output_factorial"',
+            script.read_text(encoding="utf-8"),
+        )
 
     def test_factorial_four_cell_curve_and_all_contrasts(self):
         self._factorial()
