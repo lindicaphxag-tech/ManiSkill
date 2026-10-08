@@ -3,6 +3,31 @@
 This is the current one-page handoff for upstream
 [mani-skill/ManiSkill#1495](https://github.com/mani-skill/ManiSkill/pull/1495).
 
+## Reviewer shortcut (45 seconds)
+
+**Decision needed:** Is it correct for the delta-pose trajectory converter to
+infer the signed, per-axis Euler action scale from the *active*
+`PDEEPoseController._clip_and_scale_action` mapper instead of assuming a
+fixed rotation sign? The PR intentionally changes **two files / one commit**.
+
+| Evidence | Exact public test | Reviewer-relevant result |
+|---|---|---|
+| Current #1495 source contract | [CI #37687749068](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37687749068) | **13 tests** current mapper; **18 tests** with exact #1472 controller |
+| Native controller action chart | [Kaggle v15](https://github.com/lindicaphxag-tech/ManiSkill/tree/research/native-delta-pose-assay/research/kaggle_native_assay/results/pr1495_head_v15) | **14 tests**; mixed saturated-controller outcome disclosed |
+| Frozen first 100 official PegInsertionSide demos | [Replay #37719545972](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37719545972) · [independent source-seed audit #37751515316](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37751515316) | Baseline **90**; converter only **91**; controller only **1**; both **91** |
+| Paired CPU official Diffusion Policy | [CI #37713921020](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37713921020) | Both arms trained and evaluated, but **0%** success after two updates: no policy superiority claim |
+
+**Critical limitation:** A purported disjoint 100–199 validation reused the
+wrong HDF5 cohort. It was rejected by the independent audit and
+[withdrawn](https://github.com/lindicaphxag-tech/ManiSkill/blob/research/native-delta-pose-assay/research/kaggle_diffusion_policy_peg/HOLDOUT_SOURCE_VALIDITY_ERRATUM_2026_10_08.md).
+Do **not** count it as a second replication while the corrected source-bound
+replay is under validation.
+
+**What to review:** the signed axis-separable mapper assumption and whether
+#1495 should merge standalone or document its compatibility dependency on
+#1472. These results concern **official demonstration replay correctness**,
+not external maintainer acceptance or improved learned-policy task success.
+
 ## Decision summary
 
 **Current #1495 is reviewer-ready as a standalone two-file patch.**
