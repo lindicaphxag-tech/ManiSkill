@@ -80,10 +80,14 @@ python -m research.crg_core.evidence.conformal_fresh_13state_v1.replay_archive \
 ```
 
 The archive re-runs a **byte-for-byte copy** of the original source
-evaluator against all 13 state JSONs, compares every field of the original
-aggregate to within numerical roundoff, and runs the pre-outcome transfer
+evaluator against all 13 state JSONs, compares all original scientific numerical fields to within 1e-10 while
+preserving the original calibration SHA-256 separately from the new float-
+serialization SHA-256. The two byte hashes may differ across NumPy/BLAS
+versions even when the numerical results and decisions agree. It then runs
+the pre-outcome transfer
 authorization ledger. It fails on a missing seed, changed protocol, changed
-evaluator, altered response, changed score or fabricated success.
+evaluator, materially altered response/score or fabricated success. A
+byte-identical calibration digest is not asserted unless actually observed.
 This is **owner-side reproducibility of the arithmetic**, not independent
 third-party provenance verification.
 
