@@ -2,6 +2,10 @@
 
 ### Representative research: bounded action or selective target readback
 
+**Independent reviewer?** Start with the [source-integrity audit and one-click NEW-seed real PhysX replication guide](research/frozen_policy_transfer/INDEPENDENT_REPLICATION_QUICKSTART.md). A new run on your own fork is more meaningful than author-operated CI. Please share failures and counterexamples, not just successful replications.
+
+
+
 **Best current prospective task-level result (Panda PhysX only):** under an intentionally substituted target-hold command at a predeclared step with **unknown execution ACK**, 16 frozen third-party PPO task states were tested under seven physically stepped arms. A **two-target bounded command or selective trusted target readback** method reached **15/16 tasks using 4 privileged decision readbacks**, matching **15/16 using mandatory readback on every case (16 privileged reads)**; bounded no-query achieved **11/16**, optimistic unverified ACK **6/16**, strict exact-only refusal **0/16**. These are one contributor's **precommitted 16-state discovery cohort**, not a statistical generalization or third-party reproduction. Authorization applies to **commanded target pose errors** under 0.05 m / 0.05 rad limits, never collision, tracking or human/robot safety. Readback is **privileged additional information**, not sensor-free self-healing.
 
 [**All original per-state JSON + full source logs (permanent)**](research/frozen_policy_transfer/evidence/unknown_ack_bounded_query_16/) · [**Original four-successful-job PhysX and audit CI**](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37826881229) · [**pre-outcome frozen protocol**](research/UNKNOWN_ACK_BOUNDED_QUERY_FROZEN_V1.json) · [**externally reproducible one-click actual PhysX on a fork**](.github/workflows/external-ack-frozen-ppo-replication.yml) · [**preregistered genuinely new 64-seed holdout, outcomes not assumed**](https://github.com/lindicaphxag-tech/ManiSkill/pull/80).
