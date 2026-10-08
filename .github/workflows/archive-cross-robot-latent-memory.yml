@@ -1,0 +1,137 @@
+name: Archive actual two-robot target-memory source evidence
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-cross-robot-latent-memory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  source-identity-and-hashes-readonly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check original successful cross-robot PhysX run identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37822030370 --jq .head_sha)" = "abdaa361c3244d524c2c5b19214900058057f20d"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37822030370 --jq .conclusion)" = success
+      - name: Retrieve unmodified source robot/seed controller evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/cross_robot
+          gh run download 37822030370 --repo "$GITHUB_REPOSITORY" --name original-fetch-xarm6-cross-robot-joint-memory-controller-v1 --dir /tmp/cross_robot
+          test "$(find /tmp/cross_robot -maxdepth 1 -type f | wc -l)" -eq 2
+      - name: Original JSON/log SHA-256 and four distinct non-Panda source checks
+        run: |
+          cd /tmp/cross_robot
+          printf '%s\n'             'b48fc4113774d6e6f8a530fc76ef5efeedecf2169221b24e80ff5a3ce64562ef  latent_memory_cross_robot_native_v1.json'             'dff135c76dd3a733523ea98ef3d4953884059e973e8406b85a57982b0181f45e  latent_memory_cross_robot_native.log' | sha256sum -c -
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          q=json.loads(Path('/tmp/cross_robot/latent_memory_cross_robot_native_v1.json').read_text())
+          assert q['schema']=='latent_memory_cross_robot_native_v1'
+          assert q['n_cases']==4 and q['n_distinct_robot_embodiments']==2
+          assert q['hardware_robot_tested'] is False
+          assert q['third_party_independent_reproduction'] is False
+          assert [(r['robot'],r['seed']) for r in q['records']]==[
+              ('fetch',1271),('fetch',1282),
+              ('xarm6_robotiq',2373),('xarm6_robotiq',2384)]
+          for r in q['records']:
+              assert r['controller']=='PDJointPosController'
+              assert r['actual_robot_arm_joint_dof']==(7 if r['robot']=='fetch' else 6)
+              assert r['full_native_action_width']==(13 if r['robot']=='fetch' else 7)
+              assert r['native_next_target_qpos_prediction_error_rad']<.0001
+              assert abs(r['certificate_max_interval_error_rad']-.001)<1e-8
+              assert r['policy_performance_measured'] is False
+              assert r['real_robot_execution'] is False
+          print('PASS: original independent Fetch and XArm6 native controller target memories')
+          PY
+
+  persist-unmodified-original-evidence-on-trusted-main:
+    needs: source-identity-and-hashes-readonly
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check original successful cross-robot PhysX run identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37822030370 --jq .head_sha)" = "abdaa361c3244d524c2c5b19214900058057f20d"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37822030370 --jq .conclusion)" = success
+      - name: Retrieve unmodified source robot/seed controller evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/cross_robot
+          gh run download 37822030370 --repo "$GITHUB_REPOSITORY" --name original-fetch-xarm6-cross-robot-joint-memory-controller-v1 --dir /tmp/cross_robot
+          test "$(find /tmp/cross_robot -maxdepth 1 -type f | wc -l)" -eq 2
+      - name: Original JSON/log SHA-256 and four distinct non-Panda source checks
+        run: |
+          cd /tmp/cross_robot
+          printf '%s\n'             'b48fc4113774d6e6f8a530fc76ef5efeedecf2169221b24e80ff5a3ce64562ef  latent_memory_cross_robot_native_v1.json'             'dff135c76dd3a733523ea98ef3d4953884059e973e8406b85a57982b0181f45e  latent_memory_cross_robot_native.log' | sha256sum -c -
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          q=json.loads(Path('/tmp/cross_robot/latent_memory_cross_robot_native_v1.json').read_text())
+          assert q['schema']=='latent_memory_cross_robot_native_v1'
+          assert q['n_cases']==4 and q['n_distinct_robot_embodiments']==2
+          assert q['hardware_robot_tested'] is False
+          assert q['third_party_independent_reproduction'] is False
+          assert [(r['robot'],r['seed']) for r in q['records']]==[
+              ('fetch',1271),('fetch',1282),
+              ('xarm6_robotiq',2373),('xarm6_robotiq',2384)]
+          for r in q['records']:
+              assert r['controller']=='PDJointPosController'
+              assert r['actual_robot_arm_joint_dof']==(7 if r['robot']=='fetch' else 6)
+              assert r['full_native_action_width']==(13 if r['robot']=='fetch' else 7)
+              assert r['native_next_target_qpos_prediction_error_rad']<.0001
+              assert abs(r['certificate_max_interval_error_rad']-.001)<1e-8
+              assert r['policy_performance_measured'] is False
+              assert r['real_robot_execution'] is False
+          print('PASS: original independent Fetch and XArm6 native controller target memories')
+          PY
+      - name: Permanently archive original Fetch and XArm6 robot run JSON and log
+        run: |
+          set -euo pipefail
+          dst=research/latent_memory_native_evidence/cross_robot_v1
+          mkdir -p "$dst"
+          cp /tmp/cross_robot/latent_memory_cross_robot_native_v1.json "$dst/"
+          cp /tmp/cross_robot/latent_memory_cross_robot_native.log "$dst/"
+          cat > "$dst/README.md" <<'EOF'
+          # Actual native two-robot conditional joint-memory certificate witnesses
+          Original successful source: 37822030370, head abdaa361c3244d524c2c5b19214900058057f20d.
+          Frozen protocol before new runner: b08754959722f1639510b9cc7537aea4e479b1cf.
+          Byte-identical original JSON/log, exactly SHA-256 matched by this workflow before committing.
+          Four source robot/seed cases: Fetch 1271,1282 (7 arm joints; native 13D action) and XArm6 Robotiq 2373,2384 (6 arm joints; 7D native action).
+          Unmodified official ManiSkill PickCube PhysX target joint-position controller; minmax memory interval radius .001 radians, source-target prediction discrepancy <= 5.15e-8 rad and 2.10e-8 rad respectively.
+          This validates target-controller command semantics on two different simulated embodiments; it does NOT establish frozen-policy robot task transfer, physical robot actuation/safety, independently attested hidden memory, or external third-party adoption.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dst"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'evidence: permanently preserve source-verified real Fetch XArm6 target controller trials'
+          git push origin HEAD:main
