@@ -1,0 +1,19 @@
+name: CST frozen second-task checkpoint discovery
+on:
+  push:
+    branches:
+      - validation/cst-multitask-pretrained-discovery-20261008
+  workflow_dispatch:
+jobs:
+  provenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install HF index client
+        run: python -m pip install huggingface_hub
+      - name: Enumerate actual published PPO weights and SHA256
+        run: python research/discover_public_frozen_checkpoints.py
