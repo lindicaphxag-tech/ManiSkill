@@ -167,6 +167,42 @@ closing cleanly on Python 3.11.
 This evidence is linked here because this README is already referenced by
 the upstream maintainer-facing discussion, avoiding repeated comment spam.
 
+## Frozen converter × controller interaction: official task replay
+
+**[Public four-cell native CI run #37715587885](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37715587885) — SUCCESS** on
+Python 3.11 / PhysX CPU. This is the official PegInsertionSide motion-planning
+demo replay with the *same eight source seeds* independently executed under
+four exact source configurations:
+
+| Converter fix (#1495) | Controller fix (#1472) | Successful saved trajectories / 8 |
+|:---:|:---:|---:|
+| Off | Off | **6** |
+| On | Off | **6** |
+| Off | On | **0** |
+| On | On | **6** |
+
+[Complete raw run/artifacts](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37715587885/artifacts/11523253779)
+include per-source-seed binary outcomes, original-demo provenance, and the
+exact producer/controller source versions.
+
+**Interpretation:** the isolated controller patch breaks native replay on
+these eight demos, and adding the converter patch restores baseline replay
+success. Converter-only also matches baseline, so the combined version **does
+not improve over baseline on this sample**. The joint dependence is a
+controller×converter compatibility interaction: neither change should be
+unconditionally advertised as an independently deployable universal repair.
+
+Crucially, this is **trajectory-conversion/save success**, not learned-policy
+task success. The four-cell common surviving training cohort is **empty**,
+so the four variants cannot be compared on a shared trained-policy cohort
+without redesigning the estimand. A zero-success cell is a real result, not
+missing-at-random data to exclude.
+
+A larger **32-source-seed replication** is registered in
+`validation/dp-peg-factorial-32-frozen`. The 8-seed evidence above remains
+the frozen pilot and is not counted as independent replication; any expanded
+finding requires its own complete CI/result log.
+
 ## Reproduction
 
 - Public Kaggle GPU kernel: <https://www.kaggle.com/code/oblivicore/maniskill-native-delta-pose-assay>
