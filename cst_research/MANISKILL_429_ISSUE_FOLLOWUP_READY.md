@@ -1,47 +1,49 @@
-# Issue #429 — reviewer/maintainer follow-up (manual posting required)
+# ManiSkill Issue #429 — updated technical follow-up (copy into official issue)
 
-Issue: https://github.com/mani-skill/ManiSkill/issues/429
+**Official issue:** https://github.com/mani-skill/ManiSkill/issues/429
 
-The GitHub connector could not write an upstream comment (403). Copy the
-following into the official issue; **do not post it twice**.
+Do not claim the follow-up was posted via connector: upstream issue writing
+returns HTTP 403 `Resource not accessible by integration`. If posted manually,
+the official comment's timestamp and URL constitute external publication.
 
 ---
 
-Following up with a reproducible result on the exact conversion reported here.
+Following up on #429 with an official-data reproduction and a *smaller,
+tested fix*.
 
-I tested the unmodified upstream converter and a minimal two-file patch
-against **the same first eight episodes** from ManiSkill's official PickCube-v1
-RL demo archive (`pd_joint_delta_pos`, 997 source episodes). Both tests
-replayed on `physx_cpu` using `--use-first-env-state`.
+The unmodified upstream `pd_joint_delta_pos -> pd_joint_pos` conversion
+crashes on official PickCube-v1 RL trajectories because a NumPy HDF5 action
+is passed into tensor-only `clip_and_scale_action`. The 2024 report had
+already raised a NumPy/Torch issue; the new evidence is a controlled,
+exact-input three-arm reproduction:
 
-- **Unmodified upstream:** crashes on the very first trajectory with
-  `TypeError: clip() ... got (numpy.ndarray, int, int)` from
-  `gym_utils.clip_and_scale_action`. This is a NumPy/Torch API mismatch,
-  so there is **no valid baseline task success rate** to compare.
-- **Patched conversion:** replays all eight and saves **4/8** successful
-  episodes without raising that exception.
+- Upstream `main`: TypeError on episode 1, so there is no valid baseline
+  task-success rate.
+- Correct NumPy/Torch **type + batch shape only**: 7/16 successful CPU replays.
+- Broader controller-chart encoding: also 7/16, same failures.
 
-The patch also fixes the controller-chart semantics by decoding normalized
-source delta to physical `Δq`, composing with the current qpos, then
-encoding the absolute target into the destination `PDJointPosController`
-native action range.
+Full CI and raw logs:
+https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37713849790
 
-**Full public A/B run, attached logs and machine-readable comparison:**
-https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37709660093
+I checked Panda's default destination `pd_joint_pos` config:
+`normalize_action=False`, so its action is already a physical qpos target.
+This explains why the more complex output encoding did not help the default
+Panda task. The appropriate upstream fix appears to be just the NumPy/tensor
+and 1-D-vs-batch correction.
 
-**Two-file patch branch:**
-https://github.com/lindicaphxag-tech/ManiSkill/tree/fix/joint-delta-to-joint-pos-pr
+Minimal PR-ready diff (one commit, two files):
+https://github.com/lindicaphxag-tech/ManiSkill/tree/fix/429-numpy-tensor-replay-minimal
 
-One caveat: the official source demos were generated on PhysX CUDA but this
-public CI replay uses PhysX CPU; I would not treat the remaining four
-unsuccessful episodes as proof of a converter bug without controlling backend
-differences.
+The **exact submitted file contents** separately passed a focused regression
+and official PickCube RL CPU replay (7/16 demos):
+https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37715715576
 
-The candidate source file is byte-identical to the one that passed this
-official-data validation.
+The original demonstration trajectories were generated with PhysX CUDA and
+are replayed on CPU here, so this result does not imply that the remaining
+9/16 failures are conversion bugs.
 
-Would this be an acceptable scope for a PR addressing #429? I can submit
-the minimal diff and regression tests once a maintainer gives the go-ahead,
-per the contribution guidelines.
+Would a PR restricted to this minimal NumPy/Torch replay correction be
+welcome? I will disclose the AI assistance used in code analysis, patch
+drafting and public tests, and keep the PR limited to the verified fix.
 
 ---
