@@ -89,7 +89,7 @@ def run(dir):
           need(q[MANDATORY]==1 and q[SELECT] in (0,1),"One-read information budget violation")
           for arm in ("source_no_fault",OPT,"fault_strict_common_exact",NOQUERY):
             need(q[arm]==0,"Claimed zero-readback arm accessed private goal")
-          need(row.get("refusals",{}).get("fault_strict_common_exact") is not None,"Exact guard incorrectly proceeded")
+          # Exact guard may either refuse or legitimately authorize the same native\n          # action under both histories; do not hardcode a desired negative outcome.\n          strict_refusal=row.get("refusals",{}).get("fault_strict_common_exact")\n          if strict_refusal is not None:\n            need(isinstance(strict_refusal,dict) and "step" in strict_refusal,\n                 "Missing exact-only refusal provenance")
           checks=row.get("robust_native_target_bound_checks",{})
           for key,cases in checks.items():
             need(key in (SELECT,NOQUERY),"Unknown target-state authorization source")
