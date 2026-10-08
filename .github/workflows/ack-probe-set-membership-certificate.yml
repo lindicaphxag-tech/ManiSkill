@@ -1,0 +1,32 @@
+name: Certified achieved-pose response ACK observability contract
+on:
+  push:
+    branches:
+      - research/achieved-response-set-membership-cert-20261009
+  pull_request:
+    paths:
+      - '.github/workflows/ack-probe-set-membership-certificate.yml'
+      - 'research/ack_probe_set_membership.py'
+      - 'tests/test_ack_probe_set_membership.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pure-geometric-evidence-falsifiers:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.13']
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Source is standalone standard library; audit both runtimes
+        run: |
+          python -m py_compile research/ack_probe_set_membership.py
+          python -m unittest discover -s tests -p 'test_ack_probe_set_membership.py' -v
