@@ -77,3 +77,33 @@ and the historical failure alone cannot demonstrate it.
 Interfaces: fit_state_block_envelope -> screen_new_state_pair ->
 audit_heldout_state. The last stage is *after* prediction is frozen
 and preserves both A/B errors in the state cluster.
+
+## Closest established literature and non-novel ingredients
+
+This implementation is NOT the first use of conformal prediction for robot
+policy safety or risk-conditioned action selection. Important prior works
+include:
+
+- Seo, Nakamura, Bajcsy, *Uncertainty-aware Latent Safety Filters for
+  Avoiding Out-of-Distribution Failures*, CoRL 2025:
+  https://proceedings.mlr.press/v305/seo25a.html
+- Prinster et al., *Conformal Policy Control*, ICML 2026:
+  https://proceedings.mlr.press/v306/prinster26a.html
+- Doula, *Conformal Calibration Transfer*, ICML 2026:
+  https://proceedings.mlr.press/v306/doula26a.html
+
+The established conformal finite-sample theorem and generic abstention are
+NOT new contributions. Any claimed robotics research novelty must come from a
+*verified concrete distinction*: request-specific physical response geometry
+between two genuinely different frozen policies; joint state-cluster A/B
+coverage with a state-level model validity gate; a nontrivial physical
+intervention-query efficiency improvement at matched action coverage.
+A fully executed, independently auditable prospective comparison is needed
+to substantiate any distinction.
+
+In particular, marginal conformal coverage says that the probability of a
+new complete state-block response error escaping the interval is at most
+alpha **under exchangeability**. It does NOT imply that the fraction of
+errors AMONG accepted robot actions is at most alpha. Selective risk,
+coverage, calibrated state-block errors and distribution shift must be
+reported separately. Conditioning on authorization can change error rates.
