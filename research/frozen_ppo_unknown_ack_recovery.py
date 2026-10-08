@@ -144,6 +144,8 @@ def trial(policy, seed):
                         ticket=observer.prepare(rewritten[0].detach().cpu().numpy())
                         # Do not advance / commit belief until env.step returns.
                 observations[name],_,term,trunc,info=w.step(action)
+                if name=="oracle_live_memory" and t==FAULT_STEP:
+                    rec["fault_reached"][name]=True
                 if name in observers:
                     if t==FAULT_STEP:
                         rec["fault_reached"][name]=True
@@ -206,6 +208,9 @@ def trial(policy, seed):
         for name in ARMS[1:]:
             rec["fault_reached"].setdefault(name,False)
             rec["readback_queries"].setdefault(name,0)
+        # Oracle has privileged private target access throughout the loop.
+        # Sentinel -1 means ongoing privileged access, NOT zero reads.
+        rec["readback_queries"]["oracle_live_memory"]=-1
         print("UNKNOWN_ACK_EPISODE",json.dumps(rec,sort_keys=True))
         return rec
     finally:
