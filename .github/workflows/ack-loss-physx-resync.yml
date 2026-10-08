@@ -1,0 +1,85 @@
+name: Frozen PPO physical action acknowledged unknown then privileged resync
+
+on:
+  push:
+    branches:
+      - research/ack-loss-physical-resync-20261009
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  immutable-method:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify original model and observer source blobs remained frozen
+        run: |
+          test "$(git hash-object research/action_abi_history_observer.py)" = "2aa52e477c202386fb6a7e43586d246026b6041d"
+          test "$(git hash-object research/frozen_ppo_action_history_observer.py)" = "c0999d7a1da8e370f635a0d7bb8378e4a93020dd"
+          test "$(git hash-object research/frozen_ppo_observer_policy.py)" = "0393fab23466b66508c4288722538c44103afc29"
+          test -s research/ACK_LOSS_PHYSX_RESYNC_PRECOMMIT_V1.json
+          python -m py_compile research/ack_loss_physx_resync_run.py research/ack_loss_physx_resync_audit.py
+
+  actual-physx-loss:
+    needs: immutable-method
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PYTHONUNBUFFERED: '1'
+      ABI_TASK: ${{ matrix.task }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install maintained simulator and published frozen PPO dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Run third-action ACK-loss and trusted single-readback recovery in genuine PhysX
+        run: |
+          set -o pipefail
+          python research/ack_loss_physx_resync_run.py 2>&1 | tee "ack_loss_${ABI_TASK}.log"
+          test -s "ack_loss_physx_resync_${ABI_TASK}_8.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: physical-ack-loss-${{ matrix.task }}
+          path: |
+            ack_loss_*.log
+            ack_loss_physx_resync_*.json
+
+  full-fault-evidence-audit:
+    if: always()
+    needs: [immutable-method, actual-physx-loss]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: physical-ack-loss-*
+          path: /tmp/ack-loss-physx
+          merge-multiple: true
+      - name: Independently audit all physical outcomes and explicitly unresolved failures
+        run: |
+          python research/ack_loss_physx_resync_audit.py \
+            /tmp/ack-loss-physx \
+            /tmp/ack-loss-physx-full-aggregate.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: complete-physical-ack-loss-recovery-evidence
+          path: |
+            /tmp/ack-loss-physx/*.json
+            /tmp/ack-loss-physx/*.log
+            /tmp/ack-loss-physx-full-aggregate.json
