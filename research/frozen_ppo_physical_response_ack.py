@@ -182,12 +182,15 @@ def trial(policy,seed):
                         action=ctrl.from_action_dict({
                             "arm":dispatched,"gripper":parts["gripper"]
                         }).reshape(1,-1)
+                        # Snapshot the old reference BEFORE prepare: the
+                        # observer legitimately rejects state reads while
+                        # action ACK is still pending.
+                        old=tracker.pose
                         pending=tracker.prepare(rewritten[0].detach().cpu().numpy())
                         if t==STEP_FAULT:
                             last_gripper[name]=(dispatched.clone(),parts["gripper"].clone())
                             # Candidate = pre-fault held pose, or fully
                             # acknowledged dispatched commanded-target pose.
-                            old=tracker.pose
                             clone=make_observer(arm)
                             clone.reset(old)
                             ticket=clone.prepare(rewritten[0].detach().cpu().numpy())
