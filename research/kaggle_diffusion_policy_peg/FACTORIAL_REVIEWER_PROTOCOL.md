@@ -59,3 +59,45 @@ Before claiming a benefit for #1495 or #1472, require real TensorBoard scalar tr
 Before promoting this protocol to a paper confirmatory experiment, resolve the post-treatment selection bias, add independent held-out training and evaluation seeds, and freeze success thresholds *before* seeing new outcome curves.
 
 The CPU fixture in `tests/test_policy_evidence_gate.py` contains deliberately **synthetic metrics used only to test rejection logic**; it cannot substitute for actual Diffusion Policy curves or maintenance acceptance.
+
+
+## Pre-selection intention-to-replay: implemented
+
+The four-arm Kaggle runner now emits
+`assay_output_factorial/replay_intention_to_treat.json` **before**
+computing the common-success source-seed intersection, creating the four
+paired training HDF5 files, or beginning the first policy optimizer update.
+Each row binds an original `episode_id`, source `episode_seed`, exact
+source dataset archive, four source-code intervention identities and four
+independently observed replay success sets. The record is retained even if
+the common-success intersection is below the required threshold or subsequent
+GPU training fails.
+
+To inspect the raw replay effect on **all originally requested episodes**
+(with no post-treatment survivor selection):
+
+```bash
+python research/kaggle_diffusion_policy_peg/replay_itt.py \
+  /path/to/assay_output_factorial/replay_intention_to_treat.json \
+  --output /path/to/replay_full_population.json
+```
+
+The fail-closed evaluator checks exact ordered source episode seeds, SHA
+digests, intervention identities, and every arm's binary success population.
+It reports original-population replay rates, arm-vs-arm gain-only/harm-only
+paired episodes, four-arm binary pattern counts and the finite-population
+converter/controller interaction with the **original, precommitted
+denominator**.
+
+Crucial distinction: those are *trajectory replay* outcomes, not learned
+Diffusion Policy evaluation outcomes. The four-arm policy trainings remain
+on the common post-treatment-selected demonstration set. The full-population
+replay contrast cannot be silently relabeled as a policy effect or as an
+unbiased causal estimate of trained-policy advantage. No p-value or
+independent external reproduction is claimed.
+
+[Public adversarial CI](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37717263530):
+27 pure-Python tests across 3.10 / 3.12 / 3.13 passed. The tests use
+synthetic binary fixtures; **no four-arm Kaggle execution is claimed**.
+The pre-existing v3 archive lacks complete per-source-seed intersection
+evidence and cannot be retrospectively upgraded into this result.
