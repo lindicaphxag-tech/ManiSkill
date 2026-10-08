@@ -1,0 +1,149 @@
+name: Persist frozen 32-seed memory ablation evidence
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/archive-stateful-abi-memory-32.yml'
+      - 'research/stateful_abi_memory_aggregate.py'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-stateful-abi-memory-32.yml'
+      - 'research/stateful_abi_memory_aggregate.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  read-only-source-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pin original complete PhysX workflow source and success
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37814189680 --jq .head_sha)" = "752dc38ef6806858bc899846621db48123aa8447"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37814189680 --jq .conclusion)" = success
+      - name: Download and normalize the five actual original JSON files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/abi_artifact /tmp/abi_originals
+          gh run download 37814189680 --repo "$GITHUB_REPOSITORY" --name complete-stateful-abi-memory-causal-ablation-32-originals --dir /tmp/abi_artifact
+          for file in stateful_abi_memory_ablation_chunk_0.json stateful_abi_memory_ablation_chunk_1.json stateful_abi_memory_ablation_chunk_2.json stateful_abi_memory_ablation_chunk_3.json stateful_abi_memory_ablation_aggregate.json; do
+            found=$(find /tmp/abi_artifact -name "$file" -type f)
+            test "$(printf '%s\n' "$found" | wc -l)" -eq 1
+            cp "$found" "/tmp/abi_originals/$file"
+          done
+      - name: Enforce all five exact preregistered real-output SHA256 fingerprints
+        run: |
+          cd /tmp/abi_originals
+          printf '%s\n'             '52031796cc73d416756289f588d5c0ffe4ccef5623a0e9b63ccbaebec0fc70f2  stateful_abi_memory_ablation_chunk_0.json'             '2b07c75f674e0393ca293beb3e637818404aa96902a0a4f545e298c28e3b815c  stateful_abi_memory_ablation_chunk_1.json'             '3f366a2a42a24100a8ddca64272b9e706b6763941ad13ff5326e8a9d3c6d1621  stateful_abi_memory_ablation_chunk_2.json'             '89b9061db308c9cc11cc9b698f86ace8a2da9783fdd85d9549f317ffae673f33  stateful_abi_memory_ablation_chunk_3.json'             '06d3cfb009098e9c94ea04d3713e235d35df99f20587a438f1d30a3eb9a134fe  stateful_abi_memory_ablation_aggregate.json' > expected.sha256
+          sha256sum -c expected.sha256
+      - name: Independently replay all 32 episodes and frozen 5-arm counts
+        run: |
+          python -m research.stateful_abi_memory_aggregate --input-dir /tmp/abi_originals --output /tmp/abi_replay.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          original=json.loads(Path('/tmp/abi_originals/stateful_abi_memory_ablation_aggregate.json').read_text())
+          replay=json.loads(Path('/tmp/abi_replay.json').read_text())
+          for key in ('status','successful_episodes_by_arm','primary_memory_projected_only','primary_memory_blind_only','primary_net_benefit','source_competence_gate_min_24','memory_information_gate_min_net_6','total_distinct_original_states','seed_range_inclusive','nonexact_action_projection_steps','refusal_episodes_exact_only'):
+              assert original[key]==replay[key],key
+          assert original['status']=='MECHANISM_SUPPORTED_SINGLE_TASK'
+          assert original['successful_episodes_by_arm']=={'memory':9,'memory_blind_projected':4,'naive':4,'projected':31,'source':31}
+          assert original['primary_memory_projected_only']==27
+          assert original['primary_memory_blind_only']==0
+          assert original['total_distinct_original_states']==32
+          assert [r['seed'] for r in original['all_rows']]==list(range(22001,22033))
+          print('PASS: 5 immutable original hashes, 32 source-seed task outcomes, no dropped seed, paired mechanism contrast')
+          PY
+
+  trusted-main-permanent-archive:
+    if: github.event_name != 'pull_request'
+    needs: read-only-source-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pin original complete PhysX workflow source and success
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37814189680 --jq .head_sha)" = "752dc38ef6806858bc899846621db48123aa8447"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37814189680 --jq .conclusion)" = success
+      - name: Download and normalize the five actual original JSON files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/abi_artifact /tmp/abi_originals
+          gh run download 37814189680 --repo "$GITHUB_REPOSITORY" --name complete-stateful-abi-memory-causal-ablation-32-originals --dir /tmp/abi_artifact
+          for file in stateful_abi_memory_ablation_chunk_0.json stateful_abi_memory_ablation_chunk_1.json stateful_abi_memory_ablation_chunk_2.json stateful_abi_memory_ablation_chunk_3.json stateful_abi_memory_ablation_aggregate.json; do
+            found=$(find /tmp/abi_artifact -name "$file" -type f)
+            test "$(printf '%s\n' "$found" | wc -l)" -eq 1
+            cp "$found" "/tmp/abi_originals/$file"
+          done
+      - name: Enforce all five exact preregistered real-output SHA256 fingerprints
+        run: |
+          cd /tmp/abi_originals
+          printf '%s\n'             '52031796cc73d416756289f588d5c0ffe4ccef5623a0e9b63ccbaebec0fc70f2  stateful_abi_memory_ablation_chunk_0.json'             '2b07c75f674e0393ca293beb3e637818404aa96902a0a4f545e298c28e3b815c  stateful_abi_memory_ablation_chunk_1.json'             '3f366a2a42a24100a8ddca64272b9e706b6763941ad13ff5326e8a9d3c6d1621  stateful_abi_memory_ablation_chunk_2.json'             '89b9061db308c9cc11cc9b698f86ace8a2da9783fdd85d9549f317ffae673f33  stateful_abi_memory_ablation_chunk_3.json'             '06d3cfb009098e9c94ea04d3713e235d35df99f20587a438f1d30a3eb9a134fe  stateful_abi_memory_ablation_aggregate.json' > expected.sha256
+          sha256sum -c expected.sha256
+      - name: Independently replay all 32 episodes and frozen 5-arm counts
+        run: |
+          python -m research.stateful_abi_memory_aggregate --input-dir /tmp/abi_originals --output /tmp/abi_replay.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          original=json.loads(Path('/tmp/abi_originals/stateful_abi_memory_ablation_aggregate.json').read_text())
+          replay=json.loads(Path('/tmp/abi_replay.json').read_text())
+          for key in ('status','successful_episodes_by_arm','primary_memory_projected_only','primary_memory_blind_only','primary_net_benefit','source_competence_gate_min_24','memory_information_gate_min_net_6','total_distinct_original_states','seed_range_inclusive','nonexact_action_projection_steps','refusal_episodes_exact_only'):
+              assert original[key]==replay[key],key
+          assert original['status']=='MECHANISM_SUPPORTED_SINGLE_TASK'
+          assert original['successful_episodes_by_arm']=={'memory':9,'memory_blind_projected':4,'naive':4,'projected':31,'source':31}
+          assert original['primary_memory_projected_only']==27
+          assert original['primary_memory_blind_only']==0
+          assert original['total_distinct_original_states']==32
+          assert [r['seed'] for r in original['all_rows']]==list(range(22001,22033))
+          print('PASS: 5 immutable original hashes, 32 source-seed task outcomes, no dropped seed, paired mechanism contrast')
+          PY
+      - name: Commit five original JSONs permanently only after matched-source replay
+        run: |
+          set -euo pipefail
+          dst=research/frozen_policy_transfer/evidence/stateful_abi_memory_pickcube_22001_22032
+          mkdir -p "$dst"
+          cp /tmp/abi_originals/*.json "$dst/"
+          cat > "$dst/README.md" <<'EOF'
+          # Genuine PhysX source-policy five-arm memory causality pilot
+          Preregistered original cohort: PickCube seeds 22001..22032.
+          Frozen before new runner: b27cf073b4183f7c9e8d9de116d94f646cb2863d.
+          Exact original successful CI: 37814189680 (head 752dc38ef6806858bc899846621db48123aa8447).
+          Every original JSON is copied byte-for-byte from that workflow artifact, and compared to the five fixed SHA-256 entries in archive-stateful-abi-memory-32.yml.
+          Independently reconstructed from official PhysX runs: original source 31, naive 4, exact-only 9, live-memory bounded 31, state-blind otherwise matched bounded 4 (all out of 32).
+          Paired difference: 27 live-memory-only successes, 0 blind-only.
+          Memory-aware transfer involved 27 clearly labeled NON-EXACT bounded projections.
+          No human/real-robot experiment, no third-party replication, no physical safety certificate or general VLA claim.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dst"
+          if git diff --cached --quiet; then
+            echo 'Evidence is already immutable under main'
+            exit 0
+          fi
+          git commit -m 'evidence: archive unchanged 32 state five-arm PhysX memory ablation JSONs'
+          git push origin HEAD:main
