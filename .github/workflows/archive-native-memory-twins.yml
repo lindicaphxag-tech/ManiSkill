@@ -1,0 +1,139 @@
+name: Preserve native three-world controller target-state counterexample
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-native-memory-twins.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify-immutable-originals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require source-frozen originally successful controller replay
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37820410085 --jq .head_sha)" = "4d8ed412a39f4f7add6dfac0532982f3b7067c21"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37820410085 --jq .conclusion)" = success
+      - name: Download full untouched initial 3-world four-task counterfactual bank
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/native_memory_twins
+          gh run download 37820410085 --repo "$GITHUB_REPOSITORY" --name four-task-native-latent-memory-causal-twins --dir /tmp/native_memory_twins
+          test "$(find /tmp/native_memory_twins -maxdepth 1 -type f | wc -l)" -eq 2
+      - name: Source identities, exact hashes, all adverse witness states
+        run: |
+          cd /tmp/native_memory_twins
+          printf '%s\n'             '1c37f598a30455003be3f5ab16738a6870d23ecf3518b3da31354bac221b6cf1  latent_memory_indistinguishable_twins.json'             '4db806e9d84ce5f3446a8734eace9734c15c3a08b0b26b989ea32f5078680fba  latent_memory_indistinguishable_twins.log' | sha256sum -c -
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('/tmp/native_memory_twins/latent_memory_indistinguishable_twins.json').read_text())
+          assert r['schema']=='latent_target_memory_native_twins_v1'
+          assert r['only_controlled_state_replay'] is True
+          assert r['n_genuine_physics_controller_cases']==4
+          assert [(v['task'],v['seed']) for v in r['all_cases']]==[
+            ('PickCube-v1',773),('PushCube-v1',884),
+            ('PullCube-v1',995),('StackCube-v1',1106)]
+          for v in r['all_cases']:
+              assert v['physical_qpos_unchanged_before_action']
+              assert v['physical_achieved_ee_unchanged_before_action']
+              assert v['full_info_world_A_error_m']<.0001
+              assert v['full_info_world_B_error_m']<.0001
+              assert .0199<=v['blind_copy_error_m']<=.0201
+              assert abs(v['information_lower_bound_m']-.01)<1e-6
+              assert v['artificial_state_replay_not_natural_trajectory'] is True
+              assert v['robot_safety_claim'] is False and v['task_success_claim'] is False
+          print('PASS original 4 matched-physical-state, divergent-controller-target witness states')
+          PY
+
+  archive-on-trusted-main:
+    needs: verify-immutable-originals
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require source-frozen originally successful controller replay
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37820410085 --jq .head_sha)" = "4d8ed412a39f4f7add6dfac0532982f3b7067c21"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37820410085 --jq .conclusion)" = success
+      - name: Download full untouched initial 3-world four-task counterfactual bank
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/native_memory_twins
+          gh run download 37820410085 --repo "$GITHUB_REPOSITORY" --name four-task-native-latent-memory-causal-twins --dir /tmp/native_memory_twins
+          test "$(find /tmp/native_memory_twins -maxdepth 1 -type f | wc -l)" -eq 2
+      - name: Source identities, exact hashes, all adverse witness states
+        run: |
+          cd /tmp/native_memory_twins
+          printf '%s\n'             '1c37f598a30455003be3f5ab16738a6870d23ecf3518b3da31354bac221b6cf1  latent_memory_indistinguishable_twins.json'             '4db806e9d84ce5f3446a8734eace9734c15c3a08b0b26b989ea32f5078680fba  latent_memory_indistinguishable_twins.log' | sha256sum -c -
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('/tmp/native_memory_twins/latent_memory_indistinguishable_twins.json').read_text())
+          assert r['schema']=='latent_target_memory_native_twins_v1'
+          assert r['only_controlled_state_replay'] is True
+          assert r['n_genuine_physics_controller_cases']==4
+          assert [(v['task'],v['seed']) for v in r['all_cases']]==[
+            ('PickCube-v1',773),('PushCube-v1',884),
+            ('PullCube-v1',995),('StackCube-v1',1106)]
+          for v in r['all_cases']:
+              assert v['physical_qpos_unchanged_before_action']
+              assert v['physical_achieved_ee_unchanged_before_action']
+              assert v['full_info_world_A_error_m']<.0001
+              assert v['full_info_world_B_error_m']<.0001
+              assert .0199<=v['blind_copy_error_m']<=.0201
+              assert abs(v['information_lower_bound_m']-.01)<1e-6
+              assert v['artificial_state_replay_not_natural_trajectory'] is True
+              assert v['robot_safety_claim'] is False and v['task_success_claim'] is False
+          print('PASS original 4 matched-physical-state, divergent-controller-target witness states')
+          PY
+      - name: Permanently commit exact source JSON and original simulator terminal log
+        run: |
+          set -euo pipefail
+          dst=research/latent_memory_native_evidence/twins_v1
+          mkdir -p "$dst"
+          cp /tmp/native_memory_twins/latent_memory_indistinguishable_twins.json "$dst/"
+          cp /tmp/native_memory_twins/latent_memory_indistinguishable_twins.log "$dst/"
+          cat > "$dst/README.md" <<'EOF'
+          # Native controller hidden previous target-state counterexample
+          Source run 37820410085, head 4d8ed412a39f4f7add6dfac0532982f3b7067c21.
+          Protocol frozen before implementation at 91b0166334521e660ebd7acdd11e22344608707b.
+          Original JSON+log copied without modification after SHA-256 checking against fixed fingerprints in archive-native-memory-twins.yml.
+          A/B/C worlds start with equal physical achieved pose and joint state; native controller state replay changes B/C previous targets by +0.02 m x.
+          A and B invert actual previous targets and agree on commanded desired target (~6.8e-9 m error).
+          C blindly copies A's action with B's latent target and misses desired commanded target by ~0.02 m.
+          This is a controlled API-legal state replay, not naturally sampled independent episodes; full observation DOES disclose target state unless source-policy projection hides it.
+          No robot safety, task completion improvement, random human intervention prevalence, or third-party replication is claimed.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dst"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'evidence: permanently archive exact four native hidden-target controller twins'
+          git push origin HEAD:main
