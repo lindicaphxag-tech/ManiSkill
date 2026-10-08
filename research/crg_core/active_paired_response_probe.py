@@ -1,217 +1,172 @@
-"""Budgeted, request-directed paired stochastic policy-response probing.
+"""Live budgeted probe adapter for the EXISTING directional-anytime CRG math.
 
-Purpose: replace a brittle *full Jacobian* gate for a concrete requested
-perturbation h with directly measured paired counterfactual responses.
+Adds an actual four-policy-forward-call loop, per-seed source accounting,
+preflight admissibility, fail-closed I/O and sequential stop conditions.
+All concentration/mean-secant calculations delegate to the existing
+directional_anytime_probes module. No duplicated new Hoeffding theorem.
 
-Concentration is a **statistical mean-response statement**, conditional on
-an externally justified almost-sure coordinate contrast bound, IID random
-seeds, correct observation/physical charts, and frozen policies. Observed
-sample ranges do NOT justify the population bound. Never call this a
-deterministic collision-safety certificate.
+This controls conditional *mean response* decisions only; it does not
+certify stochastic single-action or robot collision safety.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from math import isfinite, log, sqrt
+from math import isfinite
 from typing import Callable, Mapping, Sequence
 
 import numpy as np
 
+from research.crg_core.directional_anytime_probes import (
+    DirectionalDecision,
+    DirectionalResult,
+    inspect_directional_samples,
+    paired_directional_secant,
+)
 
-class ResponseProbeDecision(str, Enum):
-    STATISTICAL_MEAN_SIMILAR = "STATISTICAL_MEAN_SIMILAR"
-    STATISTICAL_MEAN_DISTINCT = "STATISTICAL_MEAN_DISTINCT"
-    ABSTAIN_BUDGET_EXHAUSTED = "ABSTAIN_BUDGET_EXHAUSTED"
+
+class ProbeExecutionStatus(str, Enum):
+    CONDITIONAL_MEAN_TRANSFER = "CONDITIONAL_MEAN_TRANSFER"
+    DO_NOT_TRANSFER_DISTINCT = "DO_NOT_TRANSFER_DISTINCT"
+    ABSTAIN_QUERY_BUDGET = "ABSTAIN_QUERY_BUDGET"
     REJECT_UNSUPPORTED_ASSUMPTIONS = "REJECT_UNSUPPORTED_ASSUMPTIONS"
 
 
 @dataclass(frozen=True)
-class PairedProbeRound:
-    seed: int
-    query_count: int
-    response_contrast: tuple[float, ...]
-    mean_contrast_norm: float
-    confidence_radius: float
-    mean_gap_lower: float
-    mean_gap_upper: float
+class ProbeExecution:
+    status: ProbeExecutionStatus
+    seeds_attempted: tuple[int, ...]
+    charged_policy_forward_queries: int
+    max_policy_forward_queries: int
+    latest_diagnostic: DirectionalResult | None
+    allows_actual_policy_transfer: bool
+    independently_validated: bool
+    deterministic_safety_guarantee: bool
+    reason: str
 
 
-@dataclass(frozen=True)
-class PairedProbeResult:
-    decision: ResponseProbeDecision
-    seeds_used: tuple[int, ...]
-    total_policy_queries: int
-    max_policy_queries: int
-    confidence_level_if_assumptions_hold: float | None
-    response_tolerance: float
-    final_mean_gap_lower: float | None
-    final_mean_gap_upper: float | None
-    rounds: tuple[PairedProbeRound, ...]
-    deterministic_safety_guarantee: bool = False
-    externally_validated: bool = False
-    explanation: str = ""
-
-
-def _unsupported(
+def execute_directional_probe_budget(
+    query_paired_plus_minus_actions: Callable[
+        [int, np.ndarray, float], Mapping[str, Sequence[float]]
+    ],
+    physical_direction: Sequence[float],
     *,
-    tolerance: float,
-    budget: int,
-    reason: str,
-    rounds: Sequence[PairedProbeRound] = (),
-    attempted_seed: int | None = None,
-) -> PairedProbeResult:
-    # A malformed sampled round may already have consumed the full four
-    # query calls. Charge it against the budget rather than undercounting.
-    attempted = () if attempted_seed is None else (attempted_seed,)
-    return PairedProbeResult(
-        ResponseProbeDecision.REJECT_UNSUPPORTED_ASSUMPTIONS,
-        tuple(r.seed for r in rounds) + attempted,
-        4 * (len(rounds) + len(attempted)), budget, None,
-        float(tolerance), None, None, tuple(rounds), False, False, reason,
-    )
+    prespecified_iid_seeds: Sequence[int],
+    probe_fraction: float,
+    trusted_action_lows: Sequence[float],
+    trusted_action_highs: Sequence[float],
+    locality_remainder_bound: float | None,
+    physical_response_tolerance: float,
+    familywise_error_budget: float,
+    max_policy_forward_queries: int,
+    independent_seeds_verified: bool,
+    controller_bounds_verified: bool,
+    common_physical_chart_verified: bool,
+    controller_authority_verified: bool,
+) -> ProbeExecution:
+    """Execute four forward passes for each paired seed and stop on evidence.
 
+    One callback invocation must return four first physical actions at
+    (+fraction*h,-fraction*h) for policy A and B, same frozen state,
+    within-policy RNG seed held constant for +/- requests. The callback
+    must not inspect hidden true held-out outcomes. The adapter cannot
+    authenticate these external facts; all provenance flags are required.
 
-def probe_pairwise_mean_response(
-    sample_four_actions: Callable[[int, np.ndarray], Mapping[str, Sequence[float]]],
-    physical_request: Sequence[float],
-    *,
-    prespecified_iid_seed_draws: Sequence[int],
-    hard_coordinate_contrast_bound: float | None,
-    max_policy_queries: int,
-    response_tolerance: float,
-    alpha: float = 0.1,
-    physical_charts_aligned: bool,
-    controller_authority_valid: bool,
-    population_bound_independently_justified: bool,
-    iid_seed_draw_design_attested: bool,
-) -> PairedProbeResult:
-    """Sequentially sample four actions per seed; stop only on strong evidence.
+    A separate independently trusted secant-to-target locality remainder
+    is mandatory; missing it means zero queries and no transfer.
 
-    For seed z, one round measures:
-      X(z) = [pi_A(h,z)-pi_A(0,z)] - [pi_B(h,z)-pi_B(0,z)].
-    All FOUR actions use the same state and per-policy matched RNG seed.
-    The objective is ||E_z X(z)||, NOT E_z||X(z)||.
-
-    Assuming IID z, frozen policies, and all population X_j in [-B,+B],
-    Hoeffding + union bound across d coordinates and all t<=N gives:
-      ||E X - sample_mean_t||_2
-           <= sqrt(d)*B*sqrt(2*ln(2*d*N/alpha)/t)
-    simultaneously for all t<=N with probability >=1-alpha.
-    This is a conservative finite-horizon confidence sequence; it needs
-    an EXTERNAL hard bound B valid for all possible RNG draws, not a
-    fitted range, three-replicate q95, or output clipping inferred from
-    observed samples.
-
-    Bounds concern the stochastic first-action *mean* response at one
-    physical request. They do NOT guarantee one rollout is safe, infer
-    a full Jacobian, certify cross-state transfer, or bound collisions.
+    Executed counts conservatively CHARGE four calls for an attempted seed
+    even if a callback fails and its actual forward count is unknown.
+    Real policy wrappers must additionally log actual model calls.
     """
-    h = np.asarray(physical_request, dtype=float)
-    budget = int(max_policy_queries) if isinstance(max_policy_queries, int) else 0
-    if budget < 4 or budget % 4:
-        raise ValueError("policy query budget must be a positive multiple of four")
-    if not isfinite(response_tolerance) or response_tolerance < 0:
-        raise ValueError("response tolerance must be finite and nonnegative")
-    if not isfinite(alpha) or not 0 < alpha < 1:
-        raise ValueError("alpha must be strictly between 0 and 1")
-    rounds: list[PairedProbeRound] = []
-    if h.ndim != 1 or not h.size or not np.isfinite(h).all():
-        return _unsupported(tolerance=response_tolerance, budget=budget,
-                            reason="invalid physical request")
-    if (
-        not physical_charts_aligned
-        or not controller_authority_valid
-        or not population_bound_independently_justified
-        or not iid_seed_draw_design_attested
-        or hard_coordinate_contrast_bound is None
-        or not isfinite(float(hard_coordinate_contrast_bound))
-        or float(hard_coordinate_contrast_bound) <= 0
+    if not isinstance(max_policy_forward_queries, int) or max_policy_forward_queries < 4 or max_policy_forward_queries % 4:
+        raise ValueError("fixed policy forward-query budget must be a positive multiple of four")
+    if not isfinite(float(physical_response_tolerance)) or physical_response_tolerance < 0:
+        raise ValueError("physical response tolerance must be finite and nonnegative")
+    if not isfinite(float(familywise_error_budget)) or not 0 < familywise_error_budget < 1:
+        raise ValueError("invalid familywise confidence budget")
+    max_pairs = max_policy_forward_queries // 4
+    seeds = tuple(prespecified_iid_seeds)
+    if len(seeds) != max_pairs or len(set(seeds)) != len(seeds) or any(
+        isinstance(s, bool) or not isinstance(s, int) or s < 0 for s in seeds
     ):
-        return _unsupported(
-            tolerance=response_tolerance, budget=budget,
-            reason="missing physical chart/authority, population bound or IID seed evidence",
+        raise ValueError("require exactly one distinct precommitted RNG seed per probe round")
+
+    def finish(status, attempted, latest, reason) -> ProbeExecution:
+        return ProbeExecution(
+            status, tuple(attempted), 4 * len(attempted),
+            max_policy_forward_queries, latest,
+            status is ProbeExecutionStatus.CONDITIONAL_MEAN_TRANSFER,
+            False, False, reason,
         )
-    N = budget // 4
-    seeds = tuple(prespecified_iid_seed_draws)
-    if (
-        len(seeds) != N or len(set(seeds)) != len(seeds)
-        or any(not isinstance(s, int) or isinstance(s, bool) or s < 0 for s in seeds)
-    ):
-        raise ValueError("freeze exactly N distinct nonnegative IID-drawn seeds before probing")
-    B = float(hard_coordinate_contrast_bound)
-    center = None
-    dimension = None
-    delta = None
-    for t, seed in enumerate(seeds, 1):
-        raw = sample_four_actions(seed, h.copy())
-        if not isinstance(raw, Mapping) or set(raw) != {
-            "baseline_a", "perturbed_a", "baseline_b", "perturbed_b"
-        }:
-            return _unsupported(
-                tolerance=response_tolerance, budget=budget,
-                reason="four paired actions or provenance keys missing",
-                rounds=rounds,
-                attempted_seed=seed,
+
+    h = np.asarray(physical_direction, dtype=float)
+    low = np.asarray(trusted_action_lows, dtype=float)
+    high = np.asarray(trusted_action_highs, dtype=float)
+    if (h.ndim != 1 or not h.size or not np.isfinite(h).all()
+        or low.ndim != 1 or high.shape != low.shape or not low.size
+        or not (np.isfinite(low).all() and np.isfinite(high).all())
+        or not np.all(high > low) or not isfinite(float(probe_fraction))
+        or not 0 < probe_fraction <= 1):
+        return finish(ProbeExecutionStatus.REJECT_UNSUPPORTED_ASSUMPTIONS, (), None,
+                      "physical perturbation, action bounds or probe fraction invalid")
+    if (locality_remainder_bound is None or
+        not isfinite(float(locality_remainder_bound)) or locality_remainder_bound < 0 or
+        not all(x is True for x in (
+            independent_seeds_verified, controller_bounds_verified,
+            common_physical_chart_verified, controller_authority_verified,
+        ))):
+        return finish(ProbeExecutionStatus.REJECT_UNSUPPORTED_ASSUMPTIONS, (), None,
+                      "independent seeds, physical bounds, authority or locality envelope not established")
+
+    secants = []
+    attempted = []
+    latest = None
+    for seed in seeds:
+        attempted.append(seed)  # count full round even if callback aborts mid-way
+        try:
+            obs = query_paired_plus_minus_actions(seed, h.copy(), probe_fraction)
+            if not isinstance(obs, Mapping) or set(obs) != {
+                "plus_a", "minus_a", "plus_b", "minus_b"
+            }:
+                raise ValueError("callback must return the four named policy first actions")
+            z = paired_directional_secant(
+                np.asarray(obs["plus_a"], dtype=float),
+                np.asarray(obs["minus_a"], dtype=float),
+                np.asarray(obs["plus_b"], dtype=float),
+                np.asarray(obs["minus_b"], dtype=float),
+                probe_fraction=probe_fraction,
+                trusted_action_lows=low,
+                trusted_action_highs=high,
             )
-        arrays = [np.asarray(raw[key], dtype=float) for key in (
-            "baseline_a", "perturbed_a", "baseline_b", "perturbed_b"
-        )]
-        if any(a.ndim != 1 or a.size == 0 for a in arrays):
-            return _unsupported(tolerance=response_tolerance, budget=budget,
-                                reason="actions must be finite one-dimensional vectors",
-                                rounds=rounds, attempted_seed=seed)
-        if len({a.shape for a in arrays}) != 1 or any(not np.isfinite(a).all() for a in arrays):
-            return _unsupported(tolerance=response_tolerance, budget=budget,
-                                reason="action dimensions differ or contain nonfinite values",
-                                rounds=rounds, attempted_seed=seed)
-        if dimension is None:
-            dimension = arrays[0].size
-            center = np.zeros(dimension, dtype=float)
-        elif arrays[0].size != dimension:
-            return _unsupported(tolerance=response_tolerance, budget=budget,
-                                reason="physical action chart dimension changed",
-                                rounds=rounds, attempted_seed=seed)
-        contrast = (arrays[1] - arrays[0]) - (arrays[3] - arrays[2])
-        # Observed violations invalidate any claimed population support,
-        # but no amount of observed compliance *proves* a population bound.
-        if not np.isfinite(contrast).all() or np.max(np.abs(contrast)) > B:
-            return _unsupported(
-                tolerance=response_tolerance, budget=budget,
-                reason="observed contrast exceeds attested population hard bound",
-                rounds=rounds,
-                attempted_seed=seed,
-            )
-        center += (contrast - center) / t
-        if not np.isfinite(center).all():
-            return _unsupported(tolerance=response_tolerance, budget=budget,
-                                reason="floating overflow in mean contrast",
-                                rounds=rounds, attempted_seed=seed)
-        radius = sqrt(dimension) * B * sqrt(2 * log(2 * dimension * N / alpha) / t)
-        norm = float(np.linalg.norm(center))
-        low, high = max(0.0, norm-radius), norm+radius
-        round_result = PairedProbeRound(
-            seed, 4*t, tuple(float(v) for v in contrast),
-            norm, radius, low, high,
+        except (ValueError, TypeError, KeyError) as error:
+            return finish(ProbeExecutionStatus.REJECT_UNSUPPORTED_ASSUMPTIONS,
+                          attempted, None, f"paired probe invalid: {error}")
+        secants.append(z)
+        latest = inspect_directional_samples(
+            np.asarray(secants),
+            probe_fraction=probe_fraction,
+            action_coordinate_span_a=high-low,
+            action_coordinate_span_b=high-low,
+            locality_remainder_bound=locality_remainder_bound,
+            trusted_response_tolerance=physical_response_tolerance,
+            familywise_error_budget=familywise_error_budget,
+            max_seed_pairs=max_pairs,
+            independent_seeds_verified=True,
+            controller_bounds_verified=True,
+            common_physical_chart_verified=True,
         )
-        rounds.append(round_result)
-        if high <= response_tolerance:
-            decision = ResponseProbeDecision.STATISTICAL_MEAN_SIMILAR
-        elif low > response_tolerance:
-            decision = ResponseProbeDecision.STATISTICAL_MEAN_DISTINCT
-        else:
-            continue
-        return PairedProbeResult(
-            decision, tuple(s for s in seeds[:t]), 4*t, budget,
-            1-alpha, response_tolerance, low, high, tuple(rounds),
-            False, False,
-            "Conditional anytime Hoeffding mean-response decision; not one-action safety",
-        )
-    last = rounds[-1]
-    return PairedProbeResult(
-        ResponseProbeDecision.ABSTAIN_BUDGET_EXHAUSTED,
-        seeds, budget, budget, 1-alpha, response_tolerance,
-        last.mean_gap_lower, last.mean_gap_upper, tuple(rounds),
-        False, False,
-        "No valid mean-response decision within the frozen query budget",
-    )
+        if latest.decision is DirectionalDecision.CONDITIONAL_SIMILAR_MEAN_RESPONSE:
+            return finish(ProbeExecutionStatus.CONDITIONAL_MEAN_TRANSFER,
+                          attempted, latest,
+                          "conditional stochastic mean response similar; not single-action safety")
+        if latest.decision is DirectionalDecision.CONDITIONAL_DISTINCT_MEAN_RESPONSE:
+            return finish(ProbeExecutionStatus.DO_NOT_TRANSFER_DISTINCT,
+                          attempted, latest, "mean policy responses distinct: refuse transfer")
+        if latest.decision is DirectionalDecision.REJECT_UNTRUSTED_BOUND:
+            return finish(ProbeExecutionStatus.REJECT_UNSUPPORTED_ASSUMPTIONS,
+                          attempted, latest, latest.reason)
+    if latest is None or latest.decision is not DirectionalDecision.ABSTAIN_QUERY_BUDGET:
+        raise AssertionError("budget exhaustion must end in the core's abstention status")
+    return finish(ProbeExecutionStatus.ABSTAIN_QUERY_BUDGET,
+                  attempted, latest, "insufficient evidence within prespecified query budget")
