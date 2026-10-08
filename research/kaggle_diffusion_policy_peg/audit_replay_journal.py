@@ -99,6 +99,14 @@ def audit_replay_journal(root: Path) -> dict:
             or type(record.get("failed_count")) is not int
             or record["failed_count"] != len(seeds)-len(successes)
             or record.get("log_file") != f"replay_{arm.name}.log"
+            or record.get("native_outcome_verifier")
+               != "RecordEpisode HDF5 terminal success matches JSON"
+            or any(
+                not isinstance(record.get(key), str)
+                or len(record[key]) != 64
+                or any(ch not in "0123456789abcdef" for ch in record[key])
+                for key in ("converted_hdf5_sha256", "converted_metadata_sha256")
+            )
         ):
             raise UnverifiableReplayEvidence(
                 "corrupt, reordered, incomplete or foreign per-arm replay census"
