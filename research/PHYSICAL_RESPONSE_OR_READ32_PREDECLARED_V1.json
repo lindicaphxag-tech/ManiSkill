@@ -1,0 +1,81 @@
+{
+  "schema": "public_physical_response_or_one_private_read_probe_20261009_v1",
+  "status": "frozen_before_hybrid_implementation_or_results",
+  "base_method_commit": "a68f5d8ae73ebf6ef59bd94fa949cc3fd7f8f018",
+  "original_public_response_runner_git_blob": "96f1baaceb87e98d7f7cdf5c3a092b80d7316b15",
+  "original_public_response_model_git_blob": "064bb46831b61af73ad445bc836326837ec5468f",
+  "externally_released_PPO_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+  "tasks": {
+    "pull_cube": {
+      "env": "PullCube-v1",
+      "fresh_seed_range": [
+        180101,
+        180108
+      ],
+      "checkpoint_sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+      "eps_m": 0.006944262561376447
+    },
+    "stack_cube": {
+      "env": "StackCube-v1",
+      "fresh_seed_range": [
+        190101,
+        190108
+      ],
+      "checkpoint_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c",
+      "eps_m": 0.00719087965534261
+    }
+  },
+  "training_data_for_response_envelope_only": {
+    "pull_cube": [
+      140001,
+      140004
+    ],
+    "stack_cube": [
+      150001,
+      150004
+    ]
+  },
+  "prior_test_data_must_not_be_used_for_tuning": {
+    "pull_cube": [
+      160101,
+      160108
+    ],
+    "stack_cube": [
+      170101,
+      170108
+    ]
+  },
+  "fault_truths": [
+    "applied_no_ack",
+    "neutral_arm_delta_no_ack"
+  ],
+  "fault_step": 2,
+  "common_public_probe_step": 3,
+  "physical_probe_action": "zero arm native target delta with frozen PPO gripper unchanged",
+  "initial_state_count": 16,
+  "total_task_seed_fault_conditions": 32,
+  "arms": [
+    "source_pause_no_fault",
+    "blind_probe_optimistic",
+    "blind_probe_pessimistic",
+    "achieved_probe_classifier_no_private_getter",
+    "PUBLIC_FIT_OR_EXPLICIT_ONE_PRIVATE_READ",
+    "privileged_once_after_probe"
+  ],
+  "new_hybrid_method": "At the public zero-delta probe, use the PREVIOUSLY FROZEN empirical segment response classifier on publicly measured achieved EE XYZ, and its independently action-history generated two candidate target-goal XYZ positions. If exactly one response segment is feasible, reset tracker to that hypothesized previous commanded target (ZERO privileged target reads). Otherwise, including BOTH plausible or NEITHER plausible/invalid model, do not guess; execute precisely ONE explicit privileged controller-target read, reset target observer and continue the same policy. This new method is NOT certified safe without an externally attested plant-response envelope. Full target read is strong additional information only for uncertain cases; report wrong confident history labels and every refusal.",
+  "observation_budget": {
+    "public_probe_per_fault": 1,
+    "maximum_privileged_decision_reads_per_fault": 1
+  },
+  "hard_gates": [
+    "unchanged empirical response epsilon/margins/model, no post-outcome revisions",
+    "eight fresh task seeds per task, two truth conditions each, all 32 preserved",
+    "source policy competence, all physical faults/probes reached separately",
+    "report both wrong confident choices and task completion, never infer one from other",
+    "per-arm private getter count: public no getter, hybrid only if abstain, oracle exactly one",
+    "explicit physical truth used only for injected action and postdecision audit",
+    "source/model/checkpoint SHA and native original CLI recorded",
+    "not real packet loss, safe hardware certification, independently attested physics, cross-robot policy transfer or external adoption"
+  ],
+  "negative_result_must_be_preserved": true
+}
