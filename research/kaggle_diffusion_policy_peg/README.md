@@ -130,6 +130,44 @@ Archive retention: this GitHub Actions artifact is scheduled to expire
 in January 2027. The factual counts, file identities and explicit negative
 performance outcome are therefore preserved in this README.
 
+## 2026-10-08: first native 2×2 *converter × controller* factorial replay
+
+[Run #37715587885](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37715587885) **completed successfully** in a separate public
+CPU runner, code head `cf289614b8fc7780e65e76f0eb39a387c7b98825`.
+The complete raw log and a machine-readable per-source-seed matrix were
+uploaded as [artifact 11523253779](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37715587885/artifacts/11523253779)
+(digest `sha256:4b2e3355cf7e853ae26857e9b38e3f7291b16d806a4b221ab891b7f367dbe9ea`).
+
+All four arms **independently replay the same eight source demonstrations**
+against the exact pinned production code trees. No arm inherits the replay
+dataset of another arm.
+
+| Converter #1495 | Controller #1472 | 8-demo official replay success |
+| --- | --- | ---: |
+| off | off | **6/8** |
+| on | off | **6/8** |
+| off | on | **0/8** |
+| on | on | **6/8** |
+
+The four-way intersection of successful source episode seeds is **zero**,
+because controller-only saved no demonstrations. This is **an observed
+nontrainable arm**, not missing-at-random data, and no policy success rate
+was imputed to that arm. The code explicitly writes `factorial_replay.json`
+and preserves the 32 observed 8×4 source-seed outcomes in
+`source_seed_matrix` with pairwise intersections and source hashes.
+
+**Interpretation:** the controller-only change's failure can be compensated
+by combining it with the converter semantics. However, the converter-only
+arm *also* saves 6/8 in this tiny replay subset; thus **the data do not
+show a converter-only effect on these eight source seeds**, nor do they
+demonstrate policy-level improvement. There is no estimate of trained policy
+success for the controller-only arm because it cannot furnish a paired dataset.
+
+This is exactly why the prior two-arm training smoke must **not** be
+interpreted as evidence of #1495's standalone value. An enlarged frozen
+2×2 replay sample and explicit implementation-contract adjudication are
+required before any statistical or upstream recommendation.
+
 ## Novelty boundary
 
 This experiment does not claim a new general SO(3) action representation: the [SO(3) action representation study](https://openreview.net/forum?id=g4ZrpMQL1Z) already compares common representations at scale. It also does not claim that Cartesian delta actions or action adapters are new; [SPACE](https://arxiv.org/abs/2606.24049) studies them across embodiments and dynamics shifts. Controller-gain effects on behavior cloning are studied in [Tune to Learn](https://arxiv.org/abs/2604.02523). The narrower engineering question here is whether two specific ManiSkill action-conversion/controller changes compose correctly and alter the official PegInsertionSide diffusion-policy pipeline. The current two-arm comparison only estimates their combined effect; it cannot attribute an effect to either PR individually. No performance claim is justified without a four-cell factorial comparison and replicated seeds.
