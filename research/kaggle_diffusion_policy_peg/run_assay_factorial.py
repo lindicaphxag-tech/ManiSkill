@@ -363,6 +363,42 @@ try:
         != {(BASE, None), (CONVERSION, None), (BASE, CONTROLLER), (CONVERSION, CONTROLLER)}
     ):
         raise RuntimeError("frozen 2x2 source intervention cells are not unique")
+    # Immutable, pre-intervention population manifest. Written before
+    # executing any converter/controller replay so aborted experiments cannot
+    # silently redefine which source episodes were attempted.
+    if any("episode_seed" not in ep for ep in selected_episodes):
+        raise RuntimeError("Pinned source selection contains an unidentifiable seed")
+    source_seed_order = [int(ep["episode_seed"]) for ep in selected_episodes]
+    if len(set(source_seed_order)) != len(source_seed_order):
+        raise RuntimeError("Precommitted source population has duplicate episode seeds")
+    original_population = {
+        "schema": "maniskill-source-population-precommit-v1",
+        "source_dataset": {
+            key: raw_dataset_record[key]
+            for key in ("repository", "revision", "path", "sha256", "size_bytes")
+        },
+        "source_episodes": [
+            {"episode_id": int(ep["episode_id"]), "episode_seed": int(ep["episode_seed"])}
+            for ep in selected_episodes
+        ],
+        "source_episode_seeds_sha256": hashlib.sha256(
+            json.dumps(source_seed_order, separators=(",", ":")).encode("utf-8")
+        ).hexdigest(),
+        "four_frozen_interventions": [
+            {"arm": arm, "source_commit": head,
+             "controller_overlay_commit": overlay}
+            for arm, head, overlay in arms
+        ],
+        "note": "Pre-treatment source population; no converted replay outcomes yet",
+    }
+    (OUTPUT / "source_population_precommit.json").write_text(
+        json.dumps(original_population, sort_keys=True, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    # Individual intervention outcome files are durable before any common-
+    # survivor intersection. A replay crash is UNKNOWN, never counted as
+    # success nor coerced to a measured failure.
+    (OUTPUT / "per_arm_replay").mkdir(parents=True, exist_ok=True)
     all_scalars: list[dict] = []
     run_summaries = []
     demonstrations = {}
@@ -419,6 +455,29 @@ try:
             "demo_path": demo_path,
             "indexed_episodes": indexed_episodes,
         }
+        # Persist all observed 0/1 replay results immediately after each
+        # completed treatment, including 0 successes. On an interrupted
+        # treatment no file is produced and the outcome remains UNKNOWN.
+        extra = set(indexed_episodes) - set(source_seed_order)
+        if extra:
+            raise RuntimeError(
+                f"Treatment {arm} returned seeds outside the precommitted source population: {sorted(extra)[:5]}"
+            )
+        completed_seeds = [seed for seed in source_seed_order if seed in indexed_episodes]
+        (OUTPUT / "per_arm_replay" / f"{arm}.json").write_text(
+            json.dumps({
+                "schema": "maniskill-completed-arm-replay-v1",
+                "arm": arm, "source_commit": start_commit,
+                "controller_overlay_commit": extra_commit,
+                "production_tree": tree,
+                "source_population_sha256": original_population["source_episode_seeds_sha256"],
+                "successful_episode_seeds": completed_seeds,
+                "successful_count": len(completed_seeds),
+                "replay_status": "completed",
+                "log_file": f"replay_{arm}.log",
+            }, sort_keys=True, indent=2) + "\n",
+            encoding="utf-8",
+        )
 
     if any("episode_seed" not in episode for episode in selected_episodes):
         raise RuntimeError("The pinned source metadata does not expose stable episode_seed values")
@@ -647,6 +706,15 @@ finally:
             if (OUTPUT / "replay_intention_to_treat.json").is_file()
             else None
         ),
+        "source_population_precommit": (
+            "source_population_precommit.json"
+            if (OUTPUT / "source_population_precommit.json").is_file()
+            else None
+        ),
+        "per_arm_replay_results": [
+            str(path.relative_to(OUTPUT))
+            for path in sorted((OUTPUT / "per_arm_replay").glob("*.json"))
+        ] if (OUTPUT / "per_arm_replay").is_dir() else [],
         "raw_demos_exported": False,
         "model_checkpoints_exported": False,
         "videos_exported": False,
