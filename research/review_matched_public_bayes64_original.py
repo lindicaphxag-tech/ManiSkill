@@ -18,7 +18,7 @@ MODEL={"pull_cube":("PullCube-v1",1760001,"74ae6a09b9af5e9e50dc71944f2e99316a8b6
        "stack_cube":("StackCube-v1",1770001,"e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c")}
 ORIGINAL_SHA={
  "bayes_same_public_pull_cube_chunk0_original8.json":"10020762449f1963cc35c4ca1cf0882e408a74135ed071672ef6c35b982bc1c6",
- "bayes_same_public_pull_cube_chunk1_original8.json":"5edbdbf239543eeeb15cd020ddf720165f32fdc3d1b2b6bfbce8246a351ef36",
+ "bayes_same_public_pull_cube_chunk1_original8.json":"5edbdbf239543eeeb15cd020ddf720165f32fdc3d1b2b6bfbce8246a351ef36d",
  "bayes_same_public_pull_cube_chunk2_original8.json":"dd5defeb8e14a4d2853522a75dd0638195d358a095a5b6a22ea7fa69fdf8d0c2",
  "bayes_same_public_pull_cube_chunk3_original8.json":"48140316e624ab41970861f9493b8dc7d10216ea38ffbfb4057a0561a792cc27",
  "bayes_same_public_stack_cube_chunk0_original8.json":"d86eb62a391cd0e68cd23c0ee52b059a7d6c31921820aeeeac168f1ffd6e2e5f",
