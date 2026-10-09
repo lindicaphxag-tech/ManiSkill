@@ -30,7 +30,7 @@ jobs:
           test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = ddfaf4522d49f73ce926e4c6d77c7ca755f8e1b6
           python -m py_compile research/frozen_ppo_aef_h4_ambiguity_horizon_physx.py research/run_aef_h4_native64.py research/audit_aef_h4_native64.py
           python - <<'PY'
-          from research.run_aef_h4_ood_new64 import accepted,check_sources
+          from research.run_aef_h4_native64 import accepted,check_sources
           check_sources()
           for task,start in (("pull_cube",4100101),("stack_cube",4200101)):
               ids=[v for chunk in range(4) for v in accepted(task,chunk)]
