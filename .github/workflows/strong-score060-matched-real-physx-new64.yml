@@ -1,0 +1,113 @@
+name: "Prospective matched real native PPO strong same-public source-trained 0.60 score versus full-history"
+on:
+  push:
+    branches: [research/strong-score060-matched-ack-new64-20261009]
+    paths:
+      - research/STRONG_SAME_PUBLIC_060_NEW64_BEFORE_PHYSX.json
+      - research/run_strong_score060_new64.py
+      - research/audit_strong_score060_new64.py
+      - .github/workflows/strong-score060-matched-real-physx-new64.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  before_outcome_full64_source_and_protocol_freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Original immutable 64-state prereg, native PPO source, untouched likelihood heuristics and true four-truth new seeds
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/STRONG_SAME_PUBLIC_060_NEW64_BEFORE_PHYSX.json)" = 64b381cd75dfedc8d5d4f9761f0a49e3472df835
+          test "$(git hash-object research/frozen_ppo_strong_tuned_score060_physx.py)" = 1d622c2e8ac8f2ad8d51fdddab728578a455c5f6
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          test "$(git hash-object research/run_strong_score060_new64.py)" = 0dd753671f43067c735ca35c5160f791338917aa
+          test "$(git hash-object research/audit_strong_score060_new64.py)" = 6f9f0f44762c8b3d426bcfef364b33ac5193ac6a
+          python -m py_compile research/frozen_ppo_strong_tuned_score060_physx.py research/run_strong_score060_new64.py research/audit_strong_score060_new64.py
+          python - <<'PY'
+          from research.run_tuned060_ack_new64 import accepted,pin_sources
+          pin_sources()
+          for task,prior in (("pull_cube",1760001),("stack_cube",1770001)):
+              seeds=[v for ch in range(4) for v in accepted(task,ch)]
+              assert len(seeds)==32 and set(seeds).isdisjoint(range(prior,prior+8))
+              assert len({(v-1)%4 for v in seeds})==4
+              assert all(sum((v-1)%4==m for v in seeds)==8 for m in range(4))
+          print("PASS: true NEW64, posthoc development-trained 0.65 dual scorer frozen, no prior-pilot seed")
+          PY
+  actual_ten_comparator_controller_worlds_each_of_64_unseen_reset_states:
+    needs: before_outcome_full64_source_and_protocol_freeze
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+      PYTHONUNBUFFERED: '1'
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install identical native CPU PhysX and released third-party frozen PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Capture physical source commit and original environment before any new PPO rollouts
+        run: |
+          git rev-parse HEAD > original_physx_source_commit.txt
+          python -m pip freeze --all > original_physx_dependencies.txt
+      - name: Step 80 actual independent native controller worlds and separately audit original outcomes
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_strong_score060_new64.py --task "$ABI_TASK" --chunk "$CHUNK" 2>&1 | tee original_physx_terminal.log
+          test -s "tuned060_${ABI_TASK}_chunk${CHUNK}_original8.json"
+          test -s "tuned060_${ABI_TASK}_chunk${CHUNK}_audit.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-new64-strong-score-060-${{ matrix.task }}-chunk${{ matrix.chunk }}
+          path: |
+            tuned060_*_original8.json
+            tuned060_*_audit.json
+            original_physx_terminal.log
+            original_physx_source_commit.txt
+            original_physx_dependencies.txt
+          retention-days: 90
+  all_64_unseen_source_complete_independent_audit:
+    needs: actual_ten_comparator_controller_worlds_each_of_64_unseen_reset_states
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-new64-strong-score-060-*
+          merge-multiple: true
+          path: /tmp/actual_matched_public_original64
+      - name: Independently score every original PhysX failure and actual paired/latent outcome
+        run: |
+          set -euo pipefail
+          python -m research.audit_tuned060_ack_new64 --source-dir /tmp/actual_matched_public_original64 --output /tmp/complete_first_audit.json
+          test -s /tmp/complete_first_audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: first-complete-new64-640-real-physx-strong-score-060-audit
+          path: |
+            /tmp/actual_matched_public_original64/*.json
+            /tmp/complete_first_audit.json
+          retention-days: 90
