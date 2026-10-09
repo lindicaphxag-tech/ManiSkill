@@ -7,6 +7,7 @@ on:
       - 'research/frozen_ppo_compound_ack_multi_belief.py'
       - 'research/multi_ack_se3_bounded.py'
       - 'research/audit_two_ack_actuation_authority_fresh16.py'
+      - 'research/TWO_ACK_UNSYNCED_OBSERVER_IMPLEMENTATION_AMENDMENT.md'
       - '.github/workflows/two-consecutive-unknown-ack-actuation-authority16.yml'
   workflow_dispatch:
 
@@ -29,7 +30,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git hash-object research/TWO_ACK_ACTUATION_AUTHORITY_FRESH16_PRECOMMIT_V2.json)" = "99f6c1e9f604e371fa0ae95480cfd1173b4d5f5f"
-          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = "fb9b4c2b82660593e05a5e30cb33da86051440f6"
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = "ddfaf4522d49f73ce926e4c6d77c7ca755f8e1b6"
           test "$(git hash-object research/multi_ack_se3_bounded.py)" = "36707a177549104ba5b4bd9bcebc76518f0d2840"
           test "$(git hash-object research/frozen_ppo_ack_bounded_query.py)" = "1dc653cdc44e422c8340475ad00f828b3a41eb4f"
           test "$(git hash-object research/two_history_se3_robust.py)" = "bb5fd155b7291fb127f94138fca321201c8271c3"
