@@ -1,0 +1,44 @@
+name: Typed SmolVLA-to-Multi-ACK controller ABI research contracts
+on:
+  push:
+    branches:
+      - research/beliefbridge-vla-action-contract-20261009
+    paths:
+      - 'research/vla_beliefbridge/**'
+      - 'tests/test_vla_beliefbridge_actual_controller.py'
+      - '.github/workflows/vla-beliefbridge-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-source-geometry-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install only finite-geometry dependencies, no fake VLA checkpoint
+        run: python -m pip install 'numpy>=1.24' 'scipy>=1.11'
+      - name: Run actual ManiSkill source finite-belief and K-history SE3 contracts
+        run: |
+          set -euo pipefail
+          python -m py_compile research/vla_beliefbridge/vla_controller_bridge.py
+          python -m unittest discover -s tests -p 'test_vla_beliefbridge_actual_controller.py' -v
+          python - <<'PY'
+          from research.action_abi_uncertain_delivery_belief import UncertainDeliveryBelief
+          from research.multi_ack_se3_bounded import common_multi_history_command
+          from research.vla_beliefbridge.vla_controller_bridge import RecedingHorizonVLAGateway
+          print("REAL_GEOMETRY_AND_TYPED_GATEWAY_IMPORTED", UncertainDeliveryBelief, common_multi_history_command, RecedingHorizonVLAGateway)
+          PY
+      - name: Record exact source Git blobs and reproducibility header
+        run: |
+          echo "Note: SOURCE CONTRACT ONLY; no pretrained VLA inference / successful robotics task claimed."
+          git rev-parse HEAD
+          git hash-object research/vla_beliefbridge/vla_controller_bridge.py
+          git hash-object research/multi_ack_se3_bounded.py
+          git hash-object research/action_abi_uncertain_delivery_belief.py
+
+# Passing here validates policy/controller representation and uncertainty
+# state machine, not VLA task performance, whole-arm safety, or WAM dynamics.
