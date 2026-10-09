@@ -1,0 +1,101 @@
+name: "Source-authentic permanent mixed ACK native PhysX full64 benchmark archive"
+on:
+  push:
+    branches: [research/mixed-ack-truth-frozenppo-new64-20261009]
+    paths:
+      - '.github/workflows/archive-original-mixed-ack-frozenppo64.yml'
+permissions:
+  contents: write
+jobs:
+  verify-real-original-and-publish-complete-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PRODUCER_RUN: '37915263314'
+      ORIGINAL_AUDIT_ARTIFACT: '11609757884'
+      ORIGINAL_ARTIFACT_ZIP_SHA256: '64f3dccaf47e4c1889ffbb8b572cb8557037ba92c8f3462377c0023aa6c397f5'
+      DEST: research/frozen_policy_transfer/evidence/mixed_ack_truth_frozen_ppo_original64_860001_870032
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require exact original successful PhysX run, original preregistration and code identities
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$PRODUCER_RUN" --jq '.conclusion')" = success
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$PRODUCER_RUN" --jq '.head_sha')" = ae8cc91bf188e6697f5a1f2e8c82ff5e6d8f4e0c
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/artifacts/"$ORIGINAL_AUDIT_ARTIFACT" --jq '.digest')" = "sha256:$ORIGINAL_ARTIFACT_ZIP_SHA256"
+          test "$(git hash-object research/MIXED_ACK_TRUTH_PPO_NEW64_PREOUTCOME_V1.json)" = 039868da753f6fc37217036ed632bf6dca953228
+          test "$(git hash-object research/frozen_ppo_mixed_ack_truth_physx.py)" = 36e672446407435e656cbf8aba6fa2de7c1e9d0e
+          test "$(git hash-object research/run_mixed_ack_truth_new64.py)" = 7c4bd55623b0420f921c6549cd7014155e7b119d
+          test "$(git hash-object research/audit_mixed_ack_truth_new64.py)" = 080d02db25fe10603eb89d7de2a92a18e74fab43
+      - name: Download ORIGINAL unmodified successful source archive via GitHub API and verify ZIP digest
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$ORIGINAL_AUDIT_ARTIFACT/zip" \
+            -o /tmp/first_mixed_real64.zip
+          echo "$ORIGINAL_ARTIFACT_ZIP_SHA256  /tmp/first_mixed_real64.zip" | sha256sum --check -
+          mkdir -p /tmp/first_mixed_real64
+          unzip -q /tmp/first_mixed_real64.zip -d /tmp/first_mixed_real64
+          test "$(find /tmp/first_mixed_real64 -type f -name '*.json' | wc -l)" -eq 17
+      - name: Independently recompute all 576 true native worlds including BOTH execution truths
+        run: |
+          set -euo pipefail
+          SOURCE_DIR="$(dirname "$(find /tmp/first_mixed_real64 -name 'mixed_ack_pull_cube_chunk0_original8.json' -print -quit)")"
+          FULL_JSON="$(find /tmp/first_mixed_real64 -name 'ORIGINAL_MIXED_ACK_ALL64_FULL_AUDIT.json' -print -quit)"
+          test -n "$SOURCE_DIR"
+          test -s "$FULL_JSON"
+          python -m research.audit_mixed_ack_truth_new64 --source-dir "$SOURCE_DIR" --output /tmp/source_independent_full_mixed64.json
+          ORIGINAL_FULL="$FULL_JSON" python - <<'PY'
+          import json,os
+          a=json.load(open(os.environ["ORIGINAL_FULL"]))
+          b=json.load(open("/tmp/source_independent_full_mixed64.json"))
+          if a!=b:raise SystemExit("Reject outcome- or provenance-modified source, including missing negative cases")
+          assert b["genuine_source_physx_reset_states"]==64
+          assert b["genuine_physics_controller_worlds"]==576
+          assert b["first_physical_ACK_truth_balance"]=={"applied":32,"held":32}
+          assert b["complete_double_fault_gate_passes"] is True
+          assert b["double_fault_exposure_population"]==64
+          assert b["model_confident_wrong"]==0
+          assert b["public_confident_authorizations"]==33
+          assert b["outcomes_total"]["new_public"]=={"success":58,"privileged_reads":31}
+          assert b["outcomes_total"]["task_preselected"]=={"success":58,"privileged_reads":58}
+          assert b["outcomes_total"]["fixed_t4"]=={"success":59,"privileged_reads":64}
+          assert b["outcomes_total"]["always_assume_held"]=={"success":43,"privileged_reads":0}
+          assert b["paired_discordances"]=={"both":57,"neither":5,"new_only":1,"task_gate_only":1}
+          print("ORIGINAL_TRUE_MIXED_ACK_ACTUAL_REAL_PHYSX_64_TASKS_576_WORLD_SOURCE_CONFIRMED",True)
+          PY
+      - name: Preserve exact 17 original JSON bytes and SHA256 per source, including failures
+        run: |
+          set -euo pipefail
+          SOURCE_DIR="$(dirname "$(find /tmp/first_mixed_real64 -name 'mixed_ack_pull_cube_chunk0_original8.json' -print -quit)")"
+          FULL_JSON="$(find /tmp/first_mixed_real64 -name 'ORIGINAL_MIXED_ACK_ALL64_FULL_AUDIT.json' -print -quit)"
+          mkdir -p "$DEST"
+          cp "$SOURCE_DIR"/*.json "$DEST"/
+          cp "$FULL_JSON" "$DEST"/
+          (cd "$DEST" && sha256sum *.json > SHA256SUMS)
+          cat > "$DEST"/README.md <<'EOF'
+          # Original real-PhysX frozen PPO mixed ACK-truth benchmark: 64 registered states, 576 native controller worlds
+
+          Original successful full 10-job source and independent all64 audit: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37915263314
+          Original source commit ae8cc91bf188e6697f5a1f2e8c82ff5e6d8f4e0c; ORIGINAL before-outcome protocol Git blob 039868da753f6fc37217036ed632bf6dca953228.
+          ORIGINAL combined source artifact ID 11609757884, SHA256 ZIP 64f3dccaf47e4c1889ffbb8b572cb8557037ba92c8f3462377c0023aa6c397f5.
+          Exactly 17 SOURCE-UNCHANGED files: eight 8-seed actual nine-controller native PhysX simulator-run JSONs; eight original task-shard source audits; and one source-complete full64 independent audit. SHA256SUMS is computed on each ORIGINAL byte stream and preserves failed outcomes/incorrect labels.
+          New original reset seeds PullCube 860001–860032; StackCube 870001–870032. Physical first t2 ACK **APPLIED** for every EVEN numbered seed (32) and physically **HELD** for every ODD seed (32). Physical t3 zero-delta ACK always HELD to retain the predeclared public pose probe. Both receipts unknown to all tested controllers.
+          The 64 original states generated 9 *actually independently stepped* paired native policy/controller worlds per state = 576 ACTUAL PhysX virtual controller trajectories, **not 576 independent robots/PPOs**. Two nominal fault event timings were actually reached in all 64 new-method states.
+          **New public full-discrete-history identify-or-one-query: 58/64 task success with 31 privileged decision target reads**, versus pre-registered task-ID strong fixed/selective route **58/64 task success with 58 private target reads**, actual paired binary 57 both-success, 5 neither, 1 new-only, 1 task-gate-only. A trivial new, actually physically stepped ALWAYS ASSUME HELD zero-read alternative: **43/64 task successes, 0 reads**; fixed t4 target query 59/64 success with 64 reads. Correct confident public history index: **33/64** new tasks, zero observed wrong against audit-only AFTER real native physical t3 probe; the remaining 31 spent one explicitly counted target read. No public/threshold/model refitting on new outcomes.
+          The 27/58 = 46.6% fewer private target reads is ONLY an OBSERVED sampled information-cost reduction with same aggregate task successes, NOT a formal statistical noninferiority result. The separately stepped fixed-read strategy was 1/64 more successful and the strong task-aware comparator has one success difference in each direction. Public achieved pose is an extra two samples per trial (no extra native probe actuation). This is an author-operated two-task, ONE Panda physical simulator, one real first ACK mixed + always-held second ACK regime; it is NOT four fully mixed joint truths, genuine network lost messages, hardware safety, independently attested empirical dynamics or third-party external adoption.
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$DEST"
+          git diff --cached --quiet && exit 0
+          git commit -m "evidence: preserve complete original 576 real native PhysX worlds and mixed held/applied ACK comparative findings"
+          git push origin HEAD:research/mixed-ack-truth-frozenppo-new64-20261009

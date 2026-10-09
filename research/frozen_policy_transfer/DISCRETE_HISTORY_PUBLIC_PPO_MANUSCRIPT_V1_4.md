@@ -93,6 +93,16 @@ Our previous **separately prospectively executed** 32-state task study required 
 
 A **retrospective, outcome-exposed** diagnostic of those old 32 original motion trajectories revealed 12 unique complete-history indexes with no observed false labels, but **no improved controller was actually executed on that old population**. The new 64-state trial was frozen afterward, on different new seeds, before implementing and executing the improved full-hypothesis admission rule. This preserves the distinction between hypothesis development and prospective task validation.
 
+### Critical preregistered adversarial follow-up: fixed-fault-pattern shortcut
+
+The original 64-state experiment physically replaced BOTH fault commands with zero native arm actions on EVERY faulted rollout. While the adapter received no acknowledgement, the generating fault truth was therefore **deterministically HELD** rather than a mixture of executed and held commands. A trivial comparator maintaining a controller target under an `always-held` assumption might recover with **zero hidden-target reads**, even when it is scientifically incapable of handling an actually executed command. This is a serious **evaluation shortcut/confound**, not an acknowledged theoretical guarantee.
+
+We have prospectively registered a fresh follow-up on **64 completely different reset states**, with the first native ACK physically **APPLIED in 32 trials** and **HELD in 32 trials** (balanced within each task), and the second command physically HELD to keep the existing public zero-delta response observation comparable. A newly added, **separately physically executed** zero-read always-assume-held adapter is included alongside the frozen public-observer method and the task-selected strong read comparator. All comparisons are stratified by actual native delivery truth. This is a strictly narrower experiment than four independently sampled two-fault outcomes, which remain untested.
+
+[Protocol frozen before mixed-ACK PhysX execution](../../MIXED_ACK_TRUTH_PPO_NEW64_PREOUTCOME_V1.json) · [source-owned nine-controller PhysX experiment](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37915263314) · [Draft research PR #130](https://github.com/lindicaphxag-tech/ManiSkill/pull/130).
+
+**Interpretation policy:** The 58/64 with 39-vs-57 reads above remains factual for the original **both-held** simulation population. Until the mixed-truth source audit is complete, it cannot establish robust recovery of an unknown *realized* ACK. A mixed-truth failure must remain in the next manuscript; no cherry-picking the held stratum or changing the physical parity schedule after outcomes.
+
 ## 5. Limitations and comparison with related methods
 
 Our geometrical observation-set test draws on standard set-membership reasoning. Existing [ActionShift](https://github.com/Archerkattri/actionshift) and [ActionABI](https://github.com/Archerkattri/actionabi) studies already investigate action-interface identification, belief updates, active probes and abstention; this work does not claim to invent those broad concepts. The narrower empirical target is an **otherwise known action ABI with missing execution truth**, in which the prior commanded target is a state variable distinct from observed achieved pose.

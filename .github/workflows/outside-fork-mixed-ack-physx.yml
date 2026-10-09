@@ -1,0 +1,79 @@
+name: "Independent reviewer: original mixed applied/held ACK frozen PPO in real PhysX"
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'research/outside_fork_mixed_ack_falsifier.py'
+      - '.github/workflows/outside-fork-mixed-ack-physx.yml'
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Published third-party unchanged frozen PPO task"
+        required: true
+        type: choice
+        options: [pull_cube, stack_cube]
+        default: pull_cube
+      first_seed:
+        description: "Select first of EIGHT genuinely new consecutive seed IDs (930001..999992) BEFORE physics"
+        required: true
+        type: number
+        default: 930001
+permissions:
+  contents: read
+jobs:
+  verify-original-source-and-owner:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reject changed method, disclose authentic operator ownership
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/frozen_ppo_mixed_ack_truth_physx.py)" = 36e672446407435e656cbf8aba6fa2de7c1e9d0e
+          python -m py_compile research/outside_fork_mixed_ack_falsifier.py
+          echo "Operator repo=$GITHUB_REPOSITORY actor=$GITHUB_ACTOR; self-owned fork execution is not scientific independent reproduction."
+
+  operator-owned-real-72-physx-controller-worlds:
+    needs: verify-original-source-and-owner
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TASK: ${{ inputs.task }}
+      FIRST_SEED: ${{ inputs.first_seed }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official ManiSkill CPU PhysX runtime and third-party frozen PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Record operator, original runtime and initial selected seeds BEFORE first step
+        run: |
+          mkdir -p outside_mixed_ack_original
+          git rev-parse HEAD > outside_mixed_ack_original/actual_checked_out_git_commit.txt
+          printf 'repo=%s actor=%s task=%s seeds_start=%s\n' "$GITHUB_REPOSITORY" "$GITHUB_ACTOR" "$TASK" "$FIRST_SEED" > outside_mixed_ack_original/DECLARED_BEFORE_ORIGINAL_PHYSX.txt
+          python -m pip freeze --all > outside_mixed_ack_original/full_runtime_freeze.txt
+      - name: Physically execute nine matched controls on 8 actual balanced ACK truth reset states
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/outside_fork_mixed_ack_falsifier.py --task "$TASK" --first-seed "$FIRST_SEED" --output outside_mixed_ack_original 2>&1 | tee outside_mixed_ack_original/complete_real_native_simulation.log
+      - name: Immutable hash all original failed and successful physical controller evidence
+        if: always()
+        run: |
+          (cd outside_mixed_ack_original && sha256sum *.json *.txt *.log > SHA256SUMS) || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: exact-original-external-operator-nine-arm-mixedACK-PhysX
+          path: outside_mixed_ack_original/
+          retention-days: 90

@@ -1,0 +1,113 @@
+name: "Precommitted balanced actual ACK truths: frozen PPO mixed held/applied PhysX"
+on:
+  push:
+    branches: [research/mixed-ack-truth-frozenppo-new64-20261009]
+    paths:
+      - 'research/MIXED_ACK_TRUTH_PPO_NEW64_PREOUTCOME_V1.json'
+      - 'research/frozen_ppo_mixed_ack_truth_physx.py'
+      - 'research/run_mixed_ack_truth_new64.py'
+      - 'research/audit_mixed_ack_truth_new64.py'
+      - '.github/workflows/mixed-ack-truth-real-ppo-physx.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preoutcome-source-and-seed-truth-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require frozen source hashes and perfectly balanced actually applied/held physical cases
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/MIXED_ACK_TRUTH_PPO_NEW64_PREOUTCOME_V1.json)" = 039868da753f6fc37217036ed632bf6dca953228
+          test "$(git hash-object research/frozen_ppo_mixed_ack_truth_physx.py)" = 36e672446407435e656cbf8aba6fa2de7c1e9d0e
+          test "$(git hash-object research/run_mixed_ack_truth_new64.py)" = 7c4bd55623b0420f921c6549cd7014155e7b119d
+          test "$(git hash-object research/audit_mixed_ack_truth_new64.py)" = 080d02db25fe10603eb89d7de2a92a18e74fab43
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          python -m py_compile research/frozen_ppo_mixed_ack_truth_physx.py research/run_mixed_ack_truth_new64.py research/audit_mixed_ack_truth_new64.py
+          python - <<'PY'
+          from research.run_mixed_ack_truth_new64 import accepted,check_sources
+          check_sources()
+          for t,start in (("pull_cube",860001),("stack_cube",870001)):
+              ids=[k for c in range(4) for k in accepted(t,c)]
+              assert ids==list(range(start,start+32)), ids
+              assert sum(k%2==0 for k in ids)==16
+              assert sum(k%2==1 for k in ids)==16
+          print("ORIGINAL_BALANCED_ACK_APPLIED_HELD_BEFORE_NEW64_PHYSX",True)
+          PY
+
+  four-by-two-physically-executed-PPO-task-shards:
+    needs: preoutcome-source-and-seed-truth-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install genuine ManiSkill PhysX with two original pretrained frozen PPOs
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Write original code and runtime provenance before any physical step
+        run: |
+          git rev-parse HEAD > ORIGINAL_EXECUTED_COMMIT.txt
+          python -m pip freeze --all > ORIGINAL_PYTHON_PACKAGES.txt
+      - name: Execute NINE actual native control worlds for each of EIGHT held/applied truth trials
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_mixed_ack_truth_new64.py --task "$TASK" --chunk "$CHUNK" 2>&1 | tee complete_actual_native_physx.log
+          test -s "mixed_ack_${TASK}_chunk${CHUNK}_original8.json"
+          test -s "mixed_ack_${TASK}_chunk${CHUNK}_audit.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-balanced-ack-${{ matrix.task }}-${{ matrix.chunk }}
+          path: |
+            mixed_ack_*_original8.json
+            mixed_ack_*_audit.json
+            complete_actual_native_physx.log
+            ORIGINAL_EXECUTED_COMMIT.txt
+            ORIGINAL_PYTHON_PACKAGES.txt
+          retention-days: 90
+
+  full-independent-64-truth-576-real-controller-audit:
+    needs: four-by-two-physically-executed-PPO-task-shards
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-balanced-ack-*
+          merge-multiple: true
+          path: /tmp/original-balanced-real64
+      - name: Independently reconstruct every physically applied/held ACK, zero-read assumption and strong query baseline
+        run: |
+          python -m research.audit_mixed_ack_truth_new64 --source-dir /tmp/original-balanced-real64 --output /tmp/ORIGINAL_MIXED_ACK_ALL64_FULL_AUDIT.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: original-mixed-ACK-64-tasks-576-physical-worlds-independent-audit
+          path: |
+            /tmp/original-balanced-real64/*.json
+            /tmp/ORIGINAL_MIXED_ACK_ALL64_FULL_AUDIT.json
+          retention-days: 90

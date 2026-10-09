@@ -1,0 +1,141 @@
+name: Prospective truly new-reset mixed ACK PPO32 applied/held native PhysX
+
+on:
+  push:
+    branches: [research/mixed-ack-truth-frozenppo-new64-20261009]
+    paths:
+      - 'research/MIXED_ACK_REALLY_NEW_RESET32_FROZEN_PROTOCOL_V1.json'
+      - '.github/workflows/mixed-ack-new-reset32-physx.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-original-source-and-new-state-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Refuse postcommit modifications to original model/controller/protocol
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/MIXED_ACK_REALLY_NEW_RESET32_FROZEN_PROTOCOL_V1.json)" = "7fb707d00c6d7e25fe42623d5b2f83c62a694ad8"
+          test "$(git hash-object research/frozen_ppo_mixed_ack_truth_physx.py)" = "36e672446407435e656cbf8aba6fa2de7c1e9d0e"
+          python - <<'PY'
+          import json
+          p=json.load(open("research/MIXED_ACK_REALLY_NEW_RESET32_FROZEN_PROTOCOL_V1.json"))
+          assert p["frozen_before_new_task_outcomes"] is True
+          assert p["total_new_reset_state_targets"]==32
+          assert p["new_reset_states"]=={
+            "pull_cube":[[980101,980108],[980109,980116]],
+            "stack_cube":[[990101,990108],[990109,990116]]}
+          assert p["actual_native_physx_worlds_expected"]==288
+          print("PASS prereg source state/control and no newly chosen seed after outcomes")
+          PY
+          python -m py_compile research/outside_fork_mixed_ack_falsifier.py
+
+  four-real-native-physx-8seed-chunks:
+    needs: frozen-original-source-and-new-state-preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {task: pull_cube, start: 980101}
+          - {task: pull_cube, start: 980109}
+          - {task: stack_cube, start: 990101}
+          - {task: stack_cube, start: 990109}
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install original native PhysX and external original released frozen PPOs
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Execute all NINE native controller worlds for EIGHT preregistered never-used resets
+        run: |
+          set -o pipefail
+          folder="new_reset_${{ matrix.task }}_${{ matrix.start }}"
+          mkdir -p "$folder"
+          printf '%s\n' "$GITHUB_SHA" > "$folder/original_runner_git_sha.txt"
+          printf 'task=%s first_seed=%s eight_original=true\n' "${{ matrix.task }}" "${{ matrix.start }}" > "$folder/prerun_seed_attestation.txt"
+          PYTHONPATH="$PWD:$PWD/research" python research/outside_fork_mixed_ack_falsifier.py             --task "${{ matrix.task }}" --first-seed "${{ matrix.start }}" --output "$folder"             2>&1 | tee "$folder/actual_native_9world_physx.log"
+          test -s "$folder/INDEPENDENT_ORIGINAL_MIXED_ACK_REVIEWER_SUMMARY.json"
+          (cd "$folder" && sha256sum *.json *.txt *.log > SOURCE_SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prereg-new32-${{ matrix.task }}-${{ matrix.start }}-all9-original-physx
+          path: new_reset_*/
+          retention-days: 90
+
+  full-32-state-first-output-and-negative-outcomes:
+    needs: four-real-native-physx-8seed-chunks
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: prereg-new32-*
+          path: /tmp/real32_source
+      - name: Verify complete 32 physical native resets, applied/held truth and all original outcomes
+        run: |
+          python - <<'PY'
+          import json,hashlib,pathlib
+          root=pathlib.Path("/tmp/real32_source")
+          required={("pull_cube",980101),("pull_cube",980109),("stack_cube",990101),("stack_cube",990109)}
+          results={}
+          allids=set()
+          for task,base in sorted(required):
+            pattern=list(root.rglob(f"outside_{task}_{base}_8_original_worlds.json"))
+            assert len(pattern)==1,(task,base,pattern)
+            path=pattern[0]
+            data=json.loads(path.read_text())
+            assert data["real_physx_simulator"] is True
+            assert data["original_seed_population"]==list(range(base,base+8))
+            assert len(data["episodes"])==8
+            summary=json.loads((path.parent/"INDEPENDENT_ORIGINAL_MIXED_ACK_REVIEWER_SUMMARY.json").read_text())
+            assert summary["actual_original_raw_sha256"]==hashlib.sha256(path.read_bytes()).hexdigest()
+            assert len(summary["all_eight_original_seed_truth_task_comparisons"])==8
+            for row in data["episodes"]:
+              ident=(task,row["seed"])
+              assert ident not in allids; allids.add(ident)
+              assert row["original_precommitted_physical_t2_execution_truth"]==("applied" if row["seed"]%2==0 else "held")
+              for arm in ("fault_public_t3_fourhistory_or_t4_query","fault_robust_then_single_privileged_query",
+                          "fault_always_single_privileged_query","fault_assume_held_without_query"):
+                assert [z["step"] for z in row["faults"][arm]]==[2,3]
+                assert type(row["success_once"][arm]) is bool
+              ev=row["public_t3_evidence"]
+              assert row["privileged_target_readback_decision_count"]["fault_public_t3_fourhistory_or_t4_query"]==int(not ev["authorized"])
+              assert ev["wrong_confident"] is False
+            results[f"{task}-{base}"]=data
+          assert len(allids)==32
+          output={"status":"NEW_SOURCE_FROZEN_REAL_PHYSX_NOT_EXTERNAL_REPRODUCTION",
+                  "registered_distinct_reset_state_count":32,
+                  "n_actual_controller_worlds":288,
+                  "source_shard_task_success_counts":{k:v["success_counts"] for k,v in results.items()},
+                  "all_cases_unmodified":True}
+          pathlib.Path("new_reset32_complete_original_audit.json").write_text(json.dumps(output,indent=2,sort_keys=True))
+          print("FRESH_TRUE_RESET32_ALL_NATIVE_PHYXS_AUDIT",json.dumps(output,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: new-reset32-full-original-experimental-audit
+          path: new_reset32_complete_original_audit.json
