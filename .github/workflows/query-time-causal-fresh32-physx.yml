@@ -1,0 +1,102 @@
+name: Frozen new32 real PhysX controlled target-query timing causal intervention
+on:
+  push:
+    branches: [research/query-time-causal-intervention-fresh32-20261009]
+  pull_request:
+    paths:
+      - 'research/QUERY_TIME_CAUSAL_FRESH32_PREOUTCOME_V1.json'
+      - 'research/frozen_ppo_query_time_causal_fresh32.py'
+      - 'research/audit_query_time_causal_fresh32.py'
+      - 'tests/test_query_time_causal_fresh32.py'
+      - '.github/workflows/query-time-causal-fresh32-physx.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prereg-and-adversarial-source-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require immutable before-implementation frozen task seeds and unchanged original method
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/QUERY_TIME_CAUSAL_FRESH32_PREOUTCOME_V1.json)" = "bdf19f7c0f75cee1bd0b0f30a3316e7cd29e3acc"
+          test "$(git hash-object research/frozen_ppo_ack_bounded_query.py)" = "1dc653cdc44e422c8340475ad00f828b3a41eb4f"
+          test "$(git hash-object research/two_history_se3_robust.py)" = "bb5fd155b7291fb127f94138fca321201c8271c3"
+          python -m py_compile research/frozen_ppo_query_time_causal_fresh32.py research/audit_query_time_causal_fresh32.py
+          python -m unittest discover -s tests -p 'test_query_time_causal_fresh32.py' -v
+
+  physically-executed-paired-controller-shards:
+    needs: prereg-and-adversarial-source-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      ABI_CHUNK: ${{ matrix.chunk }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Lock pre-outcome source and exact original method/geometry
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/QUERY_TIME_CAUSAL_FRESH32_PREOUTCOME_V1.json)" = "bdf19f7c0f75cee1bd0b0f30a3316e7cd29e3acc"
+          test "$(git hash-object research/frozen_ppo_ack_bounded_query.py)" = "1dc653cdc44e422c8340475ad00f828b3a41eb4f"
+          test "$(git hash-object research/two_history_se3_robust.py)" = "bb5fd155b7291fb127f94138fca321201c8271c3"
+      - name: Install official ManiSkill native CPU PhysX and published frozen PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Execute eight matched physically stepped controller policies on four NEW seeds
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/frozen_ppo_query_time_causal_fresh32.py 2>&1 | tee original_query_time_physx.log
+          test -s "query_time_${ABI_TASK}_chunk${ABI_CHUNK}_original4.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-query-time-${dollar}{{ matrix.task }}-chunk${dollar}{{ matrix.chunk }}
+          path: |
+            query_time_*.json
+            original_query_time_physx.log
+          retention-days: 90
+
+  full-original-32-paired-source-audit:
+    needs: physically-executed-paired-controller-shards
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-query-time-*
+          path: /tmp/query-time-all-original
+          merge-multiple: true
+      - name: Recompute all 32 task-state source rows and actual query-time/privilege ledgers
+        run: |
+          python -m research.audit_query_time_causal_fresh32 --input-dir /tmp/query-time-all-original --output /tmp/full_query_time_audit.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: complete-original-new32-query-time-causal-evidence
+          path: |
+            /tmp/query-time-all-original/*.json
+            /tmp/full_query_time_audit.json
+          retention-days: 90
