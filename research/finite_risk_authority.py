@@ -8,15 +8,24 @@ Runtime never receives the original commanded-target label.
 """
 from __future__ import annotations
 from dataclasses import dataclass
-from math import comb,ceil,isfinite,log
+from math import ceil,isfinite,log,log1p,lgamma,exp,fsum
 from typing import Optional,Sequence
+
+def _binom_interval(lo:int,hi:int,n:int,p:float)->float:
+    """Logsumexp binomial tail; avoids comb integer conversion overflow at 2k+ trials."""
+    if lo>hi:return 0.
+    if p<=0:return float(lo<=0<=hi)
+    if p>=1:return float(lo<=n<=hi)
+    A=lgamma(n+1);lp=log(p);lq=log1p(-p)
+    zs=[A-lgamma(j+1)-lgamma(n-j+1)+j*lp+(n-j)*lq
+        for j in range(lo,hi+1)]
+    peak=max(zs)
+    return min(1.,exp(peak)*fsum(exp(z-peak) for z in zs))
 
 def _cdf_leq(k:int,n:int,p:float)->float:
     if k<0:return 0.
     if k>=n:return 1.
-    if p<=0:return 1.
-    if p>=1:return 0.
-    return sum(comb(n,j)*p**j*(1.-p)**(n-j) for j in range(k+1))
+    return _binom_interval(0,k,n,p)
 
 def upper_cp(k:int,n:int,tail:float)->float:
     """One-sided exact upper P(error | authorized), NOT posterior belief."""
@@ -38,7 +47,7 @@ def lower_cp(k:int,n:int,tail:float)->float:
     lo,hi=0.,1.
     for _ in range(65):
         mid=(lo+hi)/2
-        if 1-_cdf_leq(k-1,n,mid)<tail:lo=mid
+        if _binom_interval(k,n,n,mid)<tail:lo=mid
         else:hi=mid
     return lo
 
