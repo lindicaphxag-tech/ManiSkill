@@ -36,7 +36,11 @@ jobs:
           assert len(p['arms'])==10
           assert p['source']['two_fault_worlds_step_zero_indexed']==[2,3]
           PY
-          python -m py_compile research/frozen_ppo_post_read_canonical_new64.py research/audit_canonical_post_read_fresh64.py
+          # Fail before costly simulator installs when the pre-frozen query gates
+          # were accidentally omitted while transplanting the experimental runner.
+          test "$(git hash-object research/authority_slack_query_gate.py)" = "0d19399b8a36f2893e17a25a63f15d2fe2cfd70c"
+          test "$(git hash-object research/phase_information_gate.py)" = "bdc0e04cf9a074aba7c24c883a58688214866d35"
+          python -m py_compile research/frozen_ppo_post_read_canonical_new64.py research/audit_canonical_post_read_fresh64.py research/authority_slack_query_gate.py research/phase_information_gate.py
       - name: Independently test counterexample boolean state bug in static comparator code
         run: |
           python - <<'PY'
