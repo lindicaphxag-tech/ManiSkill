@@ -205,7 +205,8 @@ def trial(policy,seed):
                 # in its paired independently simulated world. Copy its 6 axes
                 # *exactly* to the fixed-read comparator. No target getter or
                 # invalid observer enters the decision. Audit equality at t4.
-                if n in ("fault_always_single_privileged_query",POST_ARM) and step==3:
+                if (n in ("fault_always_single_privileged_query",POST_ARM) and step==3
+                    and len(result["faults"].get(PUBLIC_ARM,[]))==2):
                     witness=result["faults"].get(PUBLIC_ARM,[])
                     if len(witness)!=2 or witness[-1]["step"]!=3:
                         raise RuntimeError("Missing precommitted public t3 dispatched command")
@@ -253,7 +254,7 @@ def trial(policy,seed):
                         result["success_step"][n]=step+1
                     result["steps"][n]=step+1
                     done[n]=base._bool_value(terminated) or base._bool_value(truncated)
-                    if n==POST_ARM:
+                    if n==POST_ARM and len(result["faults"].get(PUBLIC_ARM,[]))==2:
                         # Copy only source-intended belief, no audit-only controller truth.
                         beliefs[n]=copy.deepcopy(beliefs[PUBLIC_ARM])
                         result["max_belief_width"][n]=len(beliefs[n].hypotheses)
@@ -359,8 +360,14 @@ def trial(policy,seed):
                         # any command or physical target/achieved pose diverges.
                         public_faults=result["faults"].get(PUBLIC_ARM,[])
                         own_faults=result["faults"].get(n,[])
-                        if len(public_faults)!=2 or len(own_faults)!=2:
-                            raise RuntimeError("Missing paired physical ACK trace")
+                        early_unmatched=(len(public_faults)!=2 or len(own_faults)!=2)
+                        if early_unmatched:
+                            # This trial is IN ITT, NOT in physical-prefix causal subset.
+                            result.setdefault("early_unmatched_fault",{})[n]={
+                                "original_public_fault_count":len(public_faults),
+                                "comparator_fault_count":len(own_faults),
+                                "reason":"PUBLIC_PRE_T3_EARLY_REFUSAL_NO_COMMAND_TO_COPY",
+                                "not_matched_causal_prefix":True}
                         diffs=[]
                         for a,b in zip(public_faults,own_faults):
                             diffs.append(float(np.max(np.abs(
@@ -379,9 +386,9 @@ def trial(policy,seed):
                             "pre_t5_target_position_max_abs_m":tpos,
                             "pre_t5_target_orientation_geodesic_rad":trot,
                             "audit_only_hidden_target_not_a_method_input":True,
-                            "valid_exact_prefix":True
+                            "valid_exact_prefix":not early_unmatched
                         }
-                        if max(*diffs,pos,rot,tpos,trot)>5e-5:
+                        if not early_unmatched and max(*diffs,pos,rot,tpos,trot)>5e-5:
                             raise RuntimeError("PREDECISION_PAIR_PHYSICAL_PREFIX_DIFFERED")
                     if info.get("success") is None:
                         raise RuntimeError("Missing official native task success")
