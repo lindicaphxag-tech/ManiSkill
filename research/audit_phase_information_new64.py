@@ -61,14 +61,22 @@ def get_one(folder,task,chunk):
                 "decision_reads","after_actual_dispatch_checks",
                 "deliberately_masked_commands_excluded","per_seed_full_real_native_outcomes"):
         require(report.get(key)==calc[key],"Original simulator source/summary mismatch in "+key)
-    if task=="stack_cube":
-        # Negative control: the preregistered phase arm ALWAYS requests the
-        # same real target read at step 4 as the physically separate fixed
-        # comparator. Both run complete independent real controller worlds.
-        for trial in calc["per_seed_full_real_native_outcomes"]:
-            require(trial["phase_success"]==trial["fixed_success"] and
-                    trial["phase_read_count"]==trial["fixed_read_count"],
-                    "Stack fixed-phase equivalent query violated matched physics")
+    # FALSIFIED CONTROL ASSUMPTION, retain EVERY contradiction:
+    # Both policies request private target at t=4. The old fixed-arm code
+    # retains cached maybe_two=True even AFTER belief.require_external_resync.
+    # The new phase branch clears it. This changes the subsequent command
+    # conversion, so equal query time does NOT imply equal controller semantics.
+    stack_semantic_discrepancies=[
+        {"seed":trial["seed"],
+         "phase_success":trial["phase_success"],
+         "old_fixed_success":trial["fixed_success"],
+         "phase_reads":trial["phase_read_count"],
+         "old_fixed_reads":trial["fixed_read_count"]}
+        for trial in calc["per_seed_full_real_native_outcomes"]
+        if task=="stack_cube" and (
+          trial["phase_success"]!=trial["fixed_success"] or
+          trial["phase_read_count"]!=trial["fixed_read_count"])
+    ]
     require(report.get("true_original_physx_sha256")==sha(raw)
             and report.get("preoutcome_protocol")==PROTOCOL,
             "Original simulator bytes or registered frozen study do not match")
@@ -77,6 +85,7 @@ def get_one(folder,task,chunk):
       "original_after_dispatch_checks":calc["after_actual_dispatch_checks"],
       "physically_masked_tries_excluded":calc["deliberately_masked_commands_excluded"],
       "per_seed":calc["per_seed_full_real_native_outcomes"],
+      "stack_post_read_branch_semantics_discrepancies":stack_semantic_discrepancies,
     }
 
 def audit(folder):
@@ -127,6 +136,11 @@ def audit(folder):
        k:x[k] for k in ("task","chunk","artifact","source_sha256")} for x in results],
      "overall":calc(None),"by_task":{t:calc(t) for t in TASKS},
      "all_64_original_native_task_rows":rows,
+     "stack_fixed_phase_post_read_semantics_discrepancies":[
+         mismatch for shard in results for mismatch in
+         shard["stack_post_read_branch_semantics_discrepancies"]],
+     "interpretation_warning":"Old fixed t4 arm resyncs target belief but keeps pre-read maybe_two cached True, while new phase arm resets the cached flag. Do not attribute these policy differences solely to sensing timing.",
+
      "no_claims":["outside research-lab replication","POMDP information-optimal query timing",
                   "new policy pretraining","general robotics safety","superiority over strong task-conditioned baseline unless measured"]
     }
@@ -168,7 +182,8 @@ def main():
         "checks":result["setpoint_bound_checks_not_collision_or_hardware_safety"],
         "masked":result["fault_masked_commands_EXCLUDED"],
         "paired_vs_task_gated":result["overall"]["paired_vs_strong_task_gated"],
-        "phase_t4_triggers":result["overall"]["phase_t4_triggers"]
+        "phase_t4_triggers":result["overall"]["phase_t4_triggers"],
+        "old_fixed_vs_phase_semantics_confounds":result["stack_fixed_phase_post_read_semantics_discrepancies"]
     },sort_keys=True))
 
 if __name__=="__main__":main()
