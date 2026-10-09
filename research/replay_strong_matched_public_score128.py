@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 from collections import defaultdict
 from pathlib import Path
 
@@ -63,6 +64,10 @@ def replay(source_dir: Path):
         d = json.loads(path.read_bytes())
         if len(d["episodes"]) != 8:
             raise ValueError("Unexpected source shard trial count")
+        match = re.search(r"_truth([0-3])_original8[.]json$", path.name)
+        if match is None:
+            raise ValueError("Source shard truth filename is invalid")
+        truth = int(match.group(1))
         for row in d["episodes"]:
             before = row["same_sensor_posterior_evidence"]
             at95, wrong95, idx95, _ = decide_score(row, 0.95)
@@ -72,8 +77,8 @@ def replay(source_dir: Path):
                 raise ValueError("Cannot reproduce the original 0.95 false-label audit")
             if at95 and idx95 != before["selected_candidate_index"]:
                 raise ValueError("Recorded selected history differs from replay")
-            rows.append((d["task"], row))
-    if len(rows) != 128 or len({(task, r["seed"], r.get("physical_truth_index", str(i))) for i, (task, r) in enumerate(rows)}) != 128:
+            rows.append((d["task"], truth, row))
+    if len(rows) != 128 or len({(task, r["seed"], truth) for task, truth, r in rows}) != 128:
         raise ValueError("Incomplete or duplicate 128-cell cohort")
     results = {}
     for t in (0.60, 0.95):
@@ -81,7 +86,7 @@ def replay(source_dir: Path):
         accepted_by_cluster = defaultdict(list)
         accepted_by_task = defaultdict(int)
         wrong_by_task = defaultdict(int)
-        for task, row in rows:
+        for task, truth, row in rows:
             accept, is_wrong, _, _ = decide_score(row, t)
             count += int(accept)
             wrong += int(is_wrong)
