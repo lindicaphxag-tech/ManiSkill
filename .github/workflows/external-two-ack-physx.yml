@@ -1,0 +1,98 @@
+name: OUTSIDE-fork one-click TWO missing ACKs genuine seven-arm PhysX
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: Frozen externally released original PPO/task
+        required: true
+        type: choice
+        default: pull_cube
+        options: [pull_cube, stack_cube]
+      first_seed:
+        description: FIRST of exactly eight genuinely unused new task reset seeds, >=300001
+        required: true
+        type: number
+        default: 300001
+  push:
+    branches: [repro/outside-fork-two-ack-khistory-new-seeds-20261009]
+    paths:
+      - 'research/external_two_ack_khistory_replication.py'
+      - '.github/workflows/external-two-ack-physx.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  source-identity-and-evidence-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      USER_TASK: ${{ github.event_name == 'workflow_dispatch' && inputs.task || 'pull_cube' }}
+      FIRST_SEED: ${{ github.event_name == 'workflow_dispatch' && inputs.first_seed || 300001 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require preregistered original frozen method and no negative trial exclusion
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/frozen_ppo_multi_ack_khistory.py)" = "3b502befd8940da51506ae18ed474726642f1a6d"
+          test "$(git hash-object research/MULTI_ACK_K_HISTORY_PREOUTCOME_V1.json)" = "4107c00a5359da78542bbaafa922e2f4196f11fd"
+          test "$(git hash-object research/frozen_ppo_ack_bounded_query.py)" = "1dc653cdc44e422c8340475ad00f828b3a41eb4f"
+          test "$(git hash-object research/two_history_se3_robust.py)" = "bb5fd155b7291fb127f94138fca321201c8271c3"
+          python -m py_compile research/external_two_ack_khistory_replication.py
+          python research/external_two_ack_khistory_replication.py --self-test
+          FIRST_SEED="$FIRST_SEED" USER_TASK="$USER_TASK" python - <<'PY'
+          import os,sys
+          sys.path.insert(0,"research")
+          from external_two_ack_khistory_replication import select
+          assert len(select(os.environ["USER_TASK"],int(os.environ["FIRST_SEED"])))==8
+          PY
+
+  two-physical-ACK-truths-per-original-seed:
+    needs: source-identity-and-evidence-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      USER_TASK: ${{ github.event_name == 'workflow_dispatch' && inputs.task || 'pull_cube' }}
+      FIRST_SEED: ${{ github.event_name == 'workflow_dispatch' && inputs.first_seed || 300001 }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official ManiSkill CPU PhysX simulator and frozen third-party pretrained original PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Freeze independent actor, original code Git SHA and Python environment BEFORE trial results
+        run: |
+          mkdir -p outside_two_ack_physx
+          git rev-parse HEAD > outside_two_ack_physx/source_commit.txt
+          git hash-object research/frozen_ppo_multi_ack_khistory.py > outside_two_ack_physx/unchanged_original_controller_hash.txt
+          python -m pip freeze --all > outside_two_ack_physx/exact_python_environment.txt
+          printf 'task=%s first_seed=%s count=8 github_actor=%s github_repository=%s faults=2,4 no_training=true actual_packet_loss=false\n' "$USER_TASK" "$FIRST_SEED" "$GITHUB_ACTOR" "$GITHUB_REPOSITORY" > outside_two_ack_physx/source_run_provenance.txt
+      - name: Actually step seven separate genuine native PhysX controller worlds for all eight original task states
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/external_two_ack_khistory_replication.py \
+             --task "$USER_TASK" --first-seed "$FIRST_SEED" \
+             --output-dir outside_two_ack_physx \
+             2>&1 | tee outside_two_ack_physx/full_original_physx_stdout.log
+          test -s "outside_two_ack_physx/exact_verified_summary.json"
+          test -s "outside_two_ack_physx/outside_two_ack_${USER_TASK}_${FIRST_SEED}_original8.json"
+      - name: Preserve original source hashes, full native outcomes and failure exceptions
+        if: always()
+        run: |
+          (cd outside_two_ack_physx && sha256sum *.json *.txt *.log > SHA256SUMS) || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: outsider-seven-arm-two-unknown-ack-original-physx
+          path: outside_two_ack_physx/
+          retention-days: 90
