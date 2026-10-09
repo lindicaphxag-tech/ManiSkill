@@ -1,0 +1,107 @@
+name: "Permanently archive original 32 same-reset x4 truth native PhysX source (1152 worlds)"
+on:
+  push:
+    branches: [research/numeric-initial-parity-2x2-fresh128-20261009]
+    paths: ['.github/workflows/archive-true-factorial1152-original.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  recalculate-and-preserve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require completed EXACT original physical run, immutable first attempt and source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          repo=lindicaphxag-tech/ManiSkill
+          test "$(gh api repos/$repo/actions/runs/37932361044 --jq .head_sha)" = 18f4961dd85c3795de3d7452d9f0fb4f5393066f
+          test "$(gh api repos/$repo/actions/runs/37932361044 --jq .run_attempt)" = 1
+          test "$(gh api repos/$repo/actions/runs/37932361044 --jq .conclusion)" = success
+          test "$(git hash-object research/NUMERIC_PARITY_ACK_FACTORIAL_NEW128_PREOUTCOME_V2.json)" = 9626db5b93bd6216c94d349fb00d9ea0f9b035e1
+          test "$(git hash-object research/frozen_ppo_numeric_parity_factorial_physx.py)" = 8022ab3a0d5bc97a982e78fc8ca17931aeae586c
+          test "$(git hash-object research/run_numeric_parity_ack_factorial.py)" = af63bdeb35643aa8c31ecdd92a936f33c2946395
+          test "$(git hash-object research/audit_numeric_parity_ack_factorial.py)" = 4b5714ab1bdf40a557ff903400be39c82da3f09e
+      - name: Recover ALL original PhysX source shards, audit manifests, PPO environment and logs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/original1152 /tmp/flat1152 /tmp/original_audit
+          gh run download 37932361044 --repo "$GITHUB_REPOSITORY" --pattern 'factorial-*' --dir /tmp/original1152
+          gh run download 37932361044 --repo "$GITHUB_REPOSITORY" --name 'ORIGINAL_numeric_parity_32clusters_128cells_1152worlds' --dir /tmp/original_audit
+          test "$(find /tmp/original1152 -name 'factorial_*_original8.json' -type f | wc -l)" -eq 16
+          test "$(find /tmp/original1152 -name 'factorial_*_audit.json' -type f | wc -l)" -eq 16
+          test "$(find /tmp/original1152 -name 'factorial_physics_stdout.log' -type f | wc -l)" -eq 16
+          test "$(find /tmp/original1152 -name 'FACTORIAL_SOURCE_COMMIT.txt' -type f | wc -l)" -eq 16
+          test "$(find /tmp/original1152 -name 'FACTORIAL_RUNTIME_PACKAGES.txt' -type f | wc -l)" -eq 16
+          for f in $(find /tmp/original1152 -name FACTORIAL_SOURCE_COMMIT.txt -type f); do
+            test "$(cat "$f")" = 18f4961dd85c3795de3d7452d9f0fb4f5393066f
+          done
+          find /tmp/original1152 -name 'factorial_*_original8.json' -exec cp {} /tmp/flat1152/ \;
+          find /tmp/original1152 -name 'factorial_*_audit.json' -exec cp {} /tmp/flat1152/ \;
+          test "$(find /tmp/flat1152 -name '*.json' -type f | wc -l)" -eq 32
+      - name: Independently recompute full numerical reset matching and cluster inference from originals
+        run: |
+          python -m research.audit_numeric_parity_ack_factorial --source-dir /tmp/flat1152 --output /tmp/RECHECKED_ORIGINAL1152.json
+          python - <<'PY'
+          import json, math
+          d=json.load(open('/tmp/RECHECKED_ORIGINAL1152.json'))
+          assert d['registered_source_reset_clusters']==32
+          assert d['registered_task_seed_truth_cells']==128
+          assert d['separate_physx_worlds']==1152
+          assert d['numerically_matched_public_source_observation_per_truth_verified'] is True
+          assert d['numeric_max_public_policy_obs_gap']<=5e-5
+          assert d['numeric_max_initial_achieved_ee_pose_gap']<=5e-5
+          assert d['primary_outcomes']['public']['official_task_success']==116
+          assert d['primary_outcomes']['strong_task']['official_task_success']==108
+          assert d['primary_outcomes']['public']['decision_private_reads']==91
+          assert d['primary_outcomes']['strong_task']['decision_private_reads']==109
+          assert d['paired_public_vs_strong']==dict(both=105,neither=9,public_only=11,strong_only=3)
+          assert abs(d['seed_cluster_exact_swap_two_sided_sensitivity_p_not_randomized_proof']-.0556640625)<1e-12
+          assert len(d['complete_16_shard_sha256'])==32
+          print('FIRST-ORIGINAL-1152_PHYSX_ALL_COMPLETED_WITH_NEGATIVE_OR_POSITIVE_UNMODIFIED')
+          PY
+      - name: Permanently preserve every original raw source, runtime and independent audit
+        run: |
+          set -euo pipefail
+          dir=research/frozen_policy_transfer/evidence/numeric_same_reset_2x2_first1152_2110001_2120016
+          mkdir -p "$dir/first_16_physical_shards" "$dir/first_complete_audit"
+          cp -a /tmp/original1152/. "$dir/first_16_physical_shards/"
+          cp -a /tmp/original_audit/. "$dir/first_complete_audit/"
+          cp /tmp/RECHECKED_ORIGINAL1152.json "$dir/RECHECKED_ORIGINAL1152.json"
+          cat > "$dir/README.md" <<'EOF'
+          # First original full same-reset crossed ACK PhysX result
+          Source run 37932361044, code head 18f4961dd85c3795de3d7452d9f0fb4f5393066f, first attempt 1, all 16 real shard jobs and independent source audit GREEN.
+          Total 32 genuinely different task/reset ID clusters; each runs all FOUR native physically applied/held ACK truths with NINE separately stepped frozen PPO controllers; 128 task×truth original cells, 1152 original simulator worlds. Do NOT claim N=128 independent reset states.
+          The full numerical public observation / initial achieved ee pose parity at reset was checked for 4 truths per seed to 5e-5 fixed BEFORE outcome. Bitwise SHA equality is reported separately; numeric parity is not exact equality.
+          Public history-or-query: 116/128 task successes, 91 true target reads. Strong task-only prior: 108/128, 109 reads. Fixed query: 109/128 with 128 reads. Always assumed held: 71/128 with 0 reads.
+          Paired cells: both success 105, neither 9, public-only 11, task-only-only 3. Dynamic-programming 32-reset-cluster exact sign-swap sensitivity p=0.0556640625 TWO-sided. NOT conventionally significant at .05; not a randomized trial or new safety theorem.
+          Every source JSON, source audit, failure/refusal, actual job terminal log, original installation package roster, git commit identity and full separate recomputation are preserved here. All originals are authored and run on one group's public GitHub CI; this is NOT external independent replication.
+          A separate preregistered 64-cluster test is a separate study; NEVER pool its results with this DEVELOPMENT cohort for the primary new test p-value.
+          EOF
+          (cd "$dir" && find . -type f ! -name FULL_ORIGINAL_SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > FULL_ORIGINAL_SHA256SUMS)
+          (cd "$dir" && sha256sum -c FULL_ORIGINAL_SHA256SUMS)
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dir"
+          if git diff --cached --quiet; then echo 'Already archived'; exit 0; fi
+          git commit -m 'evidence: archive all original 1152 real PhysX same-seed four-ACK truth worlds, numeric parity and clustered p'
+          for i in 1 2 3 4; do
+            git fetch origin research/numeric-initial-parity-2x2-fresh128-20261009
+            if ! git rebase origin/research/numeric-initial-parity-2x2-fresh128-20261009; then git rebase --abort; exit 1; fi
+            if git push origin HEAD:research/numeric-initial-parity-2x2-fresh128-20261009; then echo 'Original 1152 source permanently committed';exit 0;fi
+          done
+          exit 1
