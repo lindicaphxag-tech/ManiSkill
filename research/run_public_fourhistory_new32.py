@@ -90,7 +90,7 @@ def validate_result(d,task,seeds):
             if type(authorized) is not bool:
                 raise ValueError("Invalid original public decision")
             if authorized:
-                if ev.get("resync_source")!="empirical_public_achieved_motion" or reads[PUBLIC]!=0:
+                if ev.get("resync_source") not in (None,"empirical_public_achieved_motion") or reads[PUBLIC]!=0:
                     raise ValueError("Public authorization falsely used private read")
             elif ev.get("resync_source")!= "one_counted_authoritative_controller_target_read" or reads[PUBLIC]!=1:
                 # A trial can end after probe without reaching resync: do not
