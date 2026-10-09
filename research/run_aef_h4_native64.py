@@ -30,7 +30,7 @@ def check_sources():
     if blob("research/frozen_ppo_compound_ack_multi_belief.py")!=ORIGINAL_SOURCE_BLOB:
         raise ValueError("Original independently source-frozen controller baseline drift")
     p=json.loads(Path(PREREG).read_text())
-    if p.get("schema")!="preoutcome_ood_robust_action_equivalence_first_public_evidence_second_new64_v1":
+    if p.get("schema")!="prospective_native_AEF_finite_ambiguity_action_horizon_new64_v1":
         raise ValueError("Not original registered experiment identity")
     return p
 
