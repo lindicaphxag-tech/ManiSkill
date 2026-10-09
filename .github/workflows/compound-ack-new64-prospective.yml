@@ -1,0 +1,89 @@
+name: Prospective frozen multi-ACK 64 NEW native PhysX states
+on:
+  push:
+    branches:
+      - research/compound-ack-belief-bridge-20261009
+    paths:
+      - 'research/run_compound_ack_new64.py'
+      - '.github/workflows/compound-ack-new64-prospective.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: compound-new64-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  frozen-source-preoutcome-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run no-data frozen cohort, source-fingerprint and static source checks
+        run: |
+          set -euo pipefail
+          python -m py_compile research/run_compound_ack_new64.py
+          python -m research.run_compound_ack_new64 --self-test
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = '99836af14205fe3e95e52a2e0d68237c7c8a9045'
+          test "$(git hash-object research/multi_ack_se3_bounded.py)" = '36707a177549104ba5b4bd9bcebc76518f0d2840'
+          test -s research/COMPOUND_ACK_NEW64_PROSPECTIVE_V1.md
+  eight-source-authentic-native-shards:
+    needs: frozen-source-preoutcome-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official ManiSkill CPU PhysX and frozen released PPO checkpoint loader
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e . huggingface_hub
+      - name: Freeze environment and exact source and seed identifiers BEFORE outcomes
+        env:
+          SHARD_TASK: ${{ matrix.task }}
+          SHARD_CHUNK: ${{ matrix.chunk }}
+        run: |
+          mkdir -p compound_new64_artifacts
+          git rev-parse HEAD > compound_new64_artifacts/source_git_commit.txt
+          git hash-object research/frozen_ppo_compound_ack_multi_belief.py > compound_new64_artifacts/runner_blob.txt
+          git hash-object research/multi_ack_se3_bounded.py > compound_new64_artifacts/multibelief_blob.txt
+          git hash-object research/COMPOUND_ACK_NEW64_PROSPECTIVE_V1.md > compound_new64_artifacts/protocol_blob.txt
+          python -m pip freeze --all > compound_new64_artifacts/python_freeze.txt
+          printf 'task=%s chunk=%s 8_new_seeds_per_shard=true genuine_physx=true fault_steps=2,3 unchanged_policy=true\n' "$SHARD_TASK" "$SHARD_CHUNK" > compound_new64_artifacts/cohort_identity.txt
+      - name: Actually execute SEVEN real controller worlds on EIGHT untouched physical reset states
+        env:
+          SHARD_TASK: ${{ matrix.task }}
+          SHARD_CHUNK: ${{ matrix.chunk }}
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python -m research.run_compound_ack_new64 \
+            --task "$SHARD_TASK" --chunk "$SHARD_CHUNK" \
+            --out compound_new64_artifacts 2>&1 | tee compound_new64_artifacts/full_real_physx_stdout.log
+          test -s "compound_new64_artifacts/compound_new64_${SHARD_TASK}_chunk${SHARD_CHUNK}_original8.json"
+          test -s compound_new64_artifacts/summary.json
+      - name: Preserve every original result/exception SHA, including failures
+        if: always()
+        run: |
+          (cd compound_new64_artifacts && sha256sum *.json *.txt *.log > SHA256SUMS) || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: multiack-prospective-${{ matrix.task }}-chunk${{ matrix.chunk }}-${{ github.run_id }}
+          path: compound_new64_artifacts/
+          retention-days: 90
+
+# 448 policy/controller simulations if all 8 shards finish, but only
+# 64 distinct original source physical reset states and TWO PPO models.
+# No claim about collision safety, real packet loss, or external-lab validation.
