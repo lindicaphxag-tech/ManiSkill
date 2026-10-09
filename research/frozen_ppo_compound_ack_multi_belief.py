@@ -25,8 +25,8 @@ from research.two_history_se3_robust import Reason
 
 TASK=os.environ.get("ABI_TASK")
 COHORT={
-    "pull_cube":("PullCube-v1",range(380001,380009)),
-    "stack_cube":("StackCube-v1",range(390001,390009))
+    "pull_cube":("PullCube-v1",range(430001,430009)),
+    "stack_cube":("StackCube-v1",range(440001,440009))
 }
 if TASK not in COHORT:
     raise ValueError("ABI_TASK must name one of two frozen task/checkpoint cohorts")
@@ -46,7 +46,7 @@ NAMES=(
     "fault_always_single_privileged_query"
 )
 BELIEF_ARMS=NAMES[3:6]
-PROTO="research/COMPOUND_ACK_MULTI_HYPOTHESIS_PRECOMMIT_V2.md"
+PROTO="research/TWO_ACK_ACTUATION_AUTHORITY_FRESH16_PRECOMMIT_V2.json"
 
 
 def copy_target(pose):
@@ -133,6 +133,7 @@ def trial(policy,seed):
         "robust_common_action_authorizations":{},
         "robust_common_action_refusals":{},
         "robust_native_target_bound_checks":{},
+        "audit_only_native_hold_checks":{},
         "failure_causes":{},
         "success_step":{n:None for n in NAMES}
     }
@@ -255,6 +256,9 @@ def trial(policy,seed):
                         ticket=beliefs[n].prepare(intended)
                     elif n in observers:
                         ticket=observers[n].prepare(intended).ticket
+                    pre_fault_native_target=(privileged_target(arm)
+                        if step in FAULT_STEPS else None)
+                    # Audit-only private getter; NEVER a policy/decision input.
                     if step in FAULT_STEPS:
                         delivered=torch.zeros_like(rewritten[0])
                         result["faults"].setdefault(n,[]).append({
@@ -280,6 +284,24 @@ def trial(policy,seed):
                     ack=None if (step in FAULT_STEPS and
                         n=="fault_always_single_privileged_query") else True
                     observers[n].acknowledge(ticket,applied=ack)
+                if n!="source_no_fault" and step in FAULT_STEPS:
+                    actual_target_after_hold=privileged_target(arm)
+                    held_pos,held_rot=audit_pose_error(
+                        actual_target_after_hold,pre_fault_native_target)
+                    if held_pos>1e-4 or held_rot>1e-4:
+                        raise RuntimeError(
+                            f"NATIVE_ZERO_INTERVENTION_DID_NOT_HOLD_CONTROLLER_TARGET "
+                            f"task={TASK} seed={seed} step={step} arm={n} "
+                            f"position_m={held_pos} rotation_rad={held_rot}")
+                    result["audit_only_native_hold_checks"].setdefault(n,[]).append({
+                        "step":step,
+                        "held_position_error_inf_m":held_pos,
+                        "held_rotation_error_rad":held_rot,
+                        "private_target_getter_audit_only_count":2,
+                        "target_reads_not_exposed_to_controller_decisions":True})
+                    result["faults"][n][-1]["actual_native_target_hold_verified"]=True
+                    result["faults"][n][-1]["actual_native_held_position_error_m"]=held_pos
+                    result["faults"][n][-1]["actual_native_held_rotation_error_rad"]=held_rot
                 if certificate is not None and certificate.authorized and step in FAULT_STEPS:
                     # Source-native fault forcibly replaces the authorized command
                     # with a ZERO/HOLD command. We must NEVER assert that an
@@ -352,13 +374,14 @@ def main():
     rows=[trial(policy,int(seed)) for seed in SEEDS]
     assert len(rows)==8 and [r["seed"] for r in rows]==list(SEEDS)
     record={
-        "schema":"compound_two_unknown_ack_multihistory_physx_v1",
+        "schema":"compound_two_unknown_ack_actuation_authority_fresh16_v2",
         "frozen_protocol":PROTO,
         "task":TASK_NAME,"original_seed_population":list(SEEDS),
         "original_external_frozen_checkpoint_sha256":digest,
         "frozen_model_retrained":False,
         "real_physx_simulator":True,
         "two_consecutive_unknown_ack_target_hold_steps":list(FAULT_STEPS),
+        "native_hold_step2_step3_target_reads_audit_only":True,
         "preoutcome_protocol":PROTO,
         "multi_belief_max_hypotheses":16,
         "fault_is_native_target_hold_not_network_loss":True,
