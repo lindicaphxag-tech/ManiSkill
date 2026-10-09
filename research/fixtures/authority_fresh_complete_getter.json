@@ -1,0 +1,62 @@
+{
+  "schema": "effect_aware_partial_getter_contract_v1",
+  "initial": [
+    "good",
+    "held"
+  ],
+  "goals": [
+    "goal"
+  ],
+  "forbidden": [
+    "bad"
+  ],
+  "probes": [],
+  "repair_effects": {
+    "GO": {
+      "good": [
+        "goal"
+      ],
+      "held": [
+        "bad"
+      ],
+      "bad": [
+        "bad"
+      ],
+      "goal": [
+        "goal"
+      ]
+    },
+    "RESET": {
+      "good": [
+        "bad"
+      ],
+      "held": [
+        "goal"
+      ],
+      "bad": [
+        "bad"
+      ],
+      "goal": [
+        "goal"
+      ]
+    }
+  },
+  "read_support": {
+    "good": [
+      "good_seen"
+    ],
+    "held": [
+      "held_seen"
+    ],
+    "bad": [
+      "error"
+    ],
+    "goal": [
+      "goal"
+    ]
+  },
+  "read_atomic_and_fresh": true,
+  "read_cost": 2,
+  "stop_cost": 10,
+  "horizon": 1
+}
