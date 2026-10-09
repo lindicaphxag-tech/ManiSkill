@@ -1,0 +1,36 @@
+name: Readback invalidates cached four-history branch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'research/readback_belief_consistency.py'
+      - 'tests/test_readback_belief_consistency.py'
+      - '.github/workflows/readback-consistency.yml'
+  pull_request:
+    paths:
+      - 'research/readback_belief_consistency.py'
+      - 'tests/test_readback_belief_consistency.py'
+      - '.github/workflows/readback-consistency.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  precise-singleton-readback-metaproperty:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ['3.11','3.13']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install numpy scipy
+      - name: Four complete source ACK histories and stale snapshot fail-closed
+        run: python -m unittest discover -s tests -p test_readback_belief_consistency.py -v
