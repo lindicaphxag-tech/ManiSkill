@@ -34,7 +34,7 @@ jobs:
           git clone --filter=blob:none https://github.com/huggingface/lerobot.git /tmp/official-lerobot
           git -C /tmp/official-lerobot checkout b9cb121cb7d4e3e26ec5c906d08dda68d151ba52
           python -m pip install --upgrade pip
-          python -m pip install -e '/tmp/official-lerobot[smolvla]'
+          python -m pip install -e '/tmp/official-lerobot[smolvla,dataset]'
       - name: Print source and tensor backend identity before model download
         run: |
           set -euo pipefail
