@@ -203,9 +203,19 @@ class RecedingHorizonVLAGateway:
     def acknowledge(self,token,*,applied:bool|None):
         if self.pending is None or token!=self.pending:
             raise ContractViolation("Out-of-order/stale acknowledgement, do not collapse belief")
-        self.belief.acknowledge(token,applied=applied)
-        self.pending=None;self.observation=None;self.action=None
-        self._flush_policy_queue()
+        # The belief ACK handler can fail closed after consuming the ACK,
+        # e.g. if unknown delivery expands past the finite hypothesis limit.
+        # It then clears its own pending ticket and marks itself invalid.
+        # The gateway must not retain a ghost pending ticket that would
+        # permanently block a later authoritative target readback.
+        try:
+            self.belief.acknowledge(token,applied=applied)
+        finally:
+            if self.belief.pending is None:
+                self.pending=None;self.observation=None;self.action=None
+                self._flush_policy_queue()
+        # An unconsumed/invalid ACK (e.g. invalid applied type) keeps both
+        # pending tickets intact, so the caller may never fake a completion.
 
     def trusted_controller_resync(self,target,*,evidence:str):
         if self.pending is not None:
