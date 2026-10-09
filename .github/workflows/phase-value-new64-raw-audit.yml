@@ -23,7 +23,7 @@ jobs:
       - name: Download eight actual frozen PhysX shards, without dropping any failures
         run: |
           set -euo pipefail
-          gh run download 37911185135 --repo "$GITHUB_REPOSITORY" \
+          gh run download 37911547899 --repo "$GITHUB_REPOSITORY" \
             --pattern 'phaseinfo-*' --dir actual_native64_artifacts
           test "$(find actual_native64_artifacts -mindepth 1 -maxdepth 1 -type d | wc -l)" -eq 8
       - name: Validate source blobs, original native actions, SHA, actual controller reads, margins and paired strong baseline
