@@ -32,15 +32,17 @@ DATASET_ID="lerobot/libero"
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("--output",type=Path,default=Path("real_smolvla_inference_probe.json"))
+    p.add_argument("--model-id",choices=("lerobot/smolvla_base","HuggingFaceVLA/smolvla_libero"),default=MODEL_ID)
     p.add_argument("--model-revision",default=None)
     p.add_argument("--dataset-revision",default=None)
     p.add_argument("--max-episodes",type=int,default=1)
     args=p.parse_args()
     if args.max_episodes!=1:
         raise ValueError("This source-frozen checkpoint probe uses exactly one original episode")
+    model_id=args.model_id
     torch.set_num_threads(min(2,os.cpu_count() or 1))
     api=HfApi()
-    model_info=api.model_info(MODEL_ID,revision=args.model_revision)
+    model_info=api.model_info(model_id,revision=args.model_revision)
     ds_info=api.dataset_info(DATASET_ID,revision=args.dataset_revision)
     model_rev=model_info.sha
     ds_rev=ds_info.sha
@@ -53,10 +55,10 @@ def main():
     from lerobot.policies.smolvla.modeling_smolvla import SmolVLAPolicy
 
     t0=time.monotonic()
-    policy=SmolVLAPolicy.from_pretrained(MODEL_ID,revision=model_rev).to("cpu").eval()
+    policy=SmolVLAPolicy.from_pretrained(model_id,revision=model_rev).to("cpu").eval()
     t1=time.monotonic()
     preprocess,postprocess=make_pre_post_processors(
-        policy.config,MODEL_ID,pretrained_revision=model_rev,
+        policy.config,model_id,pretrained_revision=model_rev,
         preprocessor_overrides={"device_processor":{"device":"cpu"}},
     )
     # Must load REAL frames. The model card recommends "lerobot/libero".
@@ -69,21 +71,24 @@ def main():
     # Explicit smoke-test wiring: dataset names reflect image source; model
     # names reflect *training* camera positions. Name mapping alone does not
     # establish exact optical frame/calibration or hardware compatibility.
-    expected=set(k for k,feature in policy.config.input_features.items()
-                 if str(getattr(feature,"type","")).endswith("VISUAL") or
-                 str(getattr(feature,"type","")).endswith("VISUAL: 'VISUAL'>"))
-    camera_mapping={
-        "observation.images.image":"observation.images.camera1",
-        "observation.images.image2":"observation.images.camera2",
-    }
-    if not set(camera_mapping.values()).issubset(set(policy.config.input_features)):
-        raise RuntimeError("Checkpoint does not declare expected camera1/camera2 inputs; refuse inferred wiring")
-    if not set(camera_mapping).issubset(example):
-        raise RuntimeError("Original LIBERO dataset does not include both native camera observations")
-    for source,dest in camera_mapping.items():
-        if dest in example:
-            raise RuntimeError("Source dataset collides with pretrained model camera features")
-        example[dest]=example.pop(source)
+    configured=set(policy.config.input_features)
+    source_vis={"observation.images.image","observation.images.image2"}
+    generic_vis={"observation.images.camera1","observation.images.camera2"}
+    if source_vis.issubset(configured):
+        camera_mapping={}  # Fine-tuned model already expects original names.
+    elif generic_vis.issubset(configured):
+        camera_mapping={
+            "observation.images.image":"observation.images.camera1",
+            "observation.images.image2":"observation.images.camera2",
+        }
+        if not set(camera_mapping).issubset(example):
+            raise RuntimeError("Original LIBERO camera sample incomplete")
+        for source,dest in camera_mapping.items():
+            if dest in example:
+                raise RuntimeError("Dataset has incompatible colliding visual features")
+            example[dest]=example.pop(source)
+    else:
+        raise RuntimeError("Unknown checkpoint camera source identity; do NOT synthesize arbitrary input")
     t2=time.monotonic()
     with torch.inference_mode():
         policy.reset()
@@ -98,7 +103,7 @@ def main():
         raise RuntimeError("Real pretrained VLA inference produced invalid actions")
     record={
       "result":"REAL_PRETRAINED_SMOLVLA_CHECKPOINT_INFERENCE_COMPLETED",
-      "model_id":MODEL_ID,"actual_model_revision":model_rev,
+      "model_id":model_id,"actual_model_revision":model_rev,
       "dataset_id":DATASET_ID,"actual_dataset_revision":ds_rev,
       "source":"LeRobot unmodified SmolVLAPolicy.from_pretrained + real dataset episode 0",
       "policy_state":"eval/no_grad and reset before inference",
