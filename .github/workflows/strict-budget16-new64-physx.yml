@@ -1,0 +1,112 @@
+name: Prospective strict shared 16-read target-memory budget vs fixed schedule
+
+on:
+  push:
+    branches:
+      - research/strict-cap-16-certify-query-fresh64-20261009
+  pull_request:
+    paths:
+      - 'research/QUERY_STRICT_SHARED_BUDGET16_NEW64_PREREG_V1.json'
+      - 'research/frozen_ppo_strict_quota_new64.py'
+      - 'research/audit_query_strict_budget64.py'
+      - '.github/workflows/strict-budget16-new64-physx.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-source-and-bounded-trust-interface:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fail if source-frozen protocol or per-shard budget changed
+        run: |
+          test "$(git hash-object research/QUERY_STRICT_SHARED_BUDGET16_NEW64_PREREG_V1.json)" = "8394481a560ea3d0c538e9d2ebf46cc9c4949484"
+          python - <<'PY'
+          import json
+          p=json.load(open("research/QUERY_STRICT_SHARED_BUDGET16_NEW64_PREREG_V1.json"))
+          assert p["task_models"]["pull_cube"]["seeds"]==[360001,360032]
+          assert p["task_models"]["stack_cube"]["seeds"]==[370001,370032]
+          assert p["shared_privileged_read_budget"]["per_8_episode_shard"]==2
+          assert p["shared_privileged_read_budget"]["total_across_8_shards"]==16
+          assert len(p["arms"])==9
+          assert p["shared_privileged_read_budget"]["strict_cap_not_guaranteed_exact_expenditure"] is True
+          PY
+          python -m py_compile research/frozen_ppo_strict_quota_new64.py research/audit_query_strict_budget64.py
+
+  original-nine-arm-native-physx:
+    needs: frozen-source-and-bounded-trust-interface
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        shard: [0, 1, 2, 3]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      ABI_CHUNK: ${{ matrix.shard }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official genuine ManiSkill and externally frozen PPO runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Run nine genuinely independently stepped PhysX control arms on eight new seeds
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/frozen_ppo_strict_quota_new64.py 2>&1 | tee "strict_quota_${ABI_TASK}_chunk${ABI_CHUNK}.log"
+          test -s "strict_quota_${ABI_TASK}_chunk${ABI_CHUNK}_original8.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-strict-quota-${{ matrix.task }}-chunk${{ matrix.shard }}
+          path: |
+            strict_quota_*.json
+            strict_quota_*.log
+
+  no-missing-negative-full-64-state-audit:
+    needs: original-nine-arm-native-physx
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-strict-quota-*
+          path: /tmp/original_quota
+          merge-multiple: true
+      - name: Verify every source task, nine separate real arms and no query budget overspend
+        run: |
+          python -m research.audit_query_strict_budget64 --input-dir /tmp/original_quota --output strict_quota_new64_full_original_audit.json
+          python - <<'PY'
+          import json
+          d=json.load(open("strict_quota_new64_full_original_audit.json"))
+          assert d["original_new_distinct_seeds"]==64
+          assert d["periodic_nonadaptive_target_decision_reads"]==16
+          assert d["capped_adaptive_target_decision_reads"]<=16
+          assert len(d["eight_original_source_groups"])==8
+          assert all(g["quota_reads"]<=2 and g["quota_reads"]+g["quota_unused"]==2 for g in d["eight_original_source_groups"])
+          print("PUBLISHED ACTUAL budget and result, no false EXACT budget assertion:",
+                json.dumps({key:d[key] for key in ("native_task_success","capped_adaptive_target_decision_reads","capped_adaptive_uses_exactly_16","capped_adaptive_vs_periodic")},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: complete-original-strict-budget16-nine-arm-64state-audit
+          path: |
+            strict_quota_new64_full_original_audit.json
+            /tmp/original_quota/*.json
