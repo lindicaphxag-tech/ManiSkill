@@ -42,6 +42,11 @@ jobs:
           test "$(git hash-object research/MULTI_ACK_K_HISTORY_PREOUTCOME_V1.json)" = "4107c00a5359da78542bbaafa922e2f4196f11fd"
           test "$(git hash-object research/frozen_ppo_ack_bounded_query.py)" = "1dc653cdc44e422c8340475ad00f828b3a41eb4f"
           test "$(git hash-object research/two_history_se3_robust.py)" = "bb5fd155b7291fb127f94138fca321201c8271c3"
+          # Freeze all actual implicit dependencies, not just the outer experiment.
+          test "$(git hash-object research/multi_history_authority.py)" = "b7103c05b073a161793b454087956eb7210e5a1b"
+          test "$(git hash-object research/action_abi_uncertain_delivery_belief.py)" = "e554f1897557075def1c871dfe0bc3c6ae58f676"
+          test "$(git hash-object research/action_abi_history_observer.py)" = "2aa52e477c202386fb6a7e43586d246026b6041d"
+          test "$(git hash-object research/frozen_ppo_action_history_observer.py)" = "c0999d7a1da8e370f635a0d7bb8378e4a93020dd"
           python -m py_compile research/external_two_ack_khistory_replication.py
           python research/external_two_ack_khistory_replication.py --self-test
           FIRST_SEED="$FIRST_SEED" USER_TASK="$USER_TASK" python - <<'PY'
