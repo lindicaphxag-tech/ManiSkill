@@ -1,0 +1,29 @@
+name: RSS Stage1 regime-conditional public authority adversarial method proof gates
+on:
+  push:
+    branches: [submission/rss2027-stage1-identifiability-20261009]
+    paths:
+      - research/regime_conditional_authority.py
+      - research/test_regime_conditional_authority.py
+      - .github/workflows/test-regime-conditional-authority-stage1.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-only-falsifiable-robot-public-authority:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.11','3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Check source syntax, execute exact 19 adversarial tests no physics or private oracle
+        run: |
+          python -m py_compile research/regime_conditional_authority.py research/test_regime_conditional_authority.py
+          python -m unittest research.test_regime_conditional_authority -v
