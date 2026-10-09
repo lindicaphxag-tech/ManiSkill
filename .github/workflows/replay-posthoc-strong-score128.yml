@@ -1,0 +1,36 @@
+name: Source-gated retrospective strong same-public scorer on 128 PhysX cells
+
+on:
+  push:
+    branches: [research/posthoc-strong-score-matched128-20261010]
+    paths:
+      - research/replay_strong_matched_public_score128.py
+      - tests/test_posthoc_strong_score128.py
+      - .github/workflows/replay-posthoc-strong-score128.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  replay-source-with-zero-physics-claims:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Test adversarial scorer logic (no ManiSkill runtime/GPU)
+        run: python -m unittest discover -s tests -p test_posthoc_strong_score128.py -v
+      - name: Audit 16 source shards then recompute 0.95 and 0.60 offline
+        run: |
+          python -m research.replay_strong_matched_public_score128 --output matched128_posthoc_score_audit.json | tee scorer_replay_console.log
+      - name: Preserve complete descriptive result (NOT new PhysX)
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-only-posthoc-strong-score128
+          path: |
+            matched128_posthoc_score_audit.json
+            scorer_replay_console.log
+          if-no-files-found: error
