@@ -102,6 +102,21 @@ class TestNativeLatentRiskCoverage(unittest.TestCase):
             self.assertTrue(.20 < lo < .25,(n,lo))
         self.assertLess(upper_cp(0,4096,.003125),upper_cp(0,1024,.003125))
 
+    def test_first_actual_640_physx_source_uses_only_public_score_no_fake_retraining(self):
+        from research.audit_original640_public_risk_score import descriptive_only
+        r=descriptive_only()
+        self.assertEqual(r["original_source_PhysX_worlds"],640)
+        self.assertEqual(r["original_unique_task_reset_states"],64)
+        self.assertEqual(r["original_public_admissions"],16)
+        self.assertEqual(r["original_wrong_full_history_admissions"],1)
+        self.assertTrue(r["risk_threshold_grid_selected_after_old_witness_was_known"])
+        self.assertTrue(r["future_fresh_risk_certificate_not_issued"])
+        w=r["original_wrong_full_pose_witness"]["pull_cube:1760020"]
+        self.assertEqual(w["actual_original_selected_index"],0)
+        self.assertEqual(w["actual_audit_only_true_history_indices"],[3])
+        self.assertGreater(w["public_score_not_privileged_truth"],0.)
+        self.assertGreater(w["original_full_pose_error"][0],.06)
+
     def test_prospectively_required_accepted_count_calculation(self):
         n=required_zero_error_authorizations(risk_cap=.05,delta=.05,
                                               threshold_count=4,task_count=2)
