@@ -5,12 +5,16 @@ on:
     branches: [research/observability-collision-audit-20261009]
     paths:
       - 'research/audit_counterfactual_execution_observability.py'
+      - 'research/conditional_probe_or_read.py'
+      - 'tests/test_conditional_probe_or_read.py'
       - 'tests/test_counterfactual_execution_observability.py'
       - '.github/workflows/audit-physical-memory-nonidentifiability.yml'
       - '.gitattributes'
   pull_request:
     paths:
       - 'research/audit_counterfactual_execution_observability.py'
+      - 'research/conditional_probe_or_read.py'
+      - 'tests/test_conditional_probe_or_read.py'
       - 'tests/test_counterfactual_execution_observability.py'
       - '.github/workflows/audit-physical-memory-nonidentifiability.yml'
       - '.gitattributes'
@@ -39,6 +43,7 @@ jobs:
           set -euo pipefail
           python -m py_compile research/audit_counterfactual_execution_observability.py
           python -m unittest discover -s tests -p test_counterfactual_execution_observability.py -v
+          python -m unittest discover -s tests -p test_conditional_probe_or_read.py -v
           python -m research.audit_counterfactual_execution_observability --output FACTUAL_OBSERVABILITY_WITNESS.json
           python - <<'PY'
           import json
