@@ -1,0 +1,36 @@
+name: Independent adversarial contract tests — truly matched native 128-cells, no PhysX
+
+on:
+  push:
+    branches: [research/isolated-query-factorial-128-20261009]
+    paths:
+      - 'tests/test_query_isolated_factorial128_contract.py'
+      - '.github/workflows/test-query-isolated-factorial128-contract.yml'
+  pull_request:
+    paths:
+      - 'tests/test_query_isolated_factorial128_contract.py'
+      - '.github/workflows/test-query-isolated-factorial128-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-freeze-and-synthetic-adversarial-verifier:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ['3.11','3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Enforce original source Git object and test fake-sensor/query/memory/fault tampering rejection
+        shell: bash
+        run: |
+          python -m py_compile research/run_query_isolated_factorial128.py research/audit_query_isolated_same_reset_factorial128.py
+          python -m unittest discover -s tests -p test_query_isolated_factorial128_contract.py -v

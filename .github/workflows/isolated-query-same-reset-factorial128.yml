@@ -1,0 +1,131 @@
+name: First prospective TRUE same-reset four-ACK matched-A-B-C-native-physx 128-cell trial
+
+on:
+  push:
+    branches: [research/isolated-query-factorial-128-20261009]
+    paths:
+      - 'research/ISOLATED_QUERY_FACTORIAL128_PREOUTCOME_V1.json'
+      - 'research/frozen_ppo_matched_public_factorial128_physx.py'
+      - 'research/frozen_sources/matched_public_bayes_640_original_exact.py'
+      - 'research/run_query_isolated_factorial128.py'
+      - 'research/audit_query_isolated_same_reset_factorial128.py'
+      - '.github/workflows/isolated-query-same-reset-factorial128.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  first-source-freeze-and-same-method-provenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Lock prereg BEFORE first actual native PhysX outcome and detect any method patch other than forced physical truth
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/ISOLATED_QUERY_FACTORIAL128_PREOUTCOME_V1.json)" = f7f1e2598289f491e2f6aa613ba1a16fa599feb1
+          test "$(git hash-object research/frozen_sources/matched_public_bayes_640_original_exact.py)" = 6e039af56006827fc2fe063b541cfa3dcd1ddc89
+          test "$(git hash-object research/frozen_ppo_matched_public_factorial128_physx.py)" = 2f2fc34f492bf6d2810b48193283e0347f6bdc93
+          test "$(git hash-object research/run_query_isolated_factorial128.py)" = f09359dc6abd19d66e55a99e558c3969677bbf57
+          python -m py_compile research/run_query_isolated_factorial128.py research/audit_query_isolated_same_reset_factorial128.py research/frozen_ppo_matched_public_factorial128_physx.py
+          python - <<'PY'
+          from research.run_query_isolated_factorial128 import frozen_preflight,selected
+          p=frozen_preflight()
+          assert selected('pull_cube',0)==list(range(3010001,3010009))
+          assert selected('pull_cube',1)==list(range(3010009,3010017))
+          assert selected('stack_cube',0)==list(range(3020001,3020009))
+          assert selected('stack_cube',1)==list(range(3020009,3020017))
+          assert p['expected_actual_native_controller_worlds']==1280
+          print('PRE_REGISTERED TRUE SAME RESET x FOUR REAL ACK TRUTHS x TEN NATIVE WORLDS; unchanged original policy code')
+          PY
+
+  real-native-physx-four-true-ack-cells-per-seed:
+    needs: first-source-freeze-and-same-method-provenance
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {task: pull_cube, chunk: 0}
+          - {task: pull_cube, chunk: 1}
+          - {task: stack_cube, chunk: 0}
+          - {task: stack_cube, chunk: 1}
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install unchanged frozen third-party PPO + genuine CPU PhysX
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Record physical experiment identity BEFORE acting
+        run: |
+          mkdir -p original_factorial_source
+          git rev-parse HEAD > original_factorial_source/ACTUAL_SOURCE_COMMIT.txt
+          printf 'actor=%s repo=%s task=%s chunk=%s physical_worlds=320\n' "$GITHUB_ACTOR" "$GITHUB_REPOSITORY" "${{ matrix.task }}" "${{ matrix.chunk }}" > original_factorial_source/ORIGINAL_OPERATOR_AND_COHORT.txt
+          python -m pip freeze --all > original_factorial_source/FULL_ORIGINAL_PHYSX_PYTHON_ENV.txt
+      - name: Physically execute 8 new initial states x four same-process truth conditions x ten actual frozen PPO controller worlds
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python -m research.run_query_isolated_factorial128             --task "${{ matrix.task }}" --chunk "${{ matrix.chunk }}"             2>&1 | tee original_factorial_source/ORIGINAL_ALL_PHYSX_320_WORLD_TERMINAL.log
+          mv query_isolated_${{ matrix.task }}_chunk${{ matrix.chunk }}_truth*_original8.json original_factorial_source/
+          mv query_isolated_${{ matrix.task }}_chunk${{ matrix.chunk }}_truth*_audit.json original_factorial_source/
+          mv query_isolated_${{ matrix.task }}_chunk${{ matrix.chunk }}_full_truth_prefix_provenance.json original_factorial_source/
+          test "$(find original_factorial_source -name '*_original8.json' | wc -l)" = 4
+          test "$(find original_factorial_source -name '*_audit.json' | wc -l)" = 4
+          (cd original_factorial_source && find . -type f ! -name ORIGINAL_SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > ORIGINAL_SHA256SUMS)
+          (cd original_factorial_source && sha256sum -c ORIGINAL_SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: FIRST_original_true2x2_identical_queries_${{ matrix.task }}_chunk${{ matrix.chunk }}
+          path: original_factorial_source/
+          retention-days: 90
+
+  independent-full128-32-cluster-original-audit:
+    needs: real-native-physx-four-true-ack-cells-per-seed
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: FIRST_original_true2x2_identical_queries_*
+          path: /tmp/original_matched_causal128
+      - name: Rehash all untouched source physical worlds, 32 clusters x 4 actual truth conditions and same predecision full SE3
+        run: |
+          set -euo pipefail
+          python -m research.audit_query_isolated_same_reset_factorial128             --source-dir /tmp/original_matched_causal128             --output /tmp/ORIGINAL_ISOLATED_CAUSAL128_COMPLETE.json
+          python - <<'PY'
+          import json
+          d=json.load(open("/tmp/ORIGINAL_ISOLATED_CAUSAL128_COMPLETE.json"))
+          assert d["new_unique_task_reset_clusters"]==32
+          assert d["n_original_full_truth_cells"]==128
+          assert d["actual_genuine_native_controller_worlds"]==1280
+          assert d["fully_matched_initial_observation_4x_each_cluster"] is True
+          assert d["physically_stepped_native_t2_t3_t4_matched_A_B_C_each_cell"] is True
+          assert len(d["original_actual_source_shard_sha256"])==16
+          assert len(d["by_task_and_four_ACTUAL_physical_ACK_truths"])==8
+          print("PASS FIRST FULL 128 actual original PhysX matched-prefix task/truth cells",d["all_cells"])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: FULL original native 32-reset 128-truth 1280-world original source-only reviewer audit
+          path: /tmp/ORIGINAL_ISOLATED_CAUSAL128_COMPLETE.json
