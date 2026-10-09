@@ -42,7 +42,8 @@ def wilson(x, n, z=1.959963984540054):
     den = 1 + z*z/n
     mid = (p + z*z/(2*n))/den
     half = z * math.sqrt(p*(1-p)/n + z*z/(4*n*n))/den
-    return [max(0.0, mid-half), min(1.0, mid+half)]
+    return [0.0 if x == 0 else max(0.0, mid-half),
+            1.0 if x == n else min(1.0, mid+half)]
 
 
 def compute(audit, *, expected_n=64, expected_per_stratum=8):
