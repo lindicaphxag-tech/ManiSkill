@@ -1,0 +1,123 @@
+name: Prospective typed-native admissibility BEFORE unknown ACK real PhysX (16 NEW seeds)
+
+on:
+  pull_request:
+    paths:
+      - "research/TYPED_CONTROLLER_ADMISSION_NEW16_PREOUTCOME_V1.json"
+      - "research/frozen_ppo_typed_gate_fresh16.py"
+      - "research/audit_typed_gate_fresh16.py"
+      - ".github/workflows/typed-gate-fresh16-physx.yml"
+  push:
+    branches: [research/typed-physx-gate-new16-20261009]
+    paths:
+      - "research/frozen_ppo_typed_gate_fresh16.py"
+      - "research/audit_typed_gate_fresh16.py"
+      - ".github/workflows/typed-gate-fresh16-physx.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  confirm-before-outcome-protocol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Refuse any after-the-fact native action threshold / cohort / frozen PPO modification
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/TYPED_CONTROLLER_ADMISSION_NEW16_PREOUTCOME_V1.json)" = "9f2ebf875412a0dce5a33c3e4dde6f03a76b734d"
+          test "$(git hash-object research/typed_native_action_authority.py)" = "a0e46bc42fd0d8e33580e79dc94408ff301cae09"
+          test "$(git hash-object research/frozen_ppo_strict_quota_new64.py)" = "f3290b6a2d93d572c2ac73977044de1763a2ad0b"
+          test "$(git hash-object research/two_history_se3_robust.py)" = "bb5fd155b7291fb127f94138fca321201c8271c3"
+          python -m py_compile research/frozen_ppo_typed_gate_fresh16.py research/audit_typed_gate_fresh16.py
+          python - <<'PY'
+          import json
+          p=json.load(open('research/TYPED_CONTROLLER_ADMISSION_NEW16_PREOUTCOME_V1.json'))
+          assert p["new_independent_reset_seeds"]==16
+          assert p["task_cohorts"]=={"pull_cube":[380001,380008],"stack_cube":[390001,390008]}
+          assert p["typed_gate_limit"]["native_roundoff_overreach_limit"]==2e-6
+          assert p["typed_gate_limit"]["native_rotation_ball_interior"]==2e-6
+          assert p["fault_native_target_hold_step"]==2
+          assert p["quota_per_eight_seed_shard"]==2
+          print("PASS original independent source pre-result immutable native typed action contract.")
+          PY
+
+  original-released-PPO-nine-real-PhysX-arms:
+    needs: confirm-before-outcome-protocol
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube,stack_cube]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      ABI_CHUNK: "0"
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install actual original native CPU PhysX and pretrained externally released immutable PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Reproduce all nine native controller physical worlds on eight original fresh reset states
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/frozen_ppo_typed_gate_fresh16.py 2>&1 | tee "typed_native_${ABI_TASK}_complete.log"
+          test -s "typed_gate_${ABI_TASK}_new8_original.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: genuine-typed-native-physical-task-${{ matrix.task }}
+          path: |
+            typed_gate_*.json
+            typed_native_*.log
+          retention-days: 90
+
+  auditor-of-original-16-native-physical-task-outcomes:
+    needs: original-released-PPO-nine-real-PhysX-arms
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: genuine-typed-native-physical-task-*
+          path: /tmp/typed16
+          merge-multiple: true
+      - name: Audit all original positive and negative states, private reads and original fault exposure
+        run: |
+          set -euo pipefail
+          python -m research.audit_typed_gate_fresh16 --input-dir /tmp/typed16 --output typed_source_all16.json
+          python - <<'PY'
+          import json
+          p=json.load(open("typed_source_all16.json"))
+          assert sum(x["unique_original_task_reset_states"] for x in p["per_task"].values())==16
+          assert set(p["per_task"])=={"pull_cube","stack_cube"}
+          assert isinstance(p["original_predeclared_primary_inference_gate_PASSED"],bool)
+          assert p["predeclared_source_original_study_failed_370029_not_retroactively_reclassified"]
+          assert p["all16_actual_controller_target_private_reads"]["fault_robust_quota_two_per_eight"]<=4
+          print("PASS all 16 original tasks, even refusals or missing physical fault steps.")
+          if not p["original_predeclared_primary_inference_gate_PASSED"]:
+              print("NEGATIVE scientific result: precommitted fault exposure FAILED; no confirmatory claims.")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-typed-native-fresh16-all-negative-positive-real-physx
+          path: |
+            /tmp/typed16/*.json
+            /tmp/typed16/*.log
+            typed_source_all16.json
+          retention-days: 90
