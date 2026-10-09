@@ -120,9 +120,14 @@ class RealNativeBeliefIntegration(unittest.TestCase):
         g.bind_live_policy(p)
         self.assertEqual(p.queued,0)
         p.queued=49  # A real SmolVLA select_action can cache a whole chunk.
-        fresh(g,0);d=g.decide()
+        observed_generation=g.current_inference_generation
+        g.observe(VisualObservation("real_controller_test",0,(0.,0.,0.),
+            (0.,0.,0.,1.),inference_generation=observed_generation),
+            actions(),model_checkpoint_sha="a"*40,normalizer_sha="b"*40)
+        d=g.decide()
         self.assertEqual(d.code,"SEND_CERTIFIED")
         self.assertEqual(p.queued,0)
+        self.assertGreater(g.current_inference_generation,observed_generation)
         p.queued=13
         g.acknowledge(d.ticket,applied=None)
         self.assertEqual(p.queued,0)
@@ -132,6 +137,32 @@ class RealNativeBeliefIntegration(unittest.TestCase):
             evidence="authoritative_controller_target_readback")
         self.assertEqual(p.queued,0)
         self.assertGreaterEqual(p.events,4)
+
+    def test_delayed_async_vla_result_rejected_after_unknown_ack(self):
+        class Policy:
+            def __init__(self):self.queued=12
+            def drop_queued_actions(self):self.queued=0
+            def count_queued_actions(self):return self.queued
+        g=gateway()
+        g.bind_live_policy(Policy())
+        old_generation=g.current_inference_generation
+        g.observe(VisualObservation("real_controller_test",0,(0.,0.,0.),
+            (0.,0.,0.,1.),inference_generation=old_generation),
+            actions(),model_checkpoint_sha="a"*40,normalizer_sha="b"*40)
+        d=g.decide()
+        g.acknowledge(d.ticket,applied=None)
+        # A model generation request launched before the command reached the
+        # robot must not be replayed after the hidden target belief branches.
+        with self.assertRaisesRegex(ContractViolation,"Stale asynchronous"):
+            g.observe(VisualObservation("real_controller_test",1,(0.,0.,0.),
+                (0.,0.,0.,1.),inference_generation=old_generation),
+                actions(),model_checkpoint_sha="a"*40,normalizer_sha="b"*40)
+        new_generation=g.current_inference_generation
+        self.assertGreater(new_generation,old_generation)
+        g.observe(VisualObservation("real_controller_test",1,(0.,0.,0.),
+            (0.,0.,0.,1.),inference_generation=new_generation),
+            actions(),model_checkpoint_sha="a"*40,normalizer_sha="b"*40)
+        self.assertIn(g.decide().code,("SEND_CERTIFIED","QUERY_TARGET"))
 
     def test_live_policy_with_unverifiable_queue_rejected(self):
         class BrokenPolicy:
