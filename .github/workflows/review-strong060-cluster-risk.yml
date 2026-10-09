@@ -1,0 +1,43 @@
+name: Cross-platform source-frozen STRONG060 1280-world 32-reset cluster audit
+
+on:
+  push:
+    branches: [research/reviewer-audit-strong060-20261010]
+    paths:
+      - 'research/review_strong060_cluster_risk.py'
+      - 'tests/test_strong060_source_cluster_risk.py'
+      - '.github/workflows/review-strong060-cluster-risk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  independent-source-recompute-no-new-physics:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        py: ['3.11', '3.13']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.py }}
+      - name: All original source SHA/prefix/32-reset checks and adversarial statistics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p 'test_strong060_source_cluster_risk.py' -v
+          python -m research.review_strong060_cluster_risk --output verified_strong060_original_cluster_risk.json | tee source_audit_terminal.txt
+      - name: Preserve audit report for independent inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: strong060-cluster-audit-${{ matrix.os }}-py${{ matrix.py }}
+          path: |
+            verified_strong060_original_cluster_risk.json
+            source_audit_terminal.txt
+          if-no-files-found: warn
