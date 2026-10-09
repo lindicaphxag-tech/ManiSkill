@@ -1,0 +1,1374 @@
+{
+  "calibration_model_hash": "6132951f6a8655f107509de0f7d7d180abe4fb73f30831e2c213f5709642de46",
+  "chunk": 0,
+  "model": {
+    "class_models": {
+      "applied": {
+        "envelope_radius_m": 0.0021145617518965004,
+        "max_calibration_residual_m": 0.0001145617518965005,
+        "mean_public_motion_m": [
+          0.029576562345027924,
+          -0.014592893574445043,
+          0.02663092501461506
+        ]
+      },
+      "held": {
+        "envelope_radius_m": 0.0020041714252797215,
+        "max_calibration_residual_m": 4.171425279721252e-06,
+        "mean_public_motion_m": [
+          -0.0003557130694389343,
+          0.003807037886872422,
+          0.004320971667766571
+        ]
+      }
+    },
+    "n_samples": 16,
+    "not_a_safety_certificate": true,
+    "radius_margin_m": 0.002,
+    "robot": "xarm6_robotiq",
+    "schema": "online_ack_cross_robot_empirical_envelope_v1",
+    "training_seeds": [
+      430001,
+      430002,
+      430003,
+      430004,
+      430005,
+      430006,
+      430007,
+      430008
+    ],
+    "training_sha256": "4d6ccbb8a338ea974c70e853deb22c2b32572a83a8ac24c240902a62ba574b36"
+  },
+  "no_actual_network_packet_loss": true,
+  "not_independent_outside_lab": true,
+  "not_robot_collision_force_safety": true,
+  "original_frozen_checkpoint_used": false,
+  "physical_trial_truth_cases": 8,
+  "private_target_getter_only_after_corrective_action": true,
+  "real_cpu_physx": true,
+  "robot": "xarm6_robotiq",
+  "rows": [
+    {
+      "independently_real_physx_stepped_arms": [
+        {
+          "control": "public_proprio_empirical",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": true,
+          "corrective_native_six": [
+            -0.4500000000000004,
+            0.3000000000000001,
+            -0.35000000000000003,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 4.768371586472142e-09,
+          "decision": {
+            "calibrated_likelihood_not_attested": true,
+            "compatible_histories": [
+              "applied"
+            ],
+            "distance_to_calibrated_center_m": {
+              "applied": 0.00020484740356290607,
+              "held": 0.04178642877136077
+            },
+            "label": "applied",
+            "private_target_getter_calls_at_decision": 0,
+            "public_motion_xyz_m": [
+              0.029680848121643066,
+              -0.01458549709059298,
+              0.026807084679603577
+            ],
+            "status": "ONE_COMPATIBLE_PUBLIC_RESPONSE"
+          },
+          "delta_public_xyz": [
+            0.029680848121643066,
+            -0.01458549709059298,
+            0.026807084679603577
+          ],
+          "hidden_truth": "applied",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5413331985473633,
+            -0.0016385463532060385,
+            0.1975506693124771
+          ],
+          "public_t3_xyz": [
+            0.5710140466690063,
+            -0.01622404344379902,
+            0.2243577539920807
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490001,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": false
+        },
+        {
+          "control": "blind_optimistic",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": true,
+          "corrective_native_six": [
+            -0.4500000000000004,
+            0.3000000000000001,
+            -0.35000000000000003,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 4.768371586472142e-09,
+          "decision": {
+            "label": "applied",
+            "private_target_getter_calls_at_decision": 0,
+            "status": "NO_PHYSICAL_RESPONSE_USED"
+          },
+          "delta_public_xyz": [
+            0.029680848121643066,
+            -0.01458549709059298,
+            0.026807084679603577
+          ],
+          "hidden_truth": "applied",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5413331985473633,
+            -0.0016385463532060385,
+            0.1975506693124771
+          ],
+          "public_t3_xyz": [
+            0.5710140466690063,
+            -0.01622404344379902,
+            0.2243577539920807
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490001,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": false
+        },
+        {
+          "control": "blind_pessimistic",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": false,
+          "corrective_native_six": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 0.04500001192092895,
+          "decision": {
+            "label": "held",
+            "private_target_getter_calls_at_decision": 0,
+            "status": "NO_PHYSICAL_RESPONSE_USED"
+          },
+          "delta_public_xyz": [
+            0.029680848121643066,
+            -0.01458549709059298,
+            0.026807084679603577
+          ],
+          "hidden_truth": "applied",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5413331985473633,
+            -0.0016385463532060385,
+            0.1975506693124771
+          ],
+          "public_t3_xyz": [
+            0.5710140466690063,
+            -0.01622404344379902,
+            0.2243577539920807
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490001,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": true
+        }
+      ],
+      "one_online_public_measurement_per_arm": true,
+      "robot": "xarm6_robotiq",
+      "seed": 490001,
+      "truth": "applied"
+    },
+    {
+      "independently_real_physx_stepped_arms": [
+        {
+          "control": "public_proprio_empirical",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": true,
+          "corrective_native_six": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 4.768371586472142e-09,
+          "decision": {
+            "calibrated_likelihood_not_attested": true,
+            "compatible_histories": [
+              "held"
+            ],
+            "distance_to_calibrated_center_m": {
+              "applied": 0.0416198451363053,
+              "held": 9.650226954358775e-06
+            },
+            "label": "held",
+            "private_target_getter_calls_at_decision": 0,
+            "public_motion_xyz_m": [
+              -0.00035893917083740234,
+              0.0038110879249870777,
+              0.004329115152359009
+            ],
+            "status": "ONE_COMPATIBLE_PUBLIC_RESPONSE"
+          },
+          "delta_public_xyz": [
+            -0.00035893917083740234,
+            0.0038110879249870777,
+            0.004329115152359009
+          ],
+          "hidden_truth": "held",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5413331985473633,
+            -0.0016385463532060385,
+            0.1975506693124771
+          ],
+          "public_t3_xyz": [
+            0.5409742593765259,
+            0.0021725415717810392,
+            0.20187978446483612
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490001,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": false
+        },
+        {
+          "control": "blind_optimistic",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": false,
+          "corrective_native_six": [
+            -0.4500000000000004,
+            0.3000000000000001,
+            -0.35000000000000003,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 0.044999991655349736,
+          "decision": {
+            "label": "applied",
+            "private_target_getter_calls_at_decision": 0,
+            "status": "NO_PHYSICAL_RESPONSE_USED"
+          },
+          "delta_public_xyz": [
+            -0.00035893917083740234,
+            0.0038110879249870777,
+            0.004329115152359009
+          ],
+          "hidden_truth": "held",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5413331985473633,
+            -0.0016385463532060385,
+            0.1975506693124771
+          ],
+          "public_t3_xyz": [
+            0.5409742593765259,
+            0.0021725415717810392,
+            0.20187978446483612
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490001,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": true
+        },
+        {
+          "control": "blind_pessimistic",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": true,
+          "corrective_native_six": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 4.768371586472142e-09,
+          "decision": {
+            "label": "held",
+            "private_target_getter_calls_at_decision": 0,
+            "status": "NO_PHYSICAL_RESPONSE_USED"
+          },
+          "delta_public_xyz": [
+            -0.00035893917083740234,
+            0.0038110879249870777,
+            0.004329115152359009
+          ],
+          "hidden_truth": "held",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5413331985473633,
+            -0.0016385463532060385,
+            0.1975506693124771
+          ],
+          "public_t3_xyz": [
+            0.5409742593765259,
+            0.0021725415717810392,
+            0.20187978446483612
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490001,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": false
+        }
+      ],
+      "one_online_public_measurement_per_arm": true,
+      "robot": "xarm6_robotiq",
+      "seed": 490001,
+      "truth": "held"
+    },
+    {
+      "independently_real_physx_stepped_arms": [
+        {
+          "control": "public_proprio_empirical",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": true,
+          "corrective_native_six": [
+            -0.4500000000000004,
+            0.3000000000000001,
+            -0.35000000000000003,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 4.768371586472142e-09,
+          "decision": {
+            "calibrated_likelihood_not_attested": true,
+            "compatible_histories": [
+              "applied"
+            ],
+            "distance_to_calibrated_center_m": {
+              "applied": 4.876361695925115e-05,
+              "held": 0.04166535341604764
+            },
+            "label": "applied",
+            "private_target_getter_calls_at_decision": 0,
+            "public_motion_xyz_m": [
+              0.02962130308151245,
+              -0.014601239934563637,
+              0.02664843201637268
+            ],
+            "status": "ONE_COMPATIBLE_PUBLIC_RESPONSE"
+          },
+          "delta_public_xyz": [
+            0.02962130308151245,
+            -0.014601239934563637,
+            0.02664843201637268
+          ],
+          "hidden_truth": "applied",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5316186547279358,
+            -0.004939977079629898,
+            0.17484897375106812
+          ],
+          "public_t3_xyz": [
+            0.5612399578094482,
+            -0.019541217014193535,
+            0.2014974057674408
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490002,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": false
+        },
+        {
+          "control": "blind_optimistic",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": true,
+          "corrective_native_six": [
+            -0.4500000000000004,
+            0.3000000000000001,
+            -0.35000000000000003,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 4.768371586472142e-09,
+          "decision": {
+            "label": "applied",
+            "private_target_getter_calls_at_decision": 0,
+            "status": "NO_PHYSICAL_RESPONSE_USED"
+          },
+          "delta_public_xyz": [
+            0.02962130308151245,
+            -0.014601239934563637,
+            0.02664843201637268
+          ],
+          "hidden_truth": "applied",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5316186547279358,
+            -0.004939977079629898,
+            0.17484897375106812
+          ],
+          "public_t3_xyz": [
+            0.5612399578094482,
+            -0.019541217014193535,
+            0.2014974057674408
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490002,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": false
+        },
+        {
+          "control": "blind_pessimistic",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": false,
+          "corrective_native_six": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 0.04500001192092895,
+          "decision": {
+            "label": "held",
+            "private_target_getter_calls_at_decision": 0,
+            "status": "NO_PHYSICAL_RESPONSE_USED"
+          },
+          "delta_public_xyz": [
+            0.02962130308151245,
+            -0.014601239934563637,
+            0.02664843201637268
+          ],
+          "hidden_truth": "applied",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5316186547279358,
+            -0.004939977079629898,
+            0.17484897375106812
+          ],
+          "public_t3_xyz": [
+            0.5612399578094482,
+            -0.019541217014193535,
+            0.2014974057674408
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490002,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": true
+        }
+      ],
+      "one_online_public_measurement_per_arm": true,
+      "robot": "xarm6_robotiq",
+      "seed": 490002,
+      "truth": "applied"
+    },
+    {
+      "independently_real_physx_stepped_arms": [
+        {
+          "control": "public_proprio_empirical",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": true,
+          "corrective_native_six": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 4.768371586472142e-09,
+          "decision": {
+            "calibrated_likelihood_not_attested": true,
+            "compatible_histories": [
+              "held"
+            ],
+            "distance_to_calibrated_center_m": {
+              "applied": 0.041618427539980254,
+              "held": 6.431626077736331e-06
+            },
+            "label": "held",
+            "private_target_getter_calls_at_decision": 0,
+            "public_motion_xyz_m": [
+              -0.00035512447357177734,
+              0.0038106375141069293,
+              0.004326269030570984
+            ],
+            "status": "ONE_COMPATIBLE_PUBLIC_RESPONSE"
+          },
+          "delta_public_xyz": [
+            -0.00035512447357177734,
+            0.0038106375141069293,
+            0.004326269030570984
+          ],
+          "hidden_truth": "held",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5316186547279358,
+            -0.004939977079629898,
+            0.17484897375106812
+          ],
+          "public_t3_xyz": [
+            0.531263530254364,
+            -0.0011293395655229688,
+            0.1791752427816391
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490002,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": false
+        },
+        {
+          "control": "blind_optimistic",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": false,
+          "corrective_native_six": [
+            -0.4500000000000004,
+            0.3000000000000001,
+            -0.35000000000000003,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 0.044999991655349736,
+          "decision": {
+            "label": "applied",
+            "private_target_getter_calls_at_decision": 0,
+            "status": "NO_PHYSICAL_RESPONSE_USED"
+          },
+          "delta_public_xyz": [
+            -0.00035512447357177734,
+            0.0038106375141069293,
+            0.004326269030570984
+          ],
+          "hidden_truth": "held",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5316186547279358,
+            -0.004939977079629898,
+            0.17484897375106812
+          ],
+          "public_t3_xyz": [
+            0.531263530254364,
+            -0.0011293395655229688,
+            0.1791752427816391
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490002,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": true
+        },
+        {
+          "control": "blind_pessimistic",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": true,
+          "corrective_native_six": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 4.768371586472142e-09,
+          "decision": {
+            "label": "held",
+            "private_target_getter_calls_at_decision": 0,
+            "status": "NO_PHYSICAL_RESPONSE_USED"
+          },
+          "delta_public_xyz": [
+            -0.00035512447357177734,
+            0.0038106375141069293,
+            0.004326269030570984
+          ],
+          "hidden_truth": "held",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5316186547279358,
+            -0.004939977079629898,
+            0.17484897375106812
+          ],
+          "public_t3_xyz": [
+            0.531263530254364,
+            -0.0011293395655229688,
+            0.1791752427816391
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490002,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": false
+        }
+      ],
+      "one_online_public_measurement_per_arm": true,
+      "robot": "xarm6_robotiq",
+      "seed": 490002,
+      "truth": "held"
+    },
+    {
+      "independently_real_physx_stepped_arms": [
+        {
+          "control": "public_proprio_empirical",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": true,
+          "corrective_native_six": [
+            -0.4500000000000004,
+            0.3000000000000001,
+            -0.35000000000000003,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 4.768371586472142e-09,
+          "decision": {
+            "calibrated_likelihood_not_attested": true,
+            "compatible_histories": [
+              "applied"
+            ],
+            "distance_to_calibrated_center_m": {
+              "applied": 2.4849829319771285e-05,
+              "held": 0.04160366120211949
+            },
+            "label": "applied",
+            "private_target_getter_calls_at_decision": 0,
+            "public_motion_xyz_m": [
+              0.029575467109680176,
+              -0.014570513973012567,
+              0.026620179414749146
+            ],
+            "status": "ONE_COMPATIBLE_PUBLIC_RESPONSE"
+          },
+          "delta_public_xyz": [
+            0.029575467109680176,
+            -0.014570513973012567,
+            0.026620179414749146
+          ],
+          "hidden_truth": "applied",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5213198661804199,
+            0.002248779172077775,
+            0.1714075207710266
+          ],
+          "public_t3_xyz": [
+            0.5508953332901001,
+            -0.012321734800934792,
+            0.19802770018577576
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490003,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": false
+        },
+        {
+          "control": "blind_optimistic",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": true,
+          "corrective_native_six": [
+            -0.4500000000000004,
+            0.3000000000000001,
+            -0.35000000000000003,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 4.768371586472142e-09,
+          "decision": {
+            "label": "applied",
+            "private_target_getter_calls_at_decision": 0,
+            "status": "NO_PHYSICAL_RESPONSE_USED"
+          },
+          "delta_public_xyz": [
+            0.029575467109680176,
+            -0.014570513973012567,
+            0.026620179414749146
+          ],
+          "hidden_truth": "applied",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5213198661804199,
+            0.002248779172077775,
+            0.1714075207710266
+          ],
+          "public_t3_xyz": [
+            0.5508953332901001,
+            -0.012321734800934792,
+            0.19802770018577576
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490003,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": false
+        },
+        {
+          "control": "blind_pessimistic",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": false,
+          "corrective_native_six": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 0.04500001192092895,
+          "decision": {
+            "label": "held",
+            "private_target_getter_calls_at_decision": 0,
+            "status": "NO_PHYSICAL_RESPONSE_USED"
+          },
+          "delta_public_xyz": [
+            0.029575467109680176,
+            -0.014570513973012567,
+            0.026620179414749146
+          ],
+          "hidden_truth": "applied",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5213198661804199,
+            0.002248779172077775,
+            0.1714075207710266
+          ],
+          "public_t3_xyz": [
+            0.5508953332901001,
+            -0.012321734800934792,
+            0.19802770018577576
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490003,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": true
+        }
+      ],
+      "one_online_public_measurement_per_arm": true,
+      "robot": "xarm6_robotiq",
+      "seed": 490003,
+      "truth": "applied"
+    },
+    {
+      "independently_real_physx_stepped_arms": [
+        {
+          "control": "public_proprio_empirical",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": true,
+          "corrective_native_six": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 4.768371586472142e-09,
+          "decision": {
+            "calibrated_likelihood_not_attested": true,
+            "compatible_histories": [
+              "held"
+            ],
+            "distance_to_calibrated_center_m": {
+              "applied": 0.04161914102473564,
+              "held": 2.7001036372029315e-06
+            },
+            "label": "held",
+            "private_target_getter_calls_at_decision": 0,
+            "public_motion_xyz_m": [
+              -0.0003548860549926758,
+              0.003808647161349654,
+              0.0043229758739471436
+            ],
+            "status": "ONE_COMPATIBLE_PUBLIC_RESPONSE"
+          },
+          "delta_public_xyz": [
+            -0.0003548860549926758,
+            0.003808647161349654,
+            0.0043229758739471436
+          ],
+          "hidden_truth": "held",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5213198661804199,
+            0.002248779172077775,
+            0.1714075207710266
+          ],
+          "public_t3_xyz": [
+            0.5209649801254272,
+            0.006057426333427429,
+            0.17573049664497375
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490003,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": false
+        },
+        {
+          "control": "blind_optimistic",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": false,
+          "corrective_native_six": [
+            -0.4500000000000004,
+            0.3000000000000001,
+            -0.35000000000000003,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 0.044999991655349736,
+          "decision": {
+            "label": "applied",
+            "private_target_getter_calls_at_decision": 0,
+            "status": "NO_PHYSICAL_RESPONSE_USED"
+          },
+          "delta_public_xyz": [
+            -0.0003548860549926758,
+            0.003808647161349654,
+            0.0043229758739471436
+          ],
+          "hidden_truth": "held",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5213198661804199,
+            0.002248779172077775,
+            0.1714075207710266
+          ],
+          "public_t3_xyz": [
+            0.5209649801254272,
+            0.006057426333427429,
+            0.17573049664497375
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490003,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": true
+        },
+        {
+          "control": "blind_pessimistic",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": true,
+          "corrective_native_six": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 4.768371586472142e-09,
+          "decision": {
+            "label": "held",
+            "private_target_getter_calls_at_decision": 0,
+            "status": "NO_PHYSICAL_RESPONSE_USED"
+          },
+          "delta_public_xyz": [
+            -0.0003548860549926758,
+            0.003808647161349654,
+            0.0043229758739471436
+          ],
+          "hidden_truth": "held",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5213198661804199,
+            0.002248779172077775,
+            0.1714075207710266
+          ],
+          "public_t3_xyz": [
+            0.5209649801254272,
+            0.006057426333427429,
+            0.17573049664497375
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490003,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": false
+        }
+      ],
+      "one_online_public_measurement_per_arm": true,
+      "robot": "xarm6_robotiq",
+      "seed": 490003,
+      "truth": "held"
+    },
+    {
+      "independently_real_physx_stepped_arms": [
+        {
+          "control": "public_proprio_empirical",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": true,
+          "corrective_native_six": [
+            -0.4500000000000004,
+            0.3000000000000001,
+            -0.35000000000000003,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 4.768371586472142e-09,
+          "decision": {
+            "calibrated_likelihood_not_attested": true,
+            "compatible_histories": [
+              "applied"
+            ],
+            "distance_to_calibrated_center_m": {
+              "applied": 5.12384143254157e-05,
+              "held": 0.04157951996414563
+            },
+            "label": "applied",
+            "private_target_getter_calls_at_decision": 0,
+            "public_motion_xyz_m": [
+              0.029568076133728027,
+              -0.014554003137163818,
+              0.02659866213798523
+            ],
+            "status": "ONE_COMPATIBLE_PUBLIC_RESPONSE"
+          },
+          "delta_public_xyz": [
+            0.029568076133728027,
+            -0.014554003137163818,
+            0.02659866213798523
+          ],
+          "hidden_truth": "applied",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5250479578971863,
+            0.0016036572633311152,
+            0.16950984299182892
+          ],
+          "public_t3_xyz": [
+            0.5546160340309143,
+            -0.012950345873832703,
+            0.19610850512981415
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490004,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": false
+        },
+        {
+          "control": "blind_optimistic",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": true,
+          "corrective_native_six": [
+            -0.4500000000000004,
+            0.3000000000000001,
+            -0.35000000000000003,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 4.768371586472142e-09,
+          "decision": {
+            "label": "applied",
+            "private_target_getter_calls_at_decision": 0,
+            "status": "NO_PHYSICAL_RESPONSE_USED"
+          },
+          "delta_public_xyz": [
+            0.029568076133728027,
+            -0.014554003137163818,
+            0.02659866213798523
+          ],
+          "hidden_truth": "applied",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5250479578971863,
+            0.0016036572633311152,
+            0.16950984299182892
+          ],
+          "public_t3_xyz": [
+            0.5546160340309143,
+            -0.012950345873832703,
+            0.19610850512981415
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490004,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": false
+        },
+        {
+          "control": "blind_pessimistic",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": false,
+          "corrective_native_six": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 0.04500001192092895,
+          "decision": {
+            "label": "held",
+            "private_target_getter_calls_at_decision": 0,
+            "status": "NO_PHYSICAL_RESPONSE_USED"
+          },
+          "delta_public_xyz": [
+            0.029568076133728027,
+            -0.014554003137163818,
+            0.02659866213798523
+          ],
+          "hidden_truth": "applied",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5250479578971863,
+            0.0016036572633311152,
+            0.16950984299182892
+          ],
+          "public_t3_xyz": [
+            0.5546160340309143,
+            -0.012950345873832703,
+            0.19610850512981415
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490004,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": true
+        }
+      ],
+      "one_online_public_measurement_per_arm": true,
+      "robot": "xarm6_robotiq",
+      "seed": 490004,
+      "truth": "applied"
+    },
+    {
+      "independently_real_physx_stepped_arms": [
+        {
+          "control": "public_proprio_empirical",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": true,
+          "corrective_native_six": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 4.768371586472142e-09,
+          "decision": {
+            "calibrated_likelihood_not_attested": true,
+            "compatible_histories": [
+              "held"
+            ],
+            "distance_to_calibrated_center_m": {
+              "applied": 0.04161816158962736,
+              "held": 2.6796784824721603e-06
+            },
+            "label": "held",
+            "private_target_getter_calls_at_decision": 0,
+            "public_motion_xyz_m": [
+              -0.0003548264503479004,
+              0.0038071611197665334,
+              0.004323497414588928
+            ],
+            "status": "ONE_COMPATIBLE_PUBLIC_RESPONSE"
+          },
+          "delta_public_xyz": [
+            -0.0003548264503479004,
+            0.0038071611197665334,
+            0.004323497414588928
+          ],
+          "hidden_truth": "held",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5250479578971863,
+            0.0016036572633311152,
+            0.16950984299182892
+          ],
+          "public_t3_xyz": [
+            0.5246931314468384,
+            0.005410818383097649,
+            0.17383334040641785
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490004,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": false
+        },
+        {
+          "control": "blind_optimistic",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": false,
+          "corrective_native_six": [
+            -0.4500000000000004,
+            0.3000000000000001,
+            -0.35000000000000003,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 0.044999991655349736,
+          "decision": {
+            "label": "applied",
+            "private_target_getter_calls_at_decision": 0,
+            "status": "NO_PHYSICAL_RESPONSE_USED"
+          },
+          "delta_public_xyz": [
+            -0.0003548264503479004,
+            0.0038071611197665334,
+            0.004323497414588928
+          ],
+          "hidden_truth": "held",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5250479578971863,
+            0.0016036572633311152,
+            0.16950984299182892
+          ],
+          "public_t3_xyz": [
+            0.5246931314468384,
+            0.005410818383097649,
+            0.17383334040641785
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490004,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": true
+        },
+        {
+          "control": "blind_pessimistic",
+          "correction_reached": true,
+          "corrective_commanded_target_within_1e4_m": true,
+          "corrective_native_six": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "corrective_refusal": false,
+          "corrective_target_position_error_m": 4.768371586472142e-09,
+          "decision": {
+            "label": "held",
+            "private_target_getter_calls_at_decision": 0,
+            "status": "NO_PHYSICAL_RESPONSE_USED"
+          },
+          "delta_public_xyz": [
+            -0.0003548264503479004,
+            0.0038071611197665334,
+            0.004323497414588928
+          ],
+          "hidden_truth": "held",
+          "native_controller_keys": [
+            "arm",
+            "gripper_active",
+            "gripper_passive"
+          ],
+          "private_target_read_calls_before_decision": 0,
+          "public_t1_xyz": [
+            0.5250479578971863,
+            0.0016036572633311152,
+            0.16950984299182892
+          ],
+          "public_t3_xyz": [
+            0.5246931314468384,
+            0.005410818383097649,
+            0.17383334040641785
+          ],
+          "robot": "xarm6_robotiq",
+          "seed": 490004,
+          "true_delivery_used_only_to_execute_and_audit": true,
+          "unchanged_zero_native_probe_step": 3,
+          "wrong_history_authorization": false
+        }
+      ],
+      "one_online_public_measurement_per_arm": true,
+      "robot": "xarm6_robotiq",
+      "seed": 490004,
+      "truth": "held"
+    }
+  ],
+  "schema": "cross_robot_online_unknown_ack_proprio_prospective_v1",
+  "scripted_native_control_not_policy_transfer": true,
+  "source_protocol_git_blob": "0cb66afc8a9c362ee764a83b7e558069ef6bd09c",
+  "test_seeds": [
+    490001,
+    490002,
+    490003,
+    490004
+  ],
+  "totals": {
+    "blind_optimistic": {
+      "actual_held_target_position_restored": 4,
+      "confident": 8,
+      "wrong": 4
+    },
+    "blind_pessimistic": {
+      "actual_held_target_position_restored": 4,
+      "confident": 8,
+      "wrong": 4
+    },
+    "public_proprio_empirical": {
+      "actual_held_target_position_restored": 8,
+      "confident": 8,
+      "wrong": 0
+    }
+  }
+}
