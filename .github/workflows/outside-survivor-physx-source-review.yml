@@ -1,0 +1,66 @@
+name: Outside reviewer verify original fullpose PPO32 evidence (NO simulator)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/outside-survivor-physx-source-review.yml'
+      - 'research/frozen_policy_transfer/review/verify_survivor_fullpose.py'
+      - 'research/frozen_policy_transfer/evidence/survivor_fullpose_original32_860001_870016/**'
+      - 'research/audit_survivor_fullpose_new32.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  recompute-actual-physx-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Recompute all source SHA-256s, eight physical task shards, exact private readbacks
+        run: |
+          set -euo pipefail
+          python -m py_compile research/frozen_policy_transfer/review/verify_survivor_fullpose.py
+          python -m research.frozen_policy_transfer.review.verify_survivor_fullpose \
+             --output /tmp/outside_verified_original_physx32.json
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/outside_verified_original_physx32.json'))
+          assert d['independent_third_party_execution'] is False
+          assert d['original_physx_controllers']==256
+          assert len(d['all_17_original_source_sha256'])==17
+          assert d['public_only_full_pose_history_labels']==10
+          assert d['wrong_confident_full_pose_labels']==0
+          assert d['hybrid_vs_task_gate_paired_outcomes']=={
+             'both_success':28,'both_fail':4,'hybrid_only':0,'task_gate_only':0}
+          assert d['task_strata']['pull_cube']['hybrid_reads']==13
+          assert d['task_strata']['pull_cube']['strong_task_gate_reads']==11
+          assert d['task_strata']['stack_cube']['hybrid_reads']==9
+          assert d['task_strata']['stack_cube']['strong_task_gate_reads']==16
+          print('EXTERNAL_REVIEWER_STRICT_REAL_PHYX32_SOURCE_AND_TASK_HETEROGENEITY_PASSED')
+          PY
+      - name: Reject synthetic tampering with one source JSON
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import shutil,subprocess,sys,tempfile
+          base=Path('research/frozen_policy_transfer/evidence/survivor_fullpose_original32_860001_870016')
+          with tempfile.TemporaryDirectory() as directory:
+            p=Path(directory); copy=p/'source';shutil.copytree(base,copy)
+            original=next(copy.glob('survivor_fullpose_*_original4.json'))
+            original.write_bytes(original.read_bytes()+b' ')
+            cmd=[sys.executable,'-m',
+               'research.frozen_policy_transfer.review.verify_survivor_fullpose',
+               '--source',str(copy),'--output',str(p/'out.json')]
+            result=subprocess.run(cmd,capture_output=True,text=True)
+            assert result.returncode!=0
+            assert 'Unmodified original real PhysX source changed' in result.stderr
+            print('TAMPERED_SOURCE_REJECTED_ON_OUTSIDE_REVIEWER_ROUTE')
+          PY
