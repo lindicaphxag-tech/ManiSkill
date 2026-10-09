@@ -8,7 +8,7 @@ After **two separate unknown arm-command acknowledgements**, a target-accumulati
 
 ## Hard negative that changes the project
 
-The 64-real-state native PhysX study on PullCube 420001–420032 and StackCube 430001–430032 used identical frozen external PPO model weights and two actual target-hold events (`t=2,t=3`), not virtual action arithmetic. Reactive query-on-certificate-refusal completed **45/64** tasks with **44** real private target reads, whereas fixed early read completed **55/64** with **64** reads. Twelve... No: the exact pairwise discordance is **reactive-only 3, early-read-only 13**. An elementary source-independent root-frame isometry shows all candidate target-memory separation is invariant under *the same known common command*. Hence an authorized action does not intrinsically reduce uncertainty, nor certify task success.
+The 64-real-state native PhysX study on PullCube 420001–420032 and StackCube 430001–430032 used identical frozen external PPO model weights and two actual target-hold events (`t=2,t=3`), not virtual action arithmetic. Reactive query-on-certificate-refusal completed **45/64** tasks with **44** real private target reads, whereas fixed early read completed **55/64** with **64** reads. The exact pairwise discordance is **reactive-only 3, early-read-only 13**. An elementary source-independent root-frame isometry shows all candidate target-memory separation is invariant under *the same known common command*. Hence an authorized action does not intrinsically reduce uncertainty, nor certify task success.
 
 [Original negative and transparent task-specific strata](https://github.com/lindicaphxag-tech/ManiSkill/blob/main/research/frozen_policy_transfer/ORIGINAL_64_STRONG_QUERY_TIMING_BASELINE_AND_INVARIANT.md).
 
@@ -38,6 +38,7 @@ Task-only routing matches **every individual binary success/failure flag** of ea
 ```bash
 git clone https://github.com/lindicaphxag-tech/ManiSkill.git
 cd ManiSkill
+(cd research/frozen_policy_transfer/evidence/task_gated_double_ack_64_520001_530032 && sha256sum -c ORIGINAL_SHA256SUMS)
 python -m research.audit_task_gated_multi_ack_new64 \
   --input-dir research/frozen_policy_transfer/evidence/task_gated_double_ack_64_520001_530032 \
   --output /tmp/new64_task_only_audit.json
