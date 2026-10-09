@@ -194,6 +194,52 @@ class RealNativeBeliefIntegration(unittest.TestCase):
         self.assertEqual(len(g.belief.hypotheses),1)
         self.assertIsNone(g.pending)
 
+    def test_hypothesis_overflow_consumes_ack_but_requires_readback(self):
+        # This is NOT permission to guess the target when belief explodes.
+        # The physical ACK has been processed, but model uncertainty exceeds
+        # the declared budget, so only authoritative target readback recovers.
+        b=UncertainDeliveryBelief([-.1]*3,[.1]*3,[.2]*3,max_hypotheses=2)
+        b.reset(TargetPose.from_arrays([0]*3,[0,0,0,1]))
+        g=RecedingHorizonVLAGateway(
+            contract(),b,common_multi_history_command,TargetPose,
+            max_pos_error_m=.05)
+        fresh(g,0,dx=.02)
+        d=g.decide()
+        self.assertEqual(d.code,"SEND_CERTIFIED")
+        g.acknowledge(d.ticket,applied=None)
+        self.assertEqual(len(g.belief.hypotheses),2)
+        fresh(g,1,dx=.02)
+        d2=g.decide()
+        self.assertEqual(d2.code,"SEND_CERTIFIED")
+        with self.assertRaisesRegex(RuntimeError,"budget"):
+            g.acknowledge(d2.ticket,applied=None)
+        self.assertFalse(g.belief.valid)
+        self.assertIsNone(g.belief.pending)
+        self.assertIsNone(g.pending)  # no ghost outstanding ACK
+        with self.assertRaises(ContractViolation):
+            fresh(g,2,dx=.02)  # still no authorisation after overflow
+        g.trusted_controller_resync(
+            TargetPose.from_arrays([0]*3,[0,0,0,1]),
+            evidence="authoritative_controller_target_readback")
+        self.assertTrue(g.belief.valid)
+        self.assertEqual(len(g.belief.hypotheses),1)
+        fresh(g,3,dx=.01)
+        self.assertEqual(g.decide().code,"SEND_CERTIFIED")
+
+    def test_invalid_ack_payload_does_not_consume_native_ticket(self):
+        g=gateway()
+        fresh(g,0)
+        d=g.decide()
+        with self.assertRaises(TypeError):
+            g.acknowledge(d.ticket,applied="unknown")
+        self.assertEqual(g.pending,d.ticket)
+        self.assertIsNotNone(g.belief.pending)
+        with self.assertRaises(ContractViolation):
+            g.reset_episode(TargetPose.from_arrays([0]*3,[0,0,0,1]),
+                            evidence="authoritative_controller_reset")
+        g.acknowledge(d.ticket,applied=None)
+        self.assertIsNone(g.pending)
+
     def test_exact_root_left_compose_uses_achieved_pose_not_private_target(self):
         # A 90-degree rotation around X followed by a command around Z must
         # be pre-multiplied in the root frame, not right-multiplied.
