@@ -31,6 +31,12 @@ The strongest published author-operated native experiment is currently **64 diff
 | Pairwise equality isn't automatically noninferiority | 53 both wins, 11 both losses, no discordance on n=64 | Precommit a clinically/robotically relevant noninferiority margin, test power and paired intervals, then evaluate independently held-out populations |
 | Externally unrecognized | Public author-owned source/audit and repo self-PR | Outside investigator selects unseen resets and publishes original independent execution on own infrastructure; upstream maintainer review or paper decision tracked separately |
 
+## Already available cross-robot mechanism evidence — valuable but NOT task transfer
+
+The project already has [16 original PhysX controller states on Panda and xArm6 Robotiq](https://github.com/lindicaphxag-tech/ManiSkill/tree/main/research/frozen_policy_transfer/evidence/cross_robot_panda_xarm6_original16_420001_430008). They establish that real native target-state ACK ambiguity occurs under distinct robot articulations and native action packing: eight Panda and eight xArm6 target-memory histories were tested, with actual applied/held public achieved-probe branch separations near **37.6–38.5 mm** and **41.5–41.7 mm**, respectively. This is an empirically useful *mechanism generalization*, explicitly not a frozen PPO/VLA task success or inferred online hidden history label. It should be shown as distinct supporting evidence in the paper and *never* pooled with 64 paired Panda frozen-policy outcomes.
+
+The missing cross-robot bridge is a task-competent frozen policy with the proper native xArm6 action semantics, physically tested using A/B/C selective state readback and both applied/held unknown ACKs, with policy action provenance independently verified. Existing 16 cases do not satisfy that bridge.
+
 ## Actual frozen SmolVLA evidence: no misleading task-ABI inference
 
 Authentic native LIBERO/LeRobot four episodes each on spatial tasks 0 and 1 gave 1/4 and 4/4 official success [byte-archived original run](https://github.com/lindicaphxag-tech/ManiSkill/tree/evidence/smolvla-libero-4plus4-original-20261009/research/vla_beliefbridge/evidence/authentic_smolvla_libero_four_inits_per_task_20261009). These were **no-fault** task-competence pilots with small denominators. Native LIBERO OSC commands use an achieved-pose control target rather than ManiSkill's persistent previous commanded target, so injecting a drop into native OSC does **not** by itself validate our hidden target-memory problem.
