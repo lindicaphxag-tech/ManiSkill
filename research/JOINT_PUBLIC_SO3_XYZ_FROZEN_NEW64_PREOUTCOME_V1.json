@@ -1,0 +1,35 @@
+{
+  "schema": "prospective_frozen_PPO_native_joint_public_SE3_ack_history_new64_v1",
+  "registered": "2026-10-09",
+  "source_training_used": "original physically stepped 16 development resets PullCube 2040001..2040008 and StackCube 2050001..2050008. Independent SHA-pinned original native SO3 source run 37931907253; source-only training criterion tested in CI 37936002962. At arc threshold 0.02 rad, historical joint rule identified 9/16 complete target histories with 0 observed wrong. THIS IS DEVELOPMENT AFTER inspecting outcomes; no independent safety calibration.",
+  "new_original_native_PhysX_reset_seeds": {
+    "pull_cube": [
+      3310001,
+      3310032
+    ],
+    "stack_cube": [
+      3320001,
+      3320032
+    ]
+  },
+  "preregistered_real_physics_worlds": 640,
+  "n_original_reset_states": 64,
+  "physical_truth": "t2/t3 applied or held native target actions, evenly balanced four joint truths within each task, 10 actual controller worlds each original seed, same real PhysX frozen published PPO, frozen native semantics, same t4 known-delivered neutral controller action.",
+  "frozen_checkpoint_SHA256": {
+    "PullCube": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+    "StackCube": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+  },
+  "method_A": "original XYZ-only complete-history unique epsilon and 2-mm residual gap, else one private target read",
+  "method_B": "ACTUAL same physically stepped public achieved pose: candidate full SE3 allowed if XYZ min segment residual <= original per-task empirical epsilon AND public SO3 geodesic-to-candidate slerp response arc residual <= frozen 0.02 radians. Authorize iff exactly one complete candidate, else one private target read. No audit-only hidden target labels ever accessed before decision. Orientation radius was chosen on development 16, NOT calibrated reliability bound.",
+  "method_C": "once-per-reset fixed t5 authoritative controller target read with same actual prior native actions and known neutral probe",
+  "new_sensing_cost": "Two quaternion samples are taken from the SAME achieved EE pose sensor as two XYZ samples; no separate independent hardware sensor or extra native probe step. Report 128 pose sample events per adaptive method; original XYZ-only A has access to the same pose hardware but does not use orientation evidence (feature ablation, not identical consumed information channels). No cost-free public SO3: report quaternion observation count explicitly.",
+  "primary_hypotheses": [
+    "official task success and per-seed paired delta of B vs A and B vs true fixed target read",
+    "true private register reads and separately counted XYZ/SO3 observed pose samples",
+    "confident whole native SE3 actual hidden history correctness audited after real physics",
+    "time/resets early failure, prior actual commands exact equality, real all four physical truths"
+  ],
+  "gate": "NO statistical success safety claim from 64, even if zero wrong. First-run source and audit must record all original reset seeds; censor any pre-two-ACK incomplete ones. Do not edit threshold after outcome. Full source original filenames SHA256 preserved.",
+  "external_limitations": "One Panda native controller, two released PPO tasks, no actual packet drop or independent external investigator, no learned VLA fault recovery or real hardware force collision guarantee, known relative action chart. Adjacent prior art ActionShift active belief/probe, RMA/UP-OSI active system ID.",
+  "status": "BEFORE_FIRST_NEW_331_332_PHYXS_RESETS"
+}
