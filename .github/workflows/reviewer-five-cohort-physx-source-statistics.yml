@@ -1,0 +1,35 @@
+name: "Main-conference reviewer regression: 5 SHA-locked native PhysX cohorts + honest paired exact inference"
+on:
+  push:
+    branches: [research/mainconference-evidence-statistics-20261009]
+    paths:
+      - 'research/audit_five_native_physx_reviewer_statistics.py'
+      - 'research/test_five_native_physx_reviewer_statistics.py'
+      - '.github/workflows/reviewer-five-cohort-physx-source-statistics.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-frozen-statistical-credibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      matrix:
+        python-version: ['3.11','3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Exact original 5-cohort physical full-audit Git blobs and 7 honest statistics regressions
+        run: |
+          set -euo pipefail
+          python -m unittest -v research.test_five_native_physx_reviewer_statistics
+          mkdir -p /tmp/reviewer_evidence
+          python -m research.audit_five_native_physx_reviewer_statistics --output /tmp/reviewer_evidence/EXACT_FIVE_ORIGINAL_320_TRUE_RESET_5_STUDY_REVIEW.json
+          test -s /tmp/reviewer_evidence/EXACT_FIVE_ORIGINAL_320_TRUE_RESET_5_STUDY_REVIEW.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: authentic-5-physx-study-320-distinct-physical-resets-paired-stats-py${{ matrix.python-version }}
+          path: /tmp/reviewer_evidence/
+          retention-days: 90
