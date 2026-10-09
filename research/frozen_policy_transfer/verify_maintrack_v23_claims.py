@@ -40,6 +40,7 @@ def main():
     p.add_argument("--matched64",required=True,type=Path)
     p.add_argument("--factorial256",required=True,type=Path)
     p.add_argument("--motor256",required=True,type=Path)
+    p.add_argument("--collision",required=True,type=Path)
     p.add_argument("--manuscript",required=True,type=Path)
     p.add_argument("--out",required=True,type=Path)
     a=p.parse_args()
@@ -95,6 +96,25 @@ def main():
     assert all(n==256 for n in motor["physical_action_parity_eligible_denominators"].values())
     assert motor["real_t4_probe_receipts_by_method"]=={"public":256,"strong":256,"fixed":256}
     assert motor["public_extra_achieved_xyz_sample_events"]==512
+    # The factual witness is independently rescored from a DIFFERENT first
+    # 1152-world original physically executed same-reset true 2x2 ACK corpus.
+    # It is NOT synthesized by replaying/altering native hidden target state.
+    witness=json.loads(a.collision.read_bytes())
+    assert witness["actual_physx_worlds_original"]==1152
+    assert witness["registered_real_ACK_truth_cells"]==128
+    assert witness["source_original_manifest_SHA256_verified_file_count"]==34
+    assert witness["observation_pairs_actually_available"]==187
+    assert witness["exact_six_value_public_XYZ_collisions_with_distinct_hidden_full_pose"]==3
+    ww=witness["source_frozen_conflict_witnesses"]
+    assert len(ww)==3 and {v["reset_seed"] for v in ww}=={2110003,2110004,2110012}
+    for x in ww:
+        assert x["six_public_XYZ_numbers_bitwise_equal_after_JSON_load"] is True
+        assert x["actual_delivered_neutral_t4_probe_both_worlds"] is True
+        assert x["source_both_faults_physically_exposed"] is True
+        assert x["actual_hidden_target_index_A"]!=x["actual_hidden_target_index_B"]
+        assert x["commanded_target_position_separation_m_min_two_audits"]>0.039
+        assert x["commanded_target_orientation_separation_rad_min_two_audits"]>0.04
+    assert witness["not_an_independently_run_outside_physics_experiment"] is True
     doc=a.manuscript.read_text()
     for marker in ("221/256","202/256","p=0.00241","195","0.03125","0.12109375",
                    "192/256","128/256","53 joint successes","48 versus 64"):
@@ -105,6 +125,8 @@ def main():
     output={
       "schema":"MANUSCRIPT_V2_3_INDEPENDENT_SOURCE_ONLY_ORIGINAL_NATIVE_PHYSX_CLAIM_AUDIT",
       "source_only_not_separately_executed_physics":True,
+      "factual_original_native_observability_collisions":3,
+      "collisions_source_original_1152_physx_worlds":1152,
       "outside_independent_investigator_reproduction":False,
       "matched64":{"actual_worlds":576,"paired_both":both,"paired_neither":neither,"discordant":discord,
                     "public_success":53,"fixed_success":53,"public_private_reads":48,"fixed_private_reads":64},
