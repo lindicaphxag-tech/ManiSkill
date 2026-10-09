@@ -1,0 +1,48 @@
+name: Source-locked compound ACK original PhysX evidence audit
+on:
+  push:
+    branches:
+      - research/compound-ack-belief-bridge-20261009
+    paths:
+      - 'research/frozen_policy_transfer/review/audit_compound_ack16.py'
+      - '.github/workflows/compound-ack-original-evidence-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  original-raw-artifacts-and-destructive-controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fetch the ACTUAL completed frozen PPO PhysX artifacts, not rewritten markdown
+        run: |
+          mkdir -p original16/pull_cube original16/stack_cube
+          gh run download 37898781176 --repo "$GITHUB_REPOSITORY" --name compound-ack-physx-pull_cube-37898781176 --dir original16/pull_cube
+          gh run download 37898781176 --repo "$GITHUB_REPOSITORY" --name compound-ack-physx-stack_cube-37898781176 --dir original16/stack_cube
+          test -s original16/pull_cube/compound_multi_ack_pull_cube_original8.json
+          test -s original16/stack_cube/compound_multi_ack_stack_cube_original8.json
+      - name: Verify byte-locked pre-outcome source, all 16 native seeds, 384 checks, paired successes and deliberate corruptions
+        run: |
+          python -m research.frozen_policy_transfer.review.audit_compound_ack16 \
+            --pull original16/pull_cube \
+            --stack original16/stack_cube \
+            --output compound_ack_16_verified_original_summary.json \
+            --self-test
+      - name: Keep original retrospective-audit stdout and structured results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: original-compound-ack-source-lock-audit-${{ github.run_id }}
+          retention-days: 90
+          if-no-files-found: warn
+          path: compound_ack_16_verified_original_summary.json
+
+# A successful audit verifies the contributor's archived simulator results;
+# it is NOT independent physical-simulator re-execution or peer review.
