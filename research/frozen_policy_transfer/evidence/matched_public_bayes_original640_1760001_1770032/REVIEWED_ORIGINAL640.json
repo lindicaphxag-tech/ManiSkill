@@ -1,0 +1,269 @@
+{
+  "all_original_64": {
+    "fault_always_single_privileged_query": {
+      "confident_histories": 0,
+      "official_task_success": 52,
+      "privileged_decision_target_reads": 64,
+      "public_xyz_sample_events": 0,
+      "wrong_confident_histories": 0
+    },
+    "fault_public_t3_fourhistory_or_t4_query": {
+      "confident_histories": 16,
+      "official_task_success": 52,
+      "privileged_decision_target_reads": 48,
+      "public_xyz_sample_events": 128,
+      "wrong_confident_histories": 1
+    },
+    "fault_same_public_posterior_or_query": {
+      "confident_histories": 1,
+      "official_task_success": 52,
+      "privileged_decision_target_reads": 63,
+      "public_xyz_sample_events": 128,
+      "wrong_confident_histories": 0
+    }
+  },
+  "empirical_wrong_given_confident_A": "1/16",
+  "limitations": [
+    "A single mistaken history can coexist with successful task completion.",
+    "A/C binary task outcomes match in only 64 reset states; no population noninferiority.",
+    "Empirical confidence is NOT calibrated safe execution; iid bound assumes future accepted labels are exchangeable.",
+    "All worlds from one Panda controller family and two released PPOs.",
+    "Same physically stepped neutral probe; it has actuation/time cost not priced by the read-only break-even.",
+    "A/B shared public samples but C lacks decision-visible public history; read vs sample prices not directly equivalent.",
+    "B is an uncalibrated residual weighting heuristic, NOT the official ActionShift DualABI.",
+    "No external investigator actually replayed physics and no real network acknowledgement or hardware safety claim."
+  ],
+  "methods": {
+    "A": "complete_history_set_unique_or_read",
+    "B": "same_two_XYZ_heuristic_normalized_residual_weight_095_or_read",
+    "C": "mandatory_target_read"
+  },
+  "one_sided_iid_exact_95pct_upper_wrong_rate_conditional_on_acceptance_A": 0.2639573972885686,
+  "original_actions_run": "37924192162",
+  "original_head": "d378e51006fc44626ab5a651ca1ad2dad5a312e0",
+  "original_native_physx_controller_worlds": 640,
+  "original_reset_states": 64,
+  "paired_task_success_A_vs_C": {
+    "A_only": 0,
+    "C_only": 0,
+    "both_failure": 12,
+    "both_success": 52
+  },
+  "private_read_equivalent_price_per_public_XYZ_sample_A_vs_C": 0.125,
+  "private_read_equivalent_price_per_public_XYZ_sample_B_vs_C": 0.0078125,
+  "same_public_sample_events_A_and_B": 128,
+  "source_original_json_sha256": {
+    "bayes_same_public_pull_cube_chunk0_original8.json": "10020762449f1963cc35c4ca1cf0882e408a74135ed071672ef6c35b982bc1c6",
+    "bayes_same_public_pull_cube_chunk1_original8.json": "5edbdbf239543eeeb15cd020ddf720165f32fdc3d1b2b6bfbce8246a351ef36d",
+    "bayes_same_public_pull_cube_chunk2_original8.json": "dd5defeb8e14a4d2853522a75dd0638195d358a095a5b6a22ea7fa69fdf8d0c2",
+    "bayes_same_public_pull_cube_chunk3_original8.json": "48140316e624ab41970861f9493b8dc7d10216ea38ffbfb4057a0561a792cc27",
+    "bayes_same_public_stack_cube_chunk0_original8.json": "d86eb62a391cd0e68cd23c0ee52b059a7d6c31921820aeeeac168f1ffd6e2e5f",
+    "bayes_same_public_stack_cube_chunk1_original8.json": "e763449645f8837d74f693fbbf028eb1ff7a9208ea5413e2e89a00ed8420821b",
+    "bayes_same_public_stack_cube_chunk2_original8.json": "2eca38139b07f8caddfbc46ede70798b0e058cd45bafdd3b125dfa820f135f10",
+    "bayes_same_public_stack_cube_chunk3_original8.json": "6236671e9de68dc1d1236c6df0fa01a7c911a41ee1dcd44eee5b0a1927502898"
+  },
+  "status": "ORIGINAL_PHYSX_SOURCE_VERIFIED_NOT_INDEPENDENT_REEXECUTION",
+  "stratified_eight_task_x_two_ACK_truth": {
+    "pull_cube/applied/applied": {
+      "fault_always_single_privileged_query": {
+        "confident_histories": 0,
+        "official_task_success": 7,
+        "privileged_decision_target_reads": 8,
+        "public_xyz_sample_events": 0,
+        "wrong_confident_histories": 0
+      },
+      "fault_public_t3_fourhistory_or_t4_query": {
+        "confident_histories": 3,
+        "official_task_success": 7,
+        "privileged_decision_target_reads": 5,
+        "public_xyz_sample_events": 16,
+        "wrong_confident_histories": 1
+      },
+      "fault_same_public_posterior_or_query": {
+        "confident_histories": 0,
+        "official_task_success": 7,
+        "privileged_decision_target_reads": 8,
+        "public_xyz_sample_events": 16,
+        "wrong_confident_histories": 0
+      }
+    },
+    "pull_cube/applied/held": {
+      "fault_always_single_privileged_query": {
+        "confident_histories": 0,
+        "official_task_success": 8,
+        "privileged_decision_target_reads": 8,
+        "public_xyz_sample_events": 0,
+        "wrong_confident_histories": 0
+      },
+      "fault_public_t3_fourhistory_or_t4_query": {
+        "confident_histories": 4,
+        "official_task_success": 8,
+        "privileged_decision_target_reads": 4,
+        "public_xyz_sample_events": 16,
+        "wrong_confident_histories": 0
+      },
+      "fault_same_public_posterior_or_query": {
+        "confident_histories": 0,
+        "official_task_success": 8,
+        "privileged_decision_target_reads": 8,
+        "public_xyz_sample_events": 16,
+        "wrong_confident_histories": 0
+      }
+    },
+    "pull_cube/held/applied": {
+      "fault_always_single_privileged_query": {
+        "confident_histories": 0,
+        "official_task_success": 8,
+        "privileged_decision_target_reads": 8,
+        "public_xyz_sample_events": 0,
+        "wrong_confident_histories": 0
+      },
+      "fault_public_t3_fourhistory_or_t4_query": {
+        "confident_histories": 3,
+        "official_task_success": 8,
+        "privileged_decision_target_reads": 5,
+        "public_xyz_sample_events": 16,
+        "wrong_confident_histories": 0
+      },
+      "fault_same_public_posterior_or_query": {
+        "confident_histories": 0,
+        "official_task_success": 8,
+        "privileged_decision_target_reads": 8,
+        "public_xyz_sample_events": 16,
+        "wrong_confident_histories": 0
+      }
+    },
+    "pull_cube/held/held": {
+      "fault_always_single_privileged_query": {
+        "confident_histories": 0,
+        "official_task_success": 8,
+        "privileged_decision_target_reads": 8,
+        "public_xyz_sample_events": 0,
+        "wrong_confident_histories": 0
+      },
+      "fault_public_t3_fourhistory_or_t4_query": {
+        "confident_histories": 1,
+        "official_task_success": 8,
+        "privileged_decision_target_reads": 7,
+        "public_xyz_sample_events": 16,
+        "wrong_confident_histories": 0
+      },
+      "fault_same_public_posterior_or_query": {
+        "confident_histories": 0,
+        "official_task_success": 8,
+        "privileged_decision_target_reads": 8,
+        "public_xyz_sample_events": 16,
+        "wrong_confident_histories": 0
+      }
+    },
+    "stack_cube/applied/applied": {
+      "fault_always_single_privileged_query": {
+        "confident_histories": 0,
+        "official_task_success": 7,
+        "privileged_decision_target_reads": 8,
+        "public_xyz_sample_events": 0,
+        "wrong_confident_histories": 0
+      },
+      "fault_public_t3_fourhistory_or_t4_query": {
+        "confident_histories": 1,
+        "official_task_success": 7,
+        "privileged_decision_target_reads": 7,
+        "public_xyz_sample_events": 16,
+        "wrong_confident_histories": 0
+      },
+      "fault_same_public_posterior_or_query": {
+        "confident_histories": 0,
+        "official_task_success": 7,
+        "privileged_decision_target_reads": 8,
+        "public_xyz_sample_events": 16,
+        "wrong_confident_histories": 0
+      }
+    },
+    "stack_cube/applied/held": {
+      "fault_always_single_privileged_query": {
+        "confident_histories": 0,
+        "official_task_success": 4,
+        "privileged_decision_target_reads": 8,
+        "public_xyz_sample_events": 0,
+        "wrong_confident_histories": 0
+      },
+      "fault_public_t3_fourhistory_or_t4_query": {
+        "confident_histories": 4,
+        "official_task_success": 4,
+        "privileged_decision_target_reads": 4,
+        "public_xyz_sample_events": 16,
+        "wrong_confident_histories": 0
+      },
+      "fault_same_public_posterior_or_query": {
+        "confident_histories": 1,
+        "official_task_success": 4,
+        "privileged_decision_target_reads": 7,
+        "public_xyz_sample_events": 16,
+        "wrong_confident_histories": 0
+      }
+    },
+    "stack_cube/held/applied": {
+      "fault_always_single_privileged_query": {
+        "confident_histories": 0,
+        "official_task_success": 6,
+        "privileged_decision_target_reads": 8,
+        "public_xyz_sample_events": 0,
+        "wrong_confident_histories": 0
+      },
+      "fault_public_t3_fourhistory_or_t4_query": {
+        "confident_histories": 0,
+        "official_task_success": 6,
+        "privileged_decision_target_reads": 8,
+        "public_xyz_sample_events": 16,
+        "wrong_confident_histories": 0
+      },
+      "fault_same_public_posterior_or_query": {
+        "confident_histories": 0,
+        "official_task_success": 6,
+        "privileged_decision_target_reads": 8,
+        "public_xyz_sample_events": 16,
+        "wrong_confident_histories": 0
+      }
+    },
+    "stack_cube/held/held": {
+      "fault_always_single_privileged_query": {
+        "confident_histories": 0,
+        "official_task_success": 4,
+        "privileged_decision_target_reads": 8,
+        "public_xyz_sample_events": 0,
+        "wrong_confident_histories": 0
+      },
+      "fault_public_t3_fourhistory_or_t4_query": {
+        "confident_histories": 0,
+        "official_task_success": 4,
+        "privileged_decision_target_reads": 8,
+        "public_xyz_sample_events": 16,
+        "wrong_confident_histories": 0
+      },
+      "fault_same_public_posterior_or_query": {
+        "confident_histories": 0,
+        "official_task_success": 4,
+        "privileged_decision_target_reads": 8,
+        "public_xyz_sample_events": 16,
+        "wrong_confident_histories": 0
+      }
+    }
+  },
+  "wrong_confident_source_episode": [
+    {
+      "actual_compatible_history_indices": [
+        3
+      ],
+      "candidate_residuals_m": [
+        0.003924745328307362,
+        0.012138460849029531,
+        0.02450137570902766,
+        0.009269640992303482
+      ],
+      "official_task_success": true,
+      "seed": 1760020,
+      "selected_history_index": 0,
+      "task": "pull_cube"
+    }
+  ]
+}
