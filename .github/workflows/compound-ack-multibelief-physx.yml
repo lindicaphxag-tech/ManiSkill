@@ -1,0 +1,83 @@
+name: Two unknown-ACK multi-belief frozen PPO native PhysX
+on:
+  push:
+    branches:
+      - research/compound-ack-belief-bridge-20261009
+    paths:
+      - 'research/multi_ack_se3_bounded.py'
+      - 'research/frozen_ppo_compound_ack_multi_belief.py'
+      - 'research/COMPOUND_ACK_MULTI_HYPOTHESIS_PRECOMMIT_V1.md'
+      - 'tests/test_multi_ack_se3_bounded.py'
+      - '.github/workflows/compound-ack-multibelief-physx.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: multi-ack-physx-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  preoutcome-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install only numerical geometry dependencies
+        run: python -m pip install 'numpy>=1.24' 'scipy>=1.11'
+      - name: Frozen previous source and new multi-hypothesis correctness
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/frozen_ppo_ack_bounded_query.py)" = '1dc653cdc44e422c8340475ad00f828b3a41eb4f'
+          test "$(git hash-object research/two_history_se3_robust.py)" = 'bb5fd155b7291fb127f94138fca321201c8271c3'
+          python -m py_compile research/frozen_ppo_compound_ack_multi_belief.py research/multi_ack_se3_bounded.py
+          python -m unittest discover -s tests -p 'test_multi_ack_se3_bounded.py' -v
+  actual-original-physx-matched-worlds:
+    needs: preoutcome-contract
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install source-native ManiSkill PhysX and third-party checkpoint loader
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e . huggingface_hub
+      - name: Freeze source, environment and registered fault before outcomes
+        run: |
+          mkdir -p compound_ack_evidence
+          git rev-parse HEAD > compound_ack_evidence/current_source_commit.txt
+          git hash-object research/multi_ack_se3_bounded.py > compound_ack_evidence/multi_certifier_blob.txt
+          git hash-object research/frozen_ppo_compound_ack_multi_belief.py > compound_ack_evidence/compound_runner_blob.txt
+          git hash-object research/COMPOUND_ACK_MULTI_HYPOTHESIS_PRECOMMIT_V1.md > compound_ack_evidence/protocol_blob.txt
+          python -m pip freeze --all > compound_ack_evidence/environment.txt
+          printf 'task=%s faults=2,3 unknown_ACK=true unchanged_PPO=true original_robot_family=Panda\n' "$ABI_TASK" > compound_ack_evidence/experiment_identity.txt
+      - name: Genuine native PhysX task outcomes for eight fresh initial states and seven matched worlds
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/frozen_ppo_compound_ack_multi_belief.py 2>&1 | tee compound_ack_evidence/native_physx_complete.log
+          test -s "compound_multi_ack_${ABI_TASK}_original8.json"
+          cp "compound_multi_ack_${ABI_TASK}_original8.json" compound_ack_evidence/
+      - name: Preserve source hashes and failures
+        if: always()
+        run: |
+          (cd compound_ack_evidence && sha256sum *.json *.txt *.log > SHA256SUMS) || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: compound-ack-physx-${{ matrix.task }}-${{ github.run_id }}
+          path: compound_ack_evidence/
+          retention-days: 90
+
+# SETPOINT geometry only; this does not certify force, collision or real robot safety.
