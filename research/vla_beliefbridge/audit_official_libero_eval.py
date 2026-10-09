@@ -102,13 +102,14 @@ def main():
     parser.add_argument("--input", type=Path)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--self-test", action="store_true")
+    parser.add_argument("--task-id", type=int, default=0)
     args = parser.parse_args()
     if args.self_test:
         _self_test()
         return
     if args.input is None or args.output is None:
         parser.error("--input and --output are required")
-    payload = audit(json.loads(args.input.read_text()))
+    payload = audit(json.loads(args.input.read_text()), task_id=args.task_id)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
     print(json.dumps(payload, sort_keys=True))
