@@ -1,0 +1,143 @@
+name: Preserve 16 actual double-unknown-ACK source records incl failed gate
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-double-ack-actuation-negative16.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  hash-audit-all-original-physx-episodes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Lock exact original experiment and science protocol source heads
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37899086762 --jq .conclusion)" = success
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37899086762 --jq .head_sha)" = 2aff70d5dc7df18fd2d8acc120ae4d006ef5e7fd
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = ddfaf4522d49f73ce926e4c6d77c7ca755f8e1b6
+          test "$(git hash-object research/TWO_ACK_ACTUATION_AUTHORITY_FRESH16_PRECOMMIT_V2.json)" = 99f6c1e9f604e371fa0ae95480cfd1173b4d5f5f
+          test "$(git hash-object research/audit_two_ack_actuation_authority_fresh16.py)" = 8d8f5a94df9bd7cc53c30b77eb9ba73475217093
+      - name: Download exact original pull and stack PhysX JSONs and original offline full audit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/double16-flat
+          for task in pull_cube stack_cube; do
+            mkdir -p "/tmp/double16-artifact-$task"
+            gh run download 37899086762 --repo "$GITHUB_REPOSITORY" \
+              --name "unmodified-double-ack-target-hold-$task-37899086762" \
+              --dir "/tmp/double16-artifact-$task"
+            f="compound_multi_ack_${task}_original8.json"
+            test "$(find "/tmp/double16-artifact-$task" -name "$f" -type f | wc -l)" -eq 1
+            cp "$(find "/tmp/double16-artifact-$task" -name "$f" -type f)" /tmp/double16-flat/
+          done
+          mkdir -p /tmp/double16-audit-artifact
+          gh run download 37899086762 --repo "$GITHUB_REPOSITORY" \
+            --name all-original-two-ack-target-authority-full-audit \
+            --dir /tmp/double16-audit-artifact
+          test "$(find /tmp/double16-audit-artifact -name complete_source_two_ack_real_audit.json | wc -l)" -eq 1
+          cp "$(find /tmp/double16-audit-artifact -name complete_source_two_ack_real_audit.json)" /tmp/double16-flat/full_original_audit.json
+      - name: Independently recompute the exact unchanged source denominator and retain failed gate
+        run: |
+          set -euo pipefail
+          python -m research.audit_two_ack_actuation_authority_fresh16 \
+            --input-dir /tmp/double16-flat \
+            --output /tmp/recomputed_double16_audit.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('/tmp/double16-flat/full_original_audit.json').read_text())
+          y=json.loads(Path('/tmp/recomputed_double16_audit.json').read_text())
+          assert x==y
+          assert y['source_original_reset_states']==16
+          assert y['all_seed_denominator_reached'] is True
+          assert y['all_seven_arms_have_two_physical_faults_per_seed'] is False
+          assert len(y['unexposed_conditions'])==16
+          assert all(r['arm']=='fault_strict_common_exact' and r['events_reached']==1
+                     for r in y['unexposed_conditions'])
+          assert y['reads_selective']==7 and y['reads_mandatory']==16
+          assert y['max_belief_hypotheses']==4
+          expected={
+            'source_no_fault':14,
+            'fault_oracle_private_target':16,
+            'fault_optimistic_unverified_ack':3,
+            'fault_strict_common_exact':0,
+            'fault_robust_two_history_without_query':4,
+            'fault_robust_then_single_privileged_query':11,
+            'fault_always_single_privileged_query':16
+          }
+          assert y['success']==expected
+          for task in ('pull_cube','stack_cube'):
+            g=y['groups'][task]
+            for arm in ('fault_oracle_private_target',
+              'fault_optimistic_unverified_ack',
+              'fault_robust_two_history_without_query',
+              'fault_robust_then_single_privileged_query',
+              'fault_always_single_privileged_query'):
+              assert g['two_physical_holds_reached'][arm]==8
+          print('ORIGINAL_GENUINE_PHYSX_ALL16_SOURCE_GREEN_WITH_EXPLICIT_HARD_GATE_FAILURE')
+          PY
+      - name: Permanently preserve unchanged source bytes, sha manifest and counterexample
+        run: |
+          set -euo pipefail
+          dir=research/frozen_policy_transfer/evidence/consecutive_unknown_ack_16_negative
+          mkdir -p "$dir"
+          cp /tmp/double16-flat/*.json "$dir/"
+          (cd "$dir" && sha256sum *.json > SOURCE_SHA256SUMS)
+          cat > "$dir/README.md" <<'EOF'
+          # TWO CONSECUTIVE UNKNOWN ACKs in actual PhysX: authoritative negative/stress evidence
+
+          Original author-operated native CPU PhysX and completed original audit:
+          https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37899086762
+          Exact original executing head: 2aff70d5dc7df18fd2d8acc120ae4d006ef5e7fd
+          Pre-run registered actual cohorts: PullCube 430001-430008 and StackCube 440001-440008.
+          Protocol: research/TWO_ACK_ACTUATION_AUTHORITY_FRESH16_PRECOMMIT_V2.json.
+          Official released PPO weights unchanged; zero new learning.
+          Original Pull and Stack JSON and original full audit copied WITHOUT EDITS,
+          with cryptographic file manifest and independently recomputed same outputs.
+
+          Full original 16 source episodes, 7 genuine simulator control worlds each:
+          always-authoritative target read 16/16 task successes, 16 decision reads;
+          1-16 history bounded-or-query 11/16 successes, 7 decision reads;
+          robust zero-read 4/16; optimistic guessed history 3/16; strict-exact 0/16.
+          Four plausible target-memory histories occurred after two unknown acknowledgments.
+
+          CRUCIAL: ALL-SEVEN-ARM FAULT EXPOSURE SCIENTIFIC GATE FAILED.
+          Exact-common-action deliberately stopped after first unknown ACK and
+          did NOT receive the second physical fault on all 16 registered seeds.
+          It is inappropriate to claim this experiment passed confirmatory
+          fault-exposure validation or that 11/16 indicates overall superiority.
+          Every seed and failed/abstaining control arm remains in the denominator.
+          All five operational faulted comparator arms DID undergo both real native
+          target holds; the true target stayed held, independently checked before
+          and after, with getter reads AUDIT ONLY and not available to the method.
+
+          First technical runs failed due to confusion between intended vs delivered
+          commands and an unsynchronized observer; see 37897829784 and 37898675865.
+          No old seed is rebranded as a pristine independent holdout result.
+          Single Panda controller-family simulation. No external independent research
+          adoption, hardware safety, camera-only perception or actual network drops.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dir"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'evidence: archive unchanged consecutive ACK target-hold negative controls'
+          for i in 1 2 3 4 5; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then exit 0; fi
+          done
+          exit 1
