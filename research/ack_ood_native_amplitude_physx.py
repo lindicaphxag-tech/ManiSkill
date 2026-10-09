@@ -34,7 +34,7 @@ METHODS=("frozen_old_empirical","gain_segment_empirical","blind_optimistic","bli
 
 
 def _git_sha(b):
-    return hashlib.sha1(b"blob "+str(len(b)).encode()+b"\\0"+b).hexdigest()
+    return hashlib.sha1(b"blob "+str(len(b)).encode()+b"\0"+b).hexdigest()
 
 
 def frozen_provenance():
