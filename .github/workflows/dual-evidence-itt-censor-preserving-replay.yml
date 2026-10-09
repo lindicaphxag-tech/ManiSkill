@@ -1,0 +1,114 @@
+name: "Intent-to-treat original dual-ACK 64 true PhysX replay after audit-only censor fix"
+on:
+  push:
+    branches: [audit/dual-model-64-intent-to-treat-recovery-20261009]
+    paths:
+      - research/DUAL_EVIDENCE_ACK_NEW64_PREOUTCOME_V1.json
+      - research/run_dual_evidence_ack_new64.py
+      - research/audit_dual_evidence_ack_new64.py
+      - .github/workflows/dual-evidence-itt-censor-preserving-replay.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  before_outcome_full64_source_and_protocol_freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Original immutable 64-state prereg, native PPO source, untouched likelihood heuristics and true four-truth new seeds
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/DUAL_EVIDENCE_ACK_NEW64_PREOUTCOME_V1.json)" = c2c259ba7bb6beb02bf1ad8e9cdc45eeef5941ef
+          test "$(git hash-object research/frozen_ppo_dual_evidence_model_trust_physx.py)" = b97b6d1ed6a710e026f8412eb6286de53ff9bcb6
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          test "$(git hash-object research/run_dual_evidence_ack_new64.py)" = 11695633a7e66aa56c29dfc3ad0f9fa2d3878a1e
+          test "$(git hash-object research/audit_dual_evidence_ack_new64.py)" = 54be44a896979754bbc774d1b87a7ba0b49772e3
+          python -m py_compile research/frozen_ppo_dual_evidence_model_trust_physx.py research/run_dual_evidence_ack_new64.py research/audit_dual_evidence_ack_new64.py
+          python - <<'PY'
+          from research.run_dual_evidence_ack_new64 import accepted,pin_sources
+          pin_sources()
+          for task,prior in (("pull_cube",1760001),("stack_cube",1770001)):
+              seeds=[v for ch in range(4) for v in accepted(task,ch)]
+              assert len(seeds)==32 and set(seeds).isdisjoint(range(prior,prior+8))
+              assert len({(v-1)%4 for v in seeds})==4
+              assert all(sum((v-1)%4==m for v in seeds)==8 for m in range(4))
+          print("PASS: true NEW64, posthoc development-trained 0.65 dual scorer frozen, no prior-pilot seed")
+          PY
+  actual_ten_comparator_controller_worlds_each_of_64_unseen_reset_states:
+    needs: before_outcome_full64_source_and_protocol_freeze
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+      PYTHONUNBUFFERED: '1'
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install identical native CPU PhysX and released third-party frozen PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Capture physical source commit and original environment before any new PPO rollouts
+        run: |
+          git rev-parse HEAD > original_physx_source_commit.txt
+          python -m pip freeze --all > original_physx_dependencies.txt
+      - name: Step 80 actual independent native controller worlds and separately audit original outcomes
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_dual_evidence_ack_new64.py --task "$ABI_TASK" --chunk "$CHUNK" 2>&1 | tee original_physx_terminal.log
+          test -s "dual_evidence_${ABI_TASK}_chunk${CHUNK}_original8.json"
+          test -s "dual_evidence_${ABI_TASK}_chunk${CHUNK}_audit.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-itt-dual-trust-${{ matrix.task }}-chunk${{ matrix.chunk }}
+          path: |
+            dual_evidence_*_original8.json
+            dual_ack_*_original8.json
+            dual_evidence_*_audit.json
+            original_physx_terminal.log
+            original_physx_source_commit.txt
+            original_physx_dependencies.txt
+          retention-days: 90
+  all_64_unseen_source_complete_independent_audit:
+    needs: actual_ten_comparator_controller_worlds_each_of_64_unseen_reset_states
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-itt-dual-trust-*
+          merge-multiple: true
+          path: /tmp/actual_matched_public_original64
+      - name: Independently score every original PhysX failure and actual paired/latent outcome
+        run: |
+          set -euo pipefail
+          python -m research.audit_dual_evidence_ack_new64 --source-dir /tmp/actual_matched_public_original64 --output /tmp/complete_first_audit.json
+          test -s /tmp/complete_first_audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-itt-complete-64-640-physx-audit-with-censor
+          path: |
+            /tmp/actual_matched_public_original64/*.json
+            /tmp/complete_first_audit.json
+          retention-days: 90
