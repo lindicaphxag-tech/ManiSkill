@@ -1,0 +1,59 @@
+name: 'Actual PhysX original 16: public SO3 + XYZ complete-history joint feasibility SOURCE DEVELOPMENT'
+on:
+  push:
+    branches: [research/so3-geometric-authority-frontier-20261009]
+    paths:
+      - research/reviewer_real_public_SO3_joint_history_development.py
+      - .github/workflows/reviewer-public-so3-measured-development.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  original_measured_public_SO3_history_information:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pin real original physical SO3 data and source-only scoring
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37931907253 --jq .conclusion)" = success
+          test "$(git hash-object research/reviewer_real_public_SO3_joint_history_development.py)" = 7339bba4fa32ddc9fa32611373449bd46b4b2e48
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11617221170 --jq .digest)" = sha256:26a95f39fba6ceec2ed1197b3239e2ab9841917ba5eaeffce5af54c3d632cb47
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11616961514 --jq .digest)" = sha256:11d93ea36daf5418917443b67cbea3ba7ca393a903de728846704976375c1f6f
+          python -m py_compile research/reviewer_real_public_SO3_joint_history_development.py
+      - name: Download 16 genuinely PHYSICALLY MEASURED native SE3 original source episodes with two original independent physical shards
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/physx_so3
+          gh run download 37931907253 --repo "$GITHUB_REPOSITORY" --pattern 'physical-so3-original-*' --dir /tmp/physx_so3
+          find /tmp/physx_so3 -type f -name 'so3_physical_*_original8.json' -exec cp '{}' /tmp/physx_so3/ \;
+          test "$(find /tmp/physx_so3 -maxdepth 1 -name 'so3_physical_*_original8.json' | wc -l)" -eq 2
+      - name: Re-audit actual physical quaternion observations and compute XYZ+SO3 full target history identifiable frontier
+        run: |
+          set -euo pipefail
+          python -m research.reviewer_real_public_SO3_joint_history_development --source-dir /tmp/physx_so3 --output /tmp/actual_source_SO3_joint_model_development.json
+          python - <<'PY'
+          import json
+          p='/tmp/actual_source_SO3_joint_model_development.json'
+          d=json.load(open(p))
+          assert d['original_task_reset_n']==16
+          assert d['source_only_risk_frontier_NOT_a_fresh_physically_executed_counterfactual_controller']
+          assert d['SO3_threshold_selected_on_this_source_is_POSTHOC_DEVELOPMENT_ONLY']
+          assert d['same_real_physical_quaternion_and_XYZ_both_measured']
+          assert len(d['threshold_sensitivity'])==7
+          print('PASS measured native SO3 history development. NO new native PPO task success claimed.')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-pinned-real-PPO-16-measured-SO3-joint-SE3-history-development
+          path: /tmp/actual_source_SO3_joint_model_development.json
+          retention-days: 90
