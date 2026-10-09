@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: lindicaphxag-tech/jax
-          ref: d0211985cb75c44b1579ec3ea4e5a3b298f9630e
+          ref: b370df9b3b89bc5cb925cab3b2b3b190c0efdafd
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
@@ -30,11 +30,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = d0211985cb75c44b1579ec3ea4e5a3b298f9630e
+          test "$(git rev-parse HEAD)" = b370df9b3b89bc5cb925cab3b2b3b190c0efdafd
           test "$(git hash-object jax/_src/random/core.py)" = 8e6477ea8c59cfa448e46d0a45d2a82654a7bf14
           test "$(git hash-object jax/_src/scipy/stats/poisson.py)" = 9d519197342499fb8757e585644ce55d74f5e7ef
           test "$(git hash-object tests/random_lax_test.py)" = 4667aab445f58d62e333994a0d730e719103de5b
-          test "$(git hash-object tests/scipy_stats_test.py)" = 4ffe9eb919ebca15acdb3755cbe2a72114ffed89
+          test "$(git hash-object tests/scipy_stats_test.py)" = d8d0adbfbed6d577daf1b760341ed11ae39b7ec5
           python -m py_compile jax/_src/random/core.py jax/_src/scipy/stats/poisson.py tests/random_lax_test.py tests/scipy_stats_test.py
       - name: Install published matching CPU jaxlib plus exact PR JAX source
         run: |
