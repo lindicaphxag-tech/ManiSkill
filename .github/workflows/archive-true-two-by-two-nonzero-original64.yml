@@ -1,0 +1,125 @@
+name: 'Archive first native PhysX true TWO by TWO nonzero second ACK 64 original worlds'
+on:
+  push:
+    branches: [research/two-by-two-real-nonzero-ack-physx-20261009]
+    paths: [.github/workflows/archive-true-two-by-two-nonzero-original64.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  pin_full_original_sources_and_reject_corruption:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Lock exact first original full successful physical run and all nine original ZIP SHA256 digests
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37921809790 --jq .head_sha)" = 24ffe20b8f181a53feb5a6d6046c0ae2a2eea828
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37921809790 --jq .conclusion)" = success
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37921809790 --jq .run_attempt)" = 1
+          test "$(git hash-object research/TWO_BY_TWO_REAL_NONZERO_ACK64_PREREG_V1.json)" = 9209ecbfb8129e15de9ffc7441e8a196f53acaf4
+          test "$(git hash-object research/frozen_ppo_true_double_nonzero_ack_physx.py)" = 6188853f918bd338b289d771ebdd4d4c037e0a77
+          test "$(git hash-object research/run_true_two_by_two_ack64.py)" = b78d37fa20b25eb1a13e99ad0eb95ebdd9eeb71f
+          test "$(git hash-object research/audit_true_two_by_two_ack64.py)" = 7d90dfac20b70a61ce97eb3cbe923156adbb5ce8
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11612685853 --jq .digest)" = "sha256:d635a3a56dd0437851f8d8af74932641103368619e0bfcde938d2b3859a362c4"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11612646167 --jq .digest)" = "sha256:24b2e08bd22ab541ba663d73e194e288fbd47b76c7052cf9d63630c41deecf3b"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11612212515 --jq .digest)" = "sha256:ff976e3624345a8d56cad78aa8f9b0e27fb380f5c574275e1ee51382c0e05fd4"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11612177665 --jq .digest)" = "sha256:3d3e3c17ba22f7444e23b21b8c52ff7ff9cbc0e12dca4fd987f418a03703ede7"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11612177655 --jq .digest)" = "sha256:212db43fb203d140f415688c07e1c18e73ed366eff6bcaff6e8d46986a0eaf5c"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11612113542 --jq .digest)" = "sha256:525ebab8f30a406c4ca0a32ef6d13df6106238954f4b2c0124bc6434c7844c9a"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11611963995 --jq .digest)" = "sha256:dbbc213b6dd6b2a567785d5657a3465c1a0e4225e33dafcb49a142b4d8e46643"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11611909149 --jq .digest)" = "sha256:25a18ea6195e93715ed06dda41b481a69af6f626019693c36b75dd214891b45e"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11611564076 --jq .digest)" = "sha256:2b82d870788a4a401d785ab54a9b154ddddae750597cc4f9c00a734c82330b9a"
+      - name: Recover untouched eight raw source and auditor ZIPs and original all64 complete audit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/zip_originals /tmp/flat_raw /tmp/first_full
+          gh run download 37921809790 --repo "$GITHUB_REPOSITORY" --pattern "true-nonzero-2x2-*" --dir /tmp/zip_originals
+          gh run download 37921809790 --repo "$GITHUB_REPOSITORY" --name all64-real-2x2-physical-nonzero-source-and-independent-audit --dir /tmp/first_full
+          find /tmp/zip_originals -type f -name 'true_double_*.json' -exec cp {} /tmp/flat_raw/ \;
+          test "$(find /tmp/flat_raw -name 'true_double_*.json' -type f | wc -l)" -eq 16
+          test -s /tmp/first_full/true_double_all64_complete.json
+      - name: Recompute all 64 original physical results and reject five evidence falsifications
+        run: |
+          set -euo pipefail
+          python -m research.audit_true_two_by_two_ack64 --source-dir /tmp/flat_raw --output /tmp/second_recomputed_full64.json
+          python - <<'PY'
+          import json,shutil,tempfile
+          from pathlib import Path
+          from research.audit_true_two_by_two_ack64 import complete
+          a=json.loads(Path("/tmp/first_full/true_double_all64_complete.json").read_text())
+          b=json.loads(Path("/tmp/second_recomputed_full64.json").read_text())
+          assert a==b, "Original author full audit differs from fresh independent recomputation"
+          assert a["physical_worlds"]==576 and a["original_reset_states"]==64
+          assert a["full_two_by_two_applied_held_truth_strata"]
+          assert a["public_identified_complete_pose_history"]==31
+          assert a["wrong_confident_history_identifications"]==0
+          assert (a["total_outcomes"]["new"]["success"],a["total_outcomes"]["new"]["private_reads"])==(49,33)
+          assert (a["total_outcomes"]["strong"]["success"],a["total_outcomes"]["strong"]["private_reads"])==(49,51)
+          assert (a["total_outcomes"]["fixed"]["success"],a["total_outcomes"]["fixed"]["private_reads"])==(49,64)
+          for mutation in ("remove_trial_file","duplicate_seed","flip_actual_success","forge_second_applied","forge_neutral_cost"):
+              with tempfile.TemporaryDirectory() as t:
+                  dst=Path(t)/"source";shutil.copytree("/tmp/flat_raw",dst)
+                  f=sorted(dst.glob("*_original8.json"))[0]
+                  if mutation=="remove_trial_file":f.unlink()
+                  else:
+                      d=json.loads(f.read_text());r=d["episodes"][0]
+                      if mutation=="duplicate_seed":r["seed"]=d["episodes"][1]["seed"]
+                      elif mutation=="flip_actual_success":
+                          n="fault_public_t3_fourhistory_or_t4_query"
+                          r["success_once"][n]=not r["success_once"][n]
+                      elif mutation=="forge_second_applied":
+                          n="fault_public_t3_fourhistory_or_t4_query"
+                          r["faults"][n][1]["actual_native_action_is_precommitted_applied"]=not r["faults"][n][1]["actual_native_action_is_precommitted_applied"]
+                      elif mutation=="forge_neutral_cost":
+                          n="fault_public_t3_fourhistory_or_t4_query"
+                          r["paid_neutral_control_actions"][n][0]["native_6d"][0]=.4
+                      f.write_text(json.dumps(d))
+                  try:complete(dst)
+                  except (ValueError,KeyError,TypeError):continue
+                  raise AssertionError("ACCEPTED FABRICATED PHYSICS EVIDENCE "+mutation)
+          print("PASS: 576 original physical controller worlds, correct four truths, 5 forged original source trials rejected")
+          PY
+      - name: Commit complete exact original source JSON, first/independent audits and SHA256 ledger
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/true_two_by_two_nonzero_ack64_1340001_1350032
+          mkdir -p "$dest"
+          cp /tmp/flat_raw/*.json "$dest/"
+          cp /tmp/first_full/true_double_all64_complete.json "$dest/first_original_64_full_audit.json"
+          cp /tmp/second_recomputed_full64.json "$dest/second_independent_64_full_audit.json"
+          (cd "$dest" && sha256sum -- *.json > ORIGINAL_SHA256SUMS && sha256sum -c ORIGINAL_SHA256SUMS)
+          cat > "$dest/README.md" <<'EOF'
+          # Actual complete native PhysX four-truth t2-t3 ACK with NONZERO second command
+          Original all-green genuine 64 state 576 controller-world CPU PhysX source: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37921809790
+          Exact original native source commit 24ffe20b8f181a53feb5a6d6046c0ae2a2eea828, preimplementation registered protocol commit 554705d042fe886ee9365be560f0696ab7e1bd4c and immutable JSON blob 9209ecbfb8129e15de9ffc7441e8a196f53acaf4.
+          64 previously unused original task resets, PullCube 1340001-1340032 and StackCube 1350001-1350032. 8 of each ACTUAL t2-t3 joint applied/held truth per task; t3 applied dispatches fixed NONZERO normalized 6D native target delta (0.40,0,0,0,0,0) with verified changed actual target. t3 held leaves target unchanged.
+          At t4 ALL nine native target-controller treatment groups except the no-fault source undergo ONE extra PAID known-delivered neutral target-delta world step (one original native PPO action opportunity is substituted); t5 is first public unique-history/readback resume gate. Same old historical empirical public motion epsilon reused unchanged; no refit, no PPO training.
+          Actually observed after new challenge: public full-history witness/fallback 49/64 official tasks with 33 private controller-target reads, 31 confident complete-pose selections with 0 observed wrong; preselected strong task gate 49/64 with 51 reads; fixed t5 49/64 with 64 reads. EXACT SAME 49 successes, 15 failures for new and strong, zero paired discordances. 18 fewer of 51 strong baseline private reads (35.3%) with extra public achieved XYZ observations; NOT matched total information, safety guarantee, formal noninferiority, algorithmic task-success gain or external acceptance.
+          IMPORTANT: do not compare 49/64 to earlier 57/64 as pure effect of harder ACK truth: this protocol also changes the t3 nonzero pulse, t4 neutral control action and query from t4 to t5. These differences are part of the new matched internal experimental design. No real network loss, robot hardware or VLA actuation.
+          All sixteen unchanged original simulator JSON and shard source audits, plus original and independently recomputed full64 auditor, SHA256 ledger. The archival CI rejects five deliberately tampered source datasets, including lying about actual t3 native execution or uncharged neutral control cost.
+          Recompute with no simulator: python -m research.audit_true_two_by_two_ack64 --source-dir research/frozen_policy_transfer/evidence/true_two_by_two_nonzero_ack64_1340001_1350032 --output /tmp/reaudit.json
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$dest"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "evidence: original authentic 576 native PhysX real four-ACK worlds and full failures"
+          for attempt in 1 2 3 4; do
+            git fetch origin research/two-by-two-real-nonzero-ack-physx-20261009
+            if ! git rebase origin/research/two-by-two-real-nonzero-ack-physx-20261009; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:research/two-by-two-real-nonzero-ack-physx-20261009; then echo "Permanent original 2x2 PhysX evidence archived"; exit 0; fi
+          done
+          exit 1
