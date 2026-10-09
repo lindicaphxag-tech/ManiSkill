@@ -1,0 +1,60 @@
+{
+  "schema": "prospective_shared_postquery_compiler_2x2_two_ACK_v1",
+  "date": "2026-10-09",
+  "preregistration_status": "BEFORE_ANY_1480001_1490001_SIMULATION",
+  "question": "Can public history inference replace privileged target read under exactly matched physical pre-query command/state and identical post-query state container and native compiler?",
+  "earlier_seen_reset_sets": [
+    [
+      1280001,
+      1280032
+    ],
+    [
+      1290001,
+      1290032
+    ],
+    [
+      1380001,
+      1380032
+    ],
+    [
+      1390001,
+      1390032
+    ]
+  ],
+  "seeds": {
+    "pull_cube": {
+      "start": 1480001,
+      "end": 1480032
+    },
+    "stack_cube": {
+      "start": 1490001,
+      "end": 1490032
+    }
+  },
+  "total_resets": 64,
+  "physical_worlds": 576,
+  "true_physical_ACK_patterns": [
+    "held/held",
+    "applied/held",
+    "held/applied",
+    "applied/applied"
+  ],
+  "truth_schedule": "(seed-1)%4, eight per pattern per task; hidden from method inputs",
+  "policy": "Two unmodified external frozen PPO checkpoints with verified SHA256",
+  "matched_prefix": "Both matched arms physically dispatch same 6D commands on steps t2 and t3 and same neutral t4 probe, and pre-t5 achieved and native target SE3 are audited <=5e-5",
+  "shared_postquery_compiler": "Both use UncertainDeliveryBelief, one identical base.normalized_target_delta(approximate=True,old_override=single_hypothesis) and prepare/acknowledge; only information at t5 differs, public unique allowed history else charged read versus fixed charged read",
+  "compiler_trace": "Record every compiled post-t5 action, policy-native source proposal, prior belief pose and charged private reads. Compiled commands need not match if policy observations/information differ.",
+  "primary_endpoints": [
+    "paired native task success on entire prospective 64 seeds",
+    "public versus matched fixed target-private read counts",
+    "all public confident correct and wrong admissions audit",
+    "physical prefix parity and common postquery implementation",
+    "complete negative and early exits retained"
+  ],
+  "interpretation_limits": [
+    "No external independent replication, superiority significance, formal noninferiority, actual network packet loss, safety or VLA claims",
+    "Physical truth getters strictly audit-only except counted explicit reads",
+    "Post-t5 physical state can diverge as a legitimate consequence of different information",
+    "No after-results metric or threshold tuning"
+  ]
+}
