@@ -1,0 +1,230 @@
+name: "Prospective new64 real 2x2 ACK physically matched margin abstention versus public history PPO"
+on:
+  push:
+    branches: [research/observability-margin-gate-new64-20261009]
+    paths:
+      - 'research/OBSERVABILITY_MARGIN_GATE_NEW64_PREOUTCOME_V1.json'
+      - 'research/frozen_ppo_observability_margin_physx.py'
+      - '.github/workflows/observability-margin-gate-new64.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prereg-freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Check frozen-before-new-results protocol and algorithm exact blobs
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/OBSERVABILITY_MARGIN_GATE_NEW64_PREOUTCOME_V1.json)" = "f336ee90629f3d9098506d316687b66aaabaa5e8"
+          test "$(git hash-object research/frozen_ppo_observability_margin_physx.py)" = "ff044c2b0c291cc6573edcc39c8514c024762b18"
+          python -m py_compile research/frozen_ppo_observability_margin_physx.py
+          python - <<'PY'
+          import json
+          a=json.load(open("research/OBSERVABILITY_MARGIN_GATE_NEW64_PREOUTCOME_V1.json"))
+          assert a["protocol_status"]=="BEFORE_NEW_2020001_2030001_PHYSX_RUN" and a["all_n"]==64
+          assert a["model_development_disclosure"]["new_rule_selected_after_exposure_to_both_prior_outcomes"] is True
+          src=open("research/frozen_ppo_observability_margin_physx.py").read()
+          assert 'ev["authorized"]=bool(base_unique and gap>=0.0045)' in src
+          assert "fault_same_public_extra_margin_or_query" in src
+          assert "posterior_threshold_predeclared" not in src
+          assert "len(winners)==1" in src
+          assert a["seed_shards"]=={"pull_cube":[2020001,2020009,2020017,2020025],"stack_cube":[2030001,2030009,2030017,2030025]}
+          print("PASS: source/hash, two released policies, 4.5mm exploratory history-abstention gate frozen for all new64 before execution")
+          PY
+  real-native-physx:
+    needs: prereg-freeze
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {task: pull_cube, first: 2020001}
+          - {task: pull_cube, first: 2020009}
+          - {task: pull_cube, first: 2020017}
+          - {task: pull_cube, first: 2020025}
+          - {task: stack_cube, first: 2030001}
+          - {task: stack_cube, first: 2030009}
+          - {task: stack_cube, first: 2030017}
+          - {task: stack_cube, first: 2030025}
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      ABI_FIRST_SEED: ${{ matrix.first }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install official CPU PhysX and frozen released PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Run ten independently stepped actual controller worlds per registered original state
+        run: |
+          mkdir -p originals
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python -m research.frozen_ppo_matched_public_bayes_physx 2>&1 | tee originals/actual_native_physx.log
+          mv "mixed_ack_${{ matrix.task }}_original8.json" originals/
+      - name: Fail closed on missing physical prefixes, source truth, samples or success
+        run: |
+          python - <<'PY'
+          import json,os,pathlib
+          t=os.environ["ABI_TASK"]; f=int(os.environ["ABI_FIRST_SEED"])
+          d=json.load(open(f"originals/mixed_ack_{t}_original8.json"))
+          assert d["original_seed_population"]==list(range(f,f+8))
+          assert d["real_physx_simulator"] is True and len(d["episodes"])==8
+          A="fault_public_t3_fourhistory_or_t4_query"
+          B="fault_same_public_extra_margin_or_query"
+          F="fault_always_single_privileged_query"
+          agg=dict(task=t,first=f,n=8,pub_success=0,margin_success=0,fixed_success=0,
+                   pub_reads=0,margin_reads=0,fixed_reads=0,pub_unique=0,margin_unique=0,
+                   pub_wrong=0,margin_wrong=0,prefix_ok=True)
+          for r in d["episodes"]:
+            assert r["seed"] in range(f,f+8)
+            idx=(r["seed"]-1)%4
+            assert (r["original_precommitted_physical_t2_execution_truth"],r["original_precommitted_physical_t3_execution_truth"]) == (
+                "applied" if idx in (1,3) else "held","applied" if idx in (2,3) else "held")
+            for name in (A,B,F):
+              assert [q["step"] for q in r["faults"][name]]==[2,3]
+              assert type(r["success_once"][name]) is bool
+              assert type(r["privileged_target_readback_decision_count"][name]) is int
+            assert r["public_motion_observation_cost_samples"][A]==2
+            assert r["public_motion_observation_cost_samples"][B]==2
+            assert r["public_motion_observation_cost_samples"][F]==0
+            for key in ("matched_prefix_physical_audit","matched_margin_prefix_audit"):
+              c=r[key]
+              assert c["valid_exact_prefix"] is True
+              assert max(c["native_fault_dispatch_linf_each"])<=5e-5
+              assert c["pre_t5_achieved_position_max_abs_m"]<=5e-5
+              assert c["pre_t5_target_position_max_abs_m"]<=5e-5
+            pe=r["public_t3_evidence"]; be=r["same_sensor_margin_evidence"]
+            assert be["gap_threshold_exploratory_training_chosen_m"]==0.0045
+            assert be["gate_training_wrong_seed"]==1730027
+            sep=sorted(float(v) for v in be["candidate_residuals_m"])
+            assert abs(be["candidate_second_best_separation_m"]-(sep[1]-sep[0]))<1e-10
+            eps=float(be["prior_training_epsilon_m"])
+            accepted=[i for i,v in enumerate(be["candidate_residuals_m"]) if v<=eps+1e-12]
+            best=min(range(len(be["candidate_residuals_m"])),key=lambda i:be["candidate_residuals_m"][i])
+            base=len(accepted)==1 and accepted[0]==best and all(
+              d>eps+0.002 for i,d in enumerate(be["candidate_residuals_m"]) if i!=best)
+            assert be["raw_public_history_base_admissible"] is base
+            assert be["authorized"] is (base and sep[1]-sep[0]>=0.0045)
+            assert be["selected_candidate_index"]==(best if be["authorized"] else None)
+            assert r["privileged_target_readback_decision_count"][A]==int(not pe["authorized"])
+            assert r["privileged_target_readback_decision_count"][B]==int(not be["authorized"])
+            for key,name in ((A,"pub"),(B,"margin"),(F,"fixed")):
+              agg[name+"_success"]+=int(r["success_once"][key])
+              agg[name+"_reads"]+=r["privileged_target_readback_decision_count"][key]
+            agg["pub_unique"]+=int(pe["authorized"])
+            agg["margin_unique"]+=int(be["authorized"])
+            agg["pub_wrong"]+=int(pe["wrong_confident"])
+            agg["margin_wrong"]+=int(be["wrong_confident"])
+          pathlib.Path("originals/original8_verified_summary.json").write_text(json.dumps(agg,indent=2,sort_keys=True))
+          print("NEW64_TRUE_NATIVE_PHYXS_SHARD",json.dumps(agg,sort_keys=True))
+          PY
+      - name: Preserve original sources with SHA-256 and exact source pin
+        if: always()
+        run: |
+          mkdir -p originals
+          git rev-parse HEAD > originals/GIT_SOURCE_SHA.txt
+          (cd originals && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS) || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-new64-${{ matrix.task }}-${{ matrix.first }}
+          path: originals/
+          retention-days: 90
+  source-complete-original64-audit:
+    needs: real-native-physx
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-new64-*
+          path: /tmp/new64_orig
+      - name: Verify exact all64 population without dropping contrary outcomes
+        run: |
+          python - <<'PY'
+          import pathlib,json,collections
+          root=pathlib.Path("/tmp/new64_orig")
+          shard=list(root.rglob("original8_verified_summary.json"))
+          assert len(shard)==8,(len(shard),shard)
+          rows=[json.loads(p.read_text()) for p in shard]
+          # Reconstruct from BYTE-EXACT original PhysX episodes, not only eight
+          # summaries that could silently omit contrary cases.
+          import hashlib
+          files=sorted(root.rglob("mixed_ack_*_original8.json"))
+          assert len(files)==8,(len(files),files)
+          raw_by_first={}
+          registered=[]
+          fingerprints=[]
+          A="fault_public_t3_fourhistory_or_t4_query"
+          B="fault_same_public_extra_margin_or_query"
+          F="fault_always_single_privileged_query"
+          for p in files:
+            raw=p.read_bytes()
+            d=json.loads(raw)
+            ids=d["original_seed_population"]
+            assert len(ids)==8 and len(d["episodes"])==8
+            task="pull_cube" if d["task"]=="PullCube-v1" else "stack_cube"
+            key=(task,ids[0])
+            assert key not in raw_by_first
+            raw_by_first[key]=d
+            fingerprints.append({"task":task,"first":ids[0],"sha256":hashlib.sha256(raw).hexdigest()})
+            for ep in d["episodes"]:
+              ev=ep["same_sensor_margin_evidence"]
+              old=ep["public_t3_evidence"]
+              assert ep["seed"] in ids
+              assert ev["gate_training_wrong_seed"]==1730027
+              assert ev["gap_threshold_exploratory_training_chosen_m"]==0.0045
+              assert ev["authorized"] is (ev["raw_public_history_base_admissible"] and ev["candidate_second_best_separation_m"]>=0.0045)
+              assert len(ep["faults"][A])==len(ep["faults"][B])==len(ep["faults"][F])==2
+              assert ep["matched_margin_prefix_audit"]["valid_exact_prefix"] is True
+              assert ep["matched_prefix_physical_audit"]["valid_exact_prefix"] is True
+              assert ep["public_motion_observation_cost_samples"][A]==ep["public_motion_observation_cost_samples"][B]==2
+              registered.append({"task":task,"seed":ep["seed"],"truth":ep["original_precommitted_physical_t2_execution_truth"]+"/"+ep["original_precommitted_physical_t3_execution_truth"],
+                "A_success":ep["success_once"][A],"B_success":ep["success_once"][B],"C_success":ep["success_once"][F],
+                "A_reads":ep["privileged_target_readback_decision_count"][A],"B_reads":ep["privileged_target_readback_decision_count"][B],
+                "A_authorized":old["authorized"],"B_authorized":ev["authorized"],"A_wrong":old["wrong_confident"],"B_wrong":ev["wrong_confident"],"margin_m":ev["candidate_second_best_separation_m"]})
+          assert len(registered)==64 and len({(r["task"],r["seed"]) for r in registered})==64
+
+          expected={("pull_cube",x) for x in (2020001,2020009,2020017,2020025)}|{("stack_cube",x) for x in (2030001,2030009,2030017,2030025)}
+          assert {(r["task"],r["first"]) for r in rows}==expected
+          assert all(r["n"]==8 and r["prefix_ok"] for r in rows)
+          out={k:sum(r[k] for r in rows) for k in
+             ("n","pub_success","margin_success","fixed_success","pub_reads","margin_reads","fixed_reads","pub_unique","margin_unique","pub_wrong","margin_wrong")}
+          assert out["n"]==64
+          out["source_kind"]="AUTHOR_OPERATED_ACTUAL_NATIVE_PHYSX_NOT_EXTERNAL_REPRODUCTION"
+          out["controller_worlds_physically_stepped"]=640
+          out["public_XYZ_samples_each_method"]=128
+          out["task_strata"]=rows
+          out["original_physical_sha256"]=fingerprints
+          out["paired_original_64_source_episodes"]=registered
+          out["paired_A_vs_B_task_outcomes"]={
+            "both":sum(x["A_success"] and x["B_success"] for x in registered),
+            "neither":sum(not x["A_success"] and not x["B_success"] for x in registered),
+            "A_only":sum(x["A_success"] and not x["B_success"] for x in registered),
+            "B_only":sum(x["B_success"] and not x["A_success"] for x in registered),
+          }
+          assert out["pub_success"]==sum(x["A_success"] for x in registered)
+          assert out["margin_success"]==sum(x["B_success"] for x in registered)
+          assert out["pub_reads"]==sum(x["A_reads"] for x in registered)
+          assert out["margin_reads"]==sum(x["B_reads"] for x in registered)
+          assert out["pub_wrong"]==sum(x["A_wrong"] for x in registered)
+          assert out["margin_wrong"]==sum(x["B_wrong"] for x in registered)
+          pathlib.Path("new64_actual_physx_full_audit.json").write_text(json.dumps(out,indent=2,sort_keys=True))
+          print("NEW64_ACTUAL_PHYSX_FULL_SOURCE_AUDIT",json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exploratory-new64-margin-640world-original-native-physx-full-audit
+          path: new64_actual_physx_full_audit.json
