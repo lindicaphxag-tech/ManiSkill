@@ -42,10 +42,8 @@ def check_preoutcome(task:str,chunk:int):
     if (protocol["physical_contract"]["initial_obs_max_abs"]!=5e-5
         or protocol["physical_contract"]["matched_two_actual_fault_command_vectors_max_abs"]!=5e-5):
         raise RuntimeError("Numeric physical prefix threshold retuned")
-    # Required source oracles are published, frozen *pre-existing* PPO SHA256
-    # and never model weights created by this wrapper.
-    if CHECKPOINTS[task]!=CHECKPOINTS[task]:
-        raise RuntimeError("Unexpected immutable checkpoint")
+    # Source PPC model identity is verified against exact third-party SHA256
+    # in run(), BEFORE any native physical world is stepped.
     return list(range(start+4*chunk,start+4*chunk+4))
 
 def trial_complete(policy,module,task,seed,truth):
