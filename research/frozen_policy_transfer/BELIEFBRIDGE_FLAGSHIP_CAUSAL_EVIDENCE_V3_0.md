@@ -55,7 +55,7 @@ Additional sensing did **not** improve official task success, and the stricter t
 3. Read economy is **not information-equivalent or energy-equivalent**: public XYZ samples, actual probe commands, latent-model priors and runtime latency must be compared with a matched information/actuation/latency-cost active-identification baseline.
 4. No real packet transport failures, no pressure/force/collision/hardware-safety certificate, no treatment of arbitrary unavailable native action contracts. Actual observed task success is not a physical safety guarantee.
 5. All current physics is **author-operated**, not independent outsider reproduction, and the draft PRs in a user's own fork are **not** upstream acceptance.
-6. SmolVLA/LeRobot published-model forward and native LIBERO rollout pilot are an **independent, incomplete gate**; do not add any VLA success or VLA recovery percentages to the PhysX PPO outcomes.
+6. The [authentic frozen SmolVLA native LIBERO full-rollout run #37921322041](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37921322041) **completed 280 genuine control steps and failed its one unfaulted Spatial task** (official **0/1 success**, raw `eval_info.json` and separate auditor agree). This establishes executable VLA-to-LIBERO integration, **NOT VLA task competency or recovery**. A disclosed exploratory follow-up tests one-step flow denoising, which was recommended in an independent published evaluation; do not pool either pilot with the frozen-PPO PhysX outcomes.
 
 ## Reviewer-ready sequence of next falsification gates (ranked by scientific value)
 
