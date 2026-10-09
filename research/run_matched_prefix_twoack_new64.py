@@ -23,7 +23,8 @@ NAMES=("source_no_fault","fault_oracle_private_target",
 "fault_always_single_privileged_query",
 "fault_assume_held_without_query")
 PUBLIC="fault_public_t3_fourhistory_or_t4_query"
-STRONG={"pull_cube":NAMES[5],"stack_cube":NAMES[6]}
+STRONG={"pull_cube":"fault_robust_then_single_privileged_query",
+        "stack_cube":"fault_always_single_privileged_query"}
 FIXED="fault_always_single_privileged_query"
 HELD="fault_assume_held_without_query"
 
