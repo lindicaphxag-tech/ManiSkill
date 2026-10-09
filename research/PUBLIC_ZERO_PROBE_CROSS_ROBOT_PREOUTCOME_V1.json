@@ -1,0 +1,50 @@
+{
+  "schema": "public_zero_probe_cross_robot_physx_before_outcome_v1",
+  "date": "2026-10-09",
+  "frozen_before_new_physx_outputs": true,
+  "purposes": [
+    "Collect actual public achieved EE XYZ before and after an ACK-independent known delivered zero-native target probe",
+    "Collect BOTH command-history target hypotheses derived without private getter and use post-step private controller target ONLY for auditor truth",
+    "Falsify the one-step response envelope on disjoint native PhysX evaluation initial states rather than pretend the existing 16 cross-robot sources contained missing measurements"
+  ],
+  "task": "PickCube-v1",
+  "robots": {
+    "panda": {"calibration_seeds": [640001, 640004], "heldout_seeds": [640005, 640008]},
+    "xarm6_robotiq": {"calibration_seeds": [650001, 650004], "heldout_seeds": [650005, 650008]}
+  },
+  "backend": "mani_skill.physx_cpu",
+  "control": "pd_ee_target_delta_pose",
+  "reset_and_intervention": {
+    "native_pre_commands_steps": [0, 1],
+    "unknown_ack_step": 2,
+    "fault_worlds": ["applied", "held"],
+    "held_fault_actuation": "actual physical arm six-vector replaced by zero",
+    "probe_step": 3,
+    "probe_native_arm_delta": [0, 0, 0, 0, 0, 0],
+    "gripper_native": "all zero",
+    "every_seed_retained": true
+  },
+  "calibration_method_before_outcome": {
+    "one_step_empirical_model": "after = before + alpha*(true_history_target - before)+e",
+    "alpha_hat": "least-squares coefficient clipped into [0,1] independently per calibration branch",
+    "alpha_lower": "max(0,min(training_alpha_hat) - 0.05)",
+    "alpha_upper": "min(1,max(training_alpha_hat) + 0.05)",
+    "epsilon_m": "max(training Euclidean residual) + 0.002",
+    "train_vs_test": "seeds 1..4 calibration, 5..8 untouched evaluation, separately PER ROBOT",
+    "calibration_truth": "only existing experiment's administered ground truth in an OFFLINE auditor, never in online runtime",
+    "statistical_limit": "finite calibration episodes CANNOT attest deterministic future dynamics; report empirical diagnostic only"
+  },
+  "heldout_primary": [
+    "all 8 original heldout seed/robot identities x both physical truth worlds and no attrition",
+    "empirical envelope violated or not by each heldout after-probe public motion",
+    "zero-native probe separation/abstention rate and any false confident branch label",
+    "all realized native action chart/actual two fault truths and post-step audit-only target residual",
+    "no promotion of an unattested envelope to an actual deployable authority certificate"
+  ],
+  "hard_stop": [
+    "no silent Panda substitute for xArm6, wrong controller chart, wrong native action keys",
+    "no task-success claim, no PPO model, no nonzero actuation probing demonstrated, no external replication",
+    "no posthoc seed exclusion or recalibration from heldout outcomes",
+    "sample-only alpha and epsilon bounds are empirical, never deterministic collision safety or readback guarantees"
+  ]
+}
