@@ -281,10 +281,34 @@ def trial(policy,seed,shard_budget):
                     gripper=controllers["source_no_fault"].to_action_dict(
                         native[0])["gripper"]
                     intended=rewritten[0].detach().cpu().numpy()
-                    if n in beliefs:
-                        ticket=beliefs[n].prepare(intended)
-                    elif n in observers:
-                        ticket=observers[n].prepare(intended).ticket
+                    try:
+                        if n in beliefs:
+                            ticket=beliefs[n].prepare(intended)
+                        elif n in observers:
+                            ticket=observers[n].prepare(intended).ticket
+                    except ValueError as err:
+                        # Official native controller may clip a proposed
+                        # oversize SO(3) action. Our action-history observer
+                        # instead fails closed: count this trial arm as
+                        # unsuccessful rather than crashing/omitting its row.
+                        # Do NOT retune action clipping, physical fault,
+                        # task seeds or the 2-of-8 information quota.
+                        if str(err) not in (
+                            "Unrepresentable target rotation",
+                            "Unrepresentable target translation",
+                        ):
+                            raise
+                        result["refusals"][n]={
+                            "step":step,
+                            "reason":"HISTORY_OBSERVER_REJECTS_UNREPRESENTABLE_NATIVE_ACTION",
+                            "actual_exception":str(err),
+                            "proposed_native_rotation_l2":float(np.linalg.norm(intended[3:])),
+                            "proposed_native_translation_max_abs":float(np.max(np.abs(intended[:3]))),
+                            "original_task_outcome_counted_as_failure":True
+                        }
+                        result["failure_causes"][n]="NATIVE_ACTION_UNREPRESENTABLE_FAIL_CLOSED"
+                        done[n]=True
+                        continue
                     if step==FAULT_STEP:
                         delivered=torch.zeros_like(rewritten[0])
                         result["faults"][n]={
