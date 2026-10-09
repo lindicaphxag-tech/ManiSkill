@@ -1,0 +1,103 @@
+name: Permanent archive of actual shared-compiler PhysX 64
+on:
+  push:
+    branches: [evidence/shared-compiler-causal-original64-20261009]
+    paths: [.github/workflows/archive-shared-compiler-causal-original64.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  source-verified-archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pin unchanged frozen source and original protocol
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/SHARED_COMPILER_TWOACK_FROZEN_PPO64_PREOUTCOME_V1.json)" = b57973e28897c40125069fb0205e83b1c46d1885
+          test "$(git hash-object research/frozen_ppo_shared_compiler_twoack_2x2_physx.py)" = 89248363b5bc52c0568495f3f78efc58d9a1ac67
+          test "$(git hash-object research/run_shared_compiler_twoack_new64.py)" = 7b1cf4a39bda292bb52980f450928942503571da
+          test "$(git hash-object research/audit_shared_compiler_twoack_new64.py)" = d8a4492b2b77b0cee76edd0e4675d3d8975b9f96
+      - name: Fetch exactly original eight shard artifacts from genuine completed CI
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 37925044658
+          github-token: ${{ github.token }}
+          pattern: original-shared-compiler-*
+          merge-multiple: true
+          path: /tmp/original_shared_compiler_2x2
+      - name: Fetch exact untouched original full-population audit
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 37925044658
+          github-token: ${{ github.token }}
+          name: ORIGINAL_shared_compiler_2x2_64_576_PhysX_all_negative_outcomes
+          path: /tmp/archive_original_auditor
+      - name: Independently recompute and byte-compare full native PhysX result
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/recomputed64
+          python -m research.audit_shared_compiler_twoack_new64 \
+            --source-dir /tmp/original_shared_compiler_2x2 \
+            --output /tmp/recomputed64/full_shared_compiler_original64_audit.json
+          python - <<'PY'
+          from pathlib import Path
+          originals=list(Path("/tmp/archive_original_auditor").rglob("full_shared_compiler_original64_audit.json"))
+          if len(originals)!=1:
+              raise RuntimeError(f"Missing or duplicated original full-population audit: {originals}")
+          current=Path("/tmp/recomputed64/full_shared_compiler_original64_audit.json")
+          if originals[0].read_bytes()!=current.read_bytes():
+              raise RuntimeError("Original full PhysX audit differs from newly computed original-source audit")
+          print("ORIGINAL_64_POPULATION_BYTE_EXACT_AUDIT_VERIFIED")
+          PY
+      - name: Commit original 16 JSON source files plus independent full 64 audit
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+          src=Path("/tmp/original_shared_compiler_2x2")
+          dst=Path("research/frozen_policy_transfer/evidence/shared_compiler_postquery_causal_original64_1480001_1490032")
+          dst.mkdir(parents=True,exist_ok=True)
+          expected={f"sharedcompiler_{task}_chunk{k}_{kind}.json"
+                    for task in ("pull_cube","stack_cube") for k in range(4)
+                    for kind in ("original8","audit")}
+          found={p.name for p in src.glob("sharedcompiler_*.json")}
+          if found!=expected:
+              raise RuntimeError(f"Original PhysX shards missing {expected-found}, unexpected {found-expected}")
+          for name in sorted(expected): shutil.copyfile(src/name,dst/name)
+          shutil.copyfile("/tmp/recomputed64/full_shared_compiler_original64_audit.json",
+                          dst/"original_independent_full64_audit.json")
+          (dst/"README.md").write_text(
+              "# Authentic original 64-state shared post-query compiler PhysX evidence\n\n"
+              "Original author-operated native CPU PhysX run: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37925044658\n\n"
+              "64 new frozen-PPO task reset states, 576 actually stepped native controllers, real t2/t3 applied/held truth, four balanced combinations. "
+              "The two principal arms share actual native command prefix, achieved/controller target state before t5, and post-t5 belief compiler. "
+              "Whole-history public method: 53/64 task successes, 48 target reads, 16 public authorizations, zero observed wrong-confident in this cohort. "
+              "Fixed authoritative target reader: 53/64 task successes, 64 target reads. The separate task-aware route: 50/64 tasks, 60 reads.\n\n"
+              "Frozen exact source commit: 12b0156be54222e4a3ecf573898ab337c046426e. "
+              "This archive comprises exact original shard bytes plus a recomputed full audit required to MATCH byte-for-byte the original audit artifact. "
+              "The first source-implementation gate failed before complete native physics; successful run was executed after source correction and explicitly pinned. "
+              "NO statistical noninferiority or safety proof, NO matched total public sensing/latency budget, NO real packet loss, "
+              "NO VLA task fault recovery, NO independent outside-lab replication, NO upstream ManiSkill acceptance.\n"
+          )
+          print("ARCHIVED_UNMODIFIED_ORIGINAL_FILES",len(expected))
+          PY
+          dst=research/frozen_policy_transfer/evidence/shared_compiler_postquery_causal_original64_1480001_1490032
+          (cd "$dst"; sha256sum sharedcompiler_*.json original_independent_full64_audit.json README.md > ORIGINAL_SHA256SUMS)
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$dst"
+          git commit -m "Evidence: archive genuine same-compiler PhysX 64 original source and SHA256"
+          git push origin HEAD:evidence/shared-compiler-causal-original64-20261009
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: immutable-original-shared-compiler-64-rearchive
+          path: research/frozen_policy_transfer/evidence/shared_compiler_postquery_causal_original64_1480001_1490032/
+          retention-days: 90
