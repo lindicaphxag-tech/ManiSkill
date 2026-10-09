@@ -100,9 +100,9 @@ def read_verified_sources(folder):
             summary[f"{task}_truth{truth}"]={
                 "n":16,
                 "matched_public_vs_strong_t2":sum(r["public_and_strong_t2_native_identical"] for r in rows),
-                "matched_public_vs_strong_t3":sum(r["public_and_strong_t3_native_identical"] for r in rows),
+                "matched_public_vs_strong_t3":sum(r["public_and_strong_t3_native_identical"] is True for r in rows),
                 "matched_public_vs_fixed_t2":sum(r["public_and_fixed_t2_native_identical"] for r in rows),
-                "matched_public_vs_fixed_t3":sum(r["public_and_fixed_t3_native_identical"] for r in rows),
+                "matched_public_vs_fixed_t3":sum(r["public_and_fixed_t3_native_identical"] is True for r in rows),
                 "all_three_actual_neutral_probes_physically_identical":sum(r["all_three_probe_steps_reached"] for r in rows),
                 "public_fault_t3_real_exposures":sum(r["public_t3_physically_reached"] for r in rows),
                 "public_t4_physical_probe_receipts":sum(r["public_probe_reached"] for r in rows),
