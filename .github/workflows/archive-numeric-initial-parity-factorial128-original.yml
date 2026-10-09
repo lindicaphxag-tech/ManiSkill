@@ -1,0 +1,110 @@
+name: "Permanently preserve 1152 PhysX worlds, new 32 numerical-matched seed clusters"
+on:
+  push:
+    branches: [research/numeric-initial-parity-2x2-fresh128-20261009]
+    paths: [.github/workflows/archive-numeric-initial-parity-factorial128-original.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  audit-original-source-no-reexecuted-physics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Freeze new prospective protocol, identical policy code and independent auditor identity
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/NUMERIC_PARITY_ACK_FACTORIAL_NEW128_PREOUTCOME_V2.json)" = 9626db5b93bd6216c94d349fb00d9ea0f9b035e1
+          test "$(git hash-object research/frozen_ppo_numeric_parity_factorial_physx.py)" = 8022ab3a0d5bc97a982e78fc8ca17931aeae586c
+          test "$(git hash-object research/run_numeric_parity_ack_factorial.py)" = af63bdeb35643aa8c31ecdd92a936f33c2946395
+          test "$(git hash-object research/audit_numeric_parity_ack_factorial.py)" = 4b5714ab1bdf40a557ff903400be39c82da3f09e
+          python -m py_compile research/run_numeric_parity_ack_factorial.py research/audit_numeric_parity_ack_factorial.py
+          python - <<'PY'
+          from research.run_numeric_parity_ack_factorial import assert_preoutcome
+          assert_preoutcome()
+          print('FROZEN_NO_OUTCOME_SOURCE_IDENTITY_RECONFIRMED')
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 37932361044
+          repository: lindicaphxag-tech/ManiSkill
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pattern: factorial-*
+          merge-multiple: true
+          path: /tmp/numeric_parity_physx_original128
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 37932361044
+          repository: lindicaphxag-tech/ManiSkill
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pattern: ORIGINAL_numeric_parity_32clusters_128cells_1152worlds
+          merge-multiple: true
+          path: /tmp/numeric_parity_physx_original_full
+      - name: Independent full original re-audit with zero source modification
+        run: |
+          set -euo pipefail
+          python -m research.audit_numeric_parity_ack_factorial \
+            --source-dir /tmp/numeric_parity_physx_original128 \
+            --output /tmp/numeric_parity_source_only_reaudit_full128.json
+          cmp /tmp/numeric_parity_source_only_reaudit_full128.json /tmp/numeric_parity_physx_original_full/full_matched_factorial_128_native_physx_audit.json
+          python - <<'PY'
+          import json
+          a=json.load(open('/tmp/numeric_parity_source_only_reaudit_full128.json'))
+          assert a['registered_source_reset_clusters']==32
+          assert a['registered_task_seed_truth_cells']==128
+          assert a['separate_physx_worlds']==1152
+          assert a['numerically_matched_public_source_observation_per_truth_verified'] is True
+          assert a['numeric_max_public_policy_obs_gap']<=5e-5
+          assert a['numeric_max_initial_achieved_ee_pose_gap']<=5e-5
+          assert a['primary_outcomes']['public']=={'official_task_success':116,'decision_private_reads':91}
+          assert a['primary_outcomes']['strong_task']=={'official_task_success':108,'decision_private_reads':109}
+          assert a['primary_outcomes']['fixed_t5']=={'official_task_success':109,'decision_private_reads':128}
+          assert a['primary_outcomes']['always_held']=={'official_task_success':71,'decision_private_reads':0}
+          assert a['paired_public_vs_strong']=={'both':105,'neither':9,'public_only':11,'strong_only':3}
+          print('NUMERIC_PARITY_ORIGINAL128_INDEPENDENT_SOURCE_REAUDIT_PASS',json.dumps({
+            'max_public_diff':a['numeric_max_public_policy_obs_gap'],
+            'max_achieved_diff':a['numeric_max_initial_achieved_ee_pose_gap'],
+            'bitwise_identical_seed_clusters':a['exact_initial_sha_match_cluster_count'],
+            'swap_p':a['seed_cluster_exact_swap_two_sided_sensitivity_p_not_randomized_proof']
+          },sort_keys=True))
+          PY
+      - name: Preserve all exact original PhysX files plus separately recomputed full audit and SHA256
+        run: |
+          set -euo pipefail
+          folder=research/frozen_policy_transfer/evidence/numeric_initial_parity_factorial_original128_2110001_2120016
+          mkdir -p "$folder"
+          cp /tmp/numeric_parity_physx_original128/factorial_*_original8.json "$folder/"
+          cp /tmp/numeric_parity_physx_original128/factorial_*_audit.json "$folder/"
+          cp /tmp/numeric_parity_physx_original_full/full_matched_factorial_128_native_physx_audit.json "$folder/original_run_full128_audit.json"
+          cp /tmp/numeric_parity_source_only_reaudit_full128.json "$folder/separate_independent_source_only_full128_audit.json"
+          cd "$folder"
+          sha256sum *.json | LC_ALL=C sort -k2 > SHA256SUMS
+          cat > README.md <<'EOF'
+          # Prospective fresh 32 task seeds x all four actually stepped ACK execution truths
+
+          **128 native source seed/truth cells, 9 genuinely independently stepped controller worlds per cell = 1152 author-operated ManiSkill CPU PhysX worlds.** All 16 physical shards succeeded; independent all-128 numerical initial-pose/observation audit and this source-only unchanged-original re-audit independently PASSED. Original run [37932361044](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37932361044).
+
+          ## Main actual original source findings
+          Public full-history-or-private-read method: **116/128 official task successes, 91 private reads**. Task-preselected strong: **108/128,109 reads**. Fixed target read: **109/128,128 reads**. Always-held: **71/128,0 reads**. Same physical cell paired public/strong outcomes: **105 both-success,9 both-failure,11 public-only,3 strong-only**. Seed-cluster two-sided method-label-swap sensitivity **p=0.0556640625**, not statistically significant under the customary .05 cutoff. No noninferiority margin was predeclared.
+
+          ## Actual matched original initial source state contract
+          Fresh PullCube source resets 2110001–2110016, StackCube 2120001–2120016. Both t2/t3 APPLIED/HELD states truly dispatched for each one same-seed block; original public source policy observation vector and initial achieved EE pose were stored numerically **before physical rollouts**, and their max componentwise difference across all four histories was required **at most 5e-5**. SHA exact match is separately counted, and no exact byte equality is inferred from numeric tolerance. Every seed cluster was kept. A previous, **different** 32-seed run [37930607707](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37930607707) failed strict SHA on 7/16 StackCube seed groups and has not been retrospectively rescued; the same-process repair run on those old chosen seeds [37931800065](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37931800065) must not be confused with this new prospective fresh-seed independent *author-operated* run.
+
+          16 physical original files and 16 corresponding per-shard audits are byte-preserved, with both full original auditor output and byte-equal independent source-only verifier, plus this SHA256SUMS and README. Run `sha256sum -c SHA256SUMS` in this directory; re-audit with `python -m research.audit_numeric_parity_ack_factorial --source-dir <folder> --output /tmp/reaudit.json` from repository root.
+
+          This study does NOT prove task superiority at the precommitted test level, cross-controller or VLA generalization, genuine network loss, hardware safety, formal noninferiority, a new theorem or any outside-investigator independent physical replication. Nine controllers differ in some postdecision compiler/observation paths; physically paired effects cannot all be attributed to information source alone.
+          EOF
+          cd -
+          git add "$folder"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if ! git diff --cached --quiet; then
+            git commit -m "evidence: permanently archive 1152 real PhysX worlds, 32 fresh numeric-parity matched seeds and independent original128 audit"
+            git push origin HEAD:research/numeric-initial-parity-2x2-fresh128-20261009
+          fi
