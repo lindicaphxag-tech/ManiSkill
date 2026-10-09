@@ -34,7 +34,7 @@ jobs:
           test "$(git hash-object research/run_strong060_prospective128.py)" = 82ca65d132270dca24c0fa30346d31deb5cdf755
           python -m py_compile research/run_strong060_prospective128.py research/audit_strong060_prospective128.py research/frozen_ppo_matched_public_strong060_physx.py
           python - <<'PY'
-          from research.run_query_isolated_factorial128 import frozen_preflight,selected
+          from research.run_strong060_prospective128 import frozen_preflight,selected
           p=frozen_preflight()
           assert selected('pull_cube',0)==list(range(3110001,3110009))
           assert selected('pull_cube',1)==list(range(3110009,3110017))
