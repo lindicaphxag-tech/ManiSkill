@@ -1,0 +1,56 @@
+{
+  "schema": "authority_slack_proactive_multi_ack_original_physx_20261009_v1",
+  "preregistration": "COMMITTED BEFORE EXAMINING ANY OF THE 620001/630001 NATIVE PHYSX TEST OUTCOMES",
+  "question": "Can task-blind observable robust-controller target authority margin decide whether to query privately at t=4, while preserving task success with fewer private reads than fixed t=4 and against task-label-conditioned strong baseline?",
+  "prior_evidence_only": "Previous source-frozen 520001-520032/530001-530032 result: task-only route 58/64 with 56 reads, fixed 58/64 with 64; this is DEVELOPMENT DATA, never this new outcome.",
+  "frozen_original": {
+    "commit": "b7670dd17037bbb94d208a40a1e068ce972b5484",
+    "runner_blob": "99836af14205fe3e95e52a2e0d68237c7c8a9045",
+    "certifier_blob": "36707a177549104ba5b4bd9bcebc76518f0d2840",
+    "single_ack_runner_blob": "1dc653cdc44e422c8340475ad00f828b3a41eb4f"
+  },
+  "new_cohorts": {
+    "pull_cube": [
+      "620001",
+      "620032"
+    ],
+    "stack_cube": [
+      "630001",
+      "630032"
+    ],
+    "shards_per_task": 4,
+    "original_seeds_per_shard": 8
+  },
+  "fixed_policies": {
+    "proactive_t4": "For the 4-candidate controller target belief at zero-index step 4 (after two held-arm targets), compute a same-frozen-model certified common action before ever reading private target; if it is authorized but the larger normalized certified position/rotation error >=0.75, read once now, else continue with the same bounded action and query on its first future refusal. If the t4 certificate already refuses, query. Max one read per episode. Never use label or task name to choose. The source policy's achieved EE position is a public observation, not private controller target memory.",
+    "fixed_t4": "Always make one privileged controller-target read at step 4 if alive, even when robust command feasible",
+    "reactive": "Query only when a common bounded action refuses",
+    "task_gated": "Precommitted opponent: PullCube use reactive, StackCube use fixed-t4; strong known-task specialized baseline",
+    "zero": "Bounded action without any private query",
+    "optimistic": "Assume both unknown arm ACKs were received"
+  },
+  "metric_definitions": {
+    "position_inf_budget_m": 0.05,
+    "rotation_geodesic_budget_rad": 0.05,
+    "proactive_threshold_fraction": 0.75,
+    "trigger_phase_index": 4,
+    "oracle_read_cost": "one explicit private target_pose get_state used to choose action; post-dispatch audits excluded",
+    "fault_truth": "two actual zero/hold arm action replacements in ManiSkill PhysX t=2 and t=3; not actual packet loss"
+  },
+  "measured": [
+    "original ManiSkill task success for all eight matched physically executed worlds",
+    "private decision-time target read count and timing",
+    "predictive trigger score before read and phase",
+    "real controller-target postdispatch residual audit and masked action separation",
+    "four-memory-state belief at t4",
+    "per-task task-gated comparator built from whole actually executed trajectory chosen before reset"
+  ],
+  "go_no_go": "If observable task-blind proactive cannot match or improve task-gated 58/64-style frontier on unseen new 64, report negative; do not adjust .75 threshold or reuse these seeds for subsequent optimization. Data from 2 PPOs and 1 Panda/controller family cannot establish general safety or cross-embodiment.",
+  "limitations": [
+    "No physical robot safety, force, collision, trajectory certificate",
+    "No controller packet loss; native held target commands only",
+    "Task-independent rule under tests of two tasks, not training a new VLA",
+    "Original published PPO and inherited geometry frozen; improvement only in decision-time information policy",
+    "No outside-lab approval until someone else reruns the original source on unseen seeds"
+  ]
+}
