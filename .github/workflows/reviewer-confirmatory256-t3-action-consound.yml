@@ -1,0 +1,61 @@
+name: 'Reviewer: original true 256 2304 PhysX native-action confound and preassigned HELD ACK causal subgroup'
+on:
+  push:
+    branches: [research/confirmatory-256-original-source-recovery-20261009]
+    paths:
+      - research/reviewer_confirmatory256_physical_action_confound.py
+      - .github/workflows/reviewer-confirmatory256-t3-action-consound.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source_only_truth_exact_native_actions_and_costs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pin genuinely physical original source, independent original first full 256 audit and correctness of active review code
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/reviewer_confirmatory256_physical_action_confound.py)" = 10e7eda1cbdd2e902a708b8fbaff1136637d1ba7
+          python -m py_compile research/reviewer_confirmatory256_physical_action_confound.py
+          test "$(find research/frozen_policy_transfer/evidence/confirmatory_64cluster_256truth_orig_3210001_3220032 -maxdepth 1 -name 'factorial_*_original8.json' | wc -l)" -eq 32
+      - name: Recheck complete native PhysX commanded t2/t3 6D vectors, t4 neutral public XYZ, original true ACK strata and seed-cluster inference
+        run: |
+          set -euo pipefail
+          src=research/frozen_policy_transfer/evidence/confirmatory_64cluster_256truth_orig_3210001_3220032
+          python -m research.reviewer_confirmatory256_physical_action_confound --source-dir "$src" --output /tmp/ORIGINAL_256_ACTUAL_PREDECISION_ACTION_CAUSAL_CONFUND.json
+          python - <<'PY'
+          import json
+          a=json.load(open('/tmp/ORIGINAL_256_ACTUAL_PREDECISION_ACTION_CAUSAL_CONFUND.json'))
+          assert len(a['rows'])==256
+          assert a['subgroups']['original_full_256_all_exposed']['task_truth_cells']==256
+          assert a['subgroups']['preassigned_TRUE_second_ACK_HELD_128cells']['task_truth_cells']==128
+          assert a['subgroups']['preassigned_TRUE_second_ACK_APPLIED_128cells']['task_truth_cells']==128
+          assert a['subgroups']['original_full_256_all_exposed']['public_success']==221
+          assert a['subgroups']['original_full_256_all_exposed']['strong_success']==202
+          assert a['subgroups']['original_full_256_all_exposed']['public_XYZ_event_count']==512
+          assert a['cannot_attribute_all_overall_gain_solely_to_hidden_state_inference']
+          print('PASS actual 256 within-source native action confounding and 64-cluster statistic; no same-information attribution without matched physics.')
+          PY
+      - name: Commit real full 256 forensic separately from immutable FIRST physical source and full-independent audit
+        run: |
+          set -euo pipefail
+          target=research/frozen_policy_transfer/evidence/confirmatory_64cluster_256truth_orig_3210001_3220032
+          cp /tmp/ORIGINAL_256_ACTUAL_PREDECISION_ACTION_CAUSAL_CONFUND.json "$target/reviewer_original_256_native_t3_action_confound.json"
+          (cd "$target" && sha256sum -- *.json > SHA256SUMS && sha256sum -c SHA256SUMS)
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$target/reviewer_original_256_native_t3_action_confound.json" "$target/SHA256SUMS"
+          git commit -m 'review: true 256 source full t3 native command and paid probe confound, HELD causal truth strata'
+          for i in 1 2 3; do
+            git fetch origin research/confirmatory-256-original-source-recovery-20261009
+            if ! git rebase origin/research/confirmatory-256-original-source-recovery-20261009; then git rebase --abort; exit 1; fi
+            if git push origin HEAD:research/confirmatory-256-original-source-recovery-20261009; then exit 0; fi
+          done
+          exit 1
