@@ -274,9 +274,10 @@ def trial(policy,seed):
                             .reshape(-1,3)[0].tolist())
                         result["public_motion_observation_cost_samples"][n]+=1
                         # NEW, genuinely measured PUBLIC end-effector orientation.
-                        # NOT an authoritative target memory and NOT used for any
-                        # existing PPO, posterior score, history authorization,
-                        # original XYZ classifier or controller action.
+                        # NOT the controller's private target register.
+                        # The original XYZ baseline ignores this channel;
+                        # the joint-SE3 contender actually uses it at t4
+                        # to authorize one complete hidden target history.
                         public_qwxyz=np.asarray(
                             arm.ee_pose_at_base.q.detach().cpu(),dtype=float
                         ).reshape(-1,4)[0]
@@ -709,7 +710,7 @@ def main():
         "multi_belief_max_hypotheses":16,
         "fault_is_native_target_hold_not_network_loss":True,
         "privileged_readback_counts_are_decision_only_not_audit_reads":True,
-        "all_nine_actual_control_arms":list(NAMES),
+        "all_ten_actual_control_arms":list(NAMES),
         "episodes":rows,
         "success_counts":{n:sum(int(r["success_once"][n]) for r in rows)
                           for n in NAMES},
