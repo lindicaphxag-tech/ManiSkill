@@ -1,0 +1,51 @@
+name: "Reviewer source-only 2x2 ACK cost frontier (no new PhysX)"
+on:
+  push:
+    branches: [research/independent-cost-frontier-gate-20261009]
+    paths:
+      - 'research/reviewer_budget_frontier_2x2.py'
+      - 'tests/test_reviewer_budget_frontier_2x2.py'
+      - '.github/workflows/reviewer-2x2-cost-frontier.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-frozen-reviewer-frontier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Synthetic adversarial negative controls
+        run: python -m unittest discover -s tests -p 'test_reviewer_budget_frontier_2x2.py' -v
+      - name: Fetch ORIGINAL fully executed source audit at immutable archive commit
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin fe3474b9de7db32ab6ca9edeb2220005c8ddb866
+          git show FETCH_HEAD:research/frozen_policy_transfer/evidence/true_twoack_2x2_original64_1280001_1290032/full_2x2_original64_independent_audit.json > /tmp/source_2x2_original64.json
+          test "$(git hash-object /tmp/source_2x2_original64.json)" = "b3bc06fb9ab33a9d60e69f883c28b54baa35f70f"
+          echo "ORIGINAL_ARCHIVE_COMMIT=fe3474b9de7db32ab6ca9edeb2220005c8ddb866"
+          echo "ORIGINAL_AGGREGATE_GIT_BLOB=b3bc06fb9ab33a9d60e69f883c28b54baa35f70f"
+      - name: Exact public/private info cost, paired outcomes, all 8 truth strata
+        run: |
+          python -m research.reviewer_budget_frontier_2x2 \
+            --source /tmp/source_2x2_original64.json \
+            --output /tmp/source_2x2_reviewer_cost_frontier.json
+          python - <<'PY'
+          import json
+          a=json.load(open("/tmp/source_2x2_reviewer_cost_frontier.json"))
+          t=a["totals"]
+          assert t["public_success"]==55 and t["strong_task_success"]==56
+          assert t["public_reads"]==50 and t["strong_task_reads"]==59
+          assert t["public_samples"]==128 and t["confident"]==14 and t["wrong_confident"]==0
+          assert t["new_only"]==1 and t["strong_only"]==2
+          assert abs(a["private_read_equivalent_break_even_per_XYZ_sample"] - 9/128)<1e-15
+          assert a["not_new_simulation"] and a["not_external_replication"]
+          print("PASS: 64 paired PhysX reset records from pre-existing author source; honest cost frontier")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exact-source-pinned-2x2-reviewer-cost-frontier-not-new-physics
+          path: /tmp/source_2x2_reviewer_cost_frontier.json
