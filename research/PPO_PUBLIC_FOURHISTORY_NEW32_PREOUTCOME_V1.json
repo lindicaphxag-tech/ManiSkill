@@ -1,0 +1,94 @@
+{
+  "schema": "frozen_ppo_4history_public_t3_evidence_new32_v1",
+  "phase": "REGISTERED_BEFORE_RUNNER_OR_NEW_PHYSX_OUTCOMES",
+  "date": "2026-10-09",
+  "question": "Can public achieved motion across the second physical unknown ACK hold identify a unique 4-history latent target without private read, while retaining the same actual frozen PPO task success as strong task-preselected fixed t4 readback?",
+  "source": "research/frozen_ppo_compound_ack_multi_belief.py",
+  "source_git_blob": "ddfaf4522d49f73ce926e4c6d77c7ca755f8e1b6",
+  "heldout": {
+    "pull_cube": [
+      780001,
+      780016
+    ],
+    "stack_cube": [
+      790001,
+      790016
+    ],
+    "shards_per_task": 4,
+    "seeds_per_shard": 4,
+    "disjoint_from_earlier_author_experiments": true
+  },
+  "frozen_models": {
+    "revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+    "pull_cube_sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+    "stack_cube_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c",
+    "no_training": true
+  },
+  "physics": {
+    "task": [
+      "PullCube-v1",
+      "StackCube-v1"
+    ],
+    "real_physx_cpu": true,
+    "policy_horizon_steps": 50,
+    "source_chart": "pd_ee_delta_pose",
+    "destination_chart": "pd_ee_target_delta_pose",
+    "unknown_execution_ack_at_steps": [
+      2,
+      3
+    ],
+    "both_native_arm_commands_replaced_with_zero": true,
+    "gripper_unmodified": true,
+    "not_packet_transport_loss": true,
+    "pose_setpoint_bound_m": 0.05,
+    "so3_setpoint_bound_rad": 0.05
+  },
+  "new_control": {
+    "name": "fault_public_t3_fourhistory_or_t4_query",
+    "public_measures": "achieved end-effector XYZ immediately BEFORE and AFTER PHYSICALLY executed second (t=3) native zero arm command; no extra probe actuation",
+    "infer": "compare each of all (<=4) post-t3 native commanded-target candidates with prior frozen per-task empirical segment model alpha ∈ [0,1], 2mm additional guard; only use if exactly one history is compatible and each other history residual exceeds epsilon+0.002m",
+    "empirical_model": "research/empirical_probe_response_classifier.py",
+    "pull_epsilon_m": 0.006944262561376447,
+    "stack_epsilon_m": 0.00719087965534261,
+    "calibration_seeds": "Pull 140001-140004 and Stack 150001-150004, no new testing seed",
+    "fallback": "If 0 or >=2 fit OR missing/stale model: one trusted controller target read at step t=4; never defer later; if no query is available, refuse",
+    "resync": "explicit single history only if public condition passes; record model residuals and independent audit-only native target error; otherwise authoritative read",
+    "rotational_hazard": "public sensor observes only translation: before accepting unique POSITION fit, require all candidate native target ROTATIONS agree within 1e-5 rad or fall back to private read; no physical pose safety claim"
+  },
+  "comparators": [
+    "source_no_fault",
+    "fault_oracle_private_target",
+    "fault_optimistic_unverified_ack",
+    "fault_strict_common_exact",
+    "fault_robust_two_history_without_query",
+    "fault_robust_then_single_privileged_query",
+    "fault_always_single_privileged_query",
+    "fault_public_t3_fourhistory_or_t4_query"
+  ],
+  "task_gated_prior": {
+    "pull_cube": "fault_robust_then_single_privileged_query",
+    "stack_cube": "fault_always_single_privileged_query",
+    "derived_from_old_cohorts_frozen_before_this_test": true
+  },
+  "denominator": {
+    "reset_states": 32,
+    "matched_native_physx_worlds_per_seed": 8,
+    "planned_real_native_worlds": 256,
+    "all_failures_and_refusals_retained": true,
+    "all_non_exposures_counted_failure": true
+  },
+  "primary": [
+    "paired original official task-success of new public arm vs task-labelled genuine physical comparator on exact same 32 seeds",
+    "private controller decision reads and actual zero-probe count",
+    "wrong confident latent four-history selections against private truth read STRICTLY after t3 physical step for audit only",
+    "all original 32 trial states and all 8 physically executed controller worlds",
+    "complete double fault reach; report failed exposure if any"
+  ],
+  "claim_limits": [
+    "not externally independent, not network loss, no robot hardware safety",
+    "empirical gain response envelope not deterministic certified model",
+    "not equal total external sensing cost to no-public-sensor policies, report public XYZ samples explicitly",
+    "if no confident labels or task failure, report negative without test-set retuning",
+    "task success does not establish true hidden history classification"
+  ]
+}

@@ -1,0 +1,100 @@
+name: "Freeze authentic source-audited 32-state four-history frozen PPO negative result"
+on:
+  push:
+    branches: [research/ppo-public-fourhistory-heldout32-20261009]
+    paths:
+      - '.github/workflows/archive-public-fourhistory-ppo-original32.yml'
+permissions:
+  contents: write
+jobs:
+  authenticate-and-permanently-archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_RUN: '37912591209'
+      ARCHIVE_ARTIFACT_ID: '11607900781'
+      ORIGINAL_ZIP_SHA256: '196977849bd78917bb42b81997a4aa35846987e0a33579509083ec768967791b'
+      DEST: research/frozen_policy_transfer/evidence/public_fourhistory_frozen_ppo_original32_780001_790016
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require exact successful ORIGINAL registered 256-physical-world producer
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$SOURCE_RUN" --jq '.conclusion')" = 'success'
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$SOURCE_RUN" --jq '.head_sha')" = '27df7c5cfc26485f4c46ac596aeef12f2617bb96'
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/artifacts/"$ARCHIVE_ARTIFACT_ID" --jq '.digest')" = "sha256:$ORIGINAL_ZIP_SHA256"
+          test "$(git hash-object research/PPO_PUBLIC_FOURHISTORY_NEW32_PREOUTCOME_V1.json)" = 53e48a6dc10299490241f4a70aea18e155fcdc5c
+          test "$(git hash-object research/frozen_ppo_public_fourhistory_task_level_physx.py)" = df37a5ea9a7d4264097b04b7bbb2c481b9d3c166
+          test "$(git hash-object research/run_public_fourhistory_new32.py)" = 28404ff76a8a977a42d28b72060df3e03d46acf8
+          test "$(git hash-object research/audit_public_fourhistory_new32.py)" = 924f51d380e7ce6660be7a8bc6ee06205047a16e
+      - name: Download exact original ZIP, verify SHA256, list ALL 17 original JSON records
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARCHIVE_ARTIFACT_ID/zip" \
+            -o /tmp/first-complete-original32.zip
+          echo "$ORIGINAL_ZIP_SHA256  /tmp/first-complete-original32.zip" | sha256sum -c -
+          mkdir -p /tmp/public32-original
+          unzip -q /tmp/first-complete-original32.zip -d /tmp/public32-original
+          find /tmp/public32-original -type f -name '*.json' -print | sort
+          test "$(find /tmp/public32-original -type f -name '*.json' | wc -l)" -eq 17
+      - name: Independently re-derive ALL physical task/read/error results from the immutable original source
+        run: |
+          set -euo pipefail
+          ORIG_DIR="$(dirname "$(find /tmp/public32-original -name 'public_fourhistory_pull_cube_chunk0_original4.json' -print -quit)")"
+          ORIGINAL_FULL="$(find /tmp/public32-original -name 'full_original_new32_task_ack_public_audit.json' -print -quit)"
+          test -n "$ORIG_DIR"
+          test -s "$ORIGINAL_FULL"
+          python -m research.audit_public_fourhistory_new32 --source-dir "$ORIG_DIR" --output /tmp/independent_full_original32.json
+          ORIGINAL_FULL="$ORIGINAL_FULL" python - <<'PY'
+          import json,os
+          a=json.load(open(os.environ["ORIGINAL_FULL"]))
+          b=json.load(open('/tmp/independent_full_original32.json'))
+          if a!=b: raise SystemExit("Original full PhysX population cannot be independently recomputed")
+          assert b["complete_double_fault_gate_passes"] is True
+          assert b["genuine_source_physx_reset_states"]==32
+          assert b["genuine_physics_controller_worlds"]==256
+          assert b["double_fault_exposure_population"]==32
+          assert b["public_confident_authorizations"]==0
+          assert b["model_confident_wrong"]==0
+          assert b["outcomes_total"]["new_public"]=={"success":24,"privileged_reads":32}
+          assert b["outcomes_total"]["task_preselected"]=={"success":24,"privileged_reads":26}
+          print("ORIGINAL_REAL_PHYSX_NEGATIVE_SOURCE_CONFIRMED",True)
+          PY
+      - name: Commit all original bytes and honest negative limits WITHOUT fabricating new success
+        run: |
+          set -euo pipefail
+          ORIG_DIR="$(dirname "$(find /tmp/public32-original -name 'public_fourhistory_pull_cube_chunk0_original4.json' -print -quit)")"
+          ORIGINAL_FULL="$(find /tmp/public32-original -name 'full_original_new32_task_ack_public_audit.json' -print -quit)"
+          mkdir -p "$DEST"
+          cp "$ORIG_DIR"/*.json "$DEST"/
+          cp "$ORIGINAL_FULL" "$DEST"/
+          (
+            cd "$DEST"
+            sha256sum *.json > SHA256SUMS
+          )
+          cat > "$DEST"/README.md <<'EOF'
+          # Source-authentic original frozen PPO public four-history task study — NEGATIVE
+          
+          First COMPLETE author-operated 32 fresh original reset task cases and eight separately physically stepped native ManiSkill/PhysX controller arms each = 256 true native controller worlds. Original run https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37912591209; successfully executed original code head 27df7c5cfc26485f4c46ac596aeef12f2617bb96.
+          BEFORE outcome 32 original-seed protocol blob 53e48a6dc10299490241f4a70aea18e155fcdc5c. The FIRST attempted run https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37912174615 failed during logging for a NumPy-derived bool JSON type; the follow-up fixed only source record serialization, not public classifier, seeds, action, fault, query policy, or PPO. Repeated execution on the same population is a technical re-run, NOT an independent external or newly seeded confirmation.
+          Original 17 data files: eight distinct four-state full REAL native PhysX shard source JSONs; eight complete source-verified shard audit JSONs; and one independent all32 full-population source audit JSON. SHA256SUMS locks each ORIGINAL file and preserves all source failures.
+          All 32/32 intended double native hold faults were physically exposed on the new method's original trial. Public XYZ-based full-pose four-history certification was achieved on 0/32; zero wrong confident latent history. PUBLIC gate fell back to one privileged controller target read on all 32.
+          REAL frozen third-party PPO original task completion: new public XYZ + query 24/32 and 32 privileged target decision reads; **pre-registered task-ID selected strategy 24/32 success, 26 reads**, identical paired task outcome labels; fixed-t4 24/32, 32 reads; selective 21/32, 19 reads; zero-query 8/32.
+          Therefore PUBLIC XYZ-only strict SE3 belief evidence did NOT improve task success or information cost over task-aware fixed rules. This is a source-verified NEGATIVE finding, not a successful improved active-robot policy.
+          Every output is author-operated native simulated target-hold, NOT actual packet loss, hardware actuation/collision/contact safety, externally attested dynamics, independent outside-lab adoption, or a peer-reviewed method acceptance. Review the separable non-novel observability limitation in research/frozen_policy_transfer/FOUR_HISTORY_XYZ_OBSERVABILITY_LIMITS.md.
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$DEST"
+          git diff --cached --quiet && exit 0
+          git commit -m "evidence: archive 32 full frozen PPO four-history PhysX cases and negative public sensing result"
+          git push origin HEAD:research/ppo-public-fourhistory-heldout32-20261009
