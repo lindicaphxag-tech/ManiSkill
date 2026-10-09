@@ -14,6 +14,7 @@ No claim of independent third-party physics execution or hardware safety.
 from __future__ import annotations
 import argparse
 import json
+import random
 from collections import defaultdict
 from math import comb, isfinite
 from pathlib import Path
@@ -41,6 +42,46 @@ def exact_one_sided_upper(k:int,n:int,tail:float=.05)->float:
         else:hi=mid
     return hi
 
+def _task_stratified_cluster_read_savings_ci(clusters,comparison:str,draws:int=20000,seed:int=20261009):
+    """Exploratory bootstrap of total queries saved on N=32 independent resets.
+
+    Resample the original 16 Pull and 16 Stack reset clusters separately.
+    All four genuine physically stepped ACK truths travel as one cluster.
+    This measures original total query reduction, NOT task noninferiority,
+    misidentification risk or random-new-robot generalization.
+    """
+    if comparison not in (B,C) or type(draws) is not int or draws<1000:
+        raise ValueError("Only frozen existing comparators and >=1000 paired cluster draws")
+    rng=random.Random(seed)
+    groups={}
+    for task in ("pull_cube","stack_cube"):
+        rows=[rr for (t,_),rr in sorted(clusters.items()) if t==task]
+        if len(rows)!=16 or any(len(z)!=4 for z in rows):
+            raise ValueError("Need exactly 16 full four-truth reset clusters per task")
+        groups[task]=[sum(x["reads"][comparison]-x["reads"][A] for x in rr) for rr in rows]
+    observed=sum(sum(v) for v in groups.values())
+    sampling=[]
+    for _ in range(draws):
+        s=0
+        for group in groups.values():
+            for __ in range(len(group)):
+                s+=group[rng.randrange(len(group))]
+        sampling.append(s)
+    sampling.sort()
+    return {
+      "observed_total_original_private_getters_saved":observed,
+      "bootstrap_total_getters_saved_95pct_exploratory":
+         [sampling[int(.025*draws)],sampling[int(.975*draws)]],
+      "total_independent_task_reset_clusters":32,
+      "observed_clusters_saving_at_least_one_getter":
+         sum(q>0 for g in groups.values() for q in g),
+      "observed_clusters_where_method_spent_more":
+         sum(q<0 for g in groups.values() for q in g),
+      "bootstrap_draws":draws,
+      "separate_task_strata":True,
+      "not_population_noninferiority_or_statistical_risk_certificate":True
+    }
+
 def analyze_clustering(source:EVIDENCE.__class__=EVIDENCE):
     original=analyze(source)  # physical source, 16 SHA256s, four-truth native prefixes
     cells=original["all_orig_source_seed_cell_vectors"]
@@ -59,6 +100,8 @@ def analyze_clustering(source:EVIDENCE.__class__=EVIDENCE):
         per_task[task]=_stats(cases)
     allcases=list(clusters.values())
     pooled=_stats(allcases)
+    read_savings={"A_vs_B":_task_stratified_cluster_read_savings_ci(clusters,B),
+                  "A_vs_mandatory_C":_task_stratified_cluster_read_savings_ci(clusters,C)}
     original_all=original["all_cells"]
     for arm in ARMS:
         if (pooled["strategy"][arm]["official_successes"] != original_all[arm]["success"]
@@ -82,6 +125,7 @@ def analyze_clustering(source:EVIDENCE.__class__=EVIDENCE):
        "actual_native_PhysX_controller_worlds":1280,
        "pooled":pooled,
        "per_task":per_task,
+       "task_stratified_32cluster_bootstrap_getter_savings_EXPLORATORY":read_savings,
        "error_statement":"CP risk estimand = P(at least one wrongly authorized full target history among FOUR ACK truth conditions | this independent reset has >=1 authorized condition); NOT P(wrong | event authorized) nor hardware risk.",
        "assumptions":["Original reset clusters IID within fixed task under stable physical/sensor model; four condition outcomes allowed arbitrary within-cluster dependence.",
                       "The admitted cluster subset must be exchangeable as selected draws from the same frozen source distribution.",
