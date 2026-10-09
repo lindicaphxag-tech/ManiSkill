@@ -1,7 +1,7 @@
 # When Did My Robot Command Execute?
 ## Whole-History Public Observability and Privileged-State Economy Under Two Physically Ambiguous Executions
 
-**Research manuscript v2.1 · 9 October 2026 · evidence-first technical draft, NOT peer reviewed or accepted.**
+**Research manuscript v2.2 · 9 October 2026 · evidence-first technical draft, NOT peer reviewed or accepted.**
 
 **Zhibo Zhang · Hangzhou Dianzi University.** Authorship and affiliation must be confirmed before submission. All original experiments reported below are owner-operated ManiSkill CPU PhysX, not real robot hardware, network-loss trials or independent external replication.
 
@@ -76,7 +76,17 @@ The [first complete 10/10 successful true native PhysX source run](https://githu
 
 The new method and its strongest task-aware competitor had **identical paired binary task success on all 64 states**: 49 both successful, 15 both unsuccessful, no discordant outcomes. There is no observed task-success improvement and no statistical noninferiority proof. The actual private-state read cost was lower by 18/51 = **35.3%**, while public achieved-XYZ samples and one charged neutral controller action were additional real costs. The method publicly selected **31/64 complete target histories** with **zero observed wrong confident full-pose identifications**. It refused to infer in the remaining **33/64** and used one genuine authoritative read each; this does not bound future physical error probability.
 
-### 4.3 Complete original four-pattern stratification
+### 4.3 Exact paired private-target query economy, with the negative cells retained
+
+A source-only companion analysis [PR #147](https://github.com/lindicaphxag-tech/ManiSkill/pull/147) loads the two **byte-identical, archived original full-cohort audits**, verifies their Git blob \`a606de7a2bcb1efc61c47dbca0e353c597840128\`, and reruns an exact paired sign test **without re-executing a single PhysX step**. Its [original-source CI](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37924333984) passed.
+
+Across the same 64 frozen PPO task/reset identities, the proposed method spent fewer privileged target reads than the physically executed task-aware strong baseline on **24** episodes, more on **6**, and tied on **34**. The **two-sided exact paired sign-test p = 0.001430906355...** is conditional on the 30 discordant query decisions; it is explicitly a *post-outcome exploratory inference* and is not a preregistered familywise-corrected test. The paired descriptive bootstrap 95% interval for mean private reads saved per episode is **[0.125, 0.4375]**, conditional on the recorded task/reset distribution. It does not quantify hardware latency, public sensor cost, or a causal effect of having exactly equal trajectories for the task-aware comparator.
+
+The full negative control matters. Under **H/H**, the method makes **zero** unique history identifications on both tasks, consumes 8/8 private reads for each task, and is **worse** than the task-aware baseline by **three reads on PullCube H/H**; it ties on StackCube H/H. The result is **selective privileged-read economy where source evidence is informative**, not universal read reduction or general online system identification. Binary task successes are paired-identical (49 both success, 15 both failure); a task-success superiority or statistical noninferiority claim remains invalid.
+
+The task-aware comparator was independently physically stepped using the same source policy/fault truth/probe design, but it did **not** guarantee identical native physical command prefixes to the public arm. A separate original **identical-prefix** trial and its source-only corrected independent audit are preserved in [PR #142](https://github.com/lindicaphxag-tech/ManiSkill/pull/142), and **must not be pooled as iid new states** or casually used to retrofit exact prefix equality into this nonzero-second-command cohort.
+
+### 4.4 Complete original four-pattern stratification
 
 A = physically applied; H = physically held. Each row corresponds to eight *original actually stepped* task reset states.
 
@@ -92,9 +102,9 @@ A = physically applied; H = physically held. Each row corresponds to eight *orig
 | StackCube | H/H | 8 | 6 | 6 | 8 | 8 | 0 |
 | **All original tasks** | **all four** | **64** | **49** | **49** | **33** | **51** | **31** |
 
-PullCube totals: both new and strong methods succeed **31/32**, new uses 15 private reads against strong 19. StackCube totals: both succeed **18/32**, new uses 18 reads against strong 32. In *both* tasks the physical H/H combination yields **0/8 public unique histories**, so the empirical model properly abstains there rather than claiming full observability. This exposes a concrete identifiability boundary and motivates future probes that can separate even the all-held controller histories without querying.
+PullCube totals: both new and strong methods succeed **31/32**, new uses 15 private reads against strong 19. StackCube totals: both succeed **18/32**, new uses 18 reads against strong 32. In *both* tasks the physical H/H combination yields **0/8 public unique histories**, so the empirical model properly abstains there rather than claiming full observability. This exposes a concrete identifiability boundary. Some all-held histories may be observationally indistinguishable under the current sensor/probe model; future probes must demonstrate identifiability before asserting that extra motion can avoid readback.
 
-The lower overall 49/64 compared with the prior 57/64 is not clean evidence of deterioration caused solely by the second unknown execution truth: the t3 nonzero pulse, t4 physical neutral step and t5 readout jointly changed. The appropriate paired causal comparison is **within** the present study; all active baseline controllers share the same interventions.
+The lower overall 49/64 compared with the prior 57/64 is not clean evidence of deterioration caused solely by the second unknown execution truth: the t3 nonzero pulse, t4 physical neutral step and t5 readout jointly changed. Comparisons within this cohort preserve registered fault truth, neutral-action cost and frozen models, but the task-aware strong comparator does **not** share an exactly identical pre-query native physical prefix. The separate stricter physical-prefix experiment is explicitly distinguished above.
 
 ## 5. Interpretation, novelty and specific unsupported extrapolations
 
