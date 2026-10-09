@@ -1,0 +1,51 @@
+name: Peer-review real PhysX 256-cell editable SVG causal-scope and cost diagrams
+on:
+  push:
+    branches: [analysis/confirmatory256-motor-confound-conditioned-20261009]
+    paths:
+      - research/figures/render_confirmatory256_original_motor_cost.py
+      - .github/workflows/source-figures-confirmatory256-motor-cost.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  regenerate_noncausal_source_true_PhysX_paper_diagrams:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install standard peer-review vector chart backend
+        run: python -m pip install 'numpy>=1.26,<3' 'matplotlib>=3.8,<4'
+      - name: Render two vector science figures ONLY from SHA-pinned original 256-cell motor-audited source
+        run: |
+          set -euo pipefail
+          python -m research.figures.render_confirmatory256_original_motor_cost \
+            --input research/frozen_policy_transfer/derived/original256_physical_action_match_stratified_NOT_CAUSAL.json \
+            --output research/figures/confirmatory256_source_verified
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          fs=list(Path("research/figures/confirmatory256_source_verified").glob("*.svg"))
+          if len(fs)!=2:raise RuntimeError("Source-authenticated figure count changed")
+          for f in fs:
+              if not ET.parse(f).getroot().tag.endswith("svg"):
+                  raise RuntimeError("Generated picture NOT a real vector SVG")
+              print("PUBLISHABLE_EDITABLE_VECTOR_SOURCE",f.name, f.stat().st_size)
+          PY
+      - name: Commit immutable evidence-derived vector figures, not altered robot data
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/figures/confirmatory256_source_verified
+          git commit -m "Review: two original-data 256-PhysX vector plots exposing motor confounding and joint sensing cost"
+          git push origin HEAD:analysis/confirmatory256-motor-confound-conditioned-20261009
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original256_mainconference_verified_SVG_motor_plus_sensor_cost
+          path: research/figures/confirmatory256_source_verified/
+          retention-days: 90
