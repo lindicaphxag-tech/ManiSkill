@@ -1,0 +1,45 @@
+name: Source-locked complete 64-state task-gated double-ACK PhysX audit
+on:
+  push:
+    branches: [research/task-gated-ack-outside64-20261009]
+    paths:
+      - 'research/audit_task_gated_multi_ack_fresh64.py'
+      - '.github/workflows/task-gated-multiack-original64-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  inspect-original-eight-source-artifacts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Acquire all eight actual original native-PhysX raw source artifacts; never reconstructed source data
+        run: |
+          set -euo pipefail
+          gh run download 37904539256 --repo "$GITHUB_REPOSITORY" --pattern 'taskgated-*' --dir original_task_route_physx
+          test "$(find original_task_route_physx -mindepth 1 -maxdepth 1 -type d | wc -l)" -eq 8
+      - name: Verify all native task outcomes, frozen source, actual read rights, physical certificates, paired numbers and all original SHA-256
+        run: |
+          set -o pipefail
+          python -m research.audit_task_gated_multi_ack_fresh64 \
+            --artifacts original_task_route_physx \
+            --out task_gated_fresh64_real_physx_verified.json 2>&1 | tee task_gated_64_audit.log
+      - name: Archive machine-readable 64 state results, original errors and paired comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: task-gated-64-original-source-verified-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 90
+          path: |
+            task_gated_fresh64_real_physx_verified.json
+            task_gated_64_audit.log
+
+# A checksum audit of author-run experiments is not third-party empirical replication.
