@@ -82,6 +82,33 @@ class RealNativeBeliefIntegration(unittest.TestCase):
         fresh(g,2,dx=.02)
         self.assertEqual(g.decide().code,"SEND_CERTIFIED")
 
+    def test_native_chart_certificate_must_match_belief_propagation(self):
+        # Same normalized 6D number has different physical meaning under
+        # different action bounds/rotation scales. Previously the certifier
+        # could authorize using one chart and propagate hidden belief using
+        # another, losing the claimed worst-case target bound.
+        actual=UncertainDeliveryBelief([-.05]*3,[.05]*3,[.2]*3)
+        actual.reset(TargetPose.from_arrays([0]*3,[0,0,0,1]))
+        with self.assertRaisesRegex(ContractViolation,"chart differs"):
+            RecedingHorizonVLAGateway(
+                contract(),actual,common_multi_history_command,TargetPose)
+        # Explicitly declaring the source controller chart permits it.
+        matching=RecedingHorizonVLAGateway(
+            contract(),actual,common_multi_history_command,TargetPose,
+            pos_lower=(-.05,)*3,pos_upper=(.05,)*3)
+        self.assertEqual(tuple(matching.low),(-.05,)*3)
+
+        different_rotation=UncertainDeliveryBelief([-.1]*3,[.1]*3,[.1]*3)
+        different_rotation.reset(TargetPose.from_arrays([0]*3,[0,0,0,1]))
+        with self.assertRaisesRegex(ContractViolation,"chart differs"):
+            RecedingHorizonVLAGateway(
+                contract(),different_rotation,
+                common_multi_history_command,TargetPose)
+        with self.assertRaisesRegex(ContractViolation,"normalization"):
+            RecedingHorizonVLAGateway(
+                contract(),actual,common_multi_history_command,TargetPose,
+                pos_lower=(0,0,0),pos_upper=(0,0,0))
+
     def test_policy_abi_mismatch_and_unnormalized_output_forbidden(self):
         with self.assertRaises(ContractViolation):
             RecedingHorizonVLAGateway(contract(task_specific_action_mapping_verified=False),
