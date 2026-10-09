@@ -61,3 +61,20 @@ Run:
 - python -m unittest discover -s tests -p test_counterfactual_execution_observability.py -v
 
 The source-only auditor never reruns the simulator, and a self-operated CI passing is not independent external physics replication.
+
+
+## Operational reference: require a response-separating probe before spending physical motion
+
+We also supply a **non-learning, fail-closed action-selection reference**, not as a proven novel robot policy: [conditional_probe_or_read.py](https://github.com/lindicaphxag-tech/ManiSkill/blob/research/observability-collision-audit-20261009/research/conditional_probe_or_read.py). It consumes a FULL set of trusted hidden target-histories, externally trained and independently calibrated candidate response XYZ balls for each possible probe, a common native 6D action valid for **all** histories, full-target error limits and conservative task-damage limits.
+
+For a candidate probe a, the model-supplied conservative pairwise response separation is
+
+\[
+\mathrm{sep}_{\min}(a)=\min_{i<j}\left(\|\widehat\mu_i(a)-\widehat\mu_j(a)\|_2-r_i(a)-r_j(a)\right).
+\]
+
+Only when the full-history response balls are disjoint by a strict sensor-resolution margin, and source/response-model freshness, action native chart, task regret bound, maximum full pose error, physical probe time and public sensor cost are all explicitly attested, is the probe **conditionally eligible**. Choose the least-cost eligible probe only when its physical-and-sensing cost is below the cost of an authoritative native target getter; otherwise READ true target. After any probe, the system MUST revalidate the *actual* public observation before authorizing a hidden memory. The model is a caller dependency, **not magically provided by audit-only target labels**.
+
+The reference's unit tests replay the **three actual PhysX zero-probe XYZ collisions** and demand a true target read for them; they also test synthetic separating learned-model outputs, missing candidates, stale/uncalibrated predictions, invalid native charts, pose violations, contact/task-regret violations and probes more expensive than authoritative reads. All synthetic predictions are labelled as mock fixtures and **do not establish a new physical task-success or read-cost improvement**. The implementation does not call an actual robot arm or claim a calibrated bound until credible independently held-out response-model data are supplied.
+
+This constitutes a falsifiable **bridge from the observational-equivalence counterexample to a probe-vs-read design contract**, not a completed main-conference learning contribution. The missing decisive experiment is a trained action-conditioned response reliability model, executed on newly frozen full closed-loop episodes with genuine active-vs-passive/fixed/action-regret baselines at matched action and sensing cost.
