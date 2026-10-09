@@ -21,7 +21,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git hash-object research/DUAL_EVIDENCE_HISTORY_NEW64_PREOUTCOME_V1.json)" = "691adffdf1d1ec13f277f881dee35cb5e4fb5d56"
-          test "$(git hash-object research/frozen_ppo_dual_evidence_history_physx.py)" = "b925e313c6b7b378fbacb324aa0e13955aa3b498"
+          test "$(git hash-object research/frozen_ppo_dual_evidence_history_physx.py)" = "0f9cb3eab0f5f6b9a11d6a4f2fee7fb280bb2743"
           python -m py_compile research/frozen_ppo_dual_evidence_history_physx.py
           python - <<'PY'
           import json
@@ -80,39 +80,62 @@ jobs:
           F="fault_always_single_privileged_query"
           agg=dict(task=t,first=f,n=8,pub_success=0,post_success=0,fixed_success=0,
                    pub_reads=0,post_reads=0,fixed_reads=0,pub_unique=0,post_unique=0,
-                   pub_wrong=0,post_wrong=0,prefix_ok=True)
+                   pub_wrong=0,post_wrong=0,prefix_matched=0,prefix_unmatched=0,
+                   public_fault2_exposed=0,guarded_fault2_exposed=0,
+                   public_XYZ_samples=0,guard_XYZ_samples=0,unmatched_seed_ids=[])
           for r in d["episodes"]:
             assert r["seed"] in range(f,f+8)
             idx=(r["seed"]-1)%4
             assert (r["original_precommitted_physical_t2_execution_truth"],r["original_precommitted_physical_t3_execution_truth"]) == (
                 "applied" if idx in (1,3) else "held","applied" if idx in (2,3) else "held")
             for name in (A,B,F):
-              assert [q["step"] for q in r["faults"][name]]==[2,3]
+              faults=r["faults"].get(name,[])
+              assert len(faults)<=2 and [v["step"] for v in faults] in ([],[2],[2,3])
               assert type(r["success_once"][name]) is bool
               assert type(r["privileged_target_readback_decision_count"][name]) is int
-            assert r["public_motion_observation_cost_samples"][A]==2
-            assert r["public_motion_observation_cost_samples"][B]==2
-            assert r["public_motion_observation_cost_samples"][F]==0
-            for key in ("matched_prefix_physical_audit","matched_posterior_prefix_audit"):
-              c=r[key]
-              assert c["valid_exact_prefix"] is True
-              assert max(c["native_fault_dispatch_linf_each"])<=5e-5
-              assert c["pre_t5_achieved_position_max_abs_m"]<=5e-5
-              assert c["pre_t5_target_position_max_abs_m"]<=5e-5
-            pe=r["public_t3_evidence"]; be=r["same_sensor_posterior_evidence"]
-            assert be["posterior_threshold_predeclared"]==0.65
-            assert abs(sum(be["posterior_weights"])-1)<1e-5
-            assert r["privileged_target_readback_decision_count"][A]==int(not pe["authorized"])
-            assert r["privileged_target_readback_decision_count"][B]==int(not be["authorized"])
+              assert 0<=r["privileged_target_readback_decision_count"][name]<=1
+            a2=len(r["faults"].get(A,[]))==2
+            b2=len(r["faults"].get(B,[]))==2
+            agg["public_fault2_exposed"]+=int(a2)
+            agg["guarded_fault2_exposed"]+=int(b2)
+            c1=r.get("matched_prefix_physical_audit",{})
+            c2=r.get("matched_posterior_prefix_audit",{})
+            matched=bool(a2 and b2 and c1.get("valid_exact_prefix") and c2.get("valid_exact_prefix"))
+            if matched:
+              for c in (c1,c2):
+                assert all(v<=5e-5 for v in c["native_fault_dispatch_linf_each"])
+                assert c["pre_t5_achieved_position_max_abs_m"]<=5e-5
+                assert c["pre_t5_target_position_max_abs_m"]<=5e-5
+              agg["prefix_matched"]+=1
+            else:
+              assert (not a2 or not b2 or not c1.get("valid_exact_prefix") or not c2.get("valid_exact_prefix"))
+              agg["prefix_unmatched"]+=1
+              agg["unmatched_seed_ids"].append(r["seed"])
+              print("REAL_PRE_FAULT_REFUSAL_NOT_MATCHED",t,r["seed"],r.get("refusals",{}).get(A),r.get("early_unmatched_fault"))
+            for method,ev_key,reads_key,cost_key in (
+              ("pub","public_t3_evidence",A,"public_XYZ_samples"),
+              ("post","same_sensor_posterior_evidence",B,"guard_XYZ_samples")):
+              ev=r.get(ev_key,{})
+              count=r["public_motion_observation_cost_samples"].get(reads_key,0)
+              assert count in (0,2),"One-sided public sample not allowed"
+              agg[cost_key]+=count
+              if count==2:
+                assert type(ev.get("authorized")) is bool and type(ev.get("wrong_confident")) is bool
+                assert r["privileged_target_readback_decision_count"][reads_key]==int(not ev["authorized"])
+                if method=="post":
+                  assert ev["posterior_threshold_predeclared"]==0.65
+                  assert abs(sum(ev["posterior_weights"])-1)<1e-5
+                  assert ev["authorized"] is False or ev["source_unique_compatibility"] is True
+                agg[method+"_unique"]+=int(ev["authorized"])
+                agg[method+"_wrong"]+=int(ev["wrong_confident"])
+              else:
+                assert ev.get("authorized") is not True
             for key,name in ((A,"pub"),(B,"post"),(F,"fixed")):
               agg[name+"_success"]+=int(r["success_once"][key])
               agg[name+"_reads"]+=r["privileged_target_readback_decision_count"][key]
-            agg["pub_unique"]+=int(pe["authorized"])
-            agg["post_unique"]+=int(be["authorized"])
-            agg["pub_wrong"]+=int(pe["wrong_confident"])
-            agg["post_wrong"]+=int(be["wrong_confident"])
+          assert agg["prefix_matched"]+agg["prefix_unmatched"]==8
           pathlib.Path("originals/original8_verified_summary.json").write_text(json.dumps(agg,indent=2,sort_keys=True))
-          print("NEW64_TRUE_NATIVE_PHYXS_SHARD",json.dumps(agg,sort_keys=True))
+          print("AMENDED_NEW64_ORIGINAL_NATIVE_PHYSX_SHARD",json.dumps(agg,sort_keys=True))
           PY
       - name: Preserve original sources with SHA-256 and exact source pin
         if: always()
@@ -145,13 +168,19 @@ jobs:
           rows=[json.loads(p.read_text()) for p in shard]
           expected={("pull_cube",x) for x in (1820001,1820009,1820017,1820025)}|{("stack_cube",x) for x in (1830001,1830009,1830017,1830025)}
           assert {(r["task"],r["first"]) for r in rows}==expected
-          assert all(r["n"]==8 and r["prefix_ok"] for r in rows)
-          out={k:sum(r[k] for r in rows) for k in
-             ("n","pub_success","post_success","fixed_success","pub_reads","post_reads","fixed_reads","pub_unique","post_unique","pub_wrong","post_wrong")}
-          assert out["n"]==64
-          out["source_kind"]="AUTHOR_OPERATED_ACTUAL_NATIVE_PHYSX_NOT_EXTERNAL_REPRODUCTION"
-          out["controller_worlds_physically_stepped"]=640
-          out["public_XYZ_samples_each_method"]=128
+          assert all(r["n"]==8 for r in rows)
+          keys=("n","pub_success","post_success","fixed_success","pub_reads","post_reads","fixed_reads",
+             "pub_unique","post_unique","pub_wrong","post_wrong","prefix_matched","prefix_unmatched",
+             "public_fault2_exposed","guarded_fault2_exposed","public_XYZ_samples","guard_XYZ_samples")
+          out={k:sum(r[k] for r in rows) for k in keys}
+          assert out["n"]==64 and out["prefix_matched"]+out["prefix_unmatched"]==64
+          assert out["public_fault2_exposed"]<=64 and out["guarded_fault2_exposed"]<=64
+          out["unmatched_seed_ids"]=[x for r in rows for x in r["unmatched_seed_ids"]]
+          assert len(out["unmatched_seed_ids"])==out["prefix_unmatched"]
+          out["source_kind"]="AUTHOR_OPERATED_REEXECUTION_AFTER_DISCLOSED_EARLY_REFUSAL_BOOKKEEPING_AMENDMENT"
+          out["intention_to_test_original_reset_count"]=64
+          out["controller_worlds_declared"]=640
+          out["no_unqualified_all_prefix_causal_claim"]=True
           out["task_strata"]=rows
           pathlib.Path("new64_actual_physx_full_audit.json").write_text(json.dumps(out,indent=2,sort_keys=True))
           print("NEW64_ACTUAL_PHYSX_FULL_SOURCE_AUDIT",json.dumps(out,sort_keys=True))
