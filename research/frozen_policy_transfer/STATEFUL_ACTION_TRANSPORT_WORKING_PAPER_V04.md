@@ -221,6 +221,28 @@ The capped-versus-fixed paired exclusives were **9 versus 3**, exploratory exact
 
 This is an *important reproducible counterexample*, not a success result to hide. It exposes the distinction between componentwise normalized action bounds and a rotational joint ball (an admissible orientation control needs `||u_rot||₂≤1`, not simply `|u_rot,i|≤1`). Clipping an otherwise invalid command without recomputing both rotation setpoint error and accumulated controller memory can violate the assumed target-update contract. The new gate orders checks as `(i) evidence source and chart identification → (ii) complete valid native action representation → (iii) certified target-setpoint error → (iv) actual acknowledgement/physical step`; violation at stage (ii) cannot be credited as successful stage (iii) uncertainty recovery. This requirement is not itself a new theorem, and an independent head-to-head with existing ActionShift hard action masks is still missing.
 
+**Numerical mechanism identified after the complete experiment.**
+The seven StackCube failures share a recorded `float32` proposed
+rotation-action norm of `1.0000009536743164`. The earlier source
+conversion accepts a marginal `norm <= 1+1e-5` without performing
+its radial normalization, while the history tracker evaluates the
+transported coordinates in `float64` and rejects if
+`norm > 1+1e-6`. An independently reproducible float32 three-vector
+`[0.5773508548736572]*3` evaluates to precisely
+`1.0000009536743164` in float32 but `1.0000010144344997`
+after float64 promotion, straddling the gate. The historical
+JSON stored the norm but not the three original coefficients,
+so this is an exact *mechanism-level* reproducer, not proof of
+identical unlogged source vector components.
+The failure therefore implicates inconsistent numerical precision
+and tolerance across converter/observer, not simply a missing
+rotation-ball limit in the converter. A separately developed
+[typed native-action admissibility prototype](https://github.com/lindicaphxag-tech/ManiSkill/pull/103)
+tests the actual transported float32 radial ball, returns NONEXACT
+for any explicitly projected action and recomputes resulting target
+pose error for every history candidate before authorization.
+It has no independent task-success evidence and was not used
+to modify these original negative 64 trials.
 **Statistical and accounting decision:** treat this new capped-budget study as **descriptive/negative** only. An exactly shared cap of 16 authorized observation tokens is NOT equal number of actual private reads (10 vs 16), and the invalidated full-fault gate vetoes a confirmatory study-wide efficacy claim. The original first failed CI and fixed-evaluator second completed CI must remain distinct sources; same-seed repeats must not inflate sample size.
 
 [Original source and negative evaluator-veto results](https://github.com/lindicaphxag-tech/ManiSkill/blob/main/research/frozen_policy_transfer/STRICT_BUDGET16_NEW64_NEGATIVE_RESULT.md) ·
