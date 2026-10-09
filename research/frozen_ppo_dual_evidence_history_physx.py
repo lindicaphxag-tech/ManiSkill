@@ -206,6 +206,20 @@ def trial(policy,seed):
                 # *exactly* to the fixed-read comparator. No target getter or
                 # invalid observer enters the decision. Audit equality at t4.
                 if (n in ("fault_always_single_privileged_query",POST_ARM) and step==3
+                    and len(result["faults"].get(PUBLIC_ARM,[]))!=2):
+                    # Public arm terminated before second ACK; there is no
+                    # physical reference command to copy at this step.
+                    # Do NOT compile via an unsynchronized target observer.
+                    result["refusals"][n]={
+                        "step":step,
+                        "reason":"EARLY_PUBLIC_FAULT_NONEXPOSURE_AND_NO_VALID_SHARED_COMMAND",
+                        "auditable_no_second_fault":True,
+                        "not_causal_prefix_matched":True}
+                    result["failure_causes"][n]="PUBLIC_REFERENCE_ENDED_BEFORE_T3"
+                    result["steps"][n]=step
+                    done[n]=True
+                    continue
+                if (n in ("fault_always_single_privileged_query",POST_ARM) and step==3
                     and len(result["faults"].get(PUBLIC_ARM,[]))==2):
                     witness=result["faults"].get(PUBLIC_ARM,[])
                     if len(witness)!=2 or witness[-1]["step"]!=3:
