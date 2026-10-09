@@ -1,0 +1,119 @@
+name: Archive original new Panda xArm action-scale PhysX 32 truth-state source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-cross-robot-action-scale32-original.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  original-source-immutable-archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require exact four successful original physical simulator jobs and independent full source audit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37910505997 --jq '.head_sha')" = "62de0ad899469be9e5683415de8e17b3f8f562b9"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37910505997 --jq '.conclusion')" = "success"
+          test "$(git hash-object research/CROSS_ROBOT_ACTION_SCALE_32_PRECOMMIT_V1.json)" = "d1035ed70228375e84895716b894e756e0dc3612"
+          test "$(git hash-object research/cross_robot_action_scale_physx.py)" = "2bfb8c29bd3b4d62c68186579ad0785689c83f27"
+          test "$(git hash-object research/audit_cross_robot_action_scale32.py)" = "fd1cdafbf0a70d881ae63806b7c868f1ba51acaa"
+      - name: Fetch immutable 4-shard actual genuine PhysX original JSON and completed full source audit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/source-unmodified /tmp/source-original-flattened
+          gh run download 37910505997 --repo "$GITHUB_REPOSITORY" \
+            --name original-full32-action-scale-physx-sources-and-audit \
+            --dir /tmp/source-unmodified
+          for robot in panda xarm6_robotiq; do
+            for scale in 0p6 1p35; do
+              f="cross_robot_ack_scale_${robot}_${scale}_original8.json"
+              test "$(find /tmp/source-unmodified -name "$f" -type f | wc -l)" -eq 1
+              cp "$(find /tmp/source-unmodified -name "$f" -type f)" /tmp/source-original-flattened/
+            done
+          done
+          f=complete_original_cross_robot_action_scale32_audit.json
+          test "$(find /tmp/source-unmodified -name "$f" -type f | wc -l)" -eq 1
+          cp "$(find /tmp/source-unmodified -name "$f" -type f)" /tmp/source-original-flattened/
+      - name: Independently score ALL 32 reset/truth/scale conditions and confirm original completed audit byte-equivalent as JSON
+        run: |
+          set -euo pipefail
+          python -m research.audit_cross_robot_action_scale32 \
+            --input-dir /tmp/source-original-flattened \
+            --output /tmp/recomputed_study.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          raw=Path('/tmp/source-original-flattened')
+          a=json.loads((raw/'complete_original_cross_robot_action_scale32_audit.json').read_text())
+          b=json.loads(Path('/tmp/recomputed_study.json').read_text())
+          assert a==b, "Independent full original PhysX source result drift"
+          assert b['actual_original_physx_conditions']==32
+          assert b['distinct_reset_seeds_across_robots']==8
+          sums=b['aggregate_scores']
+          assert sums['foreign_zero_shot']['actual_native_target_position_restored']==0
+          assert sums['paired_fixed']['actual_native_target_position_restored']==16
+          assert sums['paired_action_scaled']['actual_native_target_position_restored']==32
+          assert sums['paired_action_scaled']['wrong_confident']==0
+          assert sums['paired_action_scaled']['privileged_decision_reads']==0
+          assert sums['privileged_once_after_probe']['actual_native_target_position_restored']==32
+          assert sums['privileged_once_after_probe']['privileged_decision_reads']==32
+          for blind in ['blind_optimistic','blind_pessimistic']:
+            assert sums[blind]['actual_native_target_position_restored']==16
+            assert sums[blind]['wrong_confident']==16
+          print('ORIGINAL_NATIVE_PANDA_XARM_ACTION_SCALE_32_SOURCE_AUDIT_GREEN',sums)
+          PY
+      - name: Archive EXACT unmodified ORIGINAL five source JSON files with SHA256, provenance and all negative outcomes
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/cross_robot_action_scale_ood_new32_610001_620004
+          mkdir -p "$dest"
+          cp /tmp/source-original-flattened/*.json "$dest/"
+          (cd "$dest" && sha256sum ./*.json > SOURCE_SHA256SUMS)
+          cat > "$dest/README.md" <<'EOF'
+          # Actual prospective Panda and xArm6 Robotiq action-amplitude distribution-shift unknown-ACK result
+
+          Source original 4 true ManiSkill CPU PhysX shards plus independent auditor: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37910505997
+          Source executing commit HEAD: 62de0ad899469be9e5683415de8e17b3f8f562b9
+          Original protocol was registered BEFORE runner implementation: commit 33fe5fdc287ce52dd1146c0c170a267308e1a7f1 and research/CROSS_ROBOT_ACTION_SCALE_32_PRECOMMIT_V1.json.
+          Four actual original 8-truth physical source JSONs plus one complete original audit are copied BYTE UNCHANGED, hashed with SHA256.
+          Task PickCube, two maintained real simulator articulations: panda and xarm6_robotiq, command scales 0.6/1.35, actually applied and held native arm fault truths.
+          8 original distinct robot reset seeds x two scales x two delivery truths = 32 physically stepped truth conditions.
+          Each condition has 6 separately stepped actual native robot controller arms, or 192 simulator worlds; there are ZERO pretrained PPO policy task deployments here.
+
+          Foreign robot zero-shot public achieved-motion response: 0/32 restored native commanded target POSITION (32 fail-closed abstentions).
+          One prior PAIR of known delivery-truth labelled physical calibration examples per target robot, fixed-action local prototype: 16/32, 16 abstentions.
+          SAME prior paired local calibration, action-CONDITIONED affine mean-response prototype mu_held + scale*(mu_applied - mu_held):
+          32/32 actually restored native commanded target POSITION within 1e-4m, 0 observed wrong confident ACK guesses, 0 controller target private reads at decision time.
+          Blind optimistic and blind pessimistic each restored 16/32 with 16 wrong confident ACK guesses.
+          One PRIVILEGED controller-target read after common probe: 32/32 native target position restored, 32 reads.
+
+          Prior paired calibration means TWO known truth-label target robot PhysX source trials, NOT zero-shot, unsupervised or free observations.
+          The objective is controller commanded target POSITION, not EE achieved pose, full SO3, collision/contact force, model safety, PickCube task success, trained PPO/VLA transfer, hardware loss/reorder, or outside independent lab adoption.
+          Two amplitude values and four new reset states per robot are limited evidence; observed 0 errors is not a population reliability certificate.
+          The earlier retrospective cross-robot study was hypothesis generation; THIS new 32-condition source experiment and six-arm comparators were frozen before new physical test outcomes.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dest"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'evidence: preserve all original 32 Panda/xArm action-amplitude OOD PhysX worlds'
+          for i in 1 2 3 4 5; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then exit 0; fi
+          done
+          exit 1
