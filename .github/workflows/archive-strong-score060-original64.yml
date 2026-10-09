@@ -1,0 +1,130 @@
+name: 'Archive stronger prior-tuned 0.60 full matching PhysX 640 original worlds and reviewer risk'
+on:
+  push:
+    branches: [research/strong-score060-matched-ack-new64-20261009]
+    paths: [.github/workflows/archive-strong-score060-original64.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  exact_source_and_counterfactual_claim_integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pin first original 10/10 fully physically matched CI and all nine original immutable source artifact checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37929461571 --jq .head_sha)" = ce1516687b3867ed33c14146f15128147a76c3f4
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37929461571 --jq .conclusion)" = success
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37929461571 --jq .run_attempt)" = 1
+          test "$(git hash-object research/STRONG_SAME_PUBLIC_060_NEW64_BEFORE_PHYSX.json)" = 64b381cd75dfedc8d5d4f9761f0a49e3472df835
+          test "$(git hash-object research/frozen_ppo_strong_tuned_score060_physx.py)" = 1d622c2e8ac8f2ad8d51fdddab728578a455c5f6
+          test "$(git hash-object research/run_strong_score060_new64.py)" = 0dd753671f43067c735ca35c5160f791338917aa
+          test "$(git hash-object research/audit_strong_score060_new64.py)" = 6f9f0f44762c8b3d426bcfef364b33ac5193ac6a
+          test "$(git hash-object research/reviewer_strong060_actual_source_risk.py)" = e92e164224b5b880ceac75757a2a711b3cfb9fd6
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11616075334 --jq .digest)" = "sha256:78583cbde482e3a229d20f7852b205b6d21236d61d1523d9ad3d2a0546ac4c8d"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11615876909 --jq .digest)" = "sha256:63337f79bf38a921d92180c1499de8118ba5f960570c2399080c214e22a085ea"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11615862151 --jq .digest)" = "sha256:e232868c107a879d54a8afdb5f1998a0226664587f9df06ffdbdf0c71b320e49"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11615792062 --jq .digest)" = "sha256:274ea79e6dd6b855a6769f57634e9ccb2a7f47ae0e423c39bf955d4b19c510ea"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11615727424 --jq .digest)" = "sha256:e1679deece225bda68c2ee752e9320b7bb60af0f6355f6f68e46b5aa2daa40fb"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11615567923 --jq .digest)" = "sha256:935f0ce233a2cb34db26ce26ad96239a40c9cbc3898eb3639d5f634016a6250e"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11615023559 --jq .digest)" = "sha256:a395eec4103dfe578a3732b5c69260154ba28483b6e78473390fe1dbf76cacd0"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11614948713 --jq .digest)" = "sha256:1d2b1cbc057665d6ee1ccd4918ee2223e5cdb1ddd94e4e750f31d50df48440f0"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11614883717 --jq .digest)" = "sha256:dc941e669994dd9fbca3304106f1422eb13b291af61152ebd2ad2edd4c0a9392"
+          python -m py_compile research/audit_strong_score060_new64.py research/reviewer_strong060_actual_source_risk.py
+      - name: Retrieve all eight unmodified original native PPO PhysX JSON shard evidence, original 64-state full source auditor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/zip /tmp/source /tmp/first
+          gh run download 37929461571 --repo "$GITHUB_REPOSITORY" --pattern 'original-new64-strong-score-060-*' --dir /tmp/zip
+          gh run download 37929461571 --repo "$GITHUB_REPOSITORY" --name first-complete-new64-640-real-physx-strong-score-060-audit --dir /tmp/first
+          find /tmp/zip -type f -name 'tuned060_*.json' -exec cp '{}' /tmp/source/ \;
+          test "$(find /tmp/source -type f -name 'tuned060_*.json' | wc -l)" -eq 16
+          test -s /tmp/first/complete_first_audit.json
+      - name: Independently recompute source-complete original physically matched strong-score results and exact reviewer statistics
+        run: |
+          set -euo pipefail
+          python -m research.audit_strong_score060_new64 --source-dir /tmp/source --output /tmp/second_audit.json
+          python -m research.reviewer_strong060_actual_source_risk --source-dir /tmp/source --output /tmp/actual_source_risk.json
+          python - <<'PY'
+          import json,shutil,tempfile
+          from pathlib import Path
+          from research.audit_strong_score060_new64 import full_audit
+          first=json.loads(Path('/tmp/first/complete_first_audit.json').read_text())
+          second=json.loads(Path('/tmp/second_audit.json').read_text())
+          risk=json.loads(Path('/tmp/actual_source_risk.json').read_text())
+          assert first==second,'Original unchanged PhysX source and independent 64-state audit differ'
+          A='fault_public_t3_fourhistory_or_t4_query'
+          B='fault_strong_tuned_score_060_or_query'
+          C='fault_always_single_privileged_query'
+          assert second['n_original_task_reset_states']==64 and second['real_native_PhysX_controller_worlds']==640
+          assert second['fully_exposed_physically_matched_original_states']==64
+          assert second['CENSORED_original_reset_states_kept_in_intent_to_treat']==0
+          assert (second['total'][A]['official_success'],second['total'][A]['private_reads'],second['total'][A]['wrong_confident'])==(59,52,0)
+          assert (second['total'][B]['official_success'],second['total'][B]['private_reads'],second['total'][B]['wrong_confident'])==(59,53,0)
+          assert (second['total'][C]['official_success'],second['total'][C]['private_reads'])==(59,64)
+          assert second['total'][A]['achieved_XYZ_sample_events']==second['total'][B]['achieved_XYZ_sample_events']==128
+          assert risk['original_reset_states']==risk['full_two_ACK_physically_exposed_SE3_matched_states']==64
+          assert risk['methods'][A]['exposed_true_full_history_authorizations']==12
+          assert risk['methods'][B]['exposed_true_full_history_authorizations']==11
+          assert risk['methods'][A]['exposed_wrong_confident_histories']==risk['methods'][B]['exposed_wrong_confident_histories']==0
+          for attack in ('delete_a_source','duplicate_seed','flip_task_success','forge_private_read','forge_score060_floor','forge_physical_prefix'):
+              with tempfile.TemporaryDirectory() as td:
+                  dst=Path(td)/'sources';shutil.copytree('/tmp/source',dst)
+                  f=sorted(dst.glob('*_original8.json'))[0]
+                  if attack=='delete_a_source':f.unlink()
+                  else:
+                      d=json.loads(f.read_text());q=d['episodes'][0]
+                      if attack=='duplicate_seed':q['seed']=d['episodes'][1]['seed']
+                      elif attack=='flip_task_success':q['success_once'][A]=not q['success_once'][A]
+                      elif attack=='forge_private_read':q['privileged_target_readback_decision_count'][A]=2
+                      elif attack=='forge_score060_floor':q['strong_score_060_evidence']['strong_score_floor_frozen_from_prior_training']=.95
+                      elif attack=='forge_physical_prefix':q['matched_score060_prefix_audit']['pre_t5_target_position_max_abs_m']=.1
+                      f.write_text(json.dumps(d))
+                  try:full_audit(dst)
+                  except (ValueError,AssertionError,KeyError,TypeError):continue
+                  raise AssertionError('FAILED to reject source forgery '+attack)
+          print('PASS 64 actual fully 2x2 ACK/SE3 matched, 640 real worlds, robust challenger, 6 original forgeries rejected')
+          PY
+      - name: Commit permanent original task-source archive, both independent auditor source outputs and source-stat confidence bounds
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/strong_score060_original64_1940001_1950032
+          mkdir -p "$dest"
+          cp /tmp/source/*.json "$dest/"
+          cp /tmp/first/complete_first_audit.json "$dest/first_original_full64_audit.json"
+          cp /tmp/second_audit.json "$dest/second_independent_full64_audit.json"
+          cp /tmp/actual_source_risk.json "$dest/reviewer_complete_risk_sensing_and_task_stats.json"
+          (cd "$dest" && sha256sum -- *.json > ORIGINAL_SOURCE_SHA256SUMS && sha256sum -c ORIGINAL_SOURCE_SHA256SUMS)
+          cat > "$dest/README.md" <<'EOF'
+          # Genuine native frozen PPO PhysX: strong DEVELOPMENT-tuned 0.60 same-XYZ active-read comparator
+          [First fully physically executed original 64-state, 640 native controller-world PhysX run](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37929461571), original source commit ce1516687b3867ed33c14146f15128147a76c3f4.
+          Prospective frozen protocol committed **BEFORE implementation or seeing 194/195 original results**: a8dbef81da3f7640a452a94d1bd1e90266c4b289; strong score 0.60 tuned to DIFFERENT, earlier 176/177 development states and disclosed as posthoc DEVELOPMENT score choice, NOT calibrated posterior.
+          TRUE 64 previously unseen original PullCube 1940001..1940032 and StackCube 1950001..1950032. ALL 64/64 physically expose BOTH actual unknown ACK applied/held events, with all four joint truth pairs equally balanced per task. Actual A/B/C pre-t5 controller commands and achieved/commanded full SE3 match, and A/B have identical two public XYZ sampling events each (128 per method). 10 real native control treatment worlds per state.
+          Main prior complete-history set admission: **59/64 official tasks, 52 target-register reads, 12 confident complete histories, 0 observed wrong**. Strong 0.60 same-public source-trained but uncalibrated residual-score ONLY: **59/64 tasks, 53 reads, 11 confident histories, 0 observed wrong**. Fixed true state reader: 59/64 tasks, 64 private reads. No task success superiority. Only **ONE** private read advantage over the STRONG same-information competitor — insufficient to claim a major new algorithm SOTA.
+          0 wrong confident from only 12 / 11 decisions is NOT a population false-authorization bound, zero-risk physical safety certificate, proper posterior reliability or probability calibration. All task failures kept. One controller Panda, two released PPO tasks, no actual network ACK drops or independent outside fork, no verified VLA fault repair and no real hardware safety.
+          All untouched 16 original simulator/auditor JSON files, original and independent recomputed complete64 JSON, reviewer actual-source paired outcomes/risk bounds, checksum ledger and six intentionally forged datasets rejected. Reproduce full source without simulator: python -m research.reviewer_strong060_actual_source_risk --source-dir research/frozen_policy_transfer/evidence/strong_score060_original64_1940001_1950032 --output /tmp/recalc.json
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dest"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'evidence: source-preserve strong prior-trained 0.60 PhysX 64 fully matched and reviewer risk'
+          for i in 1 2 3; do
+            git fetch origin research/strong-score060-matched-ack-new64-20261009
+            if ! git rebase origin/research/strong-score060-matched-ack-new64-20261009; then git rebase --abort; exit 1; fi
+            if git push origin HEAD:research/strong-score060-matched-ack-new64-20261009; then echo 'PASS source permanently archived'; exit 0; fi
+          done
+          exit 1
