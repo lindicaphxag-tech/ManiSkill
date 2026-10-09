@@ -1,0 +1,121 @@
+name: Archive immutable actual matched-public Bayesian pilot 16 PhysX originals
+
+on:
+  push:
+    branches: [research/matched-public-bayes-native16-20261009]
+    paths: [.github/workflows/archive-matched-public-bayes-original16.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  recalc-source-and-save-original-16:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Confirm first unique source run was complete, not source-only or rerun
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37923604209 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37923604209 --jq .run_attempt)" = "1"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37923604209 --jq .head_sha)" = "3bfc400c09d15ac6b5f87438890315393e3ec811"
+          test "$(git hash-object research/frozen_ppo_matched_public_bayes_physx.py)" = 6e039af56006827fc2fe063b541cfa3dcd1ddc89
+          test "$(git hash-object research/MATCHED_PUBLIC_BAYES_NATIVE16_PREOUTCOME_V1.json)" = d229db10a75effafda1be269f556c0bf9ca104bb
+      - name: Download untouched original run artifacts by exact first-run ID
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 37923604209
+          github-token: ${{ github.token }}
+          pattern: original-matched-public-posterior-physx-*
+          path: /tmp/bayes-original16
+      - name: Download original complete 16-state source summary
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 37923604209
+          github-token: ${{ github.token }}
+          name: all16-independently-reaggregated-original-physx
+          path: /tmp/bayes-original16/complete
+      - name: Fail if either original native PhysX shard/log/audit is absent
+        run: |
+          set -euo pipefail
+          # Do not pre-reject a pattern if artifact directories differ;
+          # the exact original filenames, two task IDs, 16 unique rows and
+          # native decision-source hashes are verified by the Python auditor.
+          find /tmp/bayes-original16 -type f | sort
+          test -s /tmp/bayes-original16/complete/new16_full_original_source_audit.json
+      - name: Independent stdlib audit of every original task state and matched information cost
+        run: |
+          python - <<'PY'
+          import json,hashlib,pathlib
+          root=pathlib.Path('/tmp/bayes-original16')
+          full=json.loads((root/'complete/new16_full_original_source_audit.json').read_text())
+          assert full['declared_reset_count']==16
+          assert full['native_controller_worlds']==160
+          aggregate={'method_success':0,'method_reads':0,'method_confident':0,
+                     'posterior_success':0,'posterior_reads':0,'posterior_confident':0,
+                     'fixed_success':0,'fixed_reads':0}
+          for task in ('pull_cube','stack_cube'):
+            files=list(root.rglob(f'mixed_ack_{task}_original8.json'))
+            summary=list(root.rglob(f'{task}_source_audit.json'))
+            assert len(files)==len(summary)==1,(task,files,summary)
+            q=json.loads(files[0].read_bytes())
+            s=json.loads(summary[0].read_bytes())
+            assert len(q['episodes'])==8
+            for row in q['episodes']:
+              for k,arm in (('method','fault_public_t3_fourhistory_or_t4_query'),
+                            ('posterior','fault_same_public_posterior_or_query'),
+                            ('fixed','fault_always_single_privileged_query')):
+                aggregate[k+'_success']+=int(row['success_once'][arm])
+                aggregate[k+'_reads']+=row['privileged_target_readback_decision_count'][arm]
+                assert row['public_motion_observation_cost_samples'][arm]==(0 if k=='fixed' else 2)
+              for key in ('matched_prefix_physical_audit','matched_posterior_prefix_audit'):
+                x=row[key]
+                assert x['valid_exact_prefix'] is True
+                assert max(*x['native_fault_dispatch_linf_each'],
+                           x['pre_t5_achieved_position_max_abs_m'],
+                           x['pre_t5_achieved_orientation_geodesic_rad'],
+                           x['pre_t5_target_position_max_abs_m'],
+                           x['pre_t5_target_orientation_geodesic_rad'])<=5e-5
+              for k,field in (('method','public_t3_evidence'),('posterior','same_sensor_posterior_evidence')):
+                e=row[field]
+                aggregate[k+'_confident']+=int(e['authorized'])
+                assert e['wrong_confident'] is False
+            assert s['n']==8 and s['all_native_prefix_verified'] is True
+          assert aggregate==dict(method_success=14,method_reads=13,method_confident=3,
+                     posterior_success=14,posterior_reads=16,posterior_confident=0,
+                     fixed_success=14,fixed_reads=16),aggregate
+          for stat in full['per_task_original_statistics']:
+            for field in aggregate:
+              assert stat[field]>=0
+          print('PASS all original 16: public unique 3, posterior score 0, fixed tasks 14/16; identical physical prequery prefix verified')
+          PY
+      - name: Preserve byte-identical source first pilot, original terminal logs, whole ledger and SHA256
+        run: |
+          set -euo pipefail
+          dst=research/frozen_policy_transfer/evidence/matched_public_bayes_original16_1700001_1710008
+          mkdir -p "$dst"
+          cp -a /tmp/bayes-original16/. "$dst/"
+          (cd "$dst" && find . -type f ! -name ORIGINAL_ARCHIVE_SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > ORIGINAL_ARCHIVE_SHA256SUMS)
+          (cd "$dst" && sha256sum -c ORIGINAL_ARCHIVE_SHA256SUMS)
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dst"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'research evidence: original 16 PhysX Bayesian vs complete history same-public pilot with SHA256'
+          for i in 1 2 3; do
+            git fetch origin "${{ github.ref_name }}"
+            if ! git rebase "origin/${{ github.ref_name }}"; then git rebase --abort; exit 1; fi
+            if git push origin HEAD:"${{ github.ref_name }}"; then exit 0; fi
+          done
+          exit 1

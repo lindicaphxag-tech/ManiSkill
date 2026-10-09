@@ -1,0 +1,123 @@
+name: "Preserve original 640 matched public real PhysX Bayes comparator and one WRONG confident case"
+on:
+  push:
+    branches: [research/matched-public-bayes-native16-20261009]
+    paths: [.github/workflows/archive-matched-public-bayes-new64.yml]
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: read
+jobs:
+  verify_true_original_then_preserve_every_failure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pin first full 10/10 PhysX experiment, frozen prereg, three exact scorers and all 9 original ZIP digests
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37924117746 --jq .head_sha)" = 2e5a2f35742cdd39593ad00b3f2e4709ef421319
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37924117746 --jq .conclusion)" = success
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37924117746 --jq .run_attempt)" = 1
+          test "$(git hash-object research/MATCHED_PUBLIC_BAYES_NEW64_PREOUTCOME_V1.json)" = 9c758954f28cd0f3a99480f43828ab2a024c805a
+          test "$(git hash-object research/frozen_ppo_matched_public_bayes_physx.py)" = 6e039af56006827fc2fe063b541cfa3dcd1ddc89
+          test "$(git hash-object research/run_matched_public_bayes_new64.py)" = 06c27fde75e37c0ab79fd7a2ec374c5249a76447
+          test "$(git hash-object research/audit_matched_public_bayes_new64.py)" = 2dbd461fa6db985d0f536080548e295151154936
+          test "$(git hash-object research/reviewer_matched_public_cost_and_uncertainty.py)" = 31889d0f80662ecf8b433154b0cc25139c4bebc4
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11614060125 --jq .digest)" = "sha256:532d6c16d1a33c2c5ac8b7674f273cab328285ed78ec73ade487d75fe39d0697"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11614055061 --jq .digest)" = "sha256:a8c0df7aa5fdd1589d5ef25da31e332f3ce2ba58ed17a8dfba087a276c7a2342"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11613835632 --jq .digest)" = "sha256:6f9958108e05f741be872b572d8caaf072c28d9745e9e4c0f01e7f822e12b37b"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11613745735 --jq .digest)" = "sha256:40224e025973a122fd2b5c27440f1573841bc428d7375ee01ce89a54e65bc6d6"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11613455947 --jq .digest)" = "sha256:4c8ce073e648f07a898cc7d30c7f743727fcb9cb3b10d7c496aa83ad49f72f4f"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11613297822 --jq .digest)" = "sha256:e0fd779c2aadacc5db2b59d130128b194ff47b533d96d08dc3cde1777d7653da"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11613272764 --jq .digest)" = "sha256:456a72dbac7c95ac21f835102e17be41f2de2326e723fc543f1744046a84121e"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11613117836 --jq .digest)" = "sha256:fc9f22be912622f86d73e9d985cd75518d147a39b1a2a519fcfd88537af5b1ea"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11612828739 --jq .digest)" = "sha256:27adf5dab0c3145a361be4ef7547046b93aca1a468e68cae8ce3d39805074843"
+      - name: Recover ALL eight byte-original separate native PPO source and audit shards
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/zip /tmp/source /tmp/first_audit
+          gh run download 37924117746 --repo "$GITHUB_REPOSITORY" --pattern "original-new64-matched-public-*" --dir /tmp/zip
+          gh run download 37924117746 --repo "$GITHUB_REPOSITORY" --name first-complete-new64-640-real-physx-full-original-audit --dir /tmp/first_audit
+          find /tmp/zip -type f -name 'bayes_same_public_*.json' -exec cp {} /tmp/source/ \;
+          test "$(find /tmp/source -type f -name 'bayes_same_public_*.json' | wc -l)" -eq 16
+          test -s /tmp/first_audit/complete_first_audit.json
+      - name: Independently rescore all 64 trial originals, paired read costs and reliability, reject 6 adversarial source mutations
+        run: |
+          set -euo pipefail
+          python -m research.audit_matched_public_bayes_new64 --source-dir /tmp/source --output /tmp/second_complete_audit.json
+          python -m research.reviewer_matched_public_cost_and_uncertainty --source-dir /tmp/source --output /tmp/paired_cost_stats.json
+          python - <<'PY'
+          import json,shutil,tempfile
+          from pathlib import Path
+          from research.audit_matched_public_bayes_new64 import full_audit
+          x=json.loads(Path("/tmp/first_audit/complete_first_audit.json").read_text())
+          y=json.loads(Path("/tmp/second_complete_audit.json").read_text())
+          z=json.loads(Path("/tmp/paired_cost_stats.json").read_text())
+          assert x==y, "Original first PhysX run differs from second independent complete source re-audit"
+          assert x["n_original_task_reset_states"]==64 and x["real_native_PhysX_controller_worlds"]==640
+          a="fault_public_t3_fourhistory_or_t4_query";b="fault_same_public_posterior_or_query";c="fault_always_single_privileged_query"
+          assert (x["total"][a]["official_success"],x["total"][a]["private_reads"],x["total"][a]["wrong_confident"]) == (52,48,1)
+          assert (x["total"][b]["official_success"],x["total"][b]["private_reads"],x["total"][b]["wrong_confident"]) == (52,63,0)
+          assert (x["total"][c]["official_success"],x["total"][c]["private_reads"]) == (52,64)
+          assert z["confidence_risk"]["observed_full_history_confident_wrong"]==1
+          assert x["total"][a]["achieved_XYZ_sample_events"]==x["total"][b]["achieved_XYZ_sample_events"]==128
+          for kind in ("missing_original","duplicate_seed","flip_success","private_read_fraud","prefix_fraud","posterior_threshold_drift"):
+              with tempfile.TemporaryDirectory() as tmp:
+                  path=Path(tmp)/"source";shutil.copytree("/tmp/source",path)
+                  f=sorted(path.glob("*_original8.json"))[0]
+                  if kind=="missing_original":f.unlink()
+                  else:
+                      data=json.loads(f.read_text(),parse_constant=lambda _ : None);row=data["episodes"][0]
+                      if kind=="duplicate_seed":row["seed"]=data["episodes"][1]["seed"]
+                      elif kind=="flip_success":row["success_once"][a]=not row["success_once"][a]
+                      elif kind=="private_read_fraud":row["privileged_target_readback_decision_count"][a]=2
+                      elif kind=="prefix_fraud":row["matched_posterior_prefix_audit"]["pre_t5_target_position_max_abs_m"]=0.1
+                      elif kind=="posterior_threshold_drift":row["same_sensor_posterior_evidence"]["posterior_threshold_predeclared"]=0.5
+                      f.write_text(json.dumps(data))
+                  try:full_audit(path)
+                  except (ValueError,KeyError,TypeError,AssertionError):continue
+                  raise AssertionError("FALSIFIED original source accepted "+kind)
+          print("PASS: 640 PhysX original worlds, one real WRONG CONFIDENT, 6 tamper rejections")
+          PY
+      - name: Commit all 16 untouched simulator original source JSON, two full source audits, stratified statistics and SHA256
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/matched_same_public_bayes_original64_1760001_1770032
+          mkdir -p "$dest"
+          cp /tmp/source/*.json "$dest/"
+          cp /tmp/first_audit/complete_first_audit.json "$dest/first_original_full64_audit.json"
+          cp /tmp/second_complete_audit.json "$dest/second_recomputed_full64_audit.json"
+          cp /tmp/paired_cost_stats.json "$dest/paired_cost_and_uncertainty.json"
+          (cd "$dest" && sha256sum -- *.json > ORIGINAL_SOURCE_SHA256SUMS && sha256sum -c ORIGINAL_SOURCE_SHA256SUMS)
+          cat > "$dest/README.md" <<'EOF'
+          # Prospective 64 genuinely unseen full-prefix-matched same-public observation ACK test: NEGATIVE confident history counterexample
+          Original 10/10 successful actually stepped PhysX source and all64 auditor: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37924117746 . Original physical SHA head 2e5a2f35742cdd39593ad00b3f2e4709ef421319.
+          Frozen NEW64 pre-outcome prereg blob 9c758954f28cd0f3a99480f43828ab2a024c805a; TWO released PPO checkpoints unchanged. PullCube seeds 1760001..1760032, StackCube 1770001..1770032: 64 independently reset task states and 640 physically stepped native controller instances across 10 fixed treatments.
+          Both unknown ACKs real applied/held physical patterns are present 8/task/truth; all three primary arms have exactly matched original physical native command and achieved/controller commanded SE3 prefix before t5. The two candidate inference treatments each receive 128 achieved-XYZ sample events and one identical physically stepped known-delivered neutral action per trial.
+          **Matched results:** full-history set membership with fallback 52/64 official tasks, 48 true private target reads, 16 confident whole-histories, **1 FALSE confident authority**. Same-public Gaussian-shaped residual score at frozen .95 threshold: 52/64 tasks, 63 true private target reads, 1 confident selection, 0 observed wrong. Mandatory private read 52/64, 64 true reads. The normalized residual weights are NOT calibrated posteriors or an official ActionShift DualABI model.
+          Read economy is 15/63 relative to a same-public heuristic and 16/64 relative to mandatory t5 private state reads. Crucially one false confident full-pose choice survived the prior empirical epsilon model; no claimed safe zero-error authority! Official task success can mask latent controller target identity errors.
+          All sixteen untouched source/audit JSON originals, original and independently recomputed complete64 JSON, exact SHA256 ledger and statistical bootstrap are preserved. Six adversarial forgeries are rejected. Stratified uncertainty intervals remain exploratory and do not certify task superiority, formal noninferiority, calibration, hardware safety, general VLA task success or external replication.
+          To independently re-score without simulator: python -m research.audit_matched_public_bayes_new64 --source-dir research/frozen_policy_transfer/evidence/matched_same_public_bayes_original64_1760001_1770032 --output /tmp/audit.json
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$dest"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "evidence: preserve 640 physically matched same-public originals incl one confidently wrong target history"
+          for i in 1 2 3 4; do
+            git fetch origin research/matched-public-bayes-native16-20261009
+            if ! git rebase origin/research/matched-public-bayes-native16-20261009; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:research/matched-public-bayes-native16-20261009; then exit 0; fi
+          done
+          exit 1

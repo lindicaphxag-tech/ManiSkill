@@ -1,0 +1,152 @@
+name: "Prospective new64 matched-public finite history vs residual-weight comparator (640 native PhysX)"
+on:
+  push:
+    branches: [research/matched-public-bayes-native16-20261009]
+    paths:
+      - '.github/workflows/matched-public-bayes-new64.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-method-and-cohort-before-outcomes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Confirm immutable new64 preregistration AND original previously tested model method
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/MATCHED_PUBLIC_BAYES_NEW64_PREOUTCOME_V1.json)" = 9c758954f28cd0f3a99480f43828ab2a024c805a
+          test "$(git hash-object research/frozen_ppo_matched_public_bayes_physx.py)" = 6e039af56006827fc2fe063b541cfa3dcd1ddc89
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          python -m py_compile research/run_matched_public_bayes_new64.py research/frozen_ppo_matched_public_bayes_physx.py
+          python - <<'PY'
+          from research.run_matched_public_bayes_new64 import pin_sources,accepted
+          pin_sources()
+          p=[z for k in range(4) for z in accepted("pull_cube",k)]
+          s=[z for k in range(4) for z in accepted("stack_cube",k)]
+          assert p==list(range(1760001,1760033))
+          assert s==list(range(1770001,1770033))
+          assert not set(p+s)&set(range(1700001,1700009))
+          assert not set(p+s)&set(range(1710001,1710009))
+          assert len(set(p+s))==64
+          print("FROZEN_64_CAUSAL_SAME_PUBLIC_10_CONTROLLER_PHYSX_READY")
+          PY
+
+  eight-frozen-native-ppo-physx-shards:
+    needs: frozen-method-and-cohort-before-outcomes
+    runs-on: ubuntu-latest
+    timeout-minutes: 115
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install native CPU PhysX and unchanged original released external PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Freeze actual operator, source and Python environment before native stepping
+        run: |
+          mkdir -p original_physx_evidence
+          git rev-parse HEAD > original_physx_evidence/SOURCE_COMMIT.txt
+          printf 'operator=%s repo=%s\n' "$GITHUB_ACTOR" "$GITHUB_REPOSITORY" > original_physx_evidence/ACTUAL_OWNER.txt
+          python -m pip freeze --all > original_physx_evidence/ACTUAL_PYTHON_ENV.txt
+      - name: Execute TEN actually stepped matched-world controller strategies for EIGHT original seeds
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python -m research.run_matched_public_bayes_new64             --task "${{ matrix.task }}" --chunk "${{ matrix.chunk }}"             2>&1 | tee original_physx_evidence/REAL_NATIVE_PHYXS_FULL_LOG.txt
+          cp "bayes_same_public_${{ matrix.task }}_chunk${{ matrix.chunk }}_original8.json" original_physx_evidence/
+          cp "bayes_same_public_${{ matrix.task }}_chunk${{ matrix.chunk }}_audit.json" original_physx_evidence/
+          (cd original_physx_evidence && find . -type f ! -name SOURCE_SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SOURCE_SHA256SUMS)
+      - name: Retain original failed as well as passed source and provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: original-same-public-Bayes-new64-${{ matrix.task }}-${{ matrix.chunk }}
+          path: original_physx_evidence/
+          retention-days: 90
+
+  independently-recompute-all64:
+    needs: eight-frozen-native-ppo-physx-shards
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-same-public-Bayes-new64-*
+          path: downloaded_originals/
+      - name: Verify untouched EIGHT original JSONs, 64 seeds, true joint ACK and matched t5 physics
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from collections import Counter
+          import hashlib, json
+          from research.run_matched_public_bayes_new64 import independent_eight
+          base=Path("downloaded_originals")
+          A="fault_public_t3_fourhistory_or_t4_query"
+          B="fault_same_public_posterior_or_query"
+          C="fault_always_single_privileged_query"
+          totals={k:Counter() for k in ("A","B","C")}
+          seen=set()
+          original=[]
+          for task in ("pull_cube","stack_cube"):
+            for chunk in range(4):
+              p=list(base.rglob(f"bayes_same_public_{task}_chunk{chunk}_original8.json"))
+              a=list(base.rglob(f"bayes_same_public_{task}_chunk{chunk}_audit.json"))
+              assert len(p)==len(a)==1,(task,chunk,len(p),len(a))
+              raw=p[0].read_bytes()
+              d=json.loads(raw)
+              recomputed=independent_eight(d,task,chunk)
+              saved=json.loads(a[0].read_bytes())
+              assert saved["exact_original_PhysX_JSON_SHA256"]==hashlib.sha256(raw).hexdigest()
+              for key,value in recomputed.items():
+                assert saved[key]==value,(task,chunk,key)
+              for witness in recomputed["original_all_eight"]:
+                ident=(witness["task"],witness["seed"])
+                assert ident not in seen;seen.add(ident)
+                assert witness["same_public_samples"] is True
+              original.append({"task":task,"chunk":chunk,"sha256":hashlib.sha256(raw).hexdigest()})
+              for label,arm in (("A",A),("B",B),("C",C)):
+                x=recomputed["source_outcomes"][arm]
+                for k in ("official_success","private_reads","confident","wrong_confident","public_xyz_events"):
+                  totals[label][k]+=x[k]
+          assert len(seen)==64 and len(original)==8
+          result={"source_original_8_shard_sha256":original,
+                  "registered_64_unique_task_reset_ids":64,
+                  "actually_physically_stepped_native_PPO_worlds":640,
+                  "all_authority_and_native_prefix_checks_passed":True,
+                  "per_original_64_by_treatment":{k:dict(v) for k,v in totals.items()},
+                  "NOT_official_ActionShift_DualABI":True,
+                  "NOT_independent_outside_reproduction":True,
+                  "NOT_hardware_certification_or_peer_review":True}
+          Path("FROZEN_64_INDEPENDENT_ALL_SOURCE_AUDIT.json").write_text(
+             json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print("NEW64_ORIGINAL_MATCHED_PUBLIC_PHYSX_FULL_DENOMINATOR",
+                json.dumps(result,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: registered-original-64-matched-public-posterior-vs-setmembership-source-recomputation
+          path: FROZEN_64_INDEPENDENT_ALL_SOURCE_AUDIT.json
