@@ -1,0 +1,46 @@
+name: Audit ALL 64 task-phase information query real PhysX originals
+on:
+  push:
+    branches: [research/phase-value-query-fresh64-20261009]
+    paths:
+      - 'research/audit_phase_information_new64.py'
+      - '.github/workflows/phase-value-new64-raw-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  eight-original-sha-source-artifacts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download eight actual frozen PhysX shards, without dropping any failures
+        run: |
+          set -euo pipefail
+          gh run download 37911185135 --repo "$GITHUB_REPOSITORY" \
+            --pattern 'phaseinfo-*' --dir actual_native64_artifacts
+          test "$(find actual_native64_artifacts -mindepth 1 -maxdepth 1 -type d | wc -l)" -eq 8
+      - name: Validate source blobs, original native actions, SHA, actual controller reads, margins and paired strong baseline
+        run: |
+          set -o pipefail
+          python -m research.audit_authority_slack_new64 \
+            --artifacts actual_native64_artifacts \
+            --out phase_value_native64_full_audited.json 2>&1 | tee phase_value_original_audit.log
+      - name: Preserve all 64 original state results, failure logs and provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-value-real64-source-hashed-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 90
+          path: |
+            phase_value_native64_full_audited.json
+            phase_value_original_audit.log
+
+# A source-locked self-audit is NOT independent external scientific endorsement.
