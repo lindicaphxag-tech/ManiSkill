@@ -107,10 +107,10 @@ def read_verified_sources(folder):
        "native_dispatched_command_identical_counts":by,
        "per_task_truth":summary,
        "original_per_condition":records,
-       "not_identical_actions_prior_to_decision_for_all_competitors":True,
+       "not_identical_actions_prior_to_decision_for_all_competitors": any(x<128 for x in by.values()),
        "scientific_claim":"The original task-success and private-read differences may include actually different native t3 motor commands BEFORE t5 information selection. Report counts as measured and do not attribute a task win solely to public target history information.",
        "zero_all_faulted_neutral_probe_not_relevant_to_three_main_comparators":"Strict-common-exact arm refuses earlier and does not probe; all THREE primary comparators actually probed 128/128.",
-       "no_policy_superiority_established":"32-cluster p=.1484, as independently audited.",
+       "no_policy_superiority_established":"New disjoint 32-cluster exact two-sided sensitivity p=.0556640625 (> .05), as independently audited.",
        "source_truth_used_ONLY_for_audit_after_actual_PhysX":True
     }
 
