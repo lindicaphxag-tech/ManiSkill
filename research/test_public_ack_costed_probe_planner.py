@@ -37,5 +37,13 @@ class TestActualActiveHistoryProbe(unittest.TestCase):
     def test_native_anisotropic_bounds_affect_actual_displacement(self):
         p=choose_bounded_probe((0,0,0),[(.1,0,0),(0,.1,0)],(-.05,-.2,-.1),(.05,.2,.1))
         self.assertTrue(all(abs(v)<=1 for v in p.normalized_native_6d))
-        self.assertAlmostEqual(p.actual_target_translation_m[2],0)
+        # The optimizer MAY choose any axis. Verify the PHYSICAL displacement
+        # is the actuator-scale translation for the actual chosen coordinate,
+        # rather than incorrectly assuming the optimizer always chooses x/y.
+        axes=[i for i,z in enumerate(p.normalized_native_6d[:3]) if abs(z)>1e-12]
+        self.assertEqual(len(axes),1)
+        i=axes[0]
+        widths=(.1,.4,.2)
+        self.assertAlmostEqual(abs(p.actual_target_translation_m[i]),.12*widths[i]/2)
+        self.assertTrue(all(abs(p.actual_target_translation_m[j])<1e-12 for j in range(3) if j!=i))
 if __name__=="__main__":unittest.main()
