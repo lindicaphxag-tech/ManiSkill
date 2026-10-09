@@ -170,6 +170,57 @@ def trial(policy,seed):
                         "source_no_fault","fault_oracle_private_target"))))
                 c=controllers[n]
                 arm=arms[n]
+                # A SECOND intentionally forced native ZERO/HOLD after an
+                # unseen first ACK requires NO unauthorized history inversion.
+                # The one-read comparator is correctly UNSYNCHRONIZED until
+                # its registered authoritative read at step 4. Do not call
+                # its observer.prepare at step 3; the physical arm command is
+                # zero regardless of what that observer would have planned.
+                if (n=="fault_always_single_privileged_query"
+                    and step==FAULT_STEPS[1]):
+                    goal_before=privileged_target(arm)  # audit ONLY
+                    gripper=controllers["source_no_fault"].to_action_dict(
+                        native[0])["gripper"]
+                    action=c.from_action_dict({
+                        "arm":torch.zeros_like(native[0,:6]),
+                        "gripper":gripper}).reshape(1,-1)
+                    result["faults"].setdefault(n,[]).append({
+                        "step":step,"actual_native_arm_command":"all_zero_hold",
+                        "original_desired_arm_action_l2":float(torch.linalg.norm(
+                            native[0,:6]).item()),
+                        "controller_execution_ack_seen_by_adapter":"unknown",
+                        "no_intended_native_conversion_authorized_while_unsynchronized":True
+                    })
+                    observations[n],_,terminated,truncated,info=w.step(action)
+                    goal_after=privileged_target(arm)  # audit ONLY
+                    pos,rot=audit_pose_error(goal_after,goal_before)
+                    if pos>1e-4 or rot>1e-4:
+                        raise RuntimeError(
+                            "MANDATORY_SECOND_PHYSICAL_HOLD_TARGET_CHANGED "
+                            f"task={TASK} seed={seed} position={pos} rot={rot}")
+                    result["audit_only_native_hold_checks"].setdefault(n,[]).append({
+                        "step":step,
+                        "held_position_error_inf_m":pos,
+                        "held_rotation_error_rad":rot,
+                        "private_target_getter_audit_only_count":2,
+                        "target_reads_not_exposed_to_controller_decisions":True
+                    })
+                    result["faults"][n][-1].update({
+                        "actual_native_target_hold_verified":True,
+                        "actual_native_held_position_error_m":pos,
+                        "actual_native_held_rotation_error_rad":rot
+                    })
+                    # No ACK is asserted and the observer remains invalid.
+                    # A SINGLE explicit trusted read at t=4 will reset it.
+                    if info.get("success") is None:
+                        raise RuntimeError("Missing actual official ManiSkill task success")
+                    success=base._bool_value(info["success"])
+                    result["success_once"][n]|=success
+                    if success and result["success_step"][n] is None:
+                        result["success_step"][n]=step+1
+                    result["steps"][n]=step+1
+                    done[n]=base._bool_value(terminated) or base._bool_value(truncated)
+                    continue
                 certificate=None
                 desired=None
                 if n=="source_no_fault":
