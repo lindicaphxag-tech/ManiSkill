@@ -1,0 +1,42 @@
+name: Original frozen PPO 1280-world resource price frontier
+on:
+  push:
+    branches:
+      - research/strong060-resource-pareto-audit-20261010
+    paths:
+      - 'research/review_strong060_original_cost_frontier.py'
+      - '.github/workflows/strong060-resource-pareto-original-audit.yml'
+      - 'research/frozen_policy_transfer/evidence/strong060_prospective_original128_first_3110001_3120016/INDEPENDENT_SOURCE_RECOMPUTATION.json'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  true-original-source-cost-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Independently recompute cost frontier and 32-cluster task uncertainty from archived original PhysX
+        run: |
+          python research/review_strong060_original_cost_frontier.py --output source_cost_frontier.json
+          python - <<'PY'
+          import json
+          x=json.load(open('source_cost_frontier.json'))
+          assert x['source_genuine_PhysX_worlds']==1280
+          assert x['independent_reset_clusters']==32
+          assert x['original_source_counts']['fault_public_t3_fourhistory_or_t4_query']['success']==109
+          assert x['original_source_counts']['fault_public_t3_fourhistory_or_t4_query']['reads']==94
+          assert x['original_source_counts']['fault_always_single_privileged_query']['success']==110
+          assert x['original_source_counts']['fault_always_single_privileged_query']['reads']==128
+          print('ORIGINAL_PHYSX_COST_FRONTIER_AUDIT_PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 32-reset-original-physx-cost-frontier-with-restrictions
+          path: source_cost_frontier.json
+          retention-days: 60
+
+# Warning: original frozen PPO evidence and cost sensitivity, NOT VLA task validation.
