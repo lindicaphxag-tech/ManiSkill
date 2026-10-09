@@ -1,0 +1,598 @@
+{
+  "controls": {
+    "fault_always_single_privileged_query": {
+      "reads": 8,
+      "success": 8
+    },
+    "fault_optimistic_unverified_ack": {
+      "reads": 0,
+      "success": 2
+    },
+    "fault_public_t3_fourhistory_or_t4_query": {
+      "reads": 5,
+      "success": 8
+    },
+    "fault_robust_then_single_privileged_query": {
+      "reads": 7,
+      "success": 8
+    },
+    "fault_robust_two_history_without_query": {
+      "reads": 0,
+      "success": 1
+    },
+    "fault_strict_common_exact": {
+      "reads": 0,
+      "success": 0
+    },
+    "source_no_fault": {
+      "reads": 0,
+      "success": 8
+    }
+  },
+  "expected_double_fault_in_all_new_arm_trials": true,
+  "frozen_prereg_blob": "b8c5205ca949720a2d39396c9f8c711e65d7982b",
+  "no_external_lab_replication": true,
+  "not_robot_collision_safety_or_real_transport_loss": true,
+  "original_raw_sha256": "d3fc43c3bc50622e4e956dac01650ce2cd342b38abeb691a591edd163148b9a3",
+  "public": {
+    "complete_fault_exposure": 8,
+    "fallback_authoritative": 5,
+    "four_candidate_states": 8,
+    "public_t3_exposure": 8,
+    "public_xyz_samples": 16,
+    "unique_history": 3,
+    "wrong_confident": 0
+  },
+  "sample_rows": [
+    {
+      "fixed_reads": 1,
+      "fixed_success": true,
+      "new_public_evidence": {
+        "accepted_position_indices": [
+          0
+        ],
+        "after_physics_audit_pose_errors": [
+          [
+            3.3527612630646075e-09,
+            9.308760801162406e-09
+          ],
+          [
+            0.03139784783124924,
+            0.01986740550021719
+          ],
+          [
+            0.09370604157447815,
+            0.030347764809027192
+          ],
+          [
+            0.12123855948448181,
+            0.04945309711767484
+          ]
+        ],
+        "after_xyz": [
+          0.711430549621582,
+          -0.09759969264268875,
+          0.07566975057125092
+        ],
+        "audit_only_hidden_target_was_NOT_decision_input": true,
+        "audit_only_true_candidate_indices": [
+          0
+        ],
+        "authorized": true,
+        "before_xyz": [
+          0.7074777483940125,
+          -0.08418720960617065,
+          0.09748653322458267
+        ],
+        "candidate_residuals_m": [
+          0.00655508490311222,
+          0.009277311246023524,
+          0.020848502029063548,
+          0.021022079784102914
+        ],
+        "empirical_motion_envelope_NOT_physical_safety_certificate": true,
+        "failure_reason": "unique_complete_history_by_public_position_witness",
+        "max_hypothetical_rotation_spread_rad": 0.04945308872220766,
+        "physical_candidate_count": 4,
+        "prior_training_epsilon_m": 0.006944262561376447,
+        "resync_source": "empirical_public_achieved_motion",
+        "selected_candidate_index": 0,
+        "wrong_confident": false
+      },
+      "new_public_fault_steps": [
+        2,
+        3
+      ],
+      "new_reads": 0,
+      "new_success": true,
+      "seed": 840001,
+      "task": "pull_cube",
+      "task_gate_actual_world": "fault_robust_then_single_privileged_query",
+      "task_gate_reads": 1,
+      "task_gate_success": true
+    },
+    {
+      "fixed_reads": 1,
+      "fixed_success": true,
+      "new_public_evidence": {
+        "accepted_position_indices": [
+          0
+        ],
+        "after_physics_audit_pose_errors": [
+          [
+            2.2351741776893697e-09,
+            2.8059870328400787e-09
+          ],
+          [
+            0.038347065448760986,
+            0.02745663963327455
+          ],
+          [
+            0.09061172604560852,
+            0.02611062729326199
+          ],
+          [
+            0.1289587914943695,
+            0.052050370701513984
+          ]
+        ],
+        "after_xyz": [
+          0.6409748196601868,
+          0.06540286540985107,
+          0.06307310611009598
+        ],
+        "audit_only_hidden_target_was_NOT_decision_input": true,
+        "audit_only_true_candidate_indices": [
+          0
+        ],
+        "authorized": false,
+        "before_xyz": [
+          0.6403481364250183,
+          0.06764600425958633,
+          0.08213359117507935
+        ],
+        "candidate_residuals_m": [
+          0.005026095901254958,
+          0.008253318661653231,
+          0.01401991509529304,
+          0.014308313371406806
+        ],
+        "empirical_motion_envelope_NOT_physical_safety_certificate": true,
+        "failure_reason": "ambiguous_or_empirical_model_invalid",
+        "max_hypothetical_rotation_spread_rad": 0.05205036962554056,
+        "physical_candidate_count": 4,
+        "prior_training_epsilon_m": 0.006944262561376447,
+        "resync_source": "one_counted_authoritative_controller_target_read",
+        "selected_candidate_index": null,
+        "wrong_confident": false
+      },
+      "new_public_fault_steps": [
+        2,
+        3
+      ],
+      "new_reads": 1,
+      "new_success": true,
+      "seed": 840002,
+      "task": "pull_cube",
+      "task_gate_actual_world": "fault_robust_then_single_privileged_query",
+      "task_gate_reads": 1,
+      "task_gate_success": true
+    },
+    {
+      "fixed_reads": 1,
+      "fixed_success": true,
+      "new_public_evidence": {
+        "accepted_position_indices": [
+          0
+        ],
+        "after_physics_audit_pose_errors": [
+          [
+            1.4901161138336505e-09,
+            1.5669903958364502e-09
+          ],
+          [
+            0.03130143731832505,
+            0.02110272785287967
+          ],
+          [
+            0.09416991472244263,
+            0.02871134831132109
+          ],
+          [
+            0.11864477396011353,
+            0.0489487620142728
+          ]
+        ],
+        "after_xyz": [
+          0.7100585699081421,
+          0.00977637991309166,
+          0.07543245702981949
+        ],
+        "audit_only_hidden_target_was_NOT_decision_input": true,
+        "audit_only_true_candidate_indices": [
+          0
+        ],
+        "authorized": false,
+        "before_xyz": [
+          0.7040379047393799,
+          0.00652888510376215,
+          0.09720959514379501
+        ],
+        "candidate_residuals_m": [
+          0.005909602339900783,
+          0.0072439823369938846,
+          0.019039040586724863,
+          0.018879217720203068
+        ],
+        "empirical_motion_envelope_NOT_physical_safety_certificate": true,
+        "failure_reason": "ambiguous_or_empirical_model_invalid",
+        "max_hypothetical_rotation_spread_rad": 0.0489487625938237,
+        "physical_candidate_count": 4,
+        "prior_training_epsilon_m": 0.006944262561376447,
+        "resync_source": "one_counted_authoritative_controller_target_read",
+        "selected_candidate_index": null,
+        "wrong_confident": false
+      },
+      "new_public_fault_steps": [
+        2,
+        3
+      ],
+      "new_reads": 1,
+      "new_success": true,
+      "seed": 840003,
+      "task": "pull_cube",
+      "task_gate_actual_world": "fault_robust_then_single_privileged_query",
+      "task_gate_reads": 1,
+      "task_gate_success": true
+    },
+    {
+      "fixed_reads": 1,
+      "fixed_success": true,
+      "new_public_evidence": {
+        "accepted_position_indices": [
+          0
+        ],
+        "after_physics_audit_pose_errors": [
+          [
+            1.4901161138336505e-09,
+            1.5092882022828518e-08
+          ],
+          [
+            0.04004889726638794,
+            0.021667687247472932
+          ],
+          [
+            0.08177915215492249,
+            0.026177866437366155
+          ],
+          [
+            0.12182804942131042,
+            0.04720526521601117
+          ]
+        ],
+        "after_xyz": [
+          0.6233443021774292,
+          -0.040179312229156494,
+          0.06492169946432114
+        ],
+        "audit_only_hidden_target_was_NOT_decision_input": true,
+        "audit_only_true_candidate_indices": [
+          0
+        ],
+        "authorized": false,
+        "before_xyz": [
+          0.625967800617218,
+          -0.03694792464375496,
+          0.0832681730389595
+        ],
+        "candidate_residuals_m": [
+          0.003674160058915927,
+          0.007020659505608058,
+          0.011481639535407031,
+          0.011766265456257077
+        ],
+        "empirical_motion_envelope_NOT_physical_safety_certificate": true,
+        "failure_reason": "ambiguous_or_empirical_model_invalid",
+        "max_hypothetical_rotation_spread_rad": 0.04720525597223395,
+        "physical_candidate_count": 4,
+        "prior_training_epsilon_m": 0.006944262561376447,
+        "resync_source": "one_counted_authoritative_controller_target_read",
+        "selected_candidate_index": null,
+        "wrong_confident": false
+      },
+      "new_public_fault_steps": [
+        2,
+        3
+      ],
+      "new_reads": 1,
+      "new_success": true,
+      "seed": 840004,
+      "task": "pull_cube",
+      "task_gate_actual_world": "fault_robust_then_single_privileged_query",
+      "task_gate_reads": 1,
+      "task_gate_success": true
+    },
+    {
+      "fixed_reads": 1,
+      "fixed_success": true,
+      "new_public_evidence": {
+        "accepted_position_indices": [
+          0
+        ],
+        "after_physics_audit_pose_errors": [
+          [
+            2.384185793236071e-08,
+            3.964417421926215e-09
+          ],
+          [
+            0.03754070997238157,
+            0.009462092457743545
+          ],
+          [
+            0.07965853810310364,
+            0.016439833487945858
+          ],
+          [
+            0.07454981058835985,
+            0.023058943778838607
+          ]
+        ],
+        "after_xyz": [
+          0.7485119104385376,
+          0.01556952204555273,
+          0.05607956647872925
+        ],
+        "audit_only_hidden_target_was_NOT_decision_input": true,
+        "audit_only_true_candidate_indices": [
+          0
+        ],
+        "authorized": true,
+        "before_xyz": [
+          0.7410720586776733,
+          0.014391717500984669,
+          0.07966203987598419
+        ],
+        "candidate_residuals_m": [
+          0.005542077559799798,
+          0.010178326418817739,
+          0.019228312917539094,
+          0.011316605860858878
+        ],
+        "empirical_motion_envelope_NOT_physical_safety_certificate": true,
+        "failure_reason": "unique_complete_history_by_public_position_witness",
+        "max_hypothetical_rotation_spread_rad": 0.0230589408017531,
+        "physical_candidate_count": 4,
+        "prior_training_epsilon_m": 0.006944262561376447,
+        "resync_source": "empirical_public_achieved_motion",
+        "selected_candidate_index": 0,
+        "wrong_confident": false
+      },
+      "new_public_fault_steps": [
+        2,
+        3
+      ],
+      "new_reads": 0,
+      "new_success": true,
+      "seed": 840005,
+      "task": "pull_cube",
+      "task_gate_actual_world": "fault_robust_then_single_privileged_query",
+      "task_gate_reads": 1,
+      "task_gate_success": true
+    },
+    {
+      "fixed_reads": 1,
+      "fixed_success": true,
+      "new_public_evidence": {
+        "accepted_position_indices": [
+          0
+        ],
+        "after_physics_audit_pose_errors": [
+          [
+            1.4901161138336505e-09,
+            1.9926579094591093e-08
+          ],
+          [
+            0.034597818553447734,
+            0.025935571097763746
+          ],
+          [
+            0.08774462342262268,
+            0.02908598453208937
+          ],
+          [
+            0.11764106154441833,
+            0.05386037119778011
+          ]
+        ],
+        "after_xyz": [
+          0.6675605773925781,
+          0.03151169791817665,
+          0.07145754992961884
+        ],
+        "audit_only_hidden_target_was_NOT_decision_input": true,
+        "audit_only_true_candidate_indices": [
+          0
+        ],
+        "authorized": false,
+        "before_xyz": [
+          0.6650736927986145,
+          0.032691288739442825,
+          0.09130925685167313
+        ],
+        "candidate_residuals_m": [
+          0.005301675567247178,
+          0.00707901554492968,
+          0.015131493186104546,
+          0.015122432235761785
+        ],
+        "empirical_motion_envelope_NOT_physical_safety_certificate": true,
+        "failure_reason": "ambiguous_or_empirical_model_invalid",
+        "max_hypothetical_rotation_spread_rad": 0.05386039089094815,
+        "physical_candidate_count": 4,
+        "prior_training_epsilon_m": 0.006944262561376447,
+        "resync_source": "one_counted_authoritative_controller_target_read",
+        "selected_candidate_index": null,
+        "wrong_confident": false
+      },
+      "new_public_fault_steps": [
+        2,
+        3
+      ],
+      "new_reads": 1,
+      "new_success": true,
+      "seed": 840006,
+      "task": "pull_cube",
+      "task_gate_actual_world": "fault_robust_then_single_privileged_query",
+      "task_gate_reads": 1,
+      "task_gate_success": true
+    },
+    {
+      "fixed_reads": 1,
+      "fixed_success": true,
+      "new_public_evidence": {
+        "accepted_position_indices": [
+          0,
+          1
+        ],
+        "after_physics_audit_pose_errors": [
+          [
+            1.4901161138336505e-09,
+            7.66634216905141e-09
+          ],
+          [
+            0.0355226680636406,
+            0.037790676223770026
+          ],
+          [
+            0.05343693494796753,
+            0.04213051437813201
+          ],
+          [
+            0.08445635288953782,
+            0.07945973979752204
+          ]
+        ],
+        "after_xyz": [
+          0.6709461212158203,
+          0.01602574810385704,
+          0.10419856011867523
+        ],
+        "audit_only_hidden_target_was_NOT_decision_input": true,
+        "audit_only_true_candidate_indices": [
+          0
+        ],
+        "authorized": false,
+        "before_xyz": [
+          0.6699985265731812,
+          0.017998874187469482,
+          0.12364810705184937
+        ],
+        "candidate_residuals_m": [
+          0.004603655642070219,
+          0.004059198246436927,
+          0.010332351123837989,
+          0.01033157247586949
+        ],
+        "empirical_motion_envelope_NOT_physical_safety_certificate": true,
+        "failure_reason": "ambiguous_or_empirical_model_invalid",
+        "max_hypothetical_rotation_spread_rad": 0.07945973219617178,
+        "physical_candidate_count": 4,
+        "prior_training_epsilon_m": 0.006944262561376447,
+        "resync_source": "one_counted_authoritative_controller_target_read",
+        "selected_candidate_index": null,
+        "wrong_confident": false
+      },
+      "new_public_fault_steps": [
+        2,
+        3
+      ],
+      "new_reads": 1,
+      "new_success": true,
+      "seed": 840007,
+      "task": "pull_cube",
+      "task_gate_actual_world": "fault_robust_then_single_privileged_query",
+      "task_gate_reads": 0,
+      "task_gate_success": true
+    },
+    {
+      "fixed_reads": 1,
+      "fixed_success": true,
+      "new_public_evidence": {
+        "accepted_position_indices": [
+          0
+        ],
+        "after_physics_audit_pose_errors": [
+          [
+            1.4901161138336505e-09,
+            7.125729961971835e-09
+          ],
+          [
+            0.0596655011177063,
+            0.021060825743455896
+          ],
+          [
+            0.06294232606887817,
+            0.018607890053343942
+          ],
+          [
+            0.12260782718658447,
+            0.03758700556687152
+          ]
+        ],
+        "after_xyz": [
+          0.5812171697616577,
+          0.01076467614620924,
+          0.04552099108695984
+        ],
+        "audit_only_hidden_target_was_NOT_decision_input": true,
+        "audit_only_true_candidate_indices": [
+          0
+        ],
+        "authorized": true,
+        "before_xyz": [
+          0.5876696109771729,
+          0.016823958605527878,
+          0.06293637305498123
+        ],
+        "candidate_residuals_m": [
+          0.0025780976020008785,
+          0.009378269993403207,
+          0.009349299525330495,
+          0.011222312328304665
+        ],
+        "empirical_motion_envelope_NOT_physical_safety_certificate": true,
+        "failure_reason": "unique_complete_history_by_public_position_witness",
+        "max_hypothetical_rotation_spread_rad": 0.037586999095093665,
+        "physical_candidate_count": 4,
+        "prior_training_epsilon_m": 0.006944262561376447,
+        "resync_source": "empirical_public_achieved_motion",
+        "selected_candidate_index": 0,
+        "wrong_confident": false
+      },
+      "new_public_fault_steps": [
+        2,
+        3
+      ],
+      "new_reads": 0,
+      "new_success": true,
+      "seed": 840008,
+      "task": "pull_cube",
+      "task_gate_actual_world": "fault_robust_then_single_privileged_query",
+      "task_gate_reads": 1,
+      "task_gate_success": true
+    }
+  ],
+  "schema": "public_hypothesis_new64_shard_audit_v2",
+  "seeds": [
+    840001,
+    840002,
+    840003,
+    840004,
+    840005,
+    840006,
+    840007,
+    840008
+  ],
+  "source_runner_git_blob": "23b8c4838f51dfef3617bf0ab739c4167586b8aa",
+  "task": "pull_cube"
+}
