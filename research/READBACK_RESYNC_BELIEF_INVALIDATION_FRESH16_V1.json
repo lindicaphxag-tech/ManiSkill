@@ -1,0 +1,41 @@
+{
+  "schema": "post_ack_readback_invalidated_cached_belief_fresh16_20261009_v1",
+  "status": "FROZEN_BEFORE_NEW_920001_930001_PHYSX_OUTCOMES",
+  "prior_source_original_run": 37911547899,
+  "prior_source_audit": 37912403644,
+  "known_confounds": [
+    {
+      "task": "StackCube-v1",
+      "seed": 830004,
+      "observed": "same t4 target read, old fixed failed, task-phase succeeded"
+    },
+    {
+      "task": "StackCube-v1",
+      "seed": 830020,
+      "observed": "same t4 target read, old fixed failed, task-phase succeeded"
+    }
+  ],
+  "mechanism": "The old fixed-t4 branch cached maybe_two before require_external_resync and then used the stale True flag to execute a 1-hypothesis common-action geometry route. After trusted resync a correct controller decision must recompute this flag as False and dispatch the ordinary single-target projected source action.",
+  "test_source_frozen": "Original public PPO model weights, original two native target holds, tolerance budgets and task-phase query gate unchanged; one-line fixed comparator cached-flag repair.",
+  "unseen_cohort": {
+    "pull_cube": [
+      920001,
+      920008
+    ],
+    "stack_cube": [
+      930001,
+      930008
+    ],
+    "total_original_reset_states": 16,
+    "matched_true_physx_worlds_per_state": 9
+  },
+  "precommitted_hard_gates": [
+    "9 actual native PhysX controller worlds run and every source SHA recorded",
+    "fixed-t4 arm actually reads controller target once at zero-index step 4",
+    "After trusted target read, finite belief collapses to exactly one state and cached ambiguity flag MUST be false",
+    "StackCube fixed-t4 and phase arm BOTH read once at t4 and all eight full physical trajectories must yield the same official task outcome; any difference fails equivalence, not paper success",
+    "All original fault holds actually at steps 2 and 3; only real dispatched bounded actions audited as physical setpoint successes",
+    "Report all 16 original seeds whether positive or negative; no statistical generalization claim"
+  ],
+  "limits": "Two pretrained PPO tasks in one Panda controller, no actual packet loss or outside lab adoption; this validation fixes a comparator semantic confound, not a generally novel active sensing algorithm"
+}
