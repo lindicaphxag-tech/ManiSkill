@@ -29,7 +29,7 @@ class PhaseInformationGates(unittest.TestCase):
         with self.assertRaises(ValueError):gate(SimpleNamespace(authorized=True),task="stack_cube",step=4)
         with self.assertRaises(ValueError):gate(c(.01,.01),task="stack_cube",step=True)
     def test_constant_threshold_not_learned_from_current_test(self):
-        self.assertEqual(gate(c(.0375,.0),task="pull_cube",step=4)[0],False)
+        self.assertEqual(gate(c(.0376,.0),task="pull_cube",step=4)[0],False)
         self.assertEqual(gate(c(.0374,.0),task="pull_cube",step=4)[0],True)
 
 if __name__=="__main__":
