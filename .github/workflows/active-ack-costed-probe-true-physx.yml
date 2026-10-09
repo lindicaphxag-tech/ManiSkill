@@ -1,0 +1,116 @@
+name: "Registered real PhysX one-step active-vs-fixed-vs-passive unknown ACK; 64 PPO tasks, 704 actual worlds"
+on:
+  push:
+    branches: [research/cost-matched-active-ack-probe-new64-20261009]
+    paths:
+      - 'research/ACTIVE_ACK_PROBE_NATIVE_NEW64_PREOUTCOME_V1.json'
+      - 'research/public_ack_costed_probe_planner.py'
+      - 'research/test_public_ack_costed_probe_planner.py'
+      - 'research/frozen_ppo_costed_active_ACK_probe_physx_v5.py'
+      - 'research/run_active_ACK_probe_new64.py'
+      - 'research/audit_active_ACK_probe_new64.py'
+      - '.github/workflows/active-ack-costed-probe-true-physx.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-pinned-preoutcome-nonleakage-and-native-probe-unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact source SHA and external true ACK protocol locked BEFORE executing any physical new seeds
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/ACTIVE_ACK_PROBE_NATIVE_NEW64_PREOUTCOME_V1.json)" = ddd392a31424d0d0067107ed314d76966c59eace
+          test "$(git hash-object research/public_ack_costed_probe_planner.py)" = 94642122c7c091f51104bb06574bfdd61d3e9245
+          test "$(git hash-object research/frozen_ppo_costed_active_ACK_probe_physx_v5.py)" = 1944d94bbde25397de5ec2b07910d2e210043bb9
+          test "$(git hash-object research/run_active_ACK_probe_new64.py)" = 7a35748b0e949be3ff5af4bed35a46f0e4b69891
+          test "$(git hash-object research/audit_active_ACK_probe_new64.py)" = 91f01c62b1686b78b78aafebdeb16e1a250f3d64
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = ddfaf4522d49f73ce926e4c6d77c7ca755f8e1b6
+          python -m py_compile research/public_ack_costed_probe_planner.py research/frozen_ppo_costed_active_ACK_probe_physx_v5.py research/run_active_ACK_probe_new64.py research/audit_active_ACK_probe_new64.py
+          python -m unittest -v research.test_public_ack_costed_probe_planner
+          python - <<'PY'
+          from research.run_active_ACK_probe_new64 import check_source, original_seeds
+          check_source()
+          for task,start in (("pull_cube",980201),("stack_cube",990201)):
+              ss=[i for c in range(4) for i in original_seeds(task,c)]
+              assert ss==list(range(start,start+32))
+              assert all(sum((("A" if i%2==0 else "H")+("A" if (i//2)%2==0 else "H"))==truth for i in ss)==8 for truth in ("AA","AH","HA","HH"))
+          print("PROSPECTIVE_COST_MATCHED_PROBE_FROZEN_64_RESET_4_TRUTH_PREOUTCOME",True)
+          PY
+  physically-execute-11-actual-native-robot-controller-worlds:
+    needs: source-pinned-preoutcome-nonleakage-and-native-probe-unit-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 125
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install original released frozen PPO and true CPU ManiSkill SAPIEN PhysX
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Record immutable original source/env BEFORE PHYSICS
+        run: |
+          git rev-parse HEAD > original_physical_head_commit.txt
+          python -m pip freeze --all > original_physx_dependency_freeze.txt
+      - name: Actually step eleven true native controllers on 8 new seed states with physically applied t4 probes
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_active_ACK_probe_new64.py --task "$TASK" --chunk "$CHUNK" 2>&1 | tee original_active_native_physx.log
+          test -s "active_probe_${TASK}_chunk${CHUNK}_original8.json"
+          test -s "active_probe_${TASK}_chunk${CHUNK}_audit.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-native-probe-actual-physx-${{ matrix.task }}-${{ matrix.chunk }}
+          path: |
+            active_probe_*_original8.json
+            active_probe_*_audit.json
+            active_probe_*_original8.json
+            original_physical_head_commit.txt
+            original_physx_dependency_freeze.txt
+            original_active_native_physx.log
+          retention-days: 90
+  independently-audit-all704-original-native-physx-actual-policy-worlds:
+    needs: physically-execute-11-actual-native-robot-controller-worlds
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-native-probe-actual-physx-*
+          merge-multiple: true
+          path: /tmp/original_real_active_probe64
+      - name: Original PhysX failures and all four true unknown-ACK physical populations reaudited
+        run: |
+          python -m research.audit_active_ACK_probe_new64 --source-dir /tmp/original_real_active_probe64 --output /tmp/INDEPENDENT_ALL704_TRUE_PHYSX_ACTIVE_V_FIXED_V_PASSIVE.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: complete-real-704-native-physx-active-v-fixed-v-passive-independent-source
+          path: |
+            /tmp/original_real_active_probe64/*.json
+            /tmp/INDEPENDENT_ALL704_TRUE_PHYSX_ACTIVE_V_FIXED_V_PASSIVE.json
+          retention-days: 90
