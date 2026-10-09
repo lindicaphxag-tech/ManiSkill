@@ -55,6 +55,9 @@ jobs:
 
   independent-seed-physx:
     needs: immutable-source-and-input-guard
+    # A dispatch creates ONE requested task/fault job, not two duplicate jobs.
+    # A branch push runs two independent one-seed smoke cases.
+    if: ${{ github.event_name != 'workflow_dispatch' || matrix.task == 'pull_cube' }}
     runs-on: ubuntu-latest
     timeout-minutes: 65
     strategy:
