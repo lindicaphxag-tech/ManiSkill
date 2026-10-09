@@ -1,0 +1,116 @@
+name: Permanently archive FIRST truly prospective B060 128-cell 1280-world PhysX evidence
+
+on:
+  push:
+    branches: [research/prospective-strong060-128-20261010]
+    paths: ['.github/workflows/archive-isolated-query-factorial128-first-source.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  immutable-original-source-audit-and-archive:
+    if: github.repository == 'lindicaphxag-tech/ManiSkill'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Prove this is FIRST source-frozen complete physical test, not a rerun
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          repo=lindicaphxag-tech/ManiSkill
+          test "$(gh api repos/$repo/actions/runs/37961696443 --jq .head_sha)" = 'bd2eff6bb47d2e9ecb2fd8b65034f2f93f73852f'
+          test "$(gh api repos/$repo/actions/runs/37961696443 --jq .conclusion)" = success
+          test "$(gh api repos/$repo/actions/runs/37961696443 --jq .run_attempt)" = 1
+          test "$(git hash-object research/STRONG060_PROSPECTIVE128_PREOUTCOME_V1.json)" = 6a3e6465376bc911479ab1ca323f44cc93eb0d94
+          test "$(git hash-object research/frozen_sources/matched_public_bayes_640_original_exact.py)" = 6e039af56006827fc2fe063b541cfa3dcd1ddc89
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 37961696443
+          github-token: ${{ github.token }}
+          pattern: FIRST_unseen_strong060_real_physics_*
+          path: /tmp/unseen_strong060_matched128
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 37961696443
+          github-token: ${{ github.token }}
+          name: FULL unseen strong060 32-reset 128-truth 1280-world actual PhysX reviewer audit
+          path: /tmp/first_run_final_review
+      - name: Recompute the complete 32-cluster/128-cell original causal study without PhysX
+        run: |
+          set -euo pipefail
+          test "$(find /tmp/unseen_strong060_matched128 -name '*_original8.json' | wc -l)" -eq 16
+          test "$(find /tmp/unseen_strong060_matched128 -name '*_audit.json' | wc -l)" -eq 16
+          test "$(find /tmp/unseen_strong060_matched128 -name '*_full_truth_prefix_provenance.json' | wc -l)" -eq 4
+          test "$(find /tmp/unseen_strong060_matched128 -name 'ORIGINAL_ALL_PHYSX_320_WORLD_TERMINAL.log' | wc -l)" -eq 4
+          find /tmp/unseen_strong060_matched128 -name ORIGINAL_SHA256SUMS -print0 |
+            while IFS= read -r -d '' manifest; do (cd "$(dirname "$manifest")" && sha256sum -c ORIGINAL_SHA256SUMS); done
+          python -m research.audit_strong060_prospective128 --source-dir /tmp/unseen_strong060_matched128 --output /tmp/recomputed_full128.json
+          python - <<'PY'
+          import json,pathlib
+          q=json.load(open('/tmp/recomputed_full128.json'))
+          assert q['new_unique_task_reset_clusters']==32
+          assert q['n_original_full_truth_cells']==128
+          assert q['actual_genuine_native_controller_worlds']==1280
+          assert len(q['original_actual_source_shard_sha256'])==16
+          assert len(q['by_task_and_four_ACTUAL_physical_ACK_truths'])==8
+          a=q['all_cells']
+          A=a['fault_public_t3_fourhistory_or_t4_query']
+          B=a['fault_same_public_posterior_or_query']
+          C=a['fault_always_single_privileged_query']
+          assert (A['success'],B['success'],C['success'])==(109,109,110)
+          assert (A['private_reads'],B['private_reads'],C['private_reads'])==(94,98,128)
+          assert (A['total_authorizations'],B['total_authorizations'])==(34,30)
+          assert A['wrong_confident_authorizations']==B['wrong_confident_authorizations']==0
+          assert q['exact_CLUSTER_level_pairwise_exploratory']['fault_always_single_privileged_query']['source_task_reset_clusters']==32
+          for p in pathlib.Path('/tmp/first_run_final_review').rglob('*.json'):
+            assert json.loads(p.read_text())==q,'Original first source aggregate changed'
+          print('PASS: 32 clusters x 4 real ACK truths, 128 cells, 1280 native PhysX worlds; no fabricated independent denominator')
+          PY
+      - name: Permanently archive byte-preserved original source and original environment, no force push
+        run: |
+          set -euo pipefail
+          dst=research/frozen_policy_transfer/evidence/strong060_prospective_original128_first_3110001_3120016
+          mkdir -p "$dst"
+          cp -a /tmp/unseen_strong060_matched128/. "$dst/"
+          cp /tmp/recomputed_full128.json "$dst/INDEPENDENT_SOURCE_RECOMPUTATION.json"
+          cat > "$dst/README.md" <<'EOF'
+          # FIRST original 32 reset clusters x four real ACK truths x ten physical controllers
+          Frozen ORIGINAL pre-outcome commit: bd2eff6bb47d2e9ecb2fd8b65034f2f93f73852f
+          First original run (all green, attempt one): https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37961696443
+          16 original 8-episode factual PhysX source JSON, 16 original shard audits, 4 same-seed full-truth pre-reset hashes, all first original terminal logs and Python environments, checksums, independent full-source recomputation.
+          The same 32 task/reset IDs each receive all FOUR genuine ACK-applied/held t2,t3 combinations. Only THIRTY-TWO independent reset clusters; 128 task/truth conditions are correlated, not independent reset observations.
+          Source-PPO and common-native-pre-t5 original physically dispatched commands, achieved EE and target SE3 conditions tested before the t5 read/authorize decision.
+          Full target-history public evidence: 109/128 success, 94 private getter reads, 34 originally authorized, 0 observed wrong confident.
+          SAME public XYZ residual-weight heuristic, frozen 0.60: 109/128 success, 98 private getter reads, 30 authorized, 0 observed wrong.
+          Mandatory t5 true target getter: 110/128 success, 128 actual getter reads.
+          DO NOT infer global noninferiority from identical within-sample task flags or 0/34 errors; count independent accepted reset clusters before quoting any risk interval. Never claim 34 iid cases.
+          NO official ActionShift DualABI trained comparator, no real ROS ACK loss, no hardware safety proof, no independently operated lab replay and no top conference acceptance.
+          EOF
+          (cd "$dst" && find . -type f ! -name FIRST_ORIGINAL_ARCHIVE_SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > FIRST_ORIGINAL_ARCHIVE_SHA256SUMS)
+          (cd "$dst" && sha256sum -c FIRST_ORIGINAL_ARCHIVE_SHA256SUMS)
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          # Prevent Windows Git checkout from normalizing original source bytes.
+          if ! grep -Fq 'research/frozen_policy_transfer/evidence/strong060_prospective_original128_first_3110001_3120016/** -text' .gitattributes; then
+            printf '\nresearch/frozen_policy_transfer/evidence/strong060_prospective_original128_first_3110001_3120016/** -text\n' >> .gitattributes
+          fi
+          git add .gitattributes "$dst"
+          if git diff --cached --quiet; then echo 'Already archived'; exit 0; fi
+          git commit -m 'evidence: permanently preserve first new-seed 0.60 matched strong-comparator 128-cell 1280-world PhysX source, all correlated negative outcomes and exact cluster audit'
+          for attempt in 1 2 3 4; do
+            git fetch origin "${{ github.ref_name }}"
+            if ! git rebase "origin/${{ github.ref_name }}"; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:"${{ github.ref_name }}"; then exit 0; fi
+          done
+          exit 1
