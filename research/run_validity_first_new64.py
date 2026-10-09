@@ -112,7 +112,8 @@ def validate_result(d,task,seeds):
                 or (arm_name!="source_no_fault" and
                     record.get("audit_only_native_target_unchanged") is not True)):
                 raise ValueError("Real physical common known-delivered t4 zero probe invalid")
-        confidence["known_t4_zero_probe"]+=1
+        if any(n not in neutral for n in (PUBLIC,NARROW)):
+            raise ValueError("The two actually stepped public controllers did not both experience the t4 probe")
         assert set(r.get("public_t4_evidence",{}))==set(PUBLIC_ARMS)
         for observed in PUBLIC_ARMS:
             ev=r["public_t4_evidence"][observed]
