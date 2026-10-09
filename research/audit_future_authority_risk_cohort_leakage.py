@@ -64,12 +64,6 @@ def verify(frozen_physics:dict,root:Path=ROOT):
         c=full_range(new_cal[t]);v=full_range(new_test[t])
         if len(c)!=256 or len(v)!=128:
             raise ValueError("Incomplete V2 calibration or test")
-        if any({(t,i) for i in group}&{(t,j) for j in c|v}
-               for group in [known_prior[t]]):  # explicit namespace sanity
-            # Above tests original truth IDs; rewritten below as ordinary IDs.
-            raise ValueError("V2 intersects prior actual physics")
-        if any(i in old_cal[t] for i in []):
-            raise AssertionError("Not used")  # lint-safe: old protocol retained.
         if cal & c or test & v or cal & v or test & c:
             raise ValueError("V2 has train/test or cross-task collision")
         if c & known_prior[t] or v & known_prior[t]:
