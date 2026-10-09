@@ -12,6 +12,16 @@ class GroupCorrelatedFaultTest(unittest.TestCase):
         self.assertEqual(result["K1_repeated_1_group_cost"],5)
         self.assertEqual(result["exhaustive_physical_world_fault_group_traces"],12)
 
+    def test_three_named_probes_from_ONE_correlated_source_fail_closed(self):
+        # Names/time samples are not sensor diversity: same failure domain
+        # can spoof all three, so it must cost an authoritative read.
+        from dataclasses import replace
+        base=example()
+        same=replace(base,groups={p:"camera_only" for p in base.groups})
+        self.assertEqual(synthesize(same)["worst_cost"],5)
+        self.assertEqual(synthesize(base)["worst_cost"],3)
+        self.assertEqual(certify(same,synthesize(same))["verified_minimax_cost"],5)
+
     def test_missing_response_model_or_action_auth_rejected(self):
         m=example()
         cases=[
