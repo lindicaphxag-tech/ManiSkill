@@ -48,7 +48,8 @@ def frozen_source():
         if h!=sha:raise RuntimeError("Original method or pretrained controller code drift: "+path)
     proto=json.loads(Path(PROTOCOL).read_text("utf-8"))
     if (proto.get("schema")!="phase_value_query_native_physx_outside64_20261009_v1"
-        or proto["fixed_policies"]["task_gated"] is None
+        or not proto.get("task_policy",{}).get("pull_cube")
+        or not proto.get("task_policy",{}).get("stack_cube")
         or proto["task_policy"]["pull_cube"] is None):
         raise ValueError("Changed frozen preoutcome query/tolerance contract")
     return expected
