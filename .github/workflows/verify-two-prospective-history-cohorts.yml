@@ -1,0 +1,46 @@
+name: Independently verify 96 frozen PPO paired PhysX trials and empirical error limits
+
+on:
+  push:
+    branches: [publication/reviewer-paired96-unbiased-verification-20261009]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-source-trial-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Recompute BOTH original prospective cohorts, all original SHA256 and per-task negative controls
+        run: |
+          set -euo pipefail
+          python -m py_compile research/frozen_policy_transfer/review/verify_two_prospective_history_cohorts.py
+          python -m unittest discover -s tests -p 'test_two_prospective_history_cohorts.py' -v
+          python -m research.frozen_policy_transfer.review.verify_two_prospective_history_cohorts \
+            --output /tmp/ppo96_reviewer_two_study_original_recalculation.json
+          python - <<'PY'
+          import json
+          x=json.load(open('/tmp/ppo96_reviewer_two_study_original_recalculation.json'))
+          a=x['descriptive_sum_of_TWO_SEPARATELY_PREREGISTERED_protocols_NOT_one_joint_trial']
+          assert a['n']==96 and a['physical_worlds']==768
+          assert a['new_success']==a['gated_success']==86
+          assert a['public_unique']==35 and a['wrong_confident']==0
+          assert a['new_reads']==61 and a['gated_reads']==84
+          print('ORIGINAL_96_OUTCOME_SOURCE_REVIEWER_VERIFIED',
+            {k:a[k] for k in ('n','physical_worlds','new_success','gated_success',
+                             'public_unique','wrong_confident','new_reads','gated_reads')})
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: original-96-task-independent-statistical-evidence-${{ matrix.python }}
+          path: /tmp/ppo96_reviewer_two_study_original_recalculation.json
