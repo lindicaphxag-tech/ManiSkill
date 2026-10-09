@@ -1,0 +1,80 @@
+{
+  "schema": "prospective_same_reset_numeric_four_truth_CONFIRMATORY_64clusters_v1",
+  "registered_on": "2026-10-09",
+  "registered_before_any_new_outcome": true,
+  "development_study": {
+    "run_id": 37932361044,
+    "original_reset_clusters": 32,
+    "original_truth_cells": 128,
+    "native_sim_worlds": 1152,
+    "public_task_success": 116,
+    "strong_task_success": 108,
+    "public_private_reads": 91,
+    "strong_private_reads": 109,
+    "exploratory_cluster_exact_swap_p_two_sided": 0.0556640625,
+    "scientific_role": "EXPLORATORY_ONLY__DO_NOT_POOL_WITH_NEW_CONFIRMATORY_TEST_FOR_PRIMARY_P"
+  },
+  "new_seeds": {
+    "pull_cube": [
+      3210001,
+      3210032
+    ],
+    "stack_cube": [
+      3220001,
+      3220032
+    ]
+  },
+  "task_count": 2,
+  "seeds_per_task": 32,
+  "truth_patterns": [
+    "held/held",
+    "applied/held",
+    "held/applied",
+    "applied/applied"
+  ],
+  "four_truths_each_seed": true,
+  "original_reset_clusters": 64,
+  "truth_cells": 256,
+  "actual_native_controllers_per_cell": 9,
+  "planned_actual_PhysX_worlds": 2304,
+  "source_shards": 32,
+  "exact_frozen_method_source_blobs": {
+    "research/frozen_ppo_numeric_parity_factorial_physx.py": "8022ab3a0d5bc97a982e78fc8ca17931aeae586c",
+    "research/empirical_probe_response_classifier.py": "064bb46831b61af73ad445bc836326837ec5468f",
+    "research/frozen_ppo_mixed_ack_truth_physx.py": "36e672446407435e656cbf8aba6fa2de7c1e9d0e"
+  },
+  "source_ppo_checkpoints": {
+    "PullCube-v1": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+    "StackCube-v1": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+  },
+  "original_method_public": "fault_public_t3_fourhistory_or_t4_query",
+  "registered_primary_comparator_task_only": {
+    "pull_cube": "fault_robust_then_single_privileged_query",
+    "stack_cube": "fault_always_single_privileged_query"
+  },
+  "secondary_comparators": [
+    "fault_always_single_privileged_query",
+    "fault_assume_held_without_query"
+  ],
+  "primary_estimand": "equal-weight per truth-cell difference in binary task success between public history and frozen task-only strong comparator, computed as 1/(4*64) sum_seed sum_truth (Y_public-Y_strong), cluster uncertainty at 64 task+reset IDs",
+  "primary_test": "two-sided exact 64-cluster sign swap by dynamic programming, EXPLORATORY exchangeability-based inference, NOT randomized causal assignment",
+  "one_primary_test_alpha": 0.05,
+  "required_observed_point_gain_for_practical_promotion": 0.04,
+  "secondary_cost_measure": "actual per-world private target getter count, 2 public XYZ samples per probe arm, physical neutral t4 probe time, all early stops and wrong confident complete target history",
+  "per_task_harm_guard": "report both per-task effects and refuse 'universally better' claim if either task point success rate declines",
+  "no_p_hacking": "Do not combine development32 and test64 clusters in primary claim; no altering eps/margins, seed IDs, matched-pose tolerance, controller, official PPO weights or rule after results",
+  "physical_initial_parity_max_abs_public_observation": 0.00005,
+  "physical_initial_parity_max_abs_achieved_ee_pose_xyz_quat": 0.00005,
+  "require_entire_four_truth_source_cluster": true,
+  "early_refusal": "Intention-to-treat: preserve source rows and incomplete injected-fault/probe exposure as censored for condition-specific causal contrast, do NOT delete or replace seeds",
+  "action_truth": "T2/T3 fully crossed native ACTUAL physically applied versus zero-hold with hidden acknowledgement; known-delivered ZERO t4 neutral probe only for continuing arms",
+  "provenance_inference_limitations": [
+    "simulator source-run authored in same lab not independent replication",
+    "64 independent reset clusters not 256 independent robot starts",
+    "simulation target hold not actual network packet loss",
+    "no VLA task closed-loop or other controller task-competent policy",
+    "same first original seed across four truth worlds only near-numerically aligned to precommitted tolerance, not always identical SHA",
+    "not a novel learned action adaptation algorithm"
+  ],
+  "pre_result_no_success_assumptions": true
+}
