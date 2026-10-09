@@ -7,7 +7,7 @@ import random
 import unittest
 from research.authority_probe_minimax import (
     Model, Probe, synthesize, certify, brute_force_minimax_value,
-    possible_posteriors, showcase,
+    possible_posteriors, showcase, next_request,
 )
 
 
@@ -89,6 +89,22 @@ class AuthorityProbeMinimax(unittest.TestCase):
             tree=synthesize(model)
             self.assertEqual(tree["worst_cost_units"],brute_force_minimax_value(model),case)
             self.assertEqual(certify(model,tree)["worst_cost_units"],tree["worst_cost_units"])
+
+    def test_runtime_request_is_fail_closed_on_unmodeled_public_response(self):
+        model=Model({"a":"A","b":"B"},
+                    (Probe("visible",1,{"a":("a_only",),"b":("b_only",)}),),5,1)
+        cert=synthesize(model)
+        first=next_request(model,cert,())
+        self.assertEqual((first["request"],first["probe"]),("probe","visible"))
+        self.assertEqual(next_request(model,cert,("a_only",))["repair"],"A")
+        self.assertEqual(next_request(model,cert,("b_only",))["repair"],"B")
+        unknown=next_request(model,cert,("unmodeled_or_shifted",))
+        self.assertEqual(unknown["request"],"read")
+        self.assertEqual(unknown["reason"],"unmodeled_observation")
+        self.assertFalse(unknown["model_certificate_valid_for_this_trace"])
+        self.assertEqual(unknown["spent_abstract_probe_cost"],1)
+        with self.assertRaisesRegex(ValueError,"unexpected observation"):
+            next_request(model,cert,("a_only","late_extra"))
 
     def test_synthetic_demo_is_clearly_labeled(self):
         result=showcase()
