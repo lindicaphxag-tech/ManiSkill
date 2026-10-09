@@ -1,0 +1,118 @@
+name: "Two unknown ACKs four real truth combinations: known delivered t4 probe & frozen PPO"
+on:
+  push:
+    branches: [research/all-four-ack-truths-active-probe-20261009]
+    paths:
+      - 'research/ALL_FOUR_ACK_JOINT_TRUTH_PPO_NEW64_PREOUTCOME_V1.json'
+      - 'research/frozen_ppo_full_joint_ack_physx_v4.py'
+      - 'research/run_full_joint_ack_new64.py'
+      - 'research/audit_full_joint_ack_new64.py'
+      - '.github/workflows/all-four-ack-real-physx-ppo.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preoutcome-hash-and-physical-protocol-identity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze exact prospective 4x-ACK population and verify no changes in policy/admission
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/ALL_FOUR_ACK_JOINT_TRUTH_PPO_NEW64_PREOUTCOME_V1.json)" = d848b24945b15470e843bb71998a893fbb6fe4ce
+          test "$(git hash-object research/frozen_ppo_full_joint_ack_physx_v4.py)" = 918aa573eee3313886d5609f671c3ee599561e52
+          test "$(git hash-object research/run_full_joint_ack_new64.py)" = 1da1cd6a9b04b01788db714868ff8d0bea784ef8
+          test "$(git hash-object research/audit_full_joint_ack_new64.py)" = 40a0565429b1b041ca20a04b27646615118397f4
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = ddfaf4522d49f73ce926e4c6d77c7ca755f8e1b6
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          python -m py_compile research/frozen_ppo_full_joint_ack_physx_v4.py research/run_full_joint_ack_new64.py research/audit_full_joint_ack_new64.py
+          python - <<'PY'
+          from research.run_full_joint_ack_new64 import check_sources,accepted
+          check_sources()
+          all_entries={(task,s) for task in ('pull_cube','stack_cube')
+                      for c in range(4) for s in accepted(task,c)}
+          assert len(all_entries)==64
+          for task,start in (("pull_cube",880001),("stack_cube",890001)):
+              ss=[s for t,s in all_entries if t==task]
+              assert set(ss)==set(range(start,start+32))
+              combos={("A" if s%2==0 else "H")+("A" if (s//2)%2==0 else "H") for s in ss}
+              assert combos=={"AA","AH","HA","HH"}
+              assert all(sum((("A" if s%2==0 else "H")+("A" if (s//2)%2==0 else "H"))==k for s in ss)==8 for k in combos)
+          print("PREOUTCOME_FOUR_JOINT_PHYSICAL_TRUTH_CLASSES_AND_64_SEEDS_FROZEN",True)
+          PY
+
+  physically-stepped-frozen-policy-nine-controllers:
+    needs: preoutcome-hash-and-physical-protocol-identity
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install real SAPIEN ManiSkill PhysX and original frozen third-party PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Record actual full original source/env before any physics
+        run: |
+          git rev-parse HEAD > ORIGINAL_SOURCE_GIT_HEAD.txt
+          python -m pip freeze --all > ORIGINAL_PACKAGES.txt
+      - name: Execute all NINE PhysX controller worlds for eight genuine t2/t3 applied/held joint truth resets
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_full_joint_ack_new64.py --task "$TASK" --chunk "$CHUNK" 2>&1 | tee actual_four_ACK_native_PhysX.log
+          test -s "full_joint_ack_${TASK}_chunk${CHUNK}_original8.json"
+          test -s "full_joint_ack_${TASK}_chunk${CHUNK}_audit.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: genuine-four-joint-truth-${{ matrix.task }}-${{ matrix.chunk }}
+          path: |
+            full_joint_ack_*_original8.json
+            full_joint_ack_*_audit.json
+            actual_four_ACK_native_PhysX.log
+            ORIGINAL_SOURCE_GIT_HEAD.txt
+            ORIGINAL_PACKAGES.txt
+          retention-days: 90
+
+  independent-original-64-task-576-actual-physical-controller-audit:
+    needs: physically-stepped-frozen-policy-nine-controllers
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: genuine-four-joint-truth-*
+          path: /tmp/original-four-joint-ACK
+          merge-multiple: true
+      - name: Validate every native physical execution, source task result, full ACK joint truth, private read and public model error
+        run: |
+          python -m research.audit_full_joint_ack_new64 --source-dir /tmp/original-four-joint-ACK --output /tmp/full_4JOINT_original64_source_audit.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: complete-4JOINT-original64-576-PhysX-worlds-full-source-audit
+          path: |
+            /tmp/original-four-joint-ACK/*.json
+            /tmp/full_4JOINT_original64_source_audit.json
+          retention-days: 90
