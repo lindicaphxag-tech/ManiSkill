@@ -1,0 +1,132 @@
+name: Permanent original 16 negative precontact PhysX evidence archive
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-original-precontact-negative16.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  source-pin-raw-original-16:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require exact genuine first PhysX run and UNCHANGED source protocol
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37905638182 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37905638182 --jq .head_sha)" = "722ac9c12715cc3b26a332685272bc95900fcbe7"
+          test "$(git hash-object research/PRECONTACT_AUTHORITY_NEW16_PRECOMMIT_V1.md)" = "299e9d07709b894bd086f3513e004ac09247cede"
+          test "$(git hash-object research/frozen_ppo_precontact_authority_new16.py)" = "6968035439b35f7ec07dbbd31ca96dd434b924dc"
+          test "$(git hash-object research/audit_precontact_authority_new16.py)" = "9f573cd1463ccc42ae6dcb6bf1507408c0dd85a9"
+      - name: Retrieve the EXACT original 2 raw PhysX complete-shard JSON files and auditor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/precontact-original
+          for task in pull_cube stack_cube; do
+            gh run download 37905638182 --repo "$GITHUB_REPOSITORY" \
+              --name "original-precontact-fullphysx-${task}" \
+              --dir "/tmp/precontact-original"
+            test -s "/tmp/precontact-original/precontact_new16_${task}_original8.json"
+          done
+          mkdir -p /tmp/precontact-auditor
+          gh run download 37905638182 --repo "$GITHUB_REPOSITORY" \
+            --name original-new16-precontact-nonselected-source-audit \
+            --dir /tmp/precontact-auditor
+          test -s /tmp/precontact-auditor/new16_full_original_audit.json
+      - name: Independently recompute all 16 original task outcomes and paired source counts
+        run: |
+          set -euo pipefail
+          python -m research.audit_precontact_authority_new16 \
+            --input-dir /tmp/precontact-original \
+            --output /tmp/fresh_recomputed_original16.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          orig=json.loads(Path('/tmp/precontact-auditor/new16_full_original_audit.json').read_text())
+          new=json.loads(Path('/tmp/fresh_recomputed_original16.json').read_text())
+          assert orig==new,'Original logged audit differs from this independent full source replay'
+          assert new['preregistered_original_states']==16
+          assert new['operational_fault_reached_all'] is True
+          assert new['all_seven_plus_two_comparator_faults_reached'] is False
+          a=new['total_success']; q=new['total_decision_target_reads']
+          for name,expected_success,expected_reads in [
+            ('fault_precontact_authority',13,16),
+            ('fault_task_id_prior',13,13),
+            ('fault_robust_then_single_privileged_query',12,8),
+            ('fault_always_single_privileged_query',13,16)]:
+            assert a[name]==expected_success and q[name]==expected_reads, name
+          rows=new['paired_outcomes']
+          assert len(rows)==16
+          assert all(r['success']['fault_precontact_authority']==
+                     r['success']['fault_task_id_prior'] for r in rows)
+          assert [r['seed'] for r in rows if
+                r['success']['fault_precontact_authority'] and
+                not r['success']['fault_robust_then_single_privileged_query']]==[480002,480005]
+          assert [r['seed'] for r in rows if
+                r['success']['fault_robust_then_single_privileged_query'] and
+                not r['success']['fault_precontact_authority']]==[480001]
+          print('IMMUTABLE_NEGATIVE_PRECONTACT_16_AUDIT_PASS')
+          PY
+      - name: Commit BYTE IDENTICAL original outcome JSON and full original audit SHA256 manifest to main
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/precontact_vs_task_prior_new16_negative
+          mkdir -p "$dest"
+          cp /tmp/precontact-original/precontact_new16_*_original8.json "$dest/"
+          cp /tmp/precontact-auditor/new16_full_original_audit.json "$dest/ORIGINAL_FULL_SOURCE_AUDIT.json"
+          (cd "$dest" && sha256sum ./*.json > SOURCE_SHA256SUMS)
+          cat > "$dest/README.md" <<'EOF'
+          # Original prospective full-state precontact vs strong task-ID query: NEGATIVE result
+
+          Genuine original official CPU PhysX run:
+          https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37905638182
+          Exact executing head: 722ac9c12715cc3b26a332685272bc95900fcbe7
+          Independent original full source auditor GREEN. All 16 original seed episodes
+          and 9 separately stepped controller worlds per seed are retained.
+          PullCube 470001-470008 and StackCube 480001-480008.
+          TWO true consecutive unknown-ACK native arm ZERO/HOLD faults reached ALL
+          operational arms; exact-common-action baseline declined early after ONE
+          unknown ACK, so frozen ALL-ARM complete-fault exposure gate FAILED.
+          Full evidence and all non-events are preserved; don't describe as
+          fully-confirmed nine-arm physical fault acceptance.
+
+          Strong trivial TASK-ID prior: 13/16 official tasks succeed, 13 private reads.
+          FULL-STATE TCP/object 0.10m public precontact trigger: EXACT SAME 16
+          paired binary task outcomes, but 16 privileged target-state reads.
+          It is DOMINATED on this registered sample and should NOT be advertised
+          as a novel information-efficient query algorithm.
+          Original geometry-only selective: 12/16 tasks with 8 reads.
+          Mandatory fixed t4 query: 13/16 tasks with 16 reads.
+          Proximity extra successes relative to geometry at Stack seeds
+          480002 and 480005, lost to geometry at seed 480001.
+          This proves neither contact safety nor future method equivalence.
+
+          Full-state positions came from simulator observations, not RGB/camera-only
+          sensors. Two third-party frozen PPOs, ONE Panda controller family,
+          no independent lab replication, no real robot hardware and no network
+          packet-loss recovery or official upstream maintainer endorsement.
+          The source data and the original full denominator audit are copied
+          UNMODIFIED and SHA256 pinned. All failures kept.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dest"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'evidence: preserve true original 16-state public-precontact failure versus task-ID prior'
+          for i in 1 2 3 4 5; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then exit 0; fi
+          done
+          echo 'Could not safely preserve original evidence on main'
+          exit 1
