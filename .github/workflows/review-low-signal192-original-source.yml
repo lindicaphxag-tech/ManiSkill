@@ -1,0 +1,69 @@
+name: Cross-platform independent SOURCE review of first low-signal 192 PhysX worlds
+
+on:
+  push:
+    branches: [evidence/low-signal-first192-permanent-20261010]
+    paths:
+      - research/review_low_signal_probe_value.py
+      - tests/test_review_low_signal_probe_value.py
+      - .github/workflows/review-low-signal192-original-source.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-only-no-new-physics:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ['3.11', '3.13']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Verify all 24 original archived raw files + source-only grouped reproducibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          folder=Path('research/frozen_policy_transfer/evidence/low_signal_first192_20261010')
+          lines=(folder/'FIRST_192_SHA256SUMS').read_text().splitlines()
+          assert len(lines)==24, f"Expected exactly 24 hash-locked archive files, got {len(lines)}"
+          for line in lines:
+              digest,name=line.split(maxsplit=1)
+              name=name.lstrip('*').removeprefix('./')
+              p=folder/name
+              assert p.is_file(), name
+              assert hashlib.sha256(p.read_bytes()).hexdigest()==digest,name
+          print('PASS EXACT 24 BYTE-IDENTICAL FIRST ORIGINAL SOURCE FILES')
+          PY
+          python -m unittest discover -s tests -p 'test_review_low_signal_probe_value.py' -v
+          python -m research.low_signal_probe_selection_physx --mode audit --folder research/frozen_policy_transfer/evidence/low_signal_first192_20261010 --output platform_original_physics_source_reaudit.json
+          python -m research.review_low_signal_probe_value --source research/frozen_policy_transfer/evidence/low_signal_first192_20261010 --output platform_original_paired_review.json
+          python - <<'PY'
+          import json
+          d=json.load(open('platform_original_paired_review.json'))
+          assert d['heldout_distinct_independent_reset_seeds']==16
+          assert d['all_heldout_physical_truth_probe_worlds']==96
+          assert d['calibration_worlds']==96
+          assert d['pooled_selected_vs_zero']['correct_history_delta_actual']==0
+          assert d['pooled_selected_vs_zero']['whole_reset_exact_signflip_p_exploratory']==1
+          assert all(v['heldout_by_actual_probe'][name]['correct']==16
+                     for v in d['by_robot'].values() for name in ('zero','x','y'))
+          print('PASS ORIGINAL NEGATIVE RESULTS ACROSS ALL TRUE SOURCE WORLDS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verified-original192-source-${{ matrix.os }}-py${{ matrix.python }}
+          path: |
+            platform_original_physics_source_reaudit.json
+            platform_original_paired_review.json
+          retention-days: 90
