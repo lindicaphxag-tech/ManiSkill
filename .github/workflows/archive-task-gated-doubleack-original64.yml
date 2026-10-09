@@ -1,0 +1,152 @@
+name: Preserve task-only double-ACK strong baseline original 64-state evidence
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-task-gated-doubleack-original64.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  source-only-independent-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Demand the FIRST all-green frozen future-cohort PhysX original
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37904539256 --jq .head_sha)" = "f79e9390ae5a2f07fda6877cf36951f6e51c3caa"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37904539256 --jq .conclusion)" = success
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37904539256 --jq .run_attempt)" = 1
+      - name: Recover all eight native PhysX comparator-world sources
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/task_gated_original
+          gh run download 37904539256 --repo "$GITHUB_REPOSITORY" --pattern 'taskgated-*' --dir /tmp/task_gated_original
+          test "$(find /tmp/task_gated_original -name summary.json -type f | wc -l)" -eq 8
+          test "$(find /tmp/task_gated_original -name 'task_gated_*_original8.json' -type f | wc -l)" -eq 8
+          test "$(find /tmp/task_gated_original -name native_physx.log -type f | wc -l)" -eq 8
+          test "$(find /tmp/task_gated_original -name source_commit.txt -type f | wc -l)" -eq 8
+          for path in $(find /tmp/task_gated_original -name source_commit.txt -type f); do
+            test "$(cat "$path")" = "f79e9390ae5a2f07fda6877cf36951f6e51c3caa"
+          done
+      - name: Rerun original-source 448-controller-world audit and all paired outcomes
+        run: |
+          python -m research.audit_task_gated_multi_ack_new64 --input-dir /tmp/task_gated_original --output /tmp/task_gated_64_complete.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('/tmp/task_gated_64_complete.json').read_text())
+          assert d['distinct_original_reset_states']==64
+          assert d['genuine_native_7_arm_stepped_worlds_if_source_trusted']==448
+          assert d['four_target_memory_hypotheses_verified_in_all_relevant_trials']
+          assert d['routed_success_total']==58
+          assert d['mandatory_success_total']==58
+          assert d['routed_true_private_reads_total']==56
+          assert d['mandatory_true_private_reads_total']==64
+          assert d['per_task']['pull_cube']['routed_task_success']==32
+          assert d['per_task']['stack_cube']['routed_task_success']==26
+          assert d['routed_vs_mandatory_paired']['routed_only']==0
+          assert d['routed_vs_mandatory_paired']['mandatory_only']==0
+          print('PASS original 448 actual simulator worlds, 64 reset states, task-only 58/64 with 56 reads, mandatory 58/64 with 64')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: task-gated-doubleack-new64-independent-full-denominator-audit
+          path: /tmp/task_gated_64_complete.json
+
+  permanently-archive-first-originals:
+    needs: source-only-independent-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Demand the FIRST all-green frozen future-cohort PhysX original
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37904539256 --jq .head_sha)" = "f79e9390ae5a2f07fda6877cf36951f6e51c3caa"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37904539256 --jq .conclusion)" = success
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37904539256 --jq .run_attempt)" = 1
+      - name: Recover all eight native PhysX comparator-world sources
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/task_gated_original
+          gh run download 37904539256 --repo "$GITHUB_REPOSITORY" --pattern 'taskgated-*' --dir /tmp/task_gated_original
+          test "$(find /tmp/task_gated_original -name summary.json -type f | wc -l)" -eq 8
+          test "$(find /tmp/task_gated_original -name 'task_gated_*_original8.json' -type f | wc -l)" -eq 8
+          test "$(find /tmp/task_gated_original -name native_physx.log -type f | wc -l)" -eq 8
+          test "$(find /tmp/task_gated_original -name source_commit.txt -type f | wc -l)" -eq 8
+          for path in $(find /tmp/task_gated_original -name source_commit.txt -type f); do
+            test "$(cat "$path")" = "f79e9390ae5a2f07fda6877cf36951f6e51c3caa"
+          done
+      - name: Rerun original-source 448-controller-world audit and all paired outcomes
+        run: |
+          python -m research.audit_task_gated_multi_ack_new64 --input-dir /tmp/task_gated_original --output /tmp/task_gated_64_complete.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('/tmp/task_gated_64_complete.json').read_text())
+          assert d['distinct_original_reset_states']==64
+          assert d['genuine_native_7_arm_stepped_worlds_if_source_trusted']==448
+          assert d['four_target_memory_hypotheses_verified_in_all_relevant_trials']
+          assert d['routed_success_total']==58
+          assert d['mandatory_success_total']==58
+          assert d['routed_true_private_reads_total']==56
+          assert d['mandatory_true_private_reads_total']==64
+          assert d['per_task']['pull_cube']['routed_task_success']==32
+          assert d['per_task']['stack_cube']['routed_task_success']==26
+          assert d['routed_vs_mandatory_paired']['routed_only']==0
+          assert d['routed_vs_mandatory_paired']['mandatory_only']==0
+          print('PASS original 448 actual simulator worlds, 64 reset states, task-only 58/64 with 56 reads, mandatory 58/64 with 64')
+          PY
+      - name: Save untouched eight original source folders, terminal logs and full ledger
+        run: |
+          set -euo pipefail
+          dst=research/frozen_policy_transfer/evidence/task_gated_double_ack_64_520001_530032
+          mkdir -p "$dst"
+          cp -a /tmp/task_gated_original/. "$dst/"
+          cp /tmp/task_gated_64_complete.json "$dst/independently_recomputed_64_paired_audit.json"
+          (cd "$dst" && find . -type f ! -name ORIGINAL_SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > ORIGINAL_SHA256SUMS)
+          (cd "$dst" && sha256sum -c ORIGINAL_SHA256SUMS)
+          cat > "$dst/README.md" <<'EOF'
+          # Source-authentic prospective task-identity-only query baseline in true ManiSkill PhysX
+          The frozen task routing was committed BEFORE held-out 520001–520032 and 530001–530032 PhysX outcomes. PullCube chooses actual native selective-query whole controller trajectory; StackCube chooses actual native always-t4-query whole controller trajectory. No outcome-based route adjustment, per-step splicing or newly trained model.
+          Exactly 64 distinct original reset states; seven physically stepped native Panda controller worlds per state, 448 controller-world comparisons, with two independent zero-arm-delta target-hold interventions at steps two and three and four plausible target histories. This is not actual network packet loss.
+          First all-green original run: 37904539256; code commit f79e9390ae5a2f07fda6877cf36951f6e51c3caa. Eight unchanged original taskgated-* workflow artifacts preserved recursively, along with complete independent no-PyTorch/no-GPU source auditing.
+          New source outcomes: TASK-ONLY ROUTER 58/64 success with 56 true decision target reads. MANDATORY early-read controller 58/64 success with 64 reads. Task-level routing PullCube 32/32 with 24 reads and StackCube 26/32 with 32 reads. This is a 12.5% observed private-read count reduction in a narrow two-policy cohort, NOT an equivalence theorem or a new independent trained model.
+          Crucial methodological threat: task-only routing was selected from PRIOR development-cohort per-task outcomes. It is a strong, very simple competitor; sophisticated evidence-gated action/query algorithms must outperform it on fresh task and preferably new robot/controller families to claim useful novel task-level query reasoning.
+          Original SHA256SUMS fingerprints all original source JSON/logs/commit/model environment files, and independently recomputed full-denominator audit. Never count future reruns of the same seeds as fresh experiments. Raw actor output/official task success is not hardware safety. No external research-lab replication.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dst"
+          if git diff --cached --quiet; then echo 'Original source already preserved'; exit 0; fi
+          git commit -m 'evidence: archive source-authentic 64 heldout 2-ACK task-gated original PhysX worlds and hard baseline'
+          for attempt in 1 2 3 4; do
+            git fetch origin main
+            if ! git rebase origin/main; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:main; then echo 'Source evidence archived without force push'; exit 0; fi
+          done
+          exit 1
