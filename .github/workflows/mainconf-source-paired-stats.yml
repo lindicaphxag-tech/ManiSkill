@@ -1,0 +1,45 @@
+name: "Main-conference immutable-source real PhysX paired statistics and exact risk intervals"
+on:
+  push:
+    branches: [research/mainconference-evidence-statistics-20261009]
+    paths:
+      - 'research/audit_mainconf_paired_statistics_native_physx.py'
+      - '.github/workflows/mainconf-source-paired-stats.yml'
+permissions:
+  contents: read
+jobs:
+  independently-audit-original-640-panda-worlds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    strategy:
+      matrix:
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Original byte SHA256 files and pure standard-library all64 paired statistical recomputation
+        run: |
+          set -euo pipefail
+          (cd research/frozen_policy_transfer/evidence/ood_pd_drive_known_ack_anchor_original64_960101_970132 && sha256sum --check SHA256SUMS)
+          python -m py_compile research/audit_mainconf_paired_statistics_native_physx.py
+          python -m research.audit_mainconf_paired_statistics_native_physx /tmp/MAINCONF_REAL640_SOURCE_PAIRED_STATS.json
+          python - <<'PY'
+          import json
+          z=json.load(open('/tmp/MAINCONF_REAL640_SOURCE_PAIRED_STATS.json'))
+          all=z['overall']
+          assert all['n_original_reset_states']==64
+          assert all['n_actual_native_controller_worlds']==640
+          assert len(z['full_16_cells'])==16
+          assert all['by_policy']['old']['public_unique_full_history_authorizations']==8
+          assert all['by_policy']['anchor']['public_unique_full_history_authorizations']==2
+          assert all['by_policy']['old']['wrong_confident_full_history_authorizations']==0
+          assert all['by_policy']['anchor']['wrong_confident_full_history_authorizations']==0
+          print('MAIN_CONFERENCE_PHYSICAL_SOURCE_PAIRED_STAT_RISK_INTERVALS_VERIFIED',True)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mainconf-real-640-physx-paired-statistics-python-${{ matrix.python }}
+          path: /tmp/MAINCONF_REAL640_SOURCE_PAIRED_STATS.json
+          retention-days: 90
