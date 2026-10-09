@@ -50,7 +50,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m research.audit_ack_ood_native_physx \
-            --input-dir /tmp/ood-verified --output /tmp/ood-recomputed.json
+            --input-dir /tmp/ood-verified/original-ood-physx --output /tmp/ood-recomputed.json
           python - <<'PY'
           import json
           recorded=json.load(open('/tmp/ood-verified/complete_real_ood_ack64.json'))
@@ -67,7 +67,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$ARCHIVE_DIR"
-          cp /tmp/ood-verified/*.json "$ARCHIVE_DIR"/
+          cp /tmp/ood-verified/original-ood-physx/*.json "$ARCHIVE_DIR"/
+          cp /tmp/ood-verified/complete_real_ood_ack64.json "$ARCHIVE_DIR"/
           (
             cd "$ARCHIVE_DIR"
             sha256sum *.json > SHA256SUMS
