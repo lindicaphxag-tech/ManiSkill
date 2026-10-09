@@ -1,0 +1,131 @@
+name: 'Archive original dual-evidence 0.65 PhysX null and censored 64 ITT'
+on:
+  push:
+    branches: [research/dual-evidence-public-authority-new64-20261009]
+    paths: [.github/workflows/archive-dual-evidence-new64-original.yml]
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: read
+jobs:
+  authenticated_raw_source_reaudit_and_permanent_archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pin FIRST fully audited real run source and immutable nine source ZIP digests
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37927919064 --jq .head_sha)" = d6209e9aea3d8e13d4093bde79b53934a23f3720
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37927919064 --jq .conclusion)" = success
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37927919064 --jq .run_attempt)" = 1
+          test "$(git hash-object research/DUAL_EVIDENCE_ACK_NEW64_PREOUTCOME_V1.json)" = c2c259ba7bb6beb02bf1ad8e9cdc45eeef5941ef
+          test "$(git hash-object research/frozen_ppo_dual_evidence_model_trust_physx.py)" = b97b6d1ed6a710e026f8412eb6286de53ff9bcb6
+          test "$(git hash-object research/run_dual_evidence_ack_new64.py)" = 0ff34cfe722eeab038a9e6c117b2db2e265eb5c8
+          test "$(git hash-object research/audit_dual_evidence_ack_new64.py)" = 54be44a896979754bbc774d1b87a7ba0b49772e3
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11615415682 --jq .digest)" = "sha256:71311107822a4119030442d89e294897bccfc325044db2c97082f416fa63733f"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11615191122 --jq .digest)" = "sha256:0d03ace6261f5793f556a6a9cdffeb1ecdcf8a6a8dc2b654de6c87c31db92daa"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11615191081 --jq .digest)" = "sha256:2c304d032a687a32abab62fb8a18cd7b612f59714ef05e75bbde7ae1bc3196e9"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11615041342 --jq .digest)" = "sha256:92a5948f689a167e740cdf9b7be16bc8a7786c53abec63d46a94f174c08edbc5"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11614777608 --jq .digest)" = "sha256:7dbdc8ca66abacc50ab33530722e76cfa164380444ee0fdc2576496c9bac315f"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11614659173 --jq .digest)" = "sha256:f0a516eae62db746269084d586f11e75ef963408a6fc94de44505e37baa99f1b"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11614659157 --jq .digest)" = "sha256:50d9fa6146ca6fbfadb29bacad68b1c23bef0d921fced904eadfe6961d86403e"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11614539362 --jq .digest)" = "sha256:d03ff3c10832d620fc57a137818910012e56c2c6f21bb46f575c69e0c7efa39d"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11614494394 --jq .digest)" = "sha256:b222b936891ee73f831ee54c978d5d35e4502f3e47d6ae79cc4c31974914201b"
+      - name: Recover all 8 untouched original native PhysX source and the original full auditor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/dualsourcezip /tmp/dualsource /tmp/dualaudit
+          gh run download 37927919064 --repo "$GITHUB_REPOSITORY" --pattern 'original-new64-dual-trust-*' --dir /tmp/dualsourcezip
+          gh run download 37927919064 --repo "$GITHUB_REPOSITORY" --name first-complete-new64-640-real-physx-full-dual-gate-audit --dir /tmp/dualaudit
+          find /tmp/dualsourcezip -type f -name 'dual_evidence_*.json' -exec cp '{}' /tmp/dualsource/ \;
+          test "$(find /tmp/dualsource -type f -name 'dual_evidence_*.json' | wc -l)" -eq 16
+          test -s /tmp/dualaudit/complete_first_audit.json
+      - name: Independently re-audit true exposure and run six deliberate source falsifications
+        run: |
+          set -euo pipefail
+          python -m research.audit_dual_evidence_ack_new64 --source-dir /tmp/dualsource --output /tmp/second_original_full64_audit.json
+          python - <<'PY'
+          import json,shutil,tempfile
+          from pathlib import Path
+          from research.audit_dual_evidence_ack_new64 import full_audit
+          a=json.loads(Path('/tmp/dualaudit/complete_first_audit.json').read_text())
+          b=json.loads(Path('/tmp/second_original_full64_audit.json').read_text())
+          assert a==b, 'FIRST original and SECOND independent full audit differ'
+          assert b['n_original_task_reset_states']==64 and b['real_native_PhysX_controller_worlds']==640
+          assert b['fully_exposed_physically_matched_original_states']==62
+          assert b['CENSORED_original_reset_states_kept_in_intent_to_treat']==2
+          assert b['exact_physical_prefix_identical_before_t5_info_decisions'] is False
+          assert b['same_two_public_achieved_xyz_samples_for_two_adaptive_methods'] is False
+          main='fault_public_t3_fourhistory_or_t4_query'
+          dual='fault_dual_evidence_065_or_query'
+          fixed='fault_always_single_privileged_query'
+          assert (b['total'][main]['official_success'],b['total'][main]['private_reads'],b['total'][main]['wrong_confident'])==(53,41,0)
+          assert (b['total'][dual]['official_success'],b['total'][dual]['private_reads'],b['total'][dual]['wrong_confident'])==(53,45,0)
+          assert (b['total'][fixed]['official_success'],b['total'][fixed]['private_reads'])==(54,62)
+          assert b['total'][main]['achieved_XYZ_sample_events']==b['total'][dual]['achieved_XYZ_sample_events']==124
+          for attack in ('remove_source','duplicate_seed','invent_confident_wrong','falsify_private_read','hide_early_termination','change_trained_065_floor'):
+              with tempfile.TemporaryDirectory() as tmp:
+                  dst=Path(tmp)/'data';shutil.copytree('/tmp/dualsource',dst)
+                  selected=sorted(dst.glob('dual_evidence_*_original8.json'))[0]
+                  if attack=='remove_source':selected.unlink()
+                  else:
+                      source=json.loads(selected.read_text());row=source['episodes'][0]
+                      if attack=='duplicate_seed':row['seed']=source['episodes'][1]['seed']
+                      elif attack=='invent_confident_wrong':row['public_t3_evidence']['wrong_confident']=not row['public_t3_evidence']['wrong_confident']
+                      elif attack=='falsify_private_read':row['privileged_target_readback_decision_count'][main]=2
+                      elif attack=='hide_early_termination':
+                          bad=dst/'dual_evidence_stack_cube_chunk3_original8.json'
+                          source=json.loads(bad.read_text());rr=next(x for x in source['episodes'] if x['seed']==1830030)
+                          rr.pop('pre_t3_reference_censored',None)
+                          bad.write_text(json.dumps(source))
+                          continue_after=False
+                      elif attack=='change_trained_065_floor':
+                          valid=next((x for x in source['episodes'] if x.get('dual_evidence_model_trust',{}).get('dual_gate_weight_floor_from_old_development') is not None),None)
+                          if valid is None:raise AssertionError('No valid public history found for tamper test')
+                          valid['dual_evidence_model_trust']['dual_gate_weight_floor_from_old_development']=0.61
+                      if attack!='hide_early_termination':selected.write_text(json.dumps(source))
+                  try:full_audit(dst)
+                  except (ValueError,KeyError,AssertionError,TypeError):continue
+                  raise AssertionError('AUDIT ACCEPTED FALSIFIED ORIGINAL '+attack)
+          print('PASS original 64 ITT / 62 fully exposed, 6 intentional forgeries detected, both original audits identical')
+          PY
+      - name: Commit unchanged first original full64 sources, second audit and exact SHA256
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/dual_evidence_trust_original64_1820001_1830032
+          mkdir -p "$dest"
+          cp /tmp/dualsource/*.json "$dest/"
+          cp /tmp/dualaudit/complete_first_audit.json "$dest/first_original_full64_audit.json"
+          cp /tmp/second_original_full64_audit.json "$dest/second_independent_full64_audit.json"
+          (cd "$dest" && sha256sum -- *.json > ORIGINAL_SOURCE_SHA256SUMS && sha256sum -c ORIGINAL_SOURCE_SHA256SUMS)
+          cat > "$dest/README.md" <<'EOF'
+          # Independent read-cost/latent authority audit of posthoc trained 0.65 dual evidence gate
+          **Original experiment**: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37927919064, physical source SHA d6209e9aea3d8e13d4093bde79b53934a23f3720; 10/10 jobs success, 8 original native PhysX data shards plus first complete source auditor.
+          **Earlier failed/repaired experimental series**: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37926518190 (pre-t3 reference termination), plus https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37927304365 (unrecognized pre-t2 source unrepresentability). See research/frozen_policy_transfer/DUAL_065_FIRST_FAILED_PHYSX_SOURCE_AND_CENSORING.md. This passing run is a source-audited **amended** implementation, not untouched first-attempt preregistration.
+          **Primary findings**: 64 original task reset states launched 10 native controller world instances each; only **62/64 actually exposed both two ACK steps and matched physical pre-decision prefixes**. Two original StackCube states 1830029 (unrepresentable even before t2) and 1830030 (terminated after t2 but before t3) are retained as ITT failures, never deleted or counted as two-fault successes.
+          Old empirical single-membership: **53/64** official tasks, **41** true private reads, **21** confident full-pose public histories, **0 observed wrong**. Posthoc-trained 0.65 double criterion: **53/64** official tasks, **45** true private reads, **17** confident whole histories, **0 observed wrong**. Fixed reader: **54/64** official tasks, **62** true reads. Each actual fully exposed public/dual had identical 124 public XYZ sample events, and the original exact physically matched native action and SE3 prefix.
+          **Important NEGATIVE**: dual gate did not produce observed reduction in confident mistakes on this cohort; old rule also had ZERO observed wrong; extra threshold cost 4 private reads. Do not claim L8 safety, 64/64 fully exposed physics, equal information cost with fixed reader, or paper acceptance.
+          All untouched 16 original task/shard and source-audit JSON, original and separately recomputed full64 and exact SHA256 manifest, six deliberate source corruptions rejected. Re-audit: python -m research.audit_dual_evidence_ack_new64 --source-dir research/frozen_policy_transfer/evidence/dual_evidence_trust_original64_1820001_1830032 --output /tmp/recompute.json .
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dest"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'evidence: permanent actual 640 PhysX amended negative dual-gate and two early nonexposed state rows'
+          for attempt in 1 2 3; do
+            git fetch origin research/dual-evidence-public-authority-new64-20261009
+            if ! git rebase origin/research/dual-evidence-public-authority-new64-20261009; then git rebase --abort; exit 1; fi
+            if git push origin HEAD:research/dual-evidence-public-authority-new64-20261009; then echo 'PASS permanent negative evidence archive'; exit 0; fi
+          done
+          exit 1
