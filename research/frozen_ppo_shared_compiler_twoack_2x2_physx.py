@@ -367,12 +367,14 @@ def trial(policy,seed):
                             beliefs[n].require_external_resync(actual)
                             result["privileged_target_readback_decision_count"][n]+=1
                             ev["resync_source"]="one_counted_authoritative_controller_target_read"
-                    maybe_two=(name_belief and len(beliefs[n].hypotheses)>1)
                     if n=="fault_always_single_privileged_query" and step==5:
                         # Explicitly disclose this additional authoritative target read.
                         actual=privileged_target(arm)
                         beliefs[n].require_external_resync(actual)
                         result["privileged_target_readback_decision_count"][n]+=1
+                    # Read the *post-resynchronization* cardinality. Earlier pilot
+                    # wrongly cached this flag before the fixed-reader's t5 reset.
+                    maybe_two=(name_belief and len(beliefs[n].hypotheses)>1)
                     if maybe_two:
                         desired=desired_source_target(src,arm,native)
                         if n=="fault_strict_common_exact":
