@@ -187,11 +187,11 @@ def trial(policy,seed):
                 c=controllers[n]
                 arm=arms[n]
                 # Fixed readback is delayed until AFTER t4 neutral probe. This
-                # comparator issues a genuinely physical t3 action using its
-                # stale (unverified) command-target belief, then resynchronizes
+                # comparator issues a genuinely physical t3 action using only
+                # public achieved pose, never invalid private history, then resynchronizes
                 # with ONE counted private target read at t5.
                 if n=="fault_always_single_privileged_query" and step==3:
-                    old=as_pose(observers[n].pose)
+                    # The observer is intentionally INVALID after the unknown t2 ACK.\n                    # Use achieved PUBLIC EE pose until the counted step-5 read.\n                    old=arm.ee_pose_at_base
                     rewritten,reason,amp=base.normalized_target_delta(
                         src,arm,native,approximate=True,old_override=old)
                     if rewritten is None:
@@ -215,7 +215,7 @@ def trial(policy,seed):
                         "actual_native_6d_dispatched":[float(v) for v in delivered.detach().cpu().numpy()],
                         "actual_native_action_is_precommitted_applied":actual_apply,
                         "controller_execution_ack_seen_by_adapter":"unknown",
-                        "fixed_baseline_target_belief_stale_until_step5":True,
+                        "fixed_baseline_public_achieved_fallback_until_step5":True,
                     })
                     observations[n],_,terminated,truncated,info=w.step(action)
                     goal_after=privileged_target(arm)  # AUDIT ONLY
