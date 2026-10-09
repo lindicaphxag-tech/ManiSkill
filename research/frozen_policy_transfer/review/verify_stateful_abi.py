@@ -173,12 +173,78 @@ def audit_robust_query_new64() -> dict:
     }
 
 
+
+def audit_strict_budget64_negative() -> dict:
+    """Audit a failed original prospective inference gate WITHOUT suppressing it.
+
+    All eight original source files, their eight complete terminal logs,
+    and the full original aggregate have exact SHA-256 identities anchored
+    to the already trusted-main-preserved manifest itself.
+    """
+    folder = EVIDENCE / "strict_shared_16read_quota_new64_negative"
+    manifest = (folder / "SHA256SUMS").read_bytes()
+    must(hashlib.sha256(manifest).hexdigest() ==
+         "0bc758fad0a1c31288805fb504f280c9bbde2216f050262e9b4b208d878f2ca4",
+         "Original failed-study pinned manifest itself was changed")
+    entries = manifest.decode("utf-8").splitlines()
+    expected = {}
+    for row in entries:
+        digest, filename = row.split(maxsplit=1)
+        must(filename not in expected and "/" not in filename and len(digest) == 64,
+             "Duplicate or malicious source entry")
+        expected[filename] = digest
+    must(len(expected) == 17, "Original negative-study 17 evidence objects missing")
+    expected_files = set(expected)
+    actual_files = {p.name for p in folder.iterdir()
+                    if p.is_file() and p.name not in ("SHA256SUMS", "README.md")}
+    must(actual_files == expected_files, "Extra or missing raw negative study evidence")
+    for name, digest in expected.items():
+        must(hashlib.sha256((folder/name).read_bytes()).hexdigest() == digest,
+             "Negative source evidence mutated: "+name)
+
+    source_auditor = Path(__file__).resolve().parents[2] / "audit_query_strict_budget64.py"
+    recomputed = runpy.run_path(str(source_auditor))["audit"](folder)
+    original = read(folder / "strict_quota_new64_full_original_audit.json")
+    must(recomputed == original, "First complete original PhysX negative auditor mismatch")
+    must(recomputed["original_new_distinct_seeds"] == 64,
+         "Original intention-to-test denominator changed")
+    must(len(recomputed["pre_fault_controller_refusal_witnesses"]) == 7,
+         "Original pre-fault impossibility was hidden")
+    must({r["seed"] for r in recomputed["pre_fault_controller_refusal_witnesses"]}
+         == {370029}, "Source-invalid StackCube state changed")
+    must(recomputed["predeclared_primary_efficacy_inference_gate_PASSED"] is False,
+         "Original scientific hard gate was relabelled PASSED")
+    must(recomputed["capped_adaptive_target_decision_reads"] == 10
+         and recomputed["periodic_nonadaptive_target_decision_reads"] == 16,
+         "Original actual query spending mutated")
+    must(recomputed["native_task_success"]["fault_robust_quota_two_per_eight"] == 50
+         and recomputed["native_task_success"]["fault_precommitted_seed_schedule_query"] == 44,
+         "Original per-trial task failure flags were changed")
+    must(recomputed["capped_adaptive_vs_periodic"]["adaptive_only"] == 9
+         and recomputed["capped_adaptive_vs_periodic"]["comparator_only"] == 3,
+         "Paired original fault experiment diverged")
+    return {
+        "status": "NEGATIVE_PROTOCOL_FAILED_NOT_CONFIRMATORY",
+        "sha256_pinned_unchanged_original_files": len(expected),
+        "original_intention_to_test_states": 64,
+        "actual_capped_target_reads": 10,
+        "actual_fixed_target_reads": 16,
+        "pre_fault_unrepresentable_native_action_refusals": 7,
+        "affected_seed": 370029,
+        "full_fault_exposure_hard_gate_passed": False,
+        "success_capped": 50,
+        "success_fixed": 44,
+        "independent_external_replication": False,
+    }
+
+
 def main() -> None:
     manifest_counts = {"observer": verify_hashes(OBSERVER), "ack": verify_hashes(ACK)}
     result = {"scope": "HASH-PINNED OWNER-RUN EVIDENCE AUDIT; NOT NEW PHYSX REPLICATION",
               "sha256_file_counts": manifest_counts,
               "observer_64": audit_observer(), "ack_recovery_16": audit_ack(),
-              "bounded_or_query_NEW64": audit_robust_query_new64()}
+              "bounded_or_query_NEW64": audit_robust_query_new64(),
+              "strict_shared_budget_NEW64_NEGATIVE": audit_strict_budget64_negative()}
     print(json.dumps(result, indent=2, sort_keys=True))
     print("PASS: SHA-256 pinned 64 observer + 16 readback + 64 fresh query-cohort original states, paired outcomes and provenance limits")
 
