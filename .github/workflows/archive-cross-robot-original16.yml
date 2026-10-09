@@ -32,8 +32,23 @@ jobs:
           gh run download 37899544825 --repo "$GITHUB_REPOSITORY" --name entire-original-Panda-xArm6-real-physx-source-and-audit --dir /tmp/cross-robot-original16
           test "$(find /tmp/cross-robot-original16 -type f -name 'cross_robot_ack_*_original4.json' | wc -l)" = 4
           test "$(find /tmp/cross-robot-original16 -type f -name 'cross_robot_full_original16_audit.json' | wc -l)" = 1
-          python -m research.audit_cross_robot_ack_physx --input-dir /tmp/cross-robot-original16 --output /tmp/cross_robot_recomputed_full16.json
-          cmp /tmp/cross_robot_recomputed_full16.json /tmp/cross-robot-original16/cross_robot_full_original16_audit.json
+          # The GitHub original full-source artifact preserves task/chunk subfolders.
+          # Collect only the EXACT four expected filenames, each once. No renames,
+          # cherry-picking or omission is permitted by the independent verifier.
+          mkdir -p /tmp/cross-robot-flat
+          for robot in panda xarm6_robotiq; do
+            for chunk in 0 1; do
+              name="cross_robot_ack_${robot}_chunk${chunk}_original4.json"
+              mapfile -t matched < <(find /tmp/cross-robot-original16 -type f -name "$name")
+              test "${#matched[@]}" = 1
+              cp "${matched[0]}" "/tmp/cross-robot-flat/$name"
+            done
+          done
+          mapfile -t aggregate < <(find /tmp/cross-robot-original16 -type f -name "cross_robot_full_original16_audit.json")
+          test "${#aggregate[@]}" = 1
+          cp "${aggregate[0]}" /tmp/cross-robot-flat/cross_robot_full_original16_audit.json
+          python -m research.audit_cross_robot_ack_physx --input-dir /tmp/cross-robot-flat --output /tmp/cross_robot_recomputed_full16.json
+          cmp /tmp/cross_robot_recomputed_full16.json /tmp/cross-robot-flat/cross_robot_full_original16_audit.json
           python -m unittest discover -s tests -p 'test_cross_robot_ack_audit.py' -v
 
   trusted-main-permanent-original-source-copy:
@@ -63,15 +78,30 @@ jobs:
           gh run download 37899544825 --repo "$GITHUB_REPOSITORY" --name entire-original-Panda-xArm6-real-physx-source-and-audit --dir /tmp/cross-robot-original16
           test "$(find /tmp/cross-robot-original16 -type f -name 'cross_robot_ack_*_original4.json' | wc -l)" = 4
           test "$(find /tmp/cross-robot-original16 -type f -name 'cross_robot_full_original16_audit.json' | wc -l)" = 1
-          python -m research.audit_cross_robot_ack_physx --input-dir /tmp/cross-robot-original16 --output /tmp/cross_robot_recomputed_full16.json
-          cmp /tmp/cross_robot_recomputed_full16.json /tmp/cross-robot-original16/cross_robot_full_original16_audit.json
+          # The GitHub original full-source artifact preserves task/chunk subfolders.
+          # Collect only the EXACT four expected filenames, each once. No renames,
+          # cherry-picking or omission is permitted by the independent verifier.
+          mkdir -p /tmp/cross-robot-flat
+          for robot in panda xarm6_robotiq; do
+            for chunk in 0 1; do
+              name="cross_robot_ack_${robot}_chunk${chunk}_original4.json"
+              mapfile -t matched < <(find /tmp/cross-robot-original16 -type f -name "$name")
+              test "${#matched[@]}" = 1
+              cp "${matched[0]}" "/tmp/cross-robot-flat/$name"
+            done
+          done
+          mapfile -t aggregate < <(find /tmp/cross-robot-original16 -type f -name "cross_robot_full_original16_audit.json")
+          test "${#aggregate[@]}" = 1
+          cp "${aggregate[0]}" /tmp/cross-robot-flat/cross_robot_full_original16_audit.json
+          python -m research.audit_cross_robot_ack_physx --input-dir /tmp/cross-robot-flat --output /tmp/cross_robot_recomputed_full16.json
+          cmp /tmp/cross_robot_recomputed_full16.json /tmp/cross-robot-flat/cross_robot_full_original16_audit.json
           python -m unittest discover -s tests -p 'test_cross_robot_ack_audit.py' -v
       - name: Publish untouched original real PhysX JSONs with individual SHA256 source seals
         run: |
           set -euo pipefail
           dest=research/frozen_policy_transfer/evidence/cross_robot_panda_xarm6_original16_420001_430008
           mkdir -p "$dest"
-          cp /tmp/cross-robot-original16/*.json "$dest/"
+          cp /tmp/cross-robot-flat/*.json "$dest/"
           (cd "$dest" && sha256sum *.json > SHA256SUMS && sha256sum -c SHA256SUMS)
           cat > "$dest/README.md" <<'EOF'
           # Cross-embodiment Panda / xArm6 stateful ACK ambiguity (mechanism, NOT policy transfer)
