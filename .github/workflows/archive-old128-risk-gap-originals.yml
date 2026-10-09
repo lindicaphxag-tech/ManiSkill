@@ -1,0 +1,71 @@
+name: "Permanently archive independently rescored 128 original native PhysX risk examples"
+on:
+  push:
+    branches: [research/observability-margin-gate-new64-20261009]
+    paths:
+      - .github/workflows/archive-old128-risk-gap-originals.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  preserve-reviewed-128-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/observability-margin-gate-new64-20261009
+          path: analysis
+          persist-credentials: true
+      - uses: actions/checkout@v4
+        with:
+          ref: research/shared-compiler-evidence-original64-20261009
+          path: original_train
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: research/matched-public-bayes-new64-20261009
+          path: original_challenge
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Re-score all 128 byte-original PhysX episodes without counterfactual task success
+        run: |
+          set -euo pipefail
+          folder=analysis/research/frozen_policy_transfer/evidence/public_gap_exploratory_original128_20261009
+          mkdir -p "$folder"
+          python analysis/research/audit_public_gap_crosscohort_development.py \
+            --cohort1 original_train/research/frozen_policy_transfer/evidence/shared_compiler_twoack_original64_1480001_1490032 \
+            --cohort2 original_challenge/research/frozen_policy_transfer/evidence/matched_public_bayes_original64_1720001_1730032 \
+            --out "$folder/CROSSCOHORT_128_HASHED_SOURCE_RESCORING.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("analysis/research/frozen_policy_transfer/evidence/public_gap_exploratory_original128_20261009/CROSSCOHORT_128_HASHED_SOURCE_RESCORING.json")
+          x=json.loads(p.read_bytes())
+          assert len(x["all_128_original_source_cases"])==128
+          assert x["not_online_policy_execution"] is True
+          assert x["training_rule_posthoc_selected_after_second_cohort"] is True
+          assert x["one_known_wrong_public_history"]["seed"]==1730027
+          assert x["source_populations"]["challenge_172_173_already_seen_when_gate_chosen"]["all_64"]["counterfactual_wrong"]==0
+          print("PERMANENT 128 ORIGINAL PHYSICAL SOURCE RESCORING VERIFIED; NO OFFPOLICY TASK SUCCESS CLAIM")
+          PY
+          cd "$folder"
+          sha256sum CROSSCOHORT_128_HASHED_SOURCE_RESCORING.json > SHA256SUMS
+          cat > README.md <<'EOF'
+          # Retrospective 128 real native PhysX original-source public-gap analysis
+          This is an **EXPLORATORY REANALYSIS** of TWO PREVIOUS author-operated true PhysX cohorts (64 reset states each), with the exact sixteen original physical source-shard SHA256 hashes recorded inside the JSON. It is NOT a new 128-world execution, not policy task success under the new margin rule, not external independent reproduction, and not a calibration guarantee.
+
+          The extra 4.5-mm gap was chosen AFTER seeing one wrong-confident public history at StackCube seed 1730027. Old reference original history-gated method: 16/64 public admissions, 0 wrong in one cohort; 16/64 public admissions, 1 wrong in the other. Retrospective extra-margin filtering: 16/64 and 15/64 admissions, and 0 observed wrong within the filtered old admissions. The source code deliberately reports `gap_rule_task_success = null`: *counterfactual native trajectories were never actually stepped on the historical data*. This selection-bias disclosure is essential.
+
+          Reproduce: from exact original data branches `research/shared-compiler-evidence-original64-20261009` and `research/matched-public-bayes-new64-20261009`, run `research/audit_public_gap_crosscohort_development.py`. The entirely NEW 64 × 10 native physical intervention is independently registered on branch `research/observability-margin-gate-new64-20261009`. Never claim a formal wrong-history safety bound or main-track acceptance from this retrospective source file.
+          EOF
+          cd -
+          cd analysis
+          git add research/frozen_policy_transfer/evidence/public_gap_exploratory_original128_20261009
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          if ! git diff --cached --quiet; then
+            git commit -m "evidence: permanently preserve original source-hashed 128-episode posthoc risk analysis"
+            git push origin HEAD:research/observability-margin-gate-new64-20261009
+          fi
