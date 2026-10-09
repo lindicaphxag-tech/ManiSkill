@@ -1,0 +1,42 @@
+name: 'Reviewer honest development baseline strength check: 0.60 same-public residual score'
+on:
+  push:
+    branches: [research/dual-evidence-public-authority-new64-20261009]
+    paths:
+      - research/reviewer_same_public_strong_baseline_development.py
+      - .github/workflows/reviewer-same-public-development-frontier.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compare_formally_declared_same_public_admission_pareto:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Independently recompute historical actual-PhysX training-only score thresholds
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/reviewer_same_public_strong_baseline_development.py)" = 6570eb6132f28ee6652c2c1a6897dd306749cd6a
+          python -m py_compile research/reviewer_same_public_strong_baseline_development.py
+          python -m research.reviewer_same_public_strong_baseline_development --output /tmp/stronger_original_same_public_development_scores.json
+          python - <<'PY'
+          import json
+          x=json.load(open('/tmp/stronger_original_same_public_development_scores.json'))
+          assert x['original_training_n']==64
+          assert x['original_set_confident']==16 and x['original_set_wrong']==1
+          s=x['threshold_sensitivity']['score_only_0.60']
+          assert s['n_confident_histories']==17 and s['n_incorrect_confident_histories']==0
+          d=x['threshold_sensitivity']['unique_plus_score_0.65']
+          assert d['n_confident_histories']==10 and d['n_incorrect_confident_histories']==0
+          assert x['independently_executed_baselines_at_each_threshold'] is False
+          print('PASS source-only stronger prior-data score challenger, NOT a new PhysX success claim')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prior-physx-development-honest-same-public-baseline-threshold-grid
+          path: /tmp/stronger_original_same_public_development_scores.json
+          retention-days: 90
