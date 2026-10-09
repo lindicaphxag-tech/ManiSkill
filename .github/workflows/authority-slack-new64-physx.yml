@@ -1,0 +1,89 @@
+name: New64 task-blind authority-slack proactive query (actual native PhysX)
+on:
+  push:
+    branches: [research/authority-slack-proactive-new64-20261009]
+    paths:
+      - '.github/workflows/authority-slack-new64-physx.yml'
+      - 'research/run_authority_slack_new64.py'
+      - 'research/frozen_ppo_authority_slack_proactive.py'
+      - 'research/authority_slack_query_gate.py'
+      - 'tests/test_authority_slack_proactive.py'
+      - 'research/AUTHORITY_SLACK_PROACTIVE_NEW64_FROZEN_V1.json'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: authority-slack-physx-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  freeze-and-falsify-query-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Strong fail-closed tests and source freeze before any unobserved seed
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p 'test_authority_slack_proactive.py' -v
+          python -m research.run_authority_slack_new64 --self-test
+          python -m py_compile research/frozen_ppo_authority_slack_proactive.py research/run_authority_slack_new64.py
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = '99836af14205fe3e95e52a2e0d68237c7c8a9045'
+          test "$(git hash-object research/multi_ack_se3_bounded.py)" = '36707a177549104ba5b4bd9bcebc76518f0d2840'
+          test "$(git hash-object research/frozen_ppo_authority_slack_proactive.py)" = '7452c66d2b72eb4ffce0179a0281208c18eb5e9f'
+          test -s research/AUTHORITY_SLACK_PROACTIVE_NEW64_FROZEN_V1.json
+  native-eight-world-source-shards:
+    needs: freeze-and-falsify-query-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 95
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      PYTHONUNBUFFERED: '1'
+      TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: CPU true PhysX with original ManiSkill and hash-verified ActionShift PPO weights
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e . huggingface_hub
+      - name: Record source and exact software before unknown physical results
+        run: |
+          mkdir -p authority_slack_originals
+          git rev-parse HEAD > authority_slack_originals/current_commit.txt
+          git hash-object research/frozen_ppo_authority_slack_proactive.py > authority_slack_originals/new_runner_blob.txt
+          git hash-object research/frozen_ppo_compound_ack_multi_belief.py > authority_slack_originals/unchanged_base_runner_blob.txt
+          git hash-object research/AUTHORITY_SLACK_PROACTIVE_NEW64_FROZEN_V1.json > authority_slack_originals/preregistered_protocol_blob.txt
+          python -m pip freeze --all > authority_slack_originals/environment.txt
+          printf 'original_task=%s original_shard=%s eight_physx_worlds=true fault_steps=2,3 query_threshold=0.75\n' "$TASK" "$CHUNK" > authority_slack_originals/source_identity.txt
+      - name: Execute all native controller worlds and actual protected setpoint audits
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_authority_slack_new64.py \
+            --task "$TASK" --chunk "$CHUNK" \
+            --out authority_slack_originals 2>&1 | tee authority_slack_originals/actual_physx.log
+          test -s "authority_slack_originals/authority_slack_${TASK}_chunk${CHUNK}_original8.json"
+          test -s authority_slack_originals/summary.json
+      - name: Preserve failures and all raw SHA256 proof
+        if: always()
+        run: |
+          (cd authority_slack_originals && sha256sum *.json *.txt *.log > SHA256SUMS) || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: authslack-${{ matrix.task }}-${{ matrix.chunk }}-${{ github.run_id }}
+          path: authority_slack_originals/
+          retention-days: 90
+
+# NO task labels in proactive triggering; task identity only chooses original PPO checkpoint.
+# Publisher-facing claims require whole-denominator source audit and strong task-routed comparator.
