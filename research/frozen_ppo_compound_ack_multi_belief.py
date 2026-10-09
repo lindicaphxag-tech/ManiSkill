@@ -25,8 +25,8 @@ from research.two_history_se3_robust import Reason
 
 TASK=os.environ.get("ABI_TASK")
 COHORT={
-    "pull_cube":("PullCube-v1",range(360001,360009)),
-    "stack_cube":("StackCube-v1",range(370001,370009))
+    "pull_cube":("PullCube-v1",range(380001,380009)),
+    "stack_cube":("StackCube-v1",range(390001,390009))
 }
 if TASK not in COHORT:
     raise ValueError("ABI_TASK must name one of two frozen task/checkpoint cohorts")
@@ -280,15 +280,33 @@ def trial(policy,seed):
                     ack=None if (step in FAULT_STEPS and
                         n=="fault_always_single_privileged_query") else True
                     observers[n].acknowledge(ticket,applied=ack)
-                if certificate is not None and certificate.authorized:
-                    # AUDIT-ONLY get_state AFTER env.step. Never inserted into
-                    # next policy/observer command. Counts separated from queries.
+                if certificate is not None and certificate.authorized and step in FAULT_STEPS:
+                    # Source-native fault forcibly replaces the authorized command
+                    # with a ZERO/HOLD command. We must NEVER assert that an
+                    # unapplied hypothetical command reached its certified goal.
+                    # Preserve this attempted action as a masked certificate.
+                    result.setdefault("certified_action_masked_by_injected_fault",{}).setdefault(n,[]).append({
+                        "step":step,
+                        "fault_truth":"arm command was physically replaced by zero",
+                        "native_action_did_not_execute":True,
+                        "postdispatch_certificate_check_not_applicable":True,
+                        "claimed_physical_setpoint_certificate":False,
+                    })
+                if certificate is not None and certificate.authorized and step not in FAULT_STEPS:
+                    # Only a real dispatched bounded action is eligible for an
+                    # AFTER-step physical target-memory audit. The accessor below
+                    # is audit-only, never a decision-time observation.
                     actual=privileged_target(arm)
                     pa,ra=audit_pose_error(actual,desired)
                     accepted=(pa<=certificate.worst_position_inf_m+1e-4 and
                               ra<=certificate.worst_orientation_geodesic_rad+1e-4)
                     if not accepted:
-                        raise RuntimeError("Robust certified setpoint violated in real controller")
+                        raise RuntimeError(
+                            f"UNMASKED CERTIFICATE VIOLATION task={TASK} seed={seed} arm={n} "
+                            f"step={step} pos={pa:.9f} bound={certificate.worst_position_inf_m:.9f} "
+                            f"rot={ra:.9f} bound={certificate.worst_orientation_geodesic_rad:.9f} "
+                            f"all_hypotheses={certificate.hypotheses}"
+                        )
                     result["robust_native_target_bound_checks"].setdefault(n,[]).append({
                         "step":step,"position_error_m":pa,
                         "rot_error_rad":ra,
