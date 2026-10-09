@@ -1,0 +1,95 @@
+name: "Byte-freeze first complete 64-state full-history frozen PPO real PhysX primary evidence"
+on:
+  push:
+    branches: [research/ppo-hypothesis-identifiability-new64-20261009]
+    paths:
+      - '.github/workflows/archive-original-discrete-history-new64.yml'
+permissions:
+  contents: write
+jobs:
+  verify-all-original-physical-sources:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ORIGINAL_RUN: '37913661619'
+      ORIGINAL_ARTIFACT_ID: '11609255182'
+      ORIGINAL_ZIP_SHA256: '7ea9056a2f977d5d7c9074ce5c4b2020a9549b404ebea536da615ddd75989476'
+      DEST: research/frozen_policy_transfer/evidence/discrete_hypothesis_ppo_original64_840001_850032
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Trust only successful original real native PhysX preregistered source code identity
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$ORIGINAL_RUN" --jq '.conclusion')" = success
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$ORIGINAL_RUN" --jq '.head_sha')" = c0473804f8a6a48e30ed592c619043a09ab25250
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/artifacts/"$ORIGINAL_ARTIFACT_ID" --jq '.digest')" = "sha256:$ORIGINAL_ZIP_SHA256"
+          test "$(git hash-object research/PPO_DISCRETE_HYPOTHESIS_NEW64_PREOUTCOME_V2.json)" = b8c5205ca949720a2d39396c9f8c711e65d7982b
+          test "$(git hash-object research/frozen_ppo_discrete_history_v2_physx.py)" = 23b8c4838f51dfef3617bf0ab739c4167586b8aa
+          test "$(git hash-object research/run_public_discrete_hypothesis_new64.py)" = b0d5b7c7a70df290dabb29535456f6e373ca66d7
+          test "$(git hash-object research/audit_public_discrete_hypothesis_new64.py)" = ee3bbf5fd43f0359bb7abb3567cfba9f7a6382f0
+      - name: Download original output ZIP and verify original sha256 before unzipping
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$ORIGINAL_ARTIFACT_ID/zip" \
+            -o /tmp/native-new64-original.zip
+          echo "$ORIGINAL_ZIP_SHA256  /tmp/native-new64-original.zip" | sha256sum --check -
+          mkdir -p /tmp/native64-real
+          unzip -q /tmp/native-new64-original.zip -d /tmp/native64-real
+          find /tmp/native64-real -name '*.json' -type f -print | sort
+          test "$(find /tmp/native64-real -name '*.json' -type f | wc -l)" -eq 17
+      - name: Re-run exact original all64 source audit and independently reject any modified decision/episode
+        run: |
+          set -euo pipefail
+          ORIGINAL_FOLDER="$(dirname "$(find /tmp/native64-real -name 'public_hypothesis_pull_cube_chunk0_original8.json' -print -quit)")"
+          FULL_SOURCE="$(find /tmp/native64-real -name 'independent_new64_full_source_audit.json' -print -quit)"
+          test -s "$FULL_SOURCE"
+          python -m research.audit_public_discrete_hypothesis_new64 --source-dir "$ORIGINAL_FOLDER" --output /tmp/independently_recomputed_new64.json
+          FULL_SOURCE="$FULL_SOURCE" python - <<'PY'
+          import os,json
+          orig=json.load(open(os.environ["FULL_SOURCE"]))
+          redo=json.load(open("/tmp/independently_recomputed_new64.json"))
+          if orig!=redo: raise SystemExit("Altered source/full population audit — refuse archival")
+          assert redo["genuine_source_physx_reset_states"]==64
+          assert redo["genuine_physics_controller_worlds"]==512
+          assert redo["complete_double_fault_gate_passes"] is True
+          assert redo["double_fault_exposure_population"]==64
+          assert redo["public_confident_authorizations"]==25
+          assert redo["model_confident_wrong"]==0
+          assert redo["outcomes_total"]["new_public"]=={"success":58,"privileged_reads":39}
+          assert redo["outcomes_total"]["task_preselected"]=={"success":58,"privileged_reads":57}
+          assert redo["paired_discordances"]=={"new_only":0,"task_gate_only":0,"both":58,"neither":6}
+          print("SOURCE_INDEPENDENT_FIRST_ORIGINAL64_PHYSX_TASK_SUCCESS_AND_COST_CONFIRMED",True)
+          PY
+      - name: Preserve all original 17 JSON bytes and per-file SHA256 in versioned public research source
+        run: |
+          set -euo pipefail
+          ORIGINAL_FOLDER="$(dirname "$(find /tmp/native64-real -name 'public_hypothesis_pull_cube_chunk0_original8.json' -print -quit)")"
+          FULL_SOURCE="$(find /tmp/native64-real -name 'independent_new64_full_source_audit.json' -print -quit)"
+          mkdir -p "$DEST"
+          cp "$ORIGINAL_FOLDER"/*.json "$DEST"/
+          cp "$FULL_SOURCE" "$DEST"/
+          (cd "$DEST" && sha256sum *.json > SHA256SUMS)
+          cat > "$DEST"/README.md <<'EOF'
+          # Prospective full-history public motion ACK identification — FIRST real frozen PPO new64 PhysX source
+          
+          **Owner-run, source-preregistered first successful 10-job PhysX+audit**: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37913661619, actual native execution source commit c0473804f8a6a48e30ed592c619043a09ab25250, original prereg Git blob b8c5205ca949720a2d39396c9f8c711e65d7982b, original combined ZIP artifact 11609255182 sha256:7ea9056a2f977d5d7c9074ce5c4b2020a9549b404ebea536da615ddd75989476.
+          The 17 byte-identical JSON files are 8 full original eight-seed matched true-PhysX controller source populations (64 original task reset states); 8 original independent shard source audits; 1 complete all64 independent source audit. SHA256SUMS freezes all original bytes including failures.
+          Both tasks employ unchanged released third-party frozen PPOs, genuine ManiSkill CPU PhysX, Panda native source-to-target controller conversion, two physically executed native arm target holds at steps 2 and 3 with ACK unknown. 8 genuinely physically stepped paired native controller worlds per seed = **512 genuine virtual controller worlds** (NOT 512 robots/policies). 64/64 actual double fault exposures achieved on the new arm.
+          **Original actual task completion: full discrete complete-history public motion identification + one counted private query on ambiguity 58/64 tasks using 39 privileged reads, versus the prospectively preselected task-aware fixed/selective rule ACTUALLY EXECUTED 58/64 tasks using 57 private target reads.** Paired binary outcome 58 both success, 6 neither, ZERO discordances. Public method selected one of four full latent target histories on 25/64 PhysX task states with 0 observed WRONG confident history labels; remaining 39 relied on an explicit privileged controller target read at step t4. The earlier over-conservative full-pose guard produced 0/32 public labels and no private reading gain. 2 public achieved XYZ samples per new-arm task, no additional probe actuation, zero test-time PPO/model retraining.
+          This is an observed task-success-preserving information budget reduction on ONE original finite cohort, NOT statistical noninferiority or proof of a universal zero-error observer. The empirical response envelope is small, prior task/robot-specific, and NOT externally certified as deterministic. The source implementation is author-operated, not a robot hardware/force/collision safety study, actual ROS/network packet loss, new VLA, independent outside-lab reproduction, or officially accepted publication.
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$DEST"
+          git diff --cached --quiet && exit 0
+          git commit -m "evidence: freeze 64 real frozen PPO four-history task states and matched 39-vs-57 query record"
+          git push origin HEAD:research/ppo-hypothesis-identifiability-new64-20261009
