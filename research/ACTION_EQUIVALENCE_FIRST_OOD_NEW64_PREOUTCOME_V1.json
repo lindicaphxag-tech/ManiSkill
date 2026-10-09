@@ -1,0 +1,59 @@
+{
+  "schema": "preoutcome_ood_robust_action_equivalence_first_public_evidence_second_new64_v1",
+  "registered": "2026-10-09",
+  "causal_question": "When hidden ACK histories are not uniquely identified, can an actual common native action certified for all currently maintained complete target histories avoid a private read, while using public motion history identification ONLY if this action is inadmissible? Physically test rather than splice old baselines.",
+  "novelty_boundary": "Worst-case common-action certificates, finite history hypotheses, risk-sensitive queries, and active adaptation are prior-art classes. Hypothesized contribution is the observed selective union and source-level negative counterfactuals, not a newly proved generic algorithm or robot safety guarantee.",
+  "source_architecture": "Start from original source-frozen ManiSkill two-ACK PPO controller and task; source target is computed from public achieved pose; native controller uses pd_ee_target_delta_pose with exact documented chart. Same source pretrained PPO/checkpoints, unchanged native 6D action normalize bounds.",
+  "real_physics": {
+    "new_seed_ranges": {
+      "pull_cube": [
+        1000101,
+        1000132
+      ],
+      "stack_cube": [
+        1010101,
+        1010132
+      ]
+    },
+    "size": 64,
+    "joint_truth": "t2 APPLIED iff seed even; t3 APPLIED iff (seed//2)%2==0; AA/AH/HA/HH 8 per task",
+    "gain_truth": "slow stiffness500/damping70 if (seed//4)%2==0, otherwise fast stiffness1500/damping130, force limit100; seven Panda joints physically modified/read back on ALL worlds",
+    "conditions": "each task×actual ACK truth×physical drive gain has FOUR independent new resets",
+    "worlds_per_seed": 10,
+    "total_genuine_maniskill_physx_worlds": 640,
+    "unknown_true_ACK_to_adapter": true,
+    "source_ppo_policy_frozen": true,
+    "t4": "one physically executed KNOWN native six-dimensional ZERO arm command, across all still active actual policy/controller worlds",
+    "public_observations": "2 achieved XYZ samples (before+after true t4) for BOTH public-motion comparator and hybrid. Strong robust-query comparator intentionally has NO extra public XYZ sensors, so do not call it matched-information.",
+    "all_failures_and_pre_fault_refusals_counted": true
+  },
+  "hybrid_method_frozen": {
+    "name": "Action-Equivalence First (AEF)",
+    "at_step5": "With complete target-history belief and desired source target from policy, attempt documented multi-history bounded native controller-action certificate (same geometric position budget 0.05m and rotation budget 0.05rad) WITHOUT choosing an ACK history. If certificate authorizes, dispatch its common native action; keep complete belief and do not query. If certificate rejects, use original fixed-epsilon t4 public motion witness (task original Pull .006944262561376447m and Stack .00719087965534261m, competing margin .002m) to select EXACTLY one complete SE(3) history only if unique. If no trustworthy unique public candidate, one counted authoritative native target getter at t5 before dispatch.",
+    "after_step5": "If the belief remained multiple (since common native action was used), try the same robust common multi-history command at each later step; at first geometric infeasibility, make ONE counted native target read and collapse; if reader was already used, refuse rather than fabricate additional getters.",
+    "priority": "robust multi-history certificate > source-frozen public unique complete history > one counted authoritative target read",
+    "no_future_leak": "Never use actual t2/t3 physical applied/held truth, source seed/gain mode or audit-only private native target in decision. No public response regression retuning based on prior OOD outcomes.",
+    "action_bound_caveat": "Bounds apply to commanded target under documented chart, not real robot collision/contact force/hardware safety.",
+    "native_query_cost_counted": true
+  },
+  "actual_physically_run_controls": [
+    "source_no_fault",
+    "fault_oracle_private_target",
+    "fault_optimistic_unverified_ack",
+    "fault_strict_common_exact",
+    "fault_robust_two_history_without_query",
+    "fault_robust_then_single_privileged_query",
+    "fault_always_single_privileged_query",
+    "fault_assume_held_without_query",
+    "fault_public_original_eps_or_t5_query",
+    "fault_robust_first_public_second_or_query"
+  ],
+  "primary": [
+    "Actual 64 seed-paired official task binary success and private target readbacks for hybrid, source-frozen public, robust-then-query, task-preselected strong and fixed t5 query",
+    "source-real ACTUAL correct/incorrect public history choices, public compatibility authorized vs USED, robust action certificates used vs rejected and native target bound checks",
+    "per reset collision/contact safety NOT claimed; native command representability, force-limits, source PDA drive readback, physical true two ACK mode and t4 neutral action audit all real controller worlds",
+    "physical gain × task × ACK truth strata, 16 original source files and independent source-only audit",
+    "include failures, new false confidence, and higher query costs without retuning pre-registered seed bank"
+  ],
+  "go_no_go": "If robust-first adds no Pareto benefit or causes lost task success on new64, publish NEGATIVE. No claims of general identifiable unique latent target or novel confidence theorem, hardware safety, VLA transfer, external adoption or CoRL/RSS/ICRA acceptance."
+}
