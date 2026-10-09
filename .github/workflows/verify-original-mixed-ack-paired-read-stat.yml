@@ -1,0 +1,23 @@
+name: "Source-locked paired 64 state private-read cost sign test (exploratory only)"
+on:
+  push:
+    branches: [research/mixed-ack-truth-frozenppo-new64-20261009]
+    paths:
+      - 'research/audit_original_mixed_ack_query_paired_effect.py'
+      - '.github/workflows/verify-original-mixed-ack-paired-read-stat.yml'
+permissions:
+  contents: read
+jobs:
+  independently-verify-original-paired-physical-read-deltas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify all original trial files and recompute paired exact exploratory sign test
+        run: |
+          set -euo pipefail
+          (cd research/frozen_policy_transfer/evidence/mixed_ack_truth_frozen_ppo_original64_860001_870032 && sha256sum --check SHA256SUMS)
+          python -m research.audit_original_mixed_ack_query_paired_effect
