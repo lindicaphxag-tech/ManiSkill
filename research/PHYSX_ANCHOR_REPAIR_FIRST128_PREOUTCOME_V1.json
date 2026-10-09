@@ -1,0 +1,75 @@
+{
+  "schema": "PHYSX_TARGET_ANCHOR_PROBE_REPAIR_FIRST128_PREOUTCOME_V1",
+  "scientific_question": "With known fault truth held constant in both arms, does a known-delivered nonzero native rotation probe change required full-SE3 target-anchor repair, and does an intervention-aware inverse restore the t1 anchor better than a counterfactual no-probe inverse?",
+  "claim_boundary": "This isolates intervention semantics under oracle-known fault truth. It is NOT passive ACK identification, not trained policy or task success, not a safe RL certificate, not independent adoption.",
+  "robot_uids": [
+    "panda",
+    "xarm6_robotiq"
+  ],
+  "task": "PickCube-v1",
+  "control_mode": "pd_ee_target_delta_pose",
+  "robot_seeds": {
+    "panda": [
+      720001,
+      720008
+    ],
+    "xarm6_robotiq": [
+      730001,
+      730008
+    ]
+  },
+  "truths": [
+    "held",
+    "applied"
+  ],
+  "known_delivered_t3_probes": {
+    "zero": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "rotation_z": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0.35
+    ]
+  },
+  "repair_comparators": [
+    "no_probe_transition_ablation",
+    "actual_transition_compensation"
+  ],
+  "fixed_anchor": "controller target full position/quaternion after common known-delivered t0,t1; repair attempts restoration of EXACT fixed t1 target, unlike earlier moving held target reference",
+  "source_actions": "same existing research/cross_robot_ack_physics.py native t0/t1/t2, with held t2 physically sent zero, applied t2 physically sent source t2",
+  "strict_matching": "two repair comparators physically rerun identical reset/ACK/probe t0:t3 action prefix; audit actual command target after t1, t3 and t4",
+  "truth_as_decision_input": "both inverse comparators get oracle physical ACK truth for controlled repair-semantic ablation; no ACK detection algorithm and no private getter pre-repair inputs",
+  "posthoc_private_target_reads": "allowed only for audit of predicted target and final physically executed restoration, never passed into inverse controller",
+  "registered_worlds": 128,
+  "independent_robot_reset_seeds": 16,
+  "factored_conditions_per_reset": 8,
+  "per_robot_worlds": 64,
+  "predeclared_t4_success": {
+    "position_max_abs_error_m": 0.0001,
+    "rotation_geodesic_error_rad": 0.001
+  },
+  "primary_outcomes": [
+    "same-prefix physically achieved EE displacement before repair",
+    "known-delivered rotation probe real target SO3 change",
+    "static vs dynamic full-SE3 commanded target restoration per paired seed/truth/probe",
+    "actual t4 task success recorded ONLY as context and never interpreted as manipulation-task success if initial task was not completed",
+    "all 128 worlds completed with source checksum provenance"
+  ],
+  "hard_vetoes": [
+    "do not posthoc choose different probes, seeds or action amplitudes",
+    "do not relabel task-level success from SE3 commanded target restoration",
+    "do not count correlated truth/probe/repair worlds as independent seeds",
+    "do not claim nonzero active information gain: fault truth supplied by oracle to both controllers",
+    "the anchor fixed at t1 changes the repair objective relative to prior moving-target experiments",
+    "do not claim general hardware safety or read atomicity from an author-operated scripted PhysX test"
+  ]
+}
