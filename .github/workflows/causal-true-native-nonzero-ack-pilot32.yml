@@ -1,0 +1,114 @@
+name: "Causal positive native t4 probe vs passive zero: prospective 32 real frozen PPO tasks and 352 PhysX worlds"
+on:
+  push:
+    branches: [research/mainconference-evidence-statistics-20261009]
+    paths:
+      - 'research/CAUSAL_NONZERO_NATIVE_PROBE_PILOT32_PREOUTCOME_V1.json'
+      - 'research/frozen_ppo_causal_nonzero_probe_pilot_v7.py'
+      - 'research/run_causal_nonzero_native_ack_pilot32.py'
+      - 'research/audit_causal_nonzero_probe_physical_pilot32.py'
+      - '.github/workflows/causal-true-native-nonzero-ack-pilot32.yml'
+permissions:
+  contents: read
+jobs:
+  immutable-source-and-original-fault-truth-precommit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze original unknown-ACK true source and nonzero/zero native action cost BEFORE any real physics
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/CAUSAL_NONZERO_NATIVE_PROBE_PILOT32_PREOUTCOME_V1.json)" = 5ddc259ddebbc7d3a486c56bbf53d806f00de64b
+          test "$(git hash-object research/frozen_ppo_causal_nonzero_probe_pilot_v7.py)" = 9cdb5e107ca2f6a60d447f0ec47fbc60047d868e
+          test "$(git hash-object research/run_causal_nonzero_native_ack_pilot32.py)" = 8b2008893ed2180bedeee2d3953c00e833c8666e
+          test "$(git hash-object research/audit_causal_nonzero_probe_physical_pilot32.py)" = db7fe83e85c920efd0e6336f9ffe74a2a073630e
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = ddfaf4522d49f73ce926e4c6d77c7ca755f8e1b6
+          python -m py_compile research/frozen_ppo_causal_nonzero_probe_pilot_v7.py research/run_causal_nonzero_native_ack_pilot32.py research/audit_causal_nonzero_probe_physical_pilot32.py
+          python - <<'PY'
+          from research.run_causal_nonzero_native_ack_pilot32 import check_sources,new_seeds,EXPECTED_T4_NONZERO
+          check_sources()
+          assert EXPECTED_T4_NONZERO==(.12,-.09,.07,0.,0.,0.)
+          for task,start in (("pull_cube",1200101),("stack_cube",1210101)):
+              ids=[x for chunk in (0,1) for x in new_seeds(task,chunk)]
+              assert ids==list(range(start,start+16))
+              truth=lambda s:("A" if s%2==0 else "H")+("A" if (s//2)%2==0 else "H")
+              assert all(sum(truth(s)==t for s in ids)==4 for t in ("AA","AH","HA","HH"))
+          print("PRECOMMITTED_POSITIVE_NONZERO_NATIVE_INTERVENTION_PILOT32_SOURCENATIVE_LOCK",True)
+          PY
+  32-truly-new-reset-paired-physical-task-shards:
+    needs: immutable-source-and-original-fault-truth-precommit
+    runs-on: ubuntu-latest
+    timeout-minutes: 125
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1]
+    env:
+      TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+      PYTHONUNBUFFERED: '1'
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install genuine CPU SAPIEN ManiSkill PhysX, no fake/dynamic offline replay
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Record actual original native PPO / controller source and physics dependency versions
+        run: |
+          git rev-parse HEAD > original_physx_source_execution_commit.txt
+          python -m pip freeze --all > original_physx_environment_freeze.txt
+      - name: Physically step ELEVEN actual frozen PPO controllers per new state under true double ACK
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_causal_nonzero_native_ack_pilot32.py --task "$TASK" --chunk "$CHUNK" 2>&1 | tee original_real_native_nonzero_physics.log
+          test -s "active_nonzero_pilot_${TASK}_chunk${CHUNK}_original8.json"
+          test -s "active_nonzero_pilot_${TASK}_chunk${CHUNK}_audit.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: real-nonzero-native-physx-${{ matrix.task }}-${{ matrix.chunk }}
+          path: |
+            active_nonzero_pilot_*_original8.json
+            active_nonzero_pilot_*_audit.json
+            active_nonzero_pilot_*_original8.json
+            original_real_native_nonzero_physics.log
+            original_physx_source_execution_commit.txt
+            original_physx_environment_freeze.txt
+          retention-days: 90
+  external-independent-pilot-original32-source-only-audit:
+    needs: 32-truly-new-reset-paired-physical-task-shards
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: real-nonzero-native-physx-*
+          merge-multiple: true
+          path: /tmp/original_nonzero_intervention32
+      - name: Confirm physically causal nonzero native intervention and task gain, full 32 original truth denominators
+        run: |
+          python -m research.audit_causal_nonzero_probe_physical_pilot32 \
+            --source-dir /tmp/original_nonzero_intervention32 \
+            --output /tmp/ORIGINAL_PHYSX_ACTIVE_PROBE_PILOT32_AUDIT.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: original-physical-active-probe-32-352-worlds-source-audit
+          path: |
+            /tmp/original_nonzero_intervention32/*.json
+            /tmp/ORIGINAL_PHYSX_ACTIVE_PROBE_PILOT32_AUDIT.json
+          retention-days: 90
