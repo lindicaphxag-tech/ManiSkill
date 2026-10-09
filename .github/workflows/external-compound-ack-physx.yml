@@ -1,0 +1,90 @@
+name: External investigator: original 7-world TWO-ACK native PhysX independent replication
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Original published frozen PPO and task'
+        required: true
+        type: choice
+        options: [pull_cube, stack_cube]
+        default: pull_cube
+      first_seed:
+        description: 'Reviewer-selected 8 consecutive unseen original reset seeds (>=500001)'
+        required: true
+        type: number
+        default: 500001
+  push:
+    branches: [research/compound-ack-belief-bridge-20261009]
+    paths:
+      - 'research/external_compound_ack_replication.py'
+      - '.github/workflows/external-compound-ack-physx.yml'
+permissions:
+  contents: read
+jobs:
+  reviewer-frozen-source-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      SELECT_TASK: ${{ github.event_name == 'workflow_dispatch' && inputs.task || 'pull_cube' }}
+      SELECT_SEED: ${{ github.event_name == 'workflow_dispatch' && inputs.first_seed || 500001 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze exact original method and strict reviewer-selected reset states
+        run: |
+          set -euo pipefail
+          python -m py_compile research/external_compound_ack_replication.py
+          python research/external_compound_ack_replication.py --self-test
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = '99836af14205fe3e95e52a2e0d68237c7c8a9045'
+          test "$(git hash-object research/multi_ack_se3_bounded.py)" = '36707a177549104ba5b4bd9bcebc76518f0d2840'
+          python -c 'import sys;sys.path.insert(0,"research");from external_compound_ack_replication import select;import os;assert len(select(os.environ["SELECT_TASK"],int(os.environ["SELECT_SEED"])))==8'
+  independently-rerunnable-native-physx:
+    needs: reviewer-frozen-source-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      SELECT_TASK: ${{ github.event_name == 'workflow_dispatch' && inputs.task || 'pull_cube' }}
+      SELECT_SEED: ${{ github.event_name == 'workflow_dispatch' && inputs.first_seed || 500001 }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install source-native ManiSkill CPU PhysX and published PPO checkpoint
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e . huggingface_hub
+      - name: Publish fork actor, exact immutable source and environment before any outcome
+        run: |
+          mkdir -p external_multi_ack_artifacts
+          git rev-parse HEAD > external_multi_ack_artifacts/current_fork_commit.txt
+          git hash-object research/frozen_ppo_compound_ack_multi_belief.py > external_multi_ack_artifacts/source_method_git_blob.txt
+          git hash-object research/multi_ack_se3_bounded.py > external_multi_ack_artifacts/source_certifier_git_blob.txt
+          python -m pip freeze --all > external_multi_ack_artifacts/environment.txt
+          printf 'fork=%s actor=%s task=%s first_seed=%s count=8 frozen_PPO=true two_native_target_holds=2,3\n' "$GITHUB_REPOSITORY" "$GITHUB_ACTOR" "$SELECT_TASK" "$SELECT_SEED" > external_multi_ack_artifacts/reviewer_identity.txt
+      - name: Physically step all seven matched native controller worlds under two unknown ACKs
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/external_compound_ack_replication.py \
+            --task "$SELECT_TASK" --first-seed "$SELECT_SEED" \
+            --out external_multi_ack_artifacts \
+            2>&1 | tee external_multi_ack_artifacts/full_native_physx.log
+          test -s external_multi_ack_artifacts/summary.json
+      - name: Preserve exact first-party-independent raw results, SHA and failures
+        if: always()
+        run: |
+          (cd external_multi_ack_artifacts && sha256sum *.json *.txt *.log > SHA256SUMS) || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fork-owner-eight-state-two-ack-native-physx
+          path: external_multi_ack_artifacts/
+          retention-days: 90
+
+# To count as independent outside-lab reproduction, a real outside actor
+# must fork/execute in their environment on unused seeds, verify source hashes
+# and publish BOTH successful and failed native simulator task worlds.
