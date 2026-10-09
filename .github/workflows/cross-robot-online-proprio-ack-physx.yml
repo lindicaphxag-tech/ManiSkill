@@ -53,11 +53,11 @@ jobs:
       - name: Calibrate labelled two-truth physical signals ONLY on eight earlier seeds
         run: |
           set -o pipefail
-          PYTHONPATH="$PWD" python research/cross_robot_online_proprio_physx.py --robot "${dollar}{{ matrix.robot }}" --mode calibrate 2>&1 | tee original_calibration.log
-          test -s "cross_robot_proprio_calibration_${dollar}{{ matrix.robot }}.json"
+          PYTHONPATH="$PWD" python research/cross_robot_online_proprio_physx.py --robot "${{ matrix.robot }}" --mode calibrate 2>&1 | tee original_calibration.log
+          test -s "cross_robot_proprio_calibration_${{ matrix.robot }}.json"
       - uses: actions/upload-artifact@v4
         with:
-          name: physical-calibration-${dollar}{{ matrix.robot }}
+          name: physical-calibration-${{ matrix.robot }}
           path: |
             cross_robot_proprio_calibration_*.json
             original_calibration.log
@@ -79,7 +79,7 @@ jobs:
           python-version: '3.11'
       - uses: actions/download-artifact@v4
         with:
-          name: physical-calibration-${dollar}{{ matrix.robot }}
+          name: physical-calibration-${{ matrix.robot }}
           path: /tmp/prior-calibration
       - name: Install native ManiSkill PhysX without retraining any policy
         run: |
@@ -91,14 +91,14 @@ jobs:
         run: |
           set -o pipefail
           PYTHONPATH="$PWD" python research/cross_robot_online_proprio_physx.py \
-            --robot "${dollar}{{ matrix.robot }}" --mode test --chunk "${dollar}{{ matrix.chunk }}" \
-            --calibration-file "/tmp/prior-calibration/cross_robot_proprio_calibration_${dollar}{{ matrix.robot }}.json" \
+            --robot "${{ matrix.robot }}" --mode test --chunk "${{ matrix.chunk }}" \
+            --calibration-file "/tmp/prior-calibration/cross_robot_proprio_calibration_${{ matrix.robot }}.json" \
             2>&1 | tee original_test.log
-          test -s "cross_robot_proprio_${dollar}{{ matrix.robot }}_chunk${dollar}{{ matrix.chunk }}_original8.json"
+          test -s "cross_robot_proprio_${{ matrix.robot }}_chunk${{ matrix.chunk }}_original8.json"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: actual-online-ack-${dollar}{{ matrix.robot }}-${dollar}{{ matrix.chunk }}
+          name: actual-online-ack-${{ matrix.robot }}-${{ matrix.chunk }}
           path: |
             cross_robot_proprio_*_original8.json
             original_test.log
