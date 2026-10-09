@@ -4,6 +4,8 @@ on:
     branches: [research/epoch-fenced-repair-authority-20261010]
     paths:
       - research/epoch_fenced_repair_authority.py
+      - research/benchmark_epoch_fenced_repair.py
+      - tests/test_benchmark_epoch_fenced_repair.py
       - tests/test_epoch_fenced_repair_authority.py
       - .github/workflows/epoch-fenced-repair-authority.yml
   workflow_dispatch:
@@ -27,5 +29,10 @@ jobs:
         run: python -m py_compile research/epoch_fenced_repair_authority.py tests/test_epoch_fenced_repair_authority.py
       - name: Exercise stale replay/mismatched epoch and lost ACK attacks
         run: python -m unittest discover -s tests -p test_epoch_fenced_repair_authority.py -v
+      - name: Execute 512 paired constructed stale-read and known lost-delivery diagnostics
+        run: python -m unittest discover -s tests -p test_benchmark_epoch_fenced_repair.py -v
+      - name: Preserve complete synthetic-only attack count in CI log
+        run: python -m research.benchmark_epoch_fenced_repair
+
       - name: Retain existing original finite certificate regression suite
         run: python -m unittest discover -s tests -p test_effect_aware_authority_certificate.py -v
