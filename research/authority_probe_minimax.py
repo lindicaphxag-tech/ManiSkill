@@ -160,7 +160,32 @@ def certify(model: Model, certificate: Mapping[str, Any]) -> dict[str, int | boo
     derived = walk(certificate["root"], histories, model.max_probe_depth)
     if type(certificate.get("worst_cost_units")) is not int or certificate["worst_cost_units"] != derived:
         raise ValueError("root bound falsified")
+
+    # Independence matters: validating cost for the SUBMITTED tree does NOT
+    # prove that tree minimizes worst-case cost. A self-consistent leaf that
+    # always reads is feasible even when a guaranteed distinguishing probe
+    # costs strictly less. Recompute a SEPARATE lower bound over ALL feasible
+    # decisions, never consulting any node of the submitted certificate.
+    @lru_cache(None)
+    def global_optimum(belief: tuple[str, ...], remaining: int) -> int:
+        if len({model.repair_by_history[h] for h in belief}) == 1:
+            return 0
+        optimum = model.authoritative_read_cost
+        if remaining:
+            for p in model.probes:
+                if p.cost >= optimum:
+                    continue
+                successors = possible_posteriors(p, belief)
+                worst_successor = max(global_optimum(b, remaining - 1)
+                                      for b in successors.values())
+                optimum = min(optimum, p.cost + worst_successor)
+        return optimum
+
+    optimal_lower_bound = global_optimum(histories, model.max_probe_depth)
+    if derived != optimal_lower_bound:
+        raise ValueError("feasible plan cost is NOT globally minimax optimal")
     return {"checked_histories": len(histories), "worst_cost_units": derived,
+            "independent_optimal_cost": optimal_lower_bound,
             **counts, "model_only": True}
 
 
