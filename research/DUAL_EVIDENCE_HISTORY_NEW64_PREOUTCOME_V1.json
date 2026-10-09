@@ -1,0 +1,49 @@
+{
+  "schema": "preoutcome_dual_evidence_gate_frozen_ppo_ack_v1",
+  "date": "2026-10-09",
+  "user_goal": "selective-readback reliability frontier, not guaranteed safe control",
+  "training_dev_outcomes_used_only_for_design": [
+    "https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37924335444",
+    "https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37924192162"
+  ],
+  "source_baseline": "research/frozen_ppo_matched_public_bayes_physx.py",
+  "baseline_checkpoint": "same original published ActionShift frozen PPO SHA pinned by physically stepping runner",
+  "registered_seeds": {
+    "pull_cube": [
+      1820001,
+      1820009,
+      1820017,
+      1820025
+    ],
+    "stack_cube": [
+      1830001,
+      1830009,
+      1830017,
+      1830025
+    ]
+  },
+  "n": 64,
+  "source_worlds_if_complete": 640,
+  "method": "Authorize a single complete SE3 execution-history only IF original preregistered unique-residual compatibility with task epsilon AND a separately computed normalized Gaussian residual support weight for the same index is >=0.65; otherwise exactly one private controller-target read at t5. No alteration of original public observer, fixed-reader or remaining controls.",
+  "support_weight": "w_i=exp(-0.5*(r_i/epsilon_task)^2)/sum_j exp(-0.5*(r_j/epsilon_task)^2); these are heuristic normalized support weights, NOT calibrated Bayesian correctness probabilities",
+  "tau": 0.65,
+  "source_selection": "selected history must be original unique residual winner; negative cases/queries always count",
+  "matched_information": "both public-history and guarded arm get exactly two achieved XYZ observations around physically matched known-delivered neutral t4, same sensor costs, same native t2/t3 fault truth, same predecision achieved/target SE3, zero additional probes",
+  "primary_outcomes": [
+    "paired official task success A vs G",
+    "confident wrong complete history count and exact failure population",
+    "private target reads",
+    "public XYZ count",
+    "task/truth and fault exposure",
+    "physical pre-t5 action/state equality"
+  ],
+  "falsification_rule": "If guarded arm has no better observed false confidence or material success than ungated at equal public inputs, report as negative; any extra private reads are charged, no posthoc tau tuning",
+  "limitations": [
+    "τ motivated by previously exposed 2026-10-09 failures; external untouched new64 prospective only",
+    "not statistically guaranteed zero wrong/confident, since no validated risk calibration",
+    "not original ActionShift DualABI",
+    "not cross-robot learned-policy task transfer",
+    "not independently executed by third party",
+    "not actual packet loss or hardware safety"
+  ]
+}
