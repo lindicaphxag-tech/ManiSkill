@@ -20,11 +20,11 @@ The observed contributions are a real task-level *information-cost* finding plus
 
 ## First things to audit, before reading the paper
 
-1. Original [full model and data claim manuscript v1.6](../frozen_policy_transfer/WHEN_DID_THE_COMMAND_EXECUTE_MANUSCRIPT_V1_6.md). Each positive task-level finding is followed by its later falsifier.
-2. [Author-run first-mixed true execution original 17 JSONs and SHA256](../frozen_policy_transfer/evidence/mixed_ack_truth_frozen_ppo_original64_860001_870032/), all failures retained.
-3. [Exactly 2 original incorrect confident target histories, source-only preservation](../frozen_policy_transfer/evidence/four_joint_truths_first_physx64_880001_890032/): source reset IDs **890005** and **890017**. Their actual target-history audit-only truth is candidate 2; empirical authorized choice was index 3.
-4. [Independent source-audited NEW 640 PhysX double-probe negative files](../frozen_policy_transfer/evidence/dual_probe_vs_single_physx_original64_900001_910032/). Original source hashes, per-task binary success flags, private read ledger, four true ACK regimes and extra probe samples can all be recomputed using `python -m research.audit_sequential_two_probe_new64 --source-dir <original-16-file-directory> --output <output.json>`.
-5. [Original preregistration before outcomes](../SEQUENTIAL_TWO_PUBLIC_PROBES_NEW64_PREOUTCOME_V1.json) and [actual frozen simulator policy code](../frozen_ppo_sequential_two_public_probes_physx_v5.py). Both were source-fingerprinted and checked before any new PhysX execution.
+1. Original [full model and data claim manuscript v1.6](frozen_policy_transfer/WHEN_DID_THE_COMMAND_EXECUTE_MANUSCRIPT_V1_6.md). Each positive task-level finding is followed by its later falsifier.
+2. [Author-run first-mixed true execution original 17 JSONs and SHA256](frozen_policy_transfer/evidence/mixed_ack_truth_frozen_ppo_original64_860001_870032/), all failures retained.
+3. [Exactly 2 original incorrect confident target histories, source-only preservation](frozen_policy_transfer/evidence/four_joint_truths_first_physx64_880001_890032/): source reset IDs **890005** and **890017**. Their actual target-history audit-only truth is candidate 2; empirical authorized choice was index 3.
+4. [Independent source-audited NEW 640 PhysX double-probe negative files](frozen_policy_transfer/evidence/dual_probe_vs_single_physx_original64_900001_910032/). Original source hashes, per-task binary success flags, private read ledger, four true ACK regimes and extra probe samples can all be recomputed using `python -m research.audit_sequential_two_probe_new64 --source-dir <original-16-file-directory> --output <output.json>`.
+5. [Original preregistration before outcomes](SEQUENTIAL_TWO_PUBLIC_PROBES_NEW64_PREOUTCOME_V1.json) and [actual frozen simulator policy code](frozen_ppo_sequential_two_public_probes_physx_v5.py). Both were source-fingerprinted and checked before any new PhysX execution.
 
 ## Out-of-sample independent researcher replication, without inventing status
 
@@ -41,7 +41,7 @@ PYTHONPATH="$PWD:$PWD/research" \
   --output outside_dual_public_new8
 ```
 
-Alternatively use [outside investigator's own fork GitHub Actions interface](../../.github/workflows/outside-dual-probe-replication.yml) **after adding the workflow to their fork default branch**, which GitHub requires for manually dispatched workflows. A fork created or run by the original author does NOT satisfy independent laboratory replication.
+Alternatively use [outside investigator's own fork GitHub Actions interface](../.github/workflows/outside-dual-probe-replication.yml) **after adding the workflow to their fork default branch**, which GitHub requires for manually dispatched workflows. A fork created or run by the original author does NOT satisfy independent laboratory replication.
 
 The research remains **open for genuinely independent run results**, ideally from a researcher who selected seeds without seeing the answers. An outside researcher should publish their complete execution log, original source hashes, exact true ACK regimes and unsuccessful task episodes, not just a screenshot of green CI.
 
