@@ -164,6 +164,46 @@ def certify(model: Model, certificate: Mapping[str, Any]) -> dict[str, int | boo
             **counts, "model_only": True}
 
 
+
+def next_request(model: Model, certificate: Mapping[str, Any],
+                 observed_probe_responses: tuple[str, ...]) -> dict[str, Any]:
+    """Model-only online executor: return probe/read/authorize; fail CLOSED.
+
+    The caller must actually dispatch each requested known-delivered probe and
+    obtain its public observation. An observation absent from calibrated support
+    triggers immediate authoritative READ; this invalidates the model-only
+    worst-cost certificate, and is explicitly exposed rather than hidden.
+    No code here actuates a physical arm or reads controller state directly.
+    """
+    certify(model, certificate)
+    if not isinstance(observed_probe_responses, tuple) or any(
+            not isinstance(o, str) or not o for o in observed_probe_responses):
+        raise ValueError("probe observations must be a tuple of strings")
+    node = certificate["root"]
+    used = 0
+    for outcome in observed_probe_responses:
+        if node["kind"] != "probe":
+            raise ValueError("unexpected observation after terminal decision")
+        used += next(p.cost for p in model.probes if p.name == node["probe"])
+        if outcome not in node["branches"]:
+            return {"request": "read", "reason": "unmodeled_observation",
+                    "model_certificate_valid_for_this_trace": False,
+                    "spent_abstract_probe_cost": used,
+                    "additional_authoritative_read_cost": model.authoritative_read_cost}
+        node = node["branches"][outcome]
+    if node["kind"] == "probe":
+        return {"request": "probe", "probe": node["probe"],
+                "spent_abstract_probe_cost": used,
+                "model_certificate_valid_for_this_trace": True}
+    if node["kind"] == "read":
+        return {"request": "read", "reason": "insufficient_model_information",
+                "spent_abstract_probe_cost": used,
+                "model_certificate_valid_for_this_trace": True}
+    return {"request": "authorize", "repair": node["repair"],
+            "spent_abstract_probe_cost": used,
+            "model_certificate_valid_for_this_trace": True}
+
+
 def brute_force_minimax_value(model: Model) -> int:
     """Uncached exhaustive oracle for small tests, independent of the planner."""
     histories = validate_model(model)
