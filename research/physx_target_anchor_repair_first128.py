@@ -26,10 +26,10 @@ from research.cross_robot_ack_physics import (
 )
 
 PROTO=Path("research/PHYSX_ANCHOR_REPAIR_FIRST128_PREOUTCOME_V1.json")
-PROTO_HASH="TO_BE_FROZEN"
+PROTO_HASH="2e78bf28f746d9ffa95ca7cf7a8b99646614d8cd"
 SOURCE_BLOBS={
  "research/cross_robot_ack_physics.py":"3b2faf44e5f413911eae25ccfd0c51fbbe2d5fe7",
- "research/action_abi_history_observer.py":"TO_BE_FROZEN",
+ "research/action_abi_history_observer.py":"2aa52e477c202386fb6a7e43586d246026b6041d",
 }
 START={"panda":720001,"xarm6_robotiq":730001}
 PROBES={"zero":np.zeros(6,dtype=np.float64),
