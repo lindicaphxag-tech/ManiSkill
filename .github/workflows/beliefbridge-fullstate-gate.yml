@@ -1,0 +1,38 @@
+name: BeliefBridge full-hidden-state research audit
+
+on:
+  pull_request:
+    paths:
+      - "research/audit_full_state_four_truth_submission.py"
+      - ".github/workflows/beliefbridge-fullstate-gate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  full-state-source-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile offline full-state checker
+        run: python -m py_compile research/audit_full_state_four_truth_submission.py
+      - name: Validate fail-closed artificial source rows (not new PhysX)
+        run: python research/audit_full_state_four_truth_submission.py --self-test
+      - name: Download first original 1280-world PhysX cluster audit artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: 1280-native-physx-32cluster-statistical-audit-ubuntu-latest-3.11
+          run-id: 37947358998
+          repository: lindicaphxag-tech/ManiSkill
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: /tmp/cluster-original
+      - name: Verify authentic cluster source and recompute sensor-cost frontier
+        run: |
+          python research/audit_original_cluster_cost_frontier.py --self-test
+          python research/audit_original_cluster_cost_frontier.py --source /tmp/cluster-original/SOURCE_FIRST_128_CLUSTER_RISK.json --output /tmp/cluster_original_cost_frontier.json
+          python -c 'import json; x=json.load(open("/tmp/cluster_original_cost_frontier.json")); assert x["read_savings"]==25 and x["authorized_clusters"]==20 and x["unique_initial_resets"]==32; print("FROZEN 1280 WORLD AUDIT PASSED")'
