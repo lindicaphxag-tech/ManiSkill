@@ -1,0 +1,115 @@
+name: "Prospective two public neutral probes: first-fault+second-fault four truth native PPO PhysX"
+on:
+  push:
+    branches: [research/sequential-two-probe-full-joint-20261009]
+    paths:
+      - 'research/SEQUENTIAL_TWO_PUBLIC_PROBES_NEW64_PREOUTCOME_V1.json'
+      - 'research/frozen_ppo_dual_public_neutral_physx_v5.py'
+      - 'research/run_dual_public_probe_new64.py'
+      - 'research/audit_dual_public_probe_new64.py'
+      - '.github/workflows/dual-public-probes-frozen-ppo-physx.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-prereg-before-unseen-physics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fail-closed if any original native method, all64 preregistered seed states or frozen calibration differs
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/SEQUENTIAL_TWO_PUBLIC_PROBES_NEW64_PREOUTCOME_V1.json)" = 2998c9312210a2c7b20d3d257153c9c08783032f
+          test "$(git hash-object research/frozen_ppo_dual_public_neutral_physx_v5.py)" = fa7b5cbe15fa4406ffeeb3fd4a60e11d2bd35836
+          test "$(git hash-object research/run_dual_public_probe_new64.py)" = d1228a2dc5fc8e66306f1840413902ab76619970
+          test "$(git hash-object research/audit_dual_public_probe_new64.py)" = 3d709c688bec2c0276bc37c2c9b7d89c77fc2787
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = ddfaf4522d49f73ce926e4c6d77c7ca755f8e1b6
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          python -m py_compile research/frozen_ppo_dual_public_neutral_physx_v5.py research/run_dual_public_probe_new64.py research/audit_dual_public_probe_new64.py
+          python - <<'PY'
+          from research.run_dual_public_probe_new64 import verify_source,seed_bank
+          verify_source()
+          for task,first in (("pull_cube",900001),("stack_cube",910001)):
+              seeds=[s for chunk in range(4) for s in seed_bank(task,chunk)]
+              assert seeds==list(range(first,first+32))
+              combos={("A" if s%2==0 else "H")+("A" if (s//2)%2==0 else "H") for s in seeds}
+              assert combos=={"AA","AH","HA","HH"}
+              assert all(sum((("A" if s%2==0 else "H")+("A" if (s//2)%2==0 else "H"))==c for s in seeds)==8 for c in combos)
+          print("BEFORE_UNSEEN_PHYSX_64_NEW_STATES_BOTH_PUBLIC_PROBES_FULL_TRUTH",True)
+          PY
+
+  genuinely-stepped-ten-physical-controller-PPO-pairs:
+    needs: source-prereg-before-unseen-physics
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install genuine CPU SAPIEN PhysX ManiSkill and public frozen PPO model loader
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Capture original actual executed commit and dependencies BEFORE physical stepping
+        run: |
+          git rev-parse HEAD > original_full_physics_commit.txt
+          python -m pip freeze --all > original_physics_environment.txt
+      - name: Execute genuine ten matched native policy-controller worlds per new reset
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_dual_public_probe_new64.py --task "$TASK" --chunk "$CHUNK" 2>&1 | tee original_full_simulator.log
+          test -s "dual_public_ack_${TASK}_chunk${CHUNK}_original8.json"
+          test -s "dual_public_ack_${TASK}_chunk${CHUNK}_manifest.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-double-probe-real-${{ matrix.task }}-${{ matrix.chunk }}
+          path: |
+            dual_public_ack_*_original8.json
+            dual_public_ack_*_manifest.json
+            original_full_simulator.log
+            original_full_physics_commit.txt
+            original_physics_environment.txt
+          retention-days: 90
+
+  independent-original-source-64-state-640-worlds-audit:
+    needs: genuinely-stepped-ten-physical-controller-PPO-pairs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-double-probe-real-*
+          merge-multiple: true
+          path: /tmp/source_original_dual_probe
+      - name: Independently recompute every physical native t2/t3 truth, two actual neutral steps, one/two-probe full-history selectors and every task failure
+        run: |
+          python -m research.audit_dual_public_probe_new64 --source-dir /tmp/source_original_dual_probe --output /tmp/COMPLETE_ORIGINAL_DUAL_PUBLIC_PPO_NEW64.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: first-original-dual-public-new64-full640-world-independent-audit
+          path: |
+            /tmp/source_original_dual_probe/*.json
+            /tmp/COMPLETE_ORIGINAL_DUAL_PUBLIC_PPO_NEW64.json
+          retention-days: 90

@@ -1,0 +1,83 @@
+name: "Audit original two-public-probe true PhysX output without rerunning simulator"
+on:
+  push:
+    branches: [research/sequential-two-probe-full-joint-20261009]
+    paths:
+      - 'research/audit_dual_public_probe_original_source_recovery.py'
+      - '.github/workflows/audit-original-dual-public-source-recovery.yml'
+permissions:
+  contents: write
+  actions: read
+jobs:
+  original-physical-source-only-audit-and-archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ORIGINAL_RUN: '37919075616'
+      OUT: research/frozen_policy_transfer/evidence/two_public_probes_original64_900001_910032
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify original physics producer, registered FIRST source and disclose its failed audit
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$ORIGINAL_RUN" --jq '.head_sha')" = 4627abd78e55affa2263bb053559bd840d9f1de4
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$ORIGINAL_RUN" --jq '.conclusion')" = failure
+          test "$(git hash-object research/SEQUENTIAL_TWO_PUBLIC_PROBES_NEW64_PREOUTCOME_V1.json)" = 2998c9312210a2c7b20d3d257153c9c08783032f
+          test "$(git hash-object research/frozen_ppo_dual_public_neutral_physx_v5.py)" = fa7b5cbe15fa4406ffeeb3fd4a60e11d2bd35836
+          test "$(git hash-object research/run_dual_public_probe_new64.py)" = d1228a2dc5fc8e66306f1840413902ab76619970
+          python -m py_compile research/audit_dual_public_probe_original_source_recovery.py
+          gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$ORIGINAL_RUN"/artifacts --paginate --jq '.artifacts[].name' | sort > /tmp/first_physical_artifacts.txt
+          test "$(grep -c '^original-double-probe-real-' /tmp/first_physical_artifacts.txt)" -eq 8
+      - uses: actions/download-artifact@v4
+        with:
+          repository: ${{ github.repository }}
+          run-id: 37919075616
+          github-token: ${{ github.token }}
+          pattern: original-double-probe-real-*
+          merge-multiple: true
+          path: /tmp/ORIGINAL_TWO_PUBLIC_REAL_PHYSX
+      - name: Audit all 64 unchanged original task outcomes and physical two-probe observations; retain failures
+        run: |
+          set -euo pipefail
+          test "$(find /tmp/ORIGINAL_TWO_PUBLIC_REAL_PHYSX -maxdepth 1 -type f -name 'dual_public_ack_*_original8.json' | wc -l)" -eq 8
+          test "$(find /tmp/ORIGINAL_TWO_PUBLIC_REAL_PHYSX -maxdepth 1 -type f -name 'dual_public_ack_*_manifest.json' | wc -l)" -eq 8
+          python -m research.audit_dual_public_probe_original_source_recovery --source-dir /tmp/ORIGINAL_TWO_PUBLIC_REAL_PHYSX --output /tmp/EXACT_FIRST_ORIGINAL_DUAL_PUBLIC_PHYSX64_AUDIT.json
+      - name: Cryptographically preserve all raw original methods, including false confident histories and premature terminations
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUT"
+          cp /tmp/ORIGINAL_TWO_PUBLIC_REAL_PHYSX/dual_public_ack_*_original8.json "$OUT"/
+          cp /tmp/ORIGINAL_TWO_PUBLIC_REAL_PHYSX/dual_public_ack_*_manifest.json "$OUT"/
+          cp /tmp/EXACT_FIRST_ORIGINAL_DUAL_PUBLIC_PHYSX64_AUDIT.json "$OUT"/
+          (cd "$OUT" && sha256sum *.json > SHA256SUMS)
+          cat > "$OUT/README.md" <<'EOF'
+          # FIRST source-frozen genuine native PhysX 64 states × 10 original controllers — two PUBLIC neutral probes
+
+          The first original simulator-producing GH Actions run was https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37919075616. All EIGHT true 8-seed × ten-controller PhysX jobs FINISHED SUCCESSFULLY, producing original per-shard task results, raw physical public motion and model histories. The overall run status was FAILURE because its downstream auditor wrongly required a source controller that had already successfully terminated after t4 to execute an impossible later t5 native neutral probe.
+          
+          No third-party robot, model retraining, reselection of seeds, change to original actual physics/source, or replacement of original JSONs was performed after this failure. The separate source-only recovery workflow downloads the FIRST original eight job artifacts, checks per-source SHA256 and full 64 paired task outcomes against the frozen protocol, and preserves all original source bytes and failures.
+          
+          Original pre-outcome protocol Git blob 2998c9312210a2c7b20d3d257153c9c08783032f. Original physically executed method Git blob fa7b5cbe15fa4406ffeeb3fd4a60e11d2bd35836. Original producer commit 4627abd78e55affa2263bb053559bd840d9f1de4. Each JSON's SHA256 is frozen in SHA256SUMS.
+          
+          Four physical t2/t3 ACK truth patterns, 64 original PullCube/StackCube reset states, ten independently actually stepped native controller worlds each, and separately real t4/t5 known-delivered neutral observations for controllers still active. A task that TERMINATED SUCCESSFULLY at t4 is not credited with nonexistent t5 sensing or actions. Scientific evidence MUST distinguish proposed two-probe effect from increased physical neutral action cost and 2-vs-4 public XYZ samples.
+          
+          Empirical motion model is NOT an attested dynamics guarantee. No actual network drops, real robot collision/force safety, new external researcher adoption or peer review acceptance. Examine EXACT_FIRST_ORIGINAL_DUAL_PUBLIC_PHYSX64_AUDIT.json including full wrong-confidence rows, source task outcomes and costs before making claims.
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$OUT"
+          git diff --cached --quiet && exit 0
+          git commit -m "evidence: byte-authenticate FIRST genuine 640-world two-probe PPO PhysX outcomes including stopped early source episode"
+          git push origin HEAD:research/sequential-two-probe-full-joint-20261009
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: first-original-dual-probe-physx-source-audit-and-raw
+          path: research/frozen_policy_transfer/evidence/two_public_probes_original64_900001_910032/
+          retention-days: 90
