@@ -23,8 +23,11 @@ def proactive_authority_slack(certificate, *, step, already_queried=False):
         raise ValueError("Research threshold corrupt")
     if not hasattr(certificate,"authorized") or type(certificate.authorized) is not bool:
         raise ValueError("Incomplete finite-controller certificate")
-    pos=float(certificate.worst_position_inf_m)
-    rot=float(certificate.worst_orientation_geodesic_rad)
+    try:
+        pos=float(certificate.worst_position_inf_m)
+        rot=float(certificate.worst_orientation_geodesic_rad)
+    except (AttributeError, TypeError) as exc:
+        raise ValueError("Missing or malformed controller certificate bounds") from exc
     if pos<0 or rot<0 or math.isnan(pos) or math.isnan(rot):
         raise ValueError("Invalid nonnegative bound")
     ratio=max(pos/POSITION_BUDGET,rot/ROTATION_BUDGET)
