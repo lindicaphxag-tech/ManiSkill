@@ -26,10 +26,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
       - name: Native LeRobot library from exact official source commit plus official SmolVLA dependencies
         run: |
           set -euo pipefail
+          mkdir -p genuine_smolvla_evidence
           git clone --filter=blob:none https://github.com/huggingface/lerobot.git /tmp/official-lerobot
           git -C /tmp/official-lerobot checkout b9cb121cb7d4e3e26ec5c906d08dda68d151ba52
           python -m pip install --upgrade pip
