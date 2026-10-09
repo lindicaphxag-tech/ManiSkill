@@ -15,7 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import random
-from collections import defaultdict
+from collections import Counter, defaultdict
 from math import comb, isfinite
 from pathlib import Path
 
@@ -127,6 +127,32 @@ def analyze_clustering(source:EVIDENCE.__class__=EVIDENCE):
         and pooled["strategy"][B]["official_successes"]==109
         and pooled["strategy"][C]["official_successes"]==110
     ): raise ValueError("New 0.60 source claims corrupted")
+    paired_authority=Counter()
+    for row in cells:
+        accepts_A=bool(row["confidence"][A])
+        accepts_B=bool(row["confidence"][B])
+        key=("both_authorize" if accepts_A and accepts_B else
+             "A_only" if accepts_A else "B_only" if accepts_B else "neither")
+        paired_authority[key]+=1
+    if dict(paired_authority)!={
+       "neither":92,"both_authorize":28,"A_only":6,"B_only":2
+    }: raise ValueError("Frozen 128-cell paired authority decisions changed")
+    cluster_read_differences=[
+        sum(row["reads"][B]-row["reads"][A] for row in rr)
+        for rr in clusters.values()
+    ]
+    observed_read_advantage=sum(cluster_read_differences)
+    possible=Counter({0:1})
+    for value in cluster_read_differences:
+        nxt=Counter()
+        for total,nways in possible.items():
+            nxt[total+value]+=nways
+            nxt[total-value]+=nways
+        possible=nxt
+    p_two_sided=sum(n for value,n in possible.items()
+                    if abs(value)>=abs(observed_read_advantage))/(2**len(cluster_read_differences))
+    if observed_read_advantage!=4:
+        raise ValueError("Original matched-cell private read difference changed")
     return {
        "status":"PROSPECTIVE_STRONG060_FIRST_SOURCE_AUDITED_CLUSTERS_NOT_INDEPENDENT_LAB",
        "original_run_id":37961696443,
@@ -135,6 +161,9 @@ def analyze_clustering(source:EVIDENCE.__class__=EVIDENCE):
        "actual_native_PhysX_controller_worlds":1280,
        "pooled":pooled,
        "per_task":per_task,
+       "paired_A_vs_B_060_authority_cells":dict(paired_authority),
+       "whole_reset_A_vs_B_private_getter_savings":observed_read_advantage,
+       "whole_reset_read_delta_exact_signflip_p_EXPLORATORY":p_two_sided,
        "task_stratified_32cluster_bootstrap_getter_savings_EXPLORATORY":read_savings,
        "error_statement":"CP risk estimand = P(at least one wrongly authorized full target history among FOUR ACK truth conditions | this independent reset has >=1 authorized condition); NOT P(wrong | event authorized) nor hardware risk.",
        "assumptions":["Original reset clusters IID within fixed task under stable physical/sensor model; four condition outcomes allowed arbitrary within-cluster dependence.",
@@ -199,7 +228,10 @@ def main():
       "A_reads":v[A]["true_target_reads"],
       "B_reads":v[B]["true_target_reads"],
       "C_reads":v[C]["true_target_reads"],
-      "original_successes":[v[z]["official_successes"] for z in ARMS]
+      "original_successes":[v[z]["official_successes"] for z in ARMS],
+      "paired_authority":result["paired_A_vs_B_060_authority_cells"],
+      "read_advantage_vs_060":result["whole_reset_A_vs_B_private_getter_savings"],
+      "exact_cluster_sign_flip_read_p_exploratory":result["whole_reset_read_delta_exact_signflip_p_EXPLORATORY"]
     },sort_keys=True))
 
 if __name__=="__main__":main()
