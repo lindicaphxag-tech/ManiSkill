@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: lindicaphxag-tech/moabb
-          ref: ed49090662f6400ab53c7cc66a895480d39db98f
+          ref: 3f094ec923ebe66de358e56933ae9dd134deac27
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
@@ -26,10 +26,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = ed49090662f6400ab53c7cc66a895480d39db98f
+          test "$(git rev-parse HEAD)" = 3f094ec923ebe66de358e56933ae9dd134deac27
           test "$(git hash-object research/EEGBCI_FIRST8_PREOUTCOME_20261010.json)" = f612cb97f8a6de1b4691f94e4794e4d682df1c6e
           test "$(git hash-object research/transfer_consistency_shrinkage.py)" = 2627d317887bfe613ac8cac57133bd22937909ad
-          test "$(git hash-object research/test_transfer_consistency_shrinkage.py)" = e04aaddb82e13202631f2edc47a91ec1136bbca0
+          test "$(git hash-object research/test_transfer_consistency_shrinkage.py)" = e9d5a6a9a78e5544af00362f5b650d7b3fd6f017
           test "$(git hash-object research/run_eegbci_first8_physionet.py)" = 7b56972f54b2ee4301ba115b301f78ae25344dc0
           python -m py_compile research/transfer_consistency_shrinkage.py research/test_transfer_consistency_shrinkage.py research/run_eegbci_first8_physionet.py
       - name: Install locked low-compute numerical packages
@@ -57,7 +57,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: lindicaphxag-tech/moabb
-          ref: ed49090662f6400ab53c7cc66a895480d39db98f
+          ref: 3f094ec923ebe66de358e56933ae9dd134deac27
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
