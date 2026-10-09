@@ -37,8 +37,14 @@ jobs:
           assert d['actual_source_truth_cells']==128
           assert d['original_actual_seed_clusters']==32
           assert d['numerical_initial_source_observations_matched_under_precommitted_tolerance'] is True
-          assert d['all_three_main_controllers_identical_physically_stepped_neutral_probe']==128
-          assert d['public_extra_achieved_xyz_sample_events']==256
+          p=d['real_t4_probe_receipts_by_method']
+          t3=d['physically_exposed_second_fault_event_by_method']
+          assert 0<=d['all_three_main_controllers_identical_physically_stepped_neutral_probe']<=128
+          assert all(0<=v<=128 for v in p.values())
+          assert all(0<=v<=128 for v in t3.values())
+          assert t3['public']==126  # two original ITT early refusals preserved
+          assert d['public_extra_achieved_xyz_sample_events']==2*p['public']
+          assert len(d['original_per_condition'])==128
           for value in d['native_dispatched_command_identical_counts'].values():
             assert 0<=value<=128
           print('SUCCESS REAL FACTORED PHYSICAL COMMAND CONFUNDS FROM ORIGINAL JSON',json.dumps(d['native_dispatched_command_identical_counts'],sort_keys=True))
@@ -50,7 +56,7 @@ jobs:
 
           This is a **second, source-only** re-analysis of all original native PhysX data from the successful fresh numeric-parity 128-cell experiment [37932361044](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37932361044). The original 36-file SHA256 physical source archive was independently rechecked **before** this analysis. No additional task policy rollout happened in this audit.
 
-          It reports actual six-axis motor commands dispatched at both unknown ACK fault steps by the public method and matched source-seed task-aware/fixed comparators, not merely nominal APPLIED/HELD labels. Every task/truth cell is included even when the physical prefix differs between compared algorithms. It independently verifies the main public/strong/fixed arms' actual known-delivered t4 neutral probe exposure and **256 extra public achieved XYZ samples** for 128 public-method trials.
+          It reports actual six-axis motor commands dispatched at both unknown ACK fault steps by the public method and matched source-seed task-aware/fixed comparators, not merely nominal APPLIED/HELD labels. Every task/truth cell is included even when the physical prefix differs between compared algorithms. It independently verifies actual known-delivered t4 neutral probe exposure and **observed** extra public achieved XYZ sample events. At least two original public policies refused EARLY before their second ACK fault and their neutral probe; counting 128 identical probes or 256 achieved XYZ sample events would therefore be false. The intent-to-treat denominator stays all 128, and only truly co-exposed action pairs enter pre-query motor parity denominators.
 
           When actual native t3 actions differ BEFORE public private-target-read decision, the end-to-end task outcome contrast cannot be attributed *only* to different information acquisition. The prior 64-state physically matched-prefix plus same-compiler experiment is the cleaner information-only result. This 128-cell experiment establishes 4-truth within-seed robustness and a positive descriptive end-to-end comparison, not a pure query-only causal treatment, noninferiority, p<.05 superiority, genuine network packet loss, VLA fault recovery, or outside-lab reproduction.
           EOF
