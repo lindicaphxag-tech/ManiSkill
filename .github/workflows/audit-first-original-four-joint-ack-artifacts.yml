@@ -39,20 +39,32 @@ jobs:
           run-id: 37917629944
           github-token: ${{ github.token }}
           pattern: genuine-four-joint-truth-*
-          merge-multiple: true
+          merge-multiple: false
           path: /tmp/genuine-first-original-four-truth
       - name: Independently verify exactly eight raw source physical shards WITHOUT fabricating failed original shard audits
         run: |
           set -euo pipefail
-          test "$(find /tmp/genuine-first-original-four-truth -maxdepth 1 -type f -name 'full_joint_ack_*_original8.json' | wc -l)" -eq 8
+          # ORIGINAL jobs failed before the runner renamed source JSONs to
+          # chunk-qualified filenames. They exist only inside 8 DISTINCT
+          # original artifacts. NEVER merge-match same-named files: overwrite
+          # would erase 3/4 of each task's actual physical original episodes.
+          mkdir -p /tmp/original-four-joint-unique-source
+          for task in pull_cube stack_cube; do
+            for chunk in 0 1 2 3; do
+              source="/tmp/genuine-first-original-four-truth/genuine-four-joint-truth-${task}-${chunk}/full_joint_ack_${task}_original8.json"
+              test -s "$source"
+              cp "$source" "/tmp/original-four-joint-unique-source/full_joint_ack_${task}_chunk${chunk}_original8.json"
+            done
+          done
+          test "$(find /tmp/original-four-joint-unique-source -maxdepth 1 -type f -name 'full_joint_ack_*_original8.json' | wc -l)" -eq 8
           python -m research.audit_original_four_joint_physx_source_only \
-            --input /tmp/genuine-first-original-four-truth \
+            --input /tmp/original-four-joint-unique-source \
             --output /tmp/ORIGINAL_FOUR_JOINT_TRUE_PHYSX_SOURCE_ONLY_AUDIT.json
       - name: Copy byte-identical original eight true PhysX JSONs, complete independent audit, checksums and negative record
         run: |
           set -euo pipefail
           mkdir -p "$OUT"
-          cp /tmp/genuine-first-original-four-truth/full_joint_ack_*_original8.json "$OUT"/
+          cp /tmp/original-four-joint-unique-source/full_joint_ack_*_original8.json "$OUT"/
           cp /tmp/ORIGINAL_FOUR_JOINT_TRUE_PHYSX_SOURCE_ONLY_AUDIT.json "$OUT"/
           (cd "$OUT" && sha256sum *.json > SHA256SUMS)
           cat > "$OUT/README.md" <<'EOF'
