@@ -1,0 +1,62 @@
+name: Cross-robot ZERO-shot vs one-paired-seed retrospective ACK calibration audit
+
+on:
+  push:
+    branches: [research/cross-robot-fewshot-ack-portability-20261009]
+    paths:
+      - 'research/cross_robot_ack_calibration_portability.py'
+      - 'tests/test_cross_robot_ack_portability.py'
+      - '.github/workflows/cross-robot-fewshot-ack-portability-source.yml'
+  pull_request:
+    paths:
+      - 'research/cross_robot_ack_calibration_portability.py'
+      - 'tests/test_cross_robot_ack_portability.py'
+      - '.github/workflows/cross-robot-fewshot-ack-portability-source.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fixed-source-portability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Lock original independently audited physical source and controller model
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/frozen_policy_transfer/evidence/cross_robot_online_public_proprio_new32_480001_490008/SHA256SUMS)" = "bf731f19efb35228b8702f1a3f7b5251d7825afa"
+          test "$(git hash-object research/audit_cross_robot_online_ack32.py)" = "f073f81ef1d8565c70bb3da77d18af227eaecf84"
+          test "$(git hash-object research/cross_robot_online_proprio_classifier.py)" = "b0d7a767b93fb9f7cab2ba70494947ccb4027979"
+          python -m py_compile research/cross_robot_ack_calibration_portability.py tests/test_cross_robot_ack_portability.py
+      - name: Recompute all 32 source condition labels and adversarial original-file tamper controls
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_cross_robot_ack_portability.py -v
+          python -m research.cross_robot_ack_calibration_portability \
+            --output /tmp/source_anchored_cross_robot_portability.json
+          python - <<'PY'
+          import json
+          report=json.load(open('/tmp/source_anchored_cross_robot_portability.json'))
+          assert report['research_status']=='RETROSPECTIVE_HYPOTHESIS_GENERATING_ONLY'
+          assert report['new_physics_run_performed'] is False
+          zero=report['pooled']['0']
+          one=report['pooled']['1']
+          assert (zero['correct_confident'],zero['wrong_confident'],zero['abstain'])==(0,0,32)
+          assert (one['correct_confident'],one['wrong_confident'],one['abstain'])==(32,0,0)
+          assert one['total_target_calibration_episodes_both_robots']==4
+          assert report['original_physx_source_run'].endswith('37905560363')
+          print('SOURCE_AUDITED_RETROSPECTIVE_CROSS_ROBOT_ZERO_VS_ONE_SHOT',zero,one)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: original-source-cross-robot-ack-fewshot-retrospective-${{ matrix.python-version }}
+          path: /tmp/source_anchored_cross_robot_portability.json
