@@ -1,0 +1,67 @@
+{
+  "schema": "cross_embodiment_stateful_action_observability_physics_v1",
+  "status": "PRECOMMITTED_BEFORE_RUNNER_AND_RESULTS",
+  "date": "2026-10-09",
+  "question": "Does the two-possible-commanded-target inference and single missing-ACK target-history divergence persist for genuinely different ManiSkill robot bodies, Panda and xArm6, with separately configured native target pose controllers?",
+  "source": "mani-skill/ManiSkill official PickCube-v1 and independent robot kinematics/URDF; no new policy trained or transferred",
+  "robots": {
+    "panda": {
+      "robot_uid": "panda",
+      "seeds": [
+        420001,
+        420008
+      ]
+    },
+    "xarm6": {
+      "robot_uid": "xarm6_robotiq",
+      "seeds": [
+        430001,
+        430008
+      ]
+    }
+  },
+  "task": "PickCube-v1",
+  "mode": "pd_ee_target_delta_pose",
+  "sim_backend": "physx_cpu",
+  "observation_mode": "state",
+  "actuator_behavior": "native controller, actual separate PhysX environments",
+  "intervention": {
+    "native_command_zero_based_step": 2,
+    "truths": [
+      "arm command really applied",
+      "native ZERO arm delta delivered instead"
+    ],
+    "ack_seen_by_tracker": "unknown in both",
+    "gripper": "zero fixed in all paired worlds",
+    "post_fault_probe_step": 3,
+    "probe_action": "same native all-zero 6D arm action",
+    "rollout_steps": 6
+  },
+  "scripted_actions": "deterministic bounded 6D native translation/rotation action at t0,t1,t2 using only action index, with a nontrivial t2 delta; all other steps are zero. Same native commands for both robots, but metric displacement depends on each robot's separately configured gain.",
+  "measures": [
+    "real_physx_step_success",
+    "pre_fault_pair_reset_pose_equality",
+    "same robot applied-v-held real target XYZ and angle separation after fault",
+    "two native action-history predicted target poses vs actual branch-specific private target pose (audit only AFTER physx step)",
+    "achieved_EE_probe_response distance between both real faults",
+    "condition number/zero-history-indistinguishability if target separation is zero",
+    "per_seed/per_arm all negative outcomes preserved",
+    "third-party xArm6 asset identity"
+  ],
+  "hypothesis": "Known action history plus known native controller chart predicts each possible commanded target on both robot implementations; missing delivery ACK causes nonzero hypothesized target divergence even under identical messages. This does NOT establish that active proprioception can distinguish those histories, or that any frozen Panda PPO transfers to xArm6.",
+  "zero_privileged_state_use_in_inference": true,
+  "private_target_use_only_after_env_step_for_audit": true,
+  "failure_policy": "Any missing robot asset, unsupported controller chart or runtime incompatibility results in explicit failure, no fallback to Panda substitute. Keep negative outcome even when xArm6 IK fails.",
+  "independent_external_robot_implementation": true,
+  "independent_research_lab": false,
+  "no_claim_policy_transfer": true,
+  "gates": [
+    "All 16 official target-control seed conditions",
+    "Eight successful original shard PhysX execution if sharded",
+    "actual separate xArm6 native URDF and articulation",
+    "no private target getter in history observer",
+    "private getter permitted for postphysical audit only",
+    "raw per-robot individual errors and probes",
+    "no model training or Panda PPO insertion"
+  ]
+}

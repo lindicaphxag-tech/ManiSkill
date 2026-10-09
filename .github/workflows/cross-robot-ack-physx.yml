@@ -1,0 +1,102 @@
+name: Prospective real PhysX cross-embodiment unknown-ACK target history
+on:
+  push:
+    branches: [research/cross-embodiment-ack-pose-observability-20261009]
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-identity-and-audit-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Guard original prereg and require real independent xArm6 implementation
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/CROSS_EMBODIMENT_ACK_PREOUTCOME_V1.json)" = "4e10a144cdf5b2a3b5186629e93e1091d879cd64"
+          test "$(git hash-object research/action_abi_history_observer.py)" = "2aa52e477c202386fb6a7e43586d246026b6041d"
+          grep -q '^class XArm6Robotiq(BaseAgent):' mani_skill/agents/robots/xarm6/xarm6_robotiq.py
+          grep -q 'xarm6_robotiq' mani_skill/envs/tasks/tabletop/pick_cube.py
+          python -m py_compile research/cross_robot_ack_physics.py research/audit_cross_robot_ack_physx.py
+          python -m unittest discover -s tests -p 'test_cross_robot_ack_audit.py' -v
+
+  two-genuine-articulation-native-physx:
+    needs: frozen-identity-and-audit-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    strategy:
+      fail-fast: false
+      matrix:
+        robot: [panda, xarm6_robotiq]
+        chunk: [0, 1]
+    env:
+      ROBOT_UID: ${{ matrix.robot }}
+      CHUNK_ID: ${{ matrix.chunk }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official source ManiSkill CPU native PhysX runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Download actual xArm6 URDF and native articulation data, never silently substitute Panda
+        if: matrix.robot == 'xarm6_robotiq'
+        run: |
+          python -m mani_skill.utils.download_asset xarm6 -y
+      - name: Record exact native simulator and executed source identity
+        run: |
+          git rev-parse HEAD > cross_robot_source_commit.txt
+          git hash-object research/CROSS_EMBODIMENT_ACK_PREOUTCOME_V1.json > cross_robot_prereg_blob.txt
+          git hash-object research/action_abi_history_observer.py > cross_robot_observer_blob.txt
+      - name: Run truly separate applied-v-held PhysX controllers with matched unknown ACK
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/cross_robot_ack_physics.py --robot "$ROBOT_UID" --chunk "$CHUNK_ID" 2>&1 | tee cross_robot_real_physx.log
+          test -s "cross_robot_ack_${ROBOT_UID}_chunk${CHUNK_ID}_original4.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cross-robot-real-${{ matrix.robot }}-chunk-${{ matrix.chunk }}
+          path: |
+            cross_robot_ack_*.json
+            cross_robot_real_physx.log
+            cross_robot_source_commit.txt
+            cross_robot_prereg_blob.txt
+            cross_robot_observer_blob.txt
+          retention-days: 90
+
+  entire-original-cross-robot-16-physics-audit:
+    needs: two-genuine-articulation-native-physx
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: cross-robot-real-*
+          path: /tmp/cross-robot-orig
+          merge-multiple: true
+      - name: Audit exact original full-denominator 8 Panda/8 xArm6 native physics reset states
+        run: |
+          python -m research.audit_cross_robot_ack_physx --input-dir /tmp/cross-robot-orig --output /tmp/cross_robot_full_original16_audit.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: entire-original-Panda-xArm6-real-physx-source-and-audit
+          path: |
+            /tmp/cross-robot-orig/*.json
+            /tmp/cross_robot_full_original16_audit.json
+          retention-days: 90
