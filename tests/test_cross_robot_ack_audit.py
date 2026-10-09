@@ -16,6 +16,10 @@ def valid(robot="panda",chunk=0):
             real_physx_cpu=True,source_policy_trained=False,
             native_command_ack_visible="unknown",
             xarm6_is_not_a_Panda_relabel=robot=="xarm6_robotiq",
+            actual_action_controller_keys={
+                t:(["arm","gripper"] if robot=="panda" else
+                   ["arm","gripper_active","gripper_passive"])
+                for t in ("held","applied")},
             pair_reset_l2_m=0.,
             both_private_target_reads_for_audit_only=True,
             native_requested_commands=[
@@ -56,6 +60,10 @@ class AuditContract(unittest.TestCase):
     def test_mislabeled_panda_as_xarm_is_rejected(self):
         source=valid("xarm6_robotiq")
         source["rows"][0]["robot_uid"]="panda"
+        with self.assertRaises(ValueError):audit(source,"xarm6_robotiq",0)
+    def test_fake_xarm_controller_dict_rejected(self):
+        source=valid("xarm6_robotiq")
+        source["rows"][0]["actual_action_controller_keys"]["applied"]=["arm","gripper"]
         with self.assertRaises(ValueError):audit(source,"xarm6_robotiq",0)
     def test_missing_negative_seeds_not_hidden(self):
         source=valid()
