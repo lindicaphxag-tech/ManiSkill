@@ -28,7 +28,13 @@ def audit(folder:Path)->dict:
     expected|={f"native_two_probes_{robot}_chunk{chunk}_original16.json"
                for robot in ROBOTS for chunk in (0,1)}
     files={x.name for x in folder.glob("*.json")}
-    if files!=expected:
+    # A trusted archival directory also contains the FIRST-run aggregate
+    # and a separate posthoc public-gap diagnostic, beside the SIX original
+    # source JSONs. Allow only these two named derived ledgers, never
+    # silently admit unknown extra source shards or drop an original world.
+    archive_derived={"original_two_probe_full_audit.json",
+                     "observed_public_motion_identifiability_gap.json"}
+    if not expected.issubset(files) or files-expected-archive_derived:
         raise ValueError("Original 2 calibration + 4 test JSON files missing or additional")
     models={}
     per_robot_probe={}
