@@ -191,7 +191,9 @@ def trial(policy,seed):
                 # public achieved pose, never invalid private history, then resynchronizes
                 # with ONE counted private target read at t5.
                 if n=="fault_always_single_privileged_query" and step==3:
-                    # The observer is intentionally INVALID after the unknown t2 ACK.\n                    # Use achieved PUBLIC EE pose until the counted step-5 read.\n                    old=arm.ee_pose_at_base
+                    # The observer is intentionally INVALID after the unknown t2 ACK.
+                    # Use achieved PUBLIC EE pose until the counted step-5 read.
+                    old=arm.ee_pose_at_base
                     rewritten,reason,amp=base.normalized_target_delta(
                         src,arm,native,approximate=True,old_override=old)
                     if rewritten is None:
