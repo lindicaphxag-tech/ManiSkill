@@ -199,7 +199,22 @@ def trial(policy,seed):
                 if n in ("fault_always_single_privileged_query",POST_ARM) and step==3:
                     witness=result["faults"].get(PUBLIC_ARM,[])
                     if len(witness)!=2 or witness[-1]["step"]!=3:
-                        raise RuntimeError("Missing precommitted public t3 dispatched command")
+                        # A reference arm may terminate BEFORE the second fault.
+                        # NEVER invent a physical command, infer an ACK label,
+                        # silently delete the seed or call this fully 2x2 exposed.
+                        # Preserve all 64 source intent-to-treat states and mark
+                        # this comparative row ineligible for matched t3/t4
+                        # causal conclusions. Old FAILED CI remains public.
+                        result.setdefault("pre_t3_reference_censored",{}).setdefault(
+                            n,{"step":3,"seed":int(seed),
+                                "reason":"PUBLIC_ARM_NEVER_DISPATCHED_T3",
+                                "true_double_ACK_physics_not_exposed":True,
+                                "task_success_counts_retained_no_seed_deletion":True,
+                                "reference_fault_steps":[z["step"] for z in witness],
+                                "reference_failure_cause":result["failure_causes"].get(PUBLIC_ARM),
+                                "reference_refusal":result["refusals"].get(PUBLIC_ARM)})
+                        done[n]=True
+                        continue
                     delivered=torch.as_tensor(
                         witness[-1]["actual_native_6d_dispatched"],
                         dtype=native.dtype,device=native.device).reshape(6)
