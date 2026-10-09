@@ -1,0 +1,100 @@
+name: "Archive first real 352 native Panda PhysX nonzero vs passive ACK pilot, INCLUDING negatives"
+on:
+  push:
+    branches: [research/mainconference-evidence-statistics-20261009]
+    paths:
+      - '.github/workflows/archive-active-nonzero-original352.yml'
+permissions:
+  contents: write
+  actions: read
+jobs:
+  independently-verify-and-permanently-preserve-authentic-first-physical-pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ORIGINAL_PHYSICS: '37932453422'
+      DEST: research/frozen_policy_transfer/evidence/causal_nonzero_active_vs_passive_original32_1200101_1210116
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require first actual 4-shard native PPO experiment SUCCESS and original registered source unchanged
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$ORIGINAL_PHYSICS" --jq '.conclusion')" = success
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$ORIGINAL_PHYSICS" --jq '.head_sha')" = 497dacaf6f0e9eb5f668ade6a00e7488be517d50
+          test "$(git hash-object research/CAUSAL_NONZERO_NATIVE_PROBE_PILOT32_PREOUTCOME_V1.json)" = 5ddc259ddebbc7d3a486c56bbf53d806f00de64b
+          test "$(git hash-object research/frozen_ppo_causal_nonzero_probe_pilot_v7.py)" = 9cdb5e107ca2f6a60d447f0ec47fbc60047d868e
+          test "$(git hash-object research/run_causal_nonzero_native_ack_pilot32.py)" = 8b2008893ed2180bedeee2d3953c00e833c8666e
+          test "$(git hash-object research/audit_causal_nonzero_probe_physical_pilot32.py)" = db7fe83e85c920efd0e6336f9ffe74a2a073630e
+          gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$ORIGINAL_PHYSICS"/artifacts --paginate --jq '.artifacts[].name' | sort | tee /tmp/original_physical_artifacts.txt
+          test "$(grep -c '^real-nonzero-native-physx-' /tmp/original_physical_artifacts.txt)" -eq 4
+          test "$(grep -c '^original-physical-active-probe-32-352-worlds-source-audit$' /tmp/original_physical_artifacts.txt)" -eq 1
+      - uses: actions/download-artifact@v4
+        with:
+          repository: ${{ github.repository }}
+          run-id: 37932453422
+          github-token: ${{ github.token }}
+          pattern: real-nonzero-native-physx-*
+          merge-multiple: true
+          path: /tmp/real_nonzero_physx_sources
+      - uses: actions/download-artifact@v4
+        with:
+          repository: ${{ github.repository }}
+          run-id: 37932453422
+          github-token: ${{ github.token }}
+          name: original-physical-active-probe-32-352-worlds-source-audit
+          path: /tmp/full_original_nonzero
+      - name: Independently re-audit all original byte-identical 352 physically stepped controller worlds
+        run: |
+          set -euo pipefail
+          test "$(find /tmp/real_nonzero_physx_sources -maxdepth 1 -name '*_original8.json' | wc -l)" -eq 4
+          test "$(find /tmp/real_nonzero_physx_sources -maxdepth 1 -name '*_audit.json' | wc -l)" -eq 4
+          python -m research.audit_causal_nonzero_probe_physical_pilot32 \
+            --source-dir /tmp/real_nonzero_physx_sources \
+            --output /tmp/RERUN_SOURCE_ONLY_NO_NEW_PHYSICS.json
+          test -s /tmp/full_original_nonzero/ORIGINAL_PHYSX_ACTIVE_PROBE_PILOT32_AUDIT.json
+          cmp -s /tmp/RERUN_SOURCE_ONLY_NO_NEW_PHYSICS.json \
+            /tmp/full_original_nonzero/ORIGINAL_PHYSX_ACTIVE_PROBE_PILOT32_AUDIT.json
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/RERUN_SOURCE_ONLY_NO_NEW_PHYSICS.json'))
+          assert d['real_separately_physically_stepped_controller_worlds']==352
+          assert d['genuine_original_physical_reset_task_states']==32
+          assert d['total']['active_always_query_private_reads']==32
+          assert sum(r['active_native_target_probe_position_displacement_inf_m']>1e-5
+                     for r in d['all_original_task_truth_and_probe_evidence'])==32
+          assert len(d['per_task_true_ACK'])==8
+          print("FIRST_SOURCE_REPRODUCED_TRUE_PHYSICAL_NONZERO_32_ACTIVE_NATIVE_TARGET_PROBES",True)
+          PY
+      - name: Preserve immutable original native PhysX JSON, full external audit, SHA256 and honest scientific limits
+        run: |
+          set -euo pipefail
+          mkdir -p "$DEST"
+          cp /tmp/real_nonzero_physx_sources/active_nonzero_pilot_*.json "$DEST"/
+          cp /tmp/full_original_nonzero/ORIGINAL_PHYSX_ACTIVE_PROBE_PILOT32_AUDIT.json "$DEST"/
+          (cd "$DEST" && sha256sum *.json > SHA256SUMS)
+          cat > "$DEST/README.md" <<'EOF'
+          # Prospective real Panda/ManiSkill CPU PhysX nonzero vs ZERO native ACK probe pilot
+
+          Original first true Physics producer with **four physically executed 8-state shards / 11 separate actual controller worlds per state** and independent full original 32-source validator: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37932453422. Original physically executed source SHA 497dacaf6f0e9eb5f668ade6a00e7488be517d50, pre-outcome seed/action/method protocol blob 5ddc259ddebbc7d3a486c56bbf53d806f00de64b, method Git blob 9cdb5e107ca2f6a60d447f0ec47fbc60047d868e.
+          16 actual new PullCube initial-state seeds 1200101–1200116 plus 16 new StackCube 1210101–1210116; each task physical both unknown native ACKs either truly APPLIED or HELD, four true outcomes AA/AH/HA/HH balanced at four per task. Unchanged released third-party frozen PPO.
+          Two public methods have same ACTUAL number of physical control steps; passive ZERO is not a chosen active excitation. Active arm implements a genuinely nonzero, known-delivered, source-precommitted native 6D t4 command [0.12,-0.09,0.07,0,0,0], advancing all four full SE(3) latent native controller target histories and reporting actual native target/achieved tool displacement. A separate *matched SAME active physical t4 action* comparator always pays one counted authoritative controller memory getter at t5. This is a small fixed-actuation pilot, NOT information-optimal adaptive probing.
+          ALL 32 actual physical source episodes are in the four original native 8-episode JSON and four shard audit JSON, plus the original independent all32 source audit. SHA256SUMS fixes all 9 JSONs byte-by-byte. Includes task failures, wrong confident assignments, true physical target-displacement audit and extra sensing costs. **Read exact original totals in ORIGINAL_PHYSX_ACTIVE_PROBE_PILOT32_AUDIT.json; do not selectively promote a pilot.**
+          The old task-specific response epsilon calibrated with a native zero probe is NOT independently calibrated for the active nonzero probe, so no observation-model certification or hardware safety result is implied. No real network packet loss, independent external laboratory run, VLA end-to-end task, conference submission acceptance or general robot-family transfer is claimed.
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$DEST"
+          git diff --cached --quiet && exit 0
+          git commit -m "evidence: freeze all original 352 real Panda PhysX controller worlds and causal nonzero native probe pilot"
+          git push origin HEAD:research/mainconference-evidence-statistics-20261009
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-authenticated-first-native-nonzero-probe-352-real-PhysX-worlds
+          path: research/frozen_policy_transfer/evidence/causal_nonzero_active_vs_passive_original32_1200101_1210116/
+          retention-days: 90
