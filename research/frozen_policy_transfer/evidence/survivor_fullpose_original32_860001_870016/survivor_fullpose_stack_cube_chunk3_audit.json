@@ -1,0 +1,483 @@
+{
+  "controls": {
+    "fault_always_single_privileged_query": {
+      "reads": 4,
+      "success": 1
+    },
+    "fault_optimistic_unverified_ack": {
+      "reads": 0,
+      "success": 0
+    },
+    "fault_public_t3_fourhistory_or_t4_query": {
+      "reads": 4,
+      "success": 1
+    },
+    "fault_robust_then_single_privileged_query": {
+      "reads": 1,
+      "success": 1
+    },
+    "fault_robust_two_history_without_query": {
+      "reads": 0,
+      "success": 0
+    },
+    "fault_strict_common_exact": {
+      "reads": 0,
+      "success": 0
+    },
+    "source_no_fault": {
+      "reads": 0,
+      "success": 4
+    }
+  },
+  "expected_double_fault_in_all_new_arm_trials": true,
+  "frozen_prereg_blob": "a51b01d66e2211058854015a31138f6a838eec71",
+  "no_external_lab_replication": true,
+  "not_robot_collision_safety_or_real_transport_loss": true,
+  "original_raw_sha256": "156bb46a8145263c264982806b34cb0f03d73de8a33ec4246603ff3a292cca8e",
+  "public": {
+    "complete_fault_exposure": 4,
+    "fallback_authoritative": 4,
+    "four_candidate_states": 4,
+    "public_t3_exposure": 4,
+    "public_xyz_samples": 8,
+    "unique_history": 0,
+    "wrong_confident": 0
+  },
+  "sample_rows": [
+    {
+      "fixed_reads": 1,
+      "fixed_success": true,
+      "new_public_evidence": {
+        "accepted_position_indices": [
+          0,
+          1,
+          2
+        ],
+        "after_physics_audit_pose_errors": [
+          [
+            1.4901161138336505e-09,
+            7.79515772423005e-08
+          ],
+          [
+            0.03545701950788499,
+            0.0379167293449215
+          ],
+          [
+            0.04997942894697191,
+            0.048913848789653026
+          ],
+          [
+            0.08543644994497301,
+            0.08490785170106477
+          ]
+        ],
+        "after_xyz": [
+          0.58322674036026,
+          -0.06300922483205795,
+          0.12585295736789703
+        ],
+        "audit_only_hidden_target_was_NOT_decision_input": true,
+        "audit_only_true_candidate_indices": [
+          0
+        ],
+        "authorized": false,
+        "before_xyz": [
+          0.58775794506073,
+          -0.04196842387318611,
+          0.1313328891992569
+        ],
+        "candidate_full_pose_quaternion_xyzw_from_ACTION_HISTORY": [
+          [
+            -0.6973576302914487,
+            -0.7151183184067277,
+            0.002745930985749385,
+            -0.04786006703349754
+          ],
+          [
+            -0.7021113816826011,
+            -0.7090876803237659,
+            0.000664148518013865,
+            -0.06506787403593203
+          ],
+          [
+            -0.709289352479362,
+            -0.7019389360119654,
+            0.003815903962742782,
+            -0.06462030212514057
+          ],
+          [
+            -0.7137049030242253,
+            -0.6956458122085323,
+            0.00191135532198285,
+            -0.08184474373315671
+          ]
+        ],
+        "candidate_residuals_m": [
+          0.0004276911354146241,
+          0.00538836863282717,
+          0.00627398881949448,
+          0.007412592927614637
+        ],
+        "discarded_target_orientations_not_required_to_agree": true,
+        "empirical_motion_envelope_NOT_physical_safety_certificate": true,
+        "failure_reason": "AMBIGUOUS_OR_MODEL_FALSIFIED_PUBLIC_XYZ",
+        "max_hypothetical_rotation_spread_rad": 0.08490788598788072,
+        "physical_candidate_count": 4,
+        "position_identifies_ONE_complete_SE3_history_not_SO3_sensor": true,
+        "prior_training_epsilon_m": 0.00719087965534261,
+        "resync_source": "one_counted_authoritative_controller_target_read",
+        "selected_candidate_index": null,
+        "selection": {
+          "authorized": false,
+          "index": null,
+          "reason": "AMBIGUOUS_OR_MODEL_FALSIFIED_PUBLIC_XYZ",
+          "viable": [
+            0,
+            1,
+            2
+          ]
+        },
+        "wrong_confident": false
+      },
+      "new_public_fault_steps": [
+        2,
+        3
+      ],
+      "new_reads": 1,
+      "new_success": true,
+      "seed": 870013,
+      "task": "stack_cube",
+      "task_gate_actual_world": "fault_always_single_privileged_query",
+      "task_gate_reads": 1,
+      "task_gate_success": true
+    },
+    {
+      "fixed_reads": 1,
+      "fixed_success": false,
+      "new_public_evidence": {
+        "accepted_position_indices": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "after_physics_audit_pose_errors": [
+          [
+            2.2351741846282636e-09,
+            1.647516740186427e-07
+          ],
+          [
+            0.033664109557867056,
+            0.03258658515020729
+          ],
+          [
+            0.04718857929110529,
+            0.049029398586529126
+          ],
+          [
+            0.08085268661379816,
+            0.08022921691597572
+          ]
+        ],
+        "after_xyz": [
+          0.6523281335830688,
+          0.11944277584552765,
+          0.062433287501335144
+        ],
+        "audit_only_hidden_target_was_NOT_decision_input": true,
+        "audit_only_true_candidate_indices": [
+          0
+        ],
+        "authorized": false,
+        "before_xyz": [
+          0.6557464599609375,
+          0.09880311787128448,
+          0.08253582566976547
+        ],
+        "candidate_full_pose_quaternion_xyzw_from_ACTION_HISTORY": [
+          [
+            -0.6984888122245508,
+            -0.7122851935805112,
+            -0.04386957216214527,
+            0.053278915542831984
+          ],
+          [
+            -0.6986191987940495,
+            -0.7104475536184562,
+            -0.05088709283512386,
+            0.06786746213540533
+          ],
+          [
+            -0.6973396795731769,
+            -0.7110474934186831,
+            -0.04580456188382578,
+            0.07765806787718633
+          ],
+          [
+            -0.6973139870787284,
+            -0.7088467066894042,
+            -0.05277041935257029,
+            0.09222164974292621
+          ]
+        ],
+        "candidate_residuals_m": [
+          0.005285224549290271,
+          0.003768416481864341,
+          0.0058043096439164155,
+          0.006629126004064134
+        ],
+        "discarded_target_orientations_not_required_to_agree": true,
+        "empirical_motion_envelope_NOT_physical_safety_certificate": true,
+        "failure_reason": "AMBIGUOUS_OR_MODEL_FALSIFIED_PUBLIC_XYZ",
+        "max_hypothetical_rotation_spread_rad": 0.08022919196674348,
+        "physical_candidate_count": 4,
+        "position_identifies_ONE_complete_SE3_history_not_SO3_sensor": true,
+        "prior_training_epsilon_m": 0.00719087965534261,
+        "resync_source": "one_counted_authoritative_controller_target_read",
+        "selected_candidate_index": null,
+        "selection": {
+          "authorized": false,
+          "index": null,
+          "reason": "AMBIGUOUS_OR_MODEL_FALSIFIED_PUBLIC_XYZ",
+          "viable": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        "wrong_confident": false
+      },
+      "new_public_fault_steps": [
+        2,
+        3
+      ],
+      "new_reads": 1,
+      "new_success": false,
+      "seed": 870014,
+      "task": "stack_cube",
+      "task_gate_actual_world": "fault_always_single_privileged_query",
+      "task_gate_reads": 1,
+      "task_gate_success": false
+    },
+    {
+      "fixed_reads": 1,
+      "fixed_success": false,
+      "new_public_evidence": {
+        "accepted_position_indices": [
+          0,
+          1
+        ],
+        "after_physics_audit_pose_errors": [
+          [
+            1.4901161138336505e-09,
+            2.0606072798032805e-08
+          ],
+          [
+            0.03167773634195328,
+            0.034231486378984585
+          ],
+          [
+            0.04696301370859147,
+            0.04418112009709743
+          ],
+          [
+            0.07864075154066086,
+            0.07500542637968337
+          ]
+        ],
+        "after_xyz": [
+          0.7126378417015076,
+          0.08376562595367432,
+          0.08467929065227509
+        ],
+        "audit_only_hidden_target_was_NOT_decision_input": true,
+        "audit_only_true_candidate_indices": [
+          0
+        ],
+        "authorized": false,
+        "before_xyz": [
+          0.708114504814148,
+          0.06270851939916611,
+          0.10645052790641785
+        ],
+        "candidate_full_pose_quaternion_xyzw_from_ACTION_HISTORY": [
+          [
+            0.7259345223521056,
+            0.6853109934743066,
+            0.0462268109749312,
+            -0.035085515925626885
+          ],
+          [
+            0.731437269040382,
+            0.6788953241219018,
+            0.04114074242072732,
+            -0.04907239200647707
+          ],
+          [
+            0.7242845007820914,
+            0.6859795903461828,
+            0.0407600996776643,
+            -0.05641434063770403
+          ],
+          [
+            0.729545270037242,
+            0.6793821364893263,
+            0.035458999018111476,
+            -0.07032973037144281
+          ]
+        ],
+        "candidate_residuals_m": [
+          0.006422816364875435,
+          0.0071199060690206,
+          0.010130910996030912,
+          0.010110356142785562
+        ],
+        "discarded_target_orientations_not_required_to_agree": true,
+        "empirical_motion_envelope_NOT_physical_safety_certificate": true,
+        "failure_reason": "AMBIGUOUS_OR_MODEL_FALSIFIED_PUBLIC_XYZ",
+        "max_hypothetical_rotation_spread_rad": 0.07500544260968649,
+        "physical_candidate_count": 4,
+        "position_identifies_ONE_complete_SE3_history_not_SO3_sensor": true,
+        "prior_training_epsilon_m": 0.00719087965534261,
+        "resync_source": "one_counted_authoritative_controller_target_read",
+        "selected_candidate_index": null,
+        "selection": {
+          "authorized": false,
+          "index": null,
+          "reason": "AMBIGUOUS_OR_MODEL_FALSIFIED_PUBLIC_XYZ",
+          "viable": [
+            0,
+            1
+          ]
+        },
+        "wrong_confident": false
+      },
+      "new_public_fault_steps": [
+        2,
+        3
+      ],
+      "new_reads": 1,
+      "new_success": false,
+      "seed": 870015,
+      "task": "stack_cube",
+      "task_gate_actual_world": "fault_always_single_privileged_query",
+      "task_gate_reads": 1,
+      "task_gate_success": false
+    },
+    {
+      "fixed_reads": 1,
+      "fixed_success": false,
+      "new_public_evidence": {
+        "accepted_position_indices": [
+          0,
+          1
+        ],
+        "after_physics_audit_pose_errors": [
+          [
+            2.384185793236071e-08,
+            1.0731176091316272e-07
+          ],
+          [
+            0.04094248861074448,
+            0.0398241063902406
+          ],
+          [
+            0.052234505116939556,
+            0.05283540898615609
+          ],
+          [
+            0.09317699521780015,
+            0.09232931830094923
+          ]
+        ],
+        "after_xyz": [
+          0.5235579013824463,
+          0.006967845372855663,
+          0.05149427801370621
+        ],
+        "audit_only_hidden_target_was_NOT_decision_input": true,
+        "audit_only_true_candidate_indices": [
+          0
+        ],
+        "authorized": false,
+        "before_xyz": [
+          0.5421993732452393,
+          0.01119222491979599,
+          0.06838705390691757
+        ],
+        "candidate_full_pose_quaternion_xyzw_from_ACTION_HISTORY": [
+          [
+            0.7417346714747154,
+            0.668761265715698,
+            0.01847551590637298,
+            -0.0473993873655243
+          ],
+          [
+            0.7458714686273372,
+            0.6624937214105988,
+            0.02796247813668281,
+            -0.0632132991995408
+          ],
+          [
+            0.7485946569377158,
+            0.6589375969516069,
+            0.03370132967072329,
+            -0.06535673879846494
+          ],
+          [
+            0.7522961666900114,
+            0.6523792199679923,
+            0.04322711546739121,
+            -0.08113721356959103
+          ]
+        ],
+        "candidate_residuals_m": [
+          0.002618882351471245,
+          0.003683397944230128,
+          0.01471626115326008,
+          0.012613580881418047
+        ],
+        "discarded_target_orientations_not_required_to_agree": true,
+        "empirical_motion_envelope_NOT_physical_safety_certificate": true,
+        "failure_reason": "AMBIGUOUS_OR_MODEL_FALSIFIED_PUBLIC_XYZ",
+        "max_hypothetical_rotation_spread_rad": 0.09232935975448713,
+        "physical_candidate_count": 4,
+        "position_identifies_ONE_complete_SE3_history_not_SO3_sensor": true,
+        "prior_training_epsilon_m": 0.00719087965534261,
+        "resync_source": "one_counted_authoritative_controller_target_read",
+        "selected_candidate_index": null,
+        "selection": {
+          "authorized": false,
+          "index": null,
+          "reason": "AMBIGUOUS_OR_MODEL_FALSIFIED_PUBLIC_XYZ",
+          "viable": [
+            0,
+            1
+          ]
+        },
+        "wrong_confident": false
+      },
+      "new_public_fault_steps": [
+        2,
+        3
+      ],
+      "new_reads": 1,
+      "new_success": false,
+      "seed": 870016,
+      "task": "stack_cube",
+      "task_gate_actual_world": "fault_always_single_privileged_query",
+      "task_gate_reads": 1,
+      "task_gate_success": false
+    }
+  ],
+  "schema": "public_fourhistory_new32_shard_audit_v1",
+  "seeds": [
+    870013,
+    870014,
+    870015,
+    870016
+  ],
+  "source_runner_git_blob": "52addb52d627ea600f847ecffa38c0fad9df97ad",
+  "task": "stack_cube"
+}
