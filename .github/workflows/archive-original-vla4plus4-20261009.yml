@@ -1,0 +1,103 @@
+name: Preserve original frozen SmolVLA LIBERO 4 plus 4 episodes (source-only)
+on:
+  push:
+    branches: [evidence/smolvla-libero-4plus4-original-20261009]
+    paths: [.github/workflows/archive-original-vla4plus4-20261009.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  source-original-audit-and-archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run independent original-official-metrics auditor self-tests
+        run: |
+          set -euo pipefail
+          python -m research.vla_beliefbridge.audit_native_libero_four_episodes --self-test
+      - name: Download ORIGINAL exact Task 0 execution and model identity artifacts
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 37924054645
+          github-token: ${{ github.token }}
+          name: original-frozen-vla-four-inits-task-0
+          path: /tmp/nativevla0
+      - name: Download ORIGINAL exact Task 1 execution and model identity artifacts
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 37924054645
+          github-token: ${{ github.token }}
+          name: original-frozen-vla-four-inits-task-1
+          path: /tmp/nativevla1
+      - name: Copy genuine 8 episode metrics and compare independent per-task outcomes
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, shutil, hashlib
+          from pathlib import Path
+          from research.vla_beliefbridge.audit_native_libero_four_episodes import audit
+          dst=Path("research/vla_beliefbridge/evidence/authentic_smolvla_libero_four_inits_per_task_20261009")
+          dst.mkdir(parents=True,exist_ok=True)
+          versions=[]
+          for task in (0,1):
+              root=Path(f"/tmp/nativevla{task}")
+              sources=list(root.rglob("eval_info.json"))
+              if len(sources)!=1: raise RuntimeError(f"Official unmodified task {task} eval_info missing or duplicated: {sources}")
+              raw=sources[0].read_bytes()
+              result=audit(json.loads(raw),task_id=task,expected_n=4)
+              if result["n_success"]!=(1 if task==0 else 4):
+                  raise RuntimeError("Unexpected original per-episode success count")
+              old_audits=list(root.rglob(f"official_libero_closedloop_audit_task{task}.json"))
+              if len(old_audits)!=1:
+                  raise RuntimeError(f"Missing original independent task {task} audited result")
+              if json.loads(old_audits[0].read_text())!=result:
+                  raise RuntimeError("Posthoc original source auditor differs from ORIGINAL run")
+              ident=list(root.rglob("checkpoint_identity.json"))
+              if len(ident)!=1: raise RuntimeError("Model identity missing")
+              model=json.loads(ident[0].read_text())
+              if model["model_id"]!="HuggingFaceVLA/smolvla_libero" or len(model["immutable_model_sha"])!=40:
+                  raise RuntimeError("Not the source-locked publicly pretrained VLA")
+              versions.append(model["immutable_model_sha"])
+              shutil.copyfile(sources[0],dst/f"task{task}_ORIGINAL_official_eval_info.json")
+              shutil.copyfile(old_audits[0],dst/f"task{task}_ORIGINAL_independent_audit.json")
+              shutil.copyfile(ident[0],dst/f"task{task}_ORIGINAL_model_identity.json")
+              for file,name in [("official_lerobot_source_commit.txt","official_lerobot_source_commit"),
+                                ("maniskill_source_commit.txt","source_commit")]:
+                  match=list(root.rglob(file))
+                  if len(match)!=1: raise RuntimeError(f"Missing original {file}")
+                  shutil.copyfile(match[0],dst/f"task{task}_{name}.txt")
+              print("ORIGINAL_NATIVE_VLA_TASK_VERIFIED",task,result["original_official_successes"],model["immutable_model_sha"])
+          if len(set(versions))!=1: raise RuntimeError("Different genuine VLA model revisions across task cohorts")
+          (dst/"README.md").write_text(
+              "# Authentic original frozen SmolVLA native LIBERO 4+4 pilot evidence\n\n"
+              "Original author-operated actual MuJoCo with original official LeRobot runner: "
+              "https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37924054645\n\n"
+              "LIBERO-Spatial Task 1: original official successes [true,true,true,true] (4/4). "
+              "Task 0: original official successes [false,false,false,true] (1/4). "
+              "The original official eval_info.json, independent per-task audited JSON, exact genuine Hugging Face model SHA "
+              "and LeRobot source identities are copied unmodified. Raw video and full runtime logs remain original GitHub Actions artifacts "
+              "at the source URL (subject to Actions retention). Same task/init-state zero overlaps the earlier exploratory single-episode pilot, "
+              "so these results are NOT wholly prospective. No ACK faults injected, no BeliefBridge recovery demonstrated, no upstream acceptance "
+              "or independent outside-lab replication. This is NOT a full LIBERO benchmark or statistically robust general VLA success rate. "
+              "Native LIBERO robosuite OSC goal position uses current achieved ee_pos and is not target-memory accumulation like ManiSkill's action chart.\n"
+          )
+          files=sorted(p for p in dst.iterdir() if p.is_file())
+          with (dst/"ORIGINAL_SHA256SUMS").open("w") as f:
+              for p in files: f.write(hashlib.sha256(p.read_bytes()).hexdigest()+"  "+p.name+"\n")
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/vla_beliefbridge/evidence/authentic_smolvla_libero_four_inits_per_task_20261009
+          git commit -m "Evidence: persist original 8 native SmolVLA episode results and model provenance"
+          git push origin HEAD:evidence/smolvla-libero-4plus4-original-20261009
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-locked-authentic-frozen-vla-4plus4-task-outcomes
+          path: research/vla_beliefbridge/evidence/authentic_smolvla_libero_four_inits_per_task_20261009/
+          retention-days: 90
