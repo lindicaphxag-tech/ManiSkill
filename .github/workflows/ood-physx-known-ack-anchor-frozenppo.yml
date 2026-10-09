@@ -1,0 +1,114 @@
+name: "REAL Panda PhysX drive gain OOD: known-ACK public response validity vs original target-history witness"
+on:
+  push:
+    branches: [research/dynamics-shift-anchor-ack-new64-20261009]
+    paths:
+      - 'research/DYNAMICS_SHIFT_KNOWN_ACK_ANCHOR_NEW64_PREOUTCOME_V1.json'
+      - 'research/frozen_ppo_ood_known_anchor_physx_v6.py'
+      - 'research/run_dynamics_shift_anchor_new64.py'
+      - 'research/audit_dynamics_shift_anchor_new64.py'
+      - '.github/workflows/ood-physx-known-ack-anchor-frozenppo.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preregistered-domains-and-exact-source-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require prior source-frozen physical test design, no new-seed labels, and truly balanced OOD gains
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/DYNAMICS_SHIFT_KNOWN_ACK_ANCHOR_NEW64_PREOUTCOME_V1.json)" = 8a869f696721f4d36299e5aae66bcfc486f0fde1
+          test "$(git hash-object research/frozen_ppo_ood_known_anchor_physx_v6.py)" = 01663775035813e4f87f06171ff3cae0eaebc442
+          test "$(git hash-object research/run_dynamics_shift_anchor_new64.py)" = 6ba938db8e557f5494c879de3168138b4eb90ed1
+          test "$(git hash-object research/audit_dynamics_shift_anchor_new64.py)" = 7325097681b0bae8aa9698b5c3ecf8767aea7100
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = ddfaf4522d49f73ce926e4c6d77c7ca755f8e1b6
+          python -m py_compile research/frozen_ppo_ood_known_anchor_physx_v6.py research/run_dynamics_shift_anchor_new64.py research/audit_dynamics_shift_anchor_new64.py
+          python - <<'PY'
+          from research.run_dynamics_shift_anchor_new64 import accepted,check_sources
+          check_sources()
+          for task,start in (("pull_cube",960101),("stack_cube",970101)):
+              ids=[s for i in range(4) for s in accepted(task,i)]
+              assert ids==list(range(start,start+32))
+              truths=lambda s:("A" if s%2==0 else "H")+("A" if (s//2)%2==0 else "H")
+              gain=lambda s:"slow" if (s//4)%2==0 else "fast"
+              assert all(sum(truths(s)==t and gain(s)==g for s in ids)==4 for t in ("AA","AH","HA","HH") for g in ("slow","fast"))
+          print("PHYSX_OOD_7_REAL_PD_JOINT_DOMAIN_SHIFTS_PREDECLARED_FOUR_EXECUTION_TRUTHS_BALANCED",True)
+          PY
+
+  real-native-Panda-slow-fast-PhysX-shards:
+    needs: preregistered-domains-and-exact-source-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official real ManiSkill Panda SAPIEN CPU PhysX, unchanged pretrained PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Record source code and joint-dependent native simulator exact environment before any physics
+        run: |
+          git rev-parse HEAD > actual_source_code_commit.txt
+          python -m pip freeze --all > original_native_physx_dependencies.txt
+      - name: Actually physically change all Panda joint gain/damping and step ten native frozen PPO controller worlds per new seed
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_dynamics_shift_anchor_new64.py --task "$TASK" --chunk "$CHUNK" 2>&1 | tee original_ood_physx_episode.log
+          test -s "ood_anchor_${TASK}_chunk${CHUNK}_original8.json"
+          test -s "ood_anchor_${TASK}_chunk${CHUNK}_audit.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: real-physx-ood-known-anchor-${{ matrix.task }}-${{ matrix.chunk }}
+          path: |
+            ood_anchor_*_original8.json
+            ood_anchor_*_audit.json
+            original_ood_physx_episode.log
+            actual_source_code_commit.txt
+            original_native_physx_dependencies.txt
+          retention-days: 90
+
+  genuinely-independent-original-all64-native-PhysX-source-audit:
+    needs: real-native-Panda-slow-fast-PhysX-shards
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: real-physx-ood-known-anchor-*
+          merge-multiple: true
+          path: /tmp/actual_native_physics_anchor64
+      - name: Recalculate every actual physically shifted robot episode and all wrong confident/coverage/query/task costs
+        run: |
+          python -m research.audit_dynamics_shift_anchor_new64 --source-dir /tmp/actual_native_physics_anchor64 --output /tmp/REAL_PHYSX_OOD_ANCHOR_ALL64_AUDIT.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: complete-source-original-Panda-gain-ood-anchor64-real640-PhysX
+          path: |
+            /tmp/actual_native_physics_anchor64/*.json
+            /tmp/REAL_PHYSX_OOD_ANCHOR_ALL64_AUDIT.json
+          retention-days: 90
