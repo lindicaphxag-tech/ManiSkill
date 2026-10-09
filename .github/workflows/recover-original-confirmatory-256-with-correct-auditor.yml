@@ -1,0 +1,97 @@
+name: 'Recover exactly original 256-cell 2304-world CONFIRMATORY true PhysX; fix ONLY old 128-cell auditor import'
+on:
+  push:
+    branches: [research/confirmatory-256-original-source-recovery-20261009]
+    paths: [.github/workflows/recover-original-confirmatory-256-with-correct-auditor.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  independent_original_full_256_same_seeds_source_only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pin ORIGINAL PHYXS run including all 32 genuinely stepped physical shards and disclose original wrong-auditor failure
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37934425888 --jq .head_sha)" = 4fcef52271c93f30447f9c76bf5604fd01642c10
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37934425888 --jq .conclusion)" = failure
+          test "$(git hash-object research/audit_confirmatory_four_truth_new64clusters.py)" = 861100f728a4e0f7a8ac1f8ad027dc299c09de95
+          test "$(git hash-object research/run_confirmatory_four_truth_new64clusters.py)" = 2a9fcf978a84d22b1125930c26041c36f58ef418
+          test "$(git hash-object research/frozen_ppo_numeric_parity_factorial_physx.py)" = 8022ab3a0d5bc97a982e78fc8ca17931aeae586c
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37934425888/jobs --paginate --jq '.jobs[] | select(.name | startswith("physically-step-all-four-conditions-per-source-seed")) | .conclusion' | sort | uniq -c | awk '{print $2 ":" $1}')" = 'success:32' 
+          python -m py_compile research/audit_confirmatory_four_truth_new64clusters.py
+      - name: Download ALL original first-run physical ZIPs (no simulator re-execution; originals unchanged)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/original256_zip /tmp/original256
+          gh run download 37934425888 --repo "$GITHUB_REPOSITORY" --pattern 'factorial-*' --dir /tmp/original256_zip
+          find /tmp/original256_zip -type f -name 'factorial_*.json' -exec cp '{}' /tmp/original256/ \;
+          test "$(find /tmp/original256 -maxdepth 1 -type f -name 'factorial_*_original8.json' | wc -l)" -eq 32
+          test "$(find /tmp/original256 -maxdepth 1 -type f -name 'factorial_*_audit.json' | wc -l)" -eq 32
+      - name: Use the EXISTING CORRECT preregistered 64cluster/256cell confirmatory auditor (never old 32cluster/128cell auditor)
+        run: |
+          set -euo pipefail
+          python -m research.audit_confirmatory_four_truth_new64clusters --source-dir /tmp/original256 --output /tmp/ORIGINAL_256_TRUE_PHYSX_FULL_SOURCE_AUDIT.json
+          python - <<'PY'
+          import json
+          x=json.load(open('/tmp/ORIGINAL_256_TRUE_PHYSX_FULL_SOURCE_AUDIT.json'))
+          assert x['registered_source_reset_clusters']==64
+          assert x['registered_task_seed_truth_cells']==256
+          assert x['separate_physx_worlds']==2304
+          assert len(x['complete_32_shard_sha256'])==64
+          assert len(x['all_source_rows_retained'])==256
+          assert len(x['per_seed_full_four_truth_numeric_initial_parity'])==64
+          assert x['numerically_matched_public_source_observation_per_truth_verified']
+          assert x['numeric_max_public_policy_obs_gap']<=5e-5
+          assert x['numeric_max_initial_achieved_ee_pose_gap']<=5e-5
+          print('Genuine confirmatory old-source RESULTS, not invented:',json.dumps({
+             'outcomes':x['primary_outcomes'],
+             'paired':x['paired_public_vs_strong'],
+             'public_xyz_samples':x['total_public_xyz_sample_events'],
+             'wrong_confident':x['public_wrong_confident_count'],
+             'incomplete_both_faults':x['incomplete_both_fault_exposure_count'],
+             'p_cluster_descriptive':x['seed_cluster_exact_swap_two_sided_sensitivity_p_not_randomized_proof'],
+             'bootstrap_delta':x['seed_cluster_bootstrap_95pct_public_minus_strong_success_gap']},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: recovered-first-original-256cells-2304physx-correct-unmodified-auditor
+          path: /tmp/ORIGINAL_256_TRUE_PHYSX_FULL_SOURCE_AUDIT.json
+          retention-days: 90
+      - name: Commit all 64 actual original PhysX and shard auditor JSON + full source independent audit to long-lived source archive
+        run: |
+          set -euo pipefail
+          test -s /tmp/ORIGINAL_256_TRUE_PHYSX_FULL_SOURCE_AUDIT.json
+          dst=research/frozen_policy_transfer/evidence/confirmatory_64cluster_256truth_orig_3210001_3220032
+          mkdir -p "$dst"
+          cp /tmp/original256/factorial_*.json "$dst/"
+          cp /tmp/ORIGINAL_256_TRUE_PHYSX_FULL_SOURCE_AUDIT.json "$dst/original_full256_independent_audit.json"
+          (cd "$dst" && sha256sum -- *.json > SHA256SUMS && sha256sum -c SHA256SUMS)
+          cat > "$dst/README.md" <<'EOF'
+          # First original confirmatory 64 matched task reset clusters × four physically stepped true-ACK conditions
+          First original actual 32 PhysX shards: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37934425888
+          All 32 source physical shards completed, but original final workflow FAILED because it accidentally invoked the OLD 32cluster/128cell numeric auditor rather than the pre-existing full 64cluster/256cell auditor. First failed run is preserved, not called all-green.
+          The source-only recovery does NOT rerun or modify PPO, physical controller actions, original seed assignments, original 32 real simulation ZIPs or any outcomes. The existing intended 256-cell auditor independently reruns on untouched original data and enforces physical same-initial-pose numeric parity, four truths per seed and complete 64x4 original denominator.
+          This is a 2304 separately stepped ManiSkill native PhysX controller-instance source archive across 64 independent reset clusters (not 2304 independent statistical samples), no real hardware, no physical network drops, no VLA hidden-ACK task recovery or outside investigator proof.
+          Independently recompute: python -m research.audit_confirmatory_four_truth_new64clusters --source-dir research/frozen_policy_transfer/evidence/confirmatory_64cluster_256truth_orig_3210001_3220032 --output /tmp/recompute256.json
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dst"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'evidence: preserve all original 2304 real confirmatory PhysX and correct 256-cell independent source audit'
+          git push origin HEAD:research/confirmatory-256-original-source-recovery-20261009
