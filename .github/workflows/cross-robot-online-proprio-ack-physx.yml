@@ -35,6 +35,8 @@ jobs:
     needs: prereg-before-outcomes-and-adversarial-decisions
     runs-on: ubuntu-latest
     timeout-minutes: 65
+    env:
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
     strategy:
       fail-fast: false
       matrix:
@@ -50,6 +52,9 @@ jobs:
           sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
           python -m pip install --upgrade pip
           python -m pip install -e .
+      - name: Download true xArm6 Robotiq URDF and articulation asset for that robot only
+        if: matrix.robot == 'xarm6_robotiq'
+        run: python -m mani_skill.utils.download_asset xarm6 -y
       - name: Calibrate labelled two-truth physical signals ONLY on eight earlier seeds
         run: |
           set -o pipefail
@@ -67,6 +72,8 @@ jobs:
     needs: actual-native-physx-calibration
     runs-on: ubuntu-latest
     timeout-minutes: 70
+    env:
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
     strategy:
       fail-fast: false
       matrix:
@@ -87,6 +94,9 @@ jobs:
           sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
           python -m pip install --upgrade pip
           python -m pip install -e .
+      - name: Download xArm6 Robotiq genuine robot model before its independent test
+        if: matrix.robot == 'xarm6_robotiq'
+        run: python -m mani_skill.utils.download_asset xarm6 -y
       - name: ACTUALLY step blind proprioception, optimistic and pessimistic robot worlds
         run: |
           set -o pipefail
