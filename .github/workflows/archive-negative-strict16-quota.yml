@@ -1,0 +1,202 @@
+name: Preserve source-verified negative strict 16-query study without hiding pre-fault failures
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-negative-strict16-quota.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate-originals-no-write:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Confirm first full eight-shard source, unchanged frozen protocol
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37896670586 --jq .head_sha)" = "9cc897f4738fbb8cc1b32d513bf73a66db5556a1"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37896670586 --jq .conclusion)" = success
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37896670586 --jq .run_attempt)" = 1
+          test "$(git hash-object research/QUERY_STRICT_SHARED_BUDGET16_NEW64_PREREG_V1.json)" = "8394481a560ea3d0c538e9d2ebf46cc9c4949484"
+      - name: Recover eight source-shard original JSONs and real terminal logs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/strict-original-raw /tmp/strict-original-audit /tmp/strict-original-flat
+          gh run download 37896670586 --repo "$GITHUB_REPOSITORY" --pattern 'original-strict-quota-*' --dir /tmp/strict-original-raw
+          find /tmp/strict-original-raw -type f -name '*.json' -exec cp {} /tmp/strict-original-flat/ \;
+          find /tmp/strict-original-raw -type f -name '*.log' -exec cp {} /tmp/strict-original-flat/ \;
+          gh run download 37896670586 --repo "$GITHUB_REPOSITORY" --name complete-original-strict-budget16-nine-arm-64state-audit --dir /tmp/strict-original-audit
+          source_aggregate=$(find /tmp/strict-original-audit -type f -name strict_quota_new64_full_original_audit.json)
+          test "$(printf '%s\n' "$source_aggregate" | wc -l)" = 1
+          cp "$source_aggregate" /tmp/strict-original-flat/
+          test "$(find /tmp/strict-original-flat -maxdepth 1 -type f | wc -l)" -eq 17
+          cat > /tmp/strict-original-flat/SHA256SUMS <<'SHA_END'
+          8597051e5dd66b766eda7ac833782e6f7bd8065476683f6050c9817bb9256944  strict_quota_new64_full_original_audit.json
+          6176ab5f8a96e179ad70adda80c63a77ea07fb45bb08018723f73491aa0931c4  strict_quota_pull_cube_chunk0.log
+          b131130aa8aa905a9c18b352b4390987f418686027416f97b90a3af5b60a3028  strict_quota_pull_cube_chunk0_original8.json
+          e80e6c005e0f2a39cc95abe28a7fa6cdbba33911e9b9cb4ff6d0e771771e4d55  strict_quota_pull_cube_chunk1.log
+          443bc3c4a859a35b9fa27c62082b40cd030c925b9bf77bdec6c46edb3f364ec0  strict_quota_pull_cube_chunk1_original8.json
+          71c9ed91361bc325afb0279cbc1692427948b3a0e61319f87aac53cf838e7f64  strict_quota_pull_cube_chunk2.log
+          b4afac62260cc85317e9c3a61591300d16e1572616280dbb51159ff7d6d72d84  strict_quota_pull_cube_chunk2_original8.json
+          79408f14aca1bb236f8199be4e1f64b5df9911ed7379494f4fa536dd03e37454  strict_quota_pull_cube_chunk3.log
+          98d3c954f2bae83fbc694294999ce1f4eb0002d34e2aa55209a0c5d9167109f2  strict_quota_pull_cube_chunk3_original8.json
+          90b391e38541b0cce161ec2733a381e90dab65cd7da997c6f1ab26ea0a9cea04  strict_quota_stack_cube_chunk0.log
+          09876f762ba5314d01a63070834b16252761505ffc87fa932e233af2ed2d6495  strict_quota_stack_cube_chunk0_original8.json
+          c3ed15787cdb851dbd42ba88dbd92e62324c00265696c7dc5b74d0a49450bc3c  strict_quota_stack_cube_chunk1.log
+          80e71f9ab3e3b1e9b8456d8deb10cf2d95ac0ed2f472c1090094b8829c942ddd  strict_quota_stack_cube_chunk1_original8.json
+          6a6a42e535fbc43a36c3d120a0220f84e28abf7da15e70c60c845353ef590ad0  strict_quota_stack_cube_chunk2.log
+          025736e265219251d72ef4d3e99a4ee0e6611a599edc5b4f9c9d17d6ba5fde8c  strict_quota_stack_cube_chunk2_original8.json
+          6cf961651f7cd93fa22589f32c64721bb8bb02ce77f04d5c2d8b8dab0e87076b  strict_quota_stack_cube_chunk3.log
+          6b1a43b7e7e635b26fb238e003b845ef075aa4cd1c336de8d826ecc685e4a16c  strict_quota_stack_cube_chunk3_original8.json
+          SHA_END
+          cd /tmp/strict-original-flat
+          sha256sum -c SHA256SUMS
+      - name: Independently replay all failed original source episodes and hard-gate negative
+        run: |
+          python -m research.audit_query_strict_budget64 --input-dir /tmp/strict-original-flat --output /tmp/strict-original-recomputed.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          original=json.loads(Path('/tmp/strict-original-flat/strict_quota_new64_full_original_audit.json').read_text())
+          recomputed=json.loads(Path('/tmp/strict-original-recomputed.json').read_text())
+          assert original==recomputed
+          assert original['original_new_distinct_seeds']==64
+          assert len(original['eight_original_source_groups'])==8
+          assert original['predeclared_primary_efficacy_inference_gate_PASSED'] is False
+          assert len(original['pre_fault_controller_refusal_witnesses'])==7
+          assert {z['seed'] for z in original['pre_fault_controller_refusal_witnesses']}=={370029}
+          assert original['capped_adaptive_target_decision_reads']==10
+          assert original['periodic_nonadaptive_target_decision_reads']==16
+          assert original['native_task_success']['fault_robust_quota_two_per_eight']==50
+          assert original['native_task_success']['fault_precommitted_seed_schedule_query']==44
+          assert original['capped_adaptive_vs_periodic']['adaptive_only']==9
+          assert original['capped_adaptive_vs_periodic']['comparator_only']==3
+          print('PASS: original 64 conditions preserved, seven pre-fault fail-closed cases, scientific confirmation gate INVALID')
+          PY
+
+  permanently-preserve-on-trusted-main:
+    needs: validate-originals-no-write
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Confirm first full eight-shard source, unchanged frozen protocol
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37896670586 --jq .head_sha)" = "9cc897f4738fbb8cc1b32d513bf73a66db5556a1"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37896670586 --jq .conclusion)" = success
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37896670586 --jq .run_attempt)" = 1
+          test "$(git hash-object research/QUERY_STRICT_SHARED_BUDGET16_NEW64_PREREG_V1.json)" = "8394481a560ea3d0c538e9d2ebf46cc9c4949484"
+      - name: Recover eight source-shard original JSONs and real terminal logs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/strict-original-raw /tmp/strict-original-audit /tmp/strict-original-flat
+          gh run download 37896670586 --repo "$GITHUB_REPOSITORY" --pattern 'original-strict-quota-*' --dir /tmp/strict-original-raw
+          find /tmp/strict-original-raw -type f -name '*.json' -exec cp {} /tmp/strict-original-flat/ \;
+          find /tmp/strict-original-raw -type f -name '*.log' -exec cp {} /tmp/strict-original-flat/ \;
+          gh run download 37896670586 --repo "$GITHUB_REPOSITORY" --name complete-original-strict-budget16-nine-arm-64state-audit --dir /tmp/strict-original-audit
+          source_aggregate=$(find /tmp/strict-original-audit -type f -name strict_quota_new64_full_original_audit.json)
+          test "$(printf '%s\n' "$source_aggregate" | wc -l)" = 1
+          cp "$source_aggregate" /tmp/strict-original-flat/
+          test "$(find /tmp/strict-original-flat -maxdepth 1 -type f | wc -l)" -eq 17
+          cat > /tmp/strict-original-flat/SHA256SUMS <<'SHA_END'
+          8597051e5dd66b766eda7ac833782e6f7bd8065476683f6050c9817bb9256944  strict_quota_new64_full_original_audit.json
+          6176ab5f8a96e179ad70adda80c63a77ea07fb45bb08018723f73491aa0931c4  strict_quota_pull_cube_chunk0.log
+          b131130aa8aa905a9c18b352b4390987f418686027416f97b90a3af5b60a3028  strict_quota_pull_cube_chunk0_original8.json
+          e80e6c005e0f2a39cc95abe28a7fa6cdbba33911e9b9cb4ff6d0e771771e4d55  strict_quota_pull_cube_chunk1.log
+          443bc3c4a859a35b9fa27c62082b40cd030c925b9bf77bdec6c46edb3f364ec0  strict_quota_pull_cube_chunk1_original8.json
+          71c9ed91361bc325afb0279cbc1692427948b3a0e61319f87aac53cf838e7f64  strict_quota_pull_cube_chunk2.log
+          b4afac62260cc85317e9c3a61591300d16e1572616280dbb51159ff7d6d72d84  strict_quota_pull_cube_chunk2_original8.json
+          79408f14aca1bb236f8199be4e1f64b5df9911ed7379494f4fa536dd03e37454  strict_quota_pull_cube_chunk3.log
+          98d3c954f2bae83fbc694294999ce1f4eb0002d34e2aa55209a0c5d9167109f2  strict_quota_pull_cube_chunk3_original8.json
+          90b391e38541b0cce161ec2733a381e90dab65cd7da997c6f1ab26ea0a9cea04  strict_quota_stack_cube_chunk0.log
+          09876f762ba5314d01a63070834b16252761505ffc87fa932e233af2ed2d6495  strict_quota_stack_cube_chunk0_original8.json
+          c3ed15787cdb851dbd42ba88dbd92e62324c00265696c7dc5b74d0a49450bc3c  strict_quota_stack_cube_chunk1.log
+          80e71f9ab3e3b1e9b8456d8deb10cf2d95ac0ed2f472c1090094b8829c942ddd  strict_quota_stack_cube_chunk1_original8.json
+          6a6a42e535fbc43a36c3d120a0220f84e28abf7da15e70c60c845353ef590ad0  strict_quota_stack_cube_chunk2.log
+          025736e265219251d72ef4d3e99a4ee0e6611a599edc5b4f9c9d17d6ba5fde8c  strict_quota_stack_cube_chunk2_original8.json
+          6cf961651f7cd93fa22589f32c64721bb8bb02ce77f04d5c2d8b8dab0e87076b  strict_quota_stack_cube_chunk3.log
+          6b1a43b7e7e635b26fb238e003b845ef075aa4cd1c336de8d826ecc685e4a16c  strict_quota_stack_cube_chunk3_original8.json
+          SHA_END
+          cd /tmp/strict-original-flat
+          sha256sum -c SHA256SUMS
+      - name: Independently replay all failed original source episodes and hard-gate negative
+        run: |
+          python -m research.audit_query_strict_budget64 --input-dir /tmp/strict-original-flat --output /tmp/strict-original-recomputed.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          original=json.loads(Path('/tmp/strict-original-flat/strict_quota_new64_full_original_audit.json').read_text())
+          recomputed=json.loads(Path('/tmp/strict-original-recomputed.json').read_text())
+          assert original==recomputed
+          assert original['original_new_distinct_seeds']==64
+          assert len(original['eight_original_source_groups'])==8
+          assert original['predeclared_primary_efficacy_inference_gate_PASSED'] is False
+          assert len(original['pre_fault_controller_refusal_witnesses'])==7
+          assert {z['seed'] for z in original['pre_fault_controller_refusal_witnesses']}=={370029}
+          assert original['capped_adaptive_target_decision_reads']==10
+          assert original['periodic_nonadaptive_target_decision_reads']==16
+          assert original['native_task_success']['fault_robust_quota_two_per_eight']==50
+          assert original['native_task_success']['fault_precommitted_seed_schedule_query']==44
+          assert original['capped_adaptive_vs_periodic']['adaptive_only']==9
+          assert original['capped_adaptive_vs_periodic']['comparator_only']==3
+          print('PASS: original 64 conditions preserved, seven pre-fault fail-closed cases, scientific confirmation gate INVALID')
+          PY
+      - name: Commit first negative source experiment unmodified
+        run: |
+          set -euo pipefail
+          dst=research/frozen_policy_transfer/evidence/strict_shared_16read_quota_new64_negative
+          mkdir -p "$dst"
+          cp /tmp/strict-original-flat/*.json /tmp/strict-original-flat/*.log /tmp/strict-original-flat/SHA256SUMS "$dst/"
+          cat > "$dst/README.md" <<'EOF'
+          # NEGATIVE hard-gate first genuine 64-task strict observation-budget experiment
+          Original actual PhysX source: Actions run 37896670586, exact head 9cc897f4738fbb8cc1b32d513bf73a66db5556a1.
+          Frozen before runner and outcomes: commit a47fb2b7eedcb90803bebe4845d47082b1a279da, protocol Git object 8394481a560ea3d0c538e9d2ebf46cc9c4949484.
+          Raw first-run original 8 × 8-seed JSON files, complete aggregate, and 8 original stdout logs were matched against the fixed SHA256SUMS inside the trusted-main workflow and archived WITHOUT modifications.
+          Outcomes, full 64 denominator: capped adaptive 50/64 with 10 authority reads, fixed schedule 44/64 with 16 reads, uncapped adaptive 56/64 with 19 reads, one mandatory read per fault 60/64 with 64 reads, bounded zero read 41/64.
+          Capped adaptive vs fixed schedule exclusive successes: 9 vs 3. Conditional two-sided p=0.14599609375, exploratory/descriptive only, not an established advantage.
+          THE ORIGINAL PRESPECIFIED FAULT-EXPOSURE GATE FAILED: StackCube seed 370029 had an illegal SO3 native action BEFORE fault injection (t=0) in SEVEN comparison controller arms. Each was refused and counted as a failed original trial, not silently excluded or renamed an ACK recovery outcome.
+          The first source run 37895572472 failed with an unhandled ValueError. A post-exception code change preserves the untouched study seeds and numerical budgets, but the revised full execution is explicitly a FIXED-after-seeing-that-run evaluator: it is not a perfect untouched confirmatory replication. No actual network ACK fault, physical safety or external independent reproduction.
+          The capped arm spent AT MOST 16 authority reads and actually used 10, not an EXACT-16 matched-spending trial. Source task label and model identities are recorded separately.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dst"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'evidence: permanently archive negative hard-gate 64-state shared-query-budget original trials'
+          for attempt in 1 2 3 4; do
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              echo 'Concurrent main modification conflict; refusing force push'
+              exit 1
+            fi
+            if git push origin HEAD:main; then
+              echo 'Permanently preserved negative original source evidence'
+              exit 0
+            fi
+          done
+          exit 1
