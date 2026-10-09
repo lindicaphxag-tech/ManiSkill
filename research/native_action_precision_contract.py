@@ -100,9 +100,15 @@ def authorize_native_cartesian_ee(
     if np.linalg.norm(realized[3:])>1+numerical_guard:
         # Roundoff at float32 transport boundary: project inward at the
         # actual representable precision, not a different source float64.
-        corrected=realized[3:]/np.linalg.norm(realized[3:])
+        # A mathematical float64 radius-one vector can round OUTSIDE
+        # the legal SO3 unit ball again when transmitted as float32.
+        # Move at least eight float32 ULPs into the interior, then
+        # recompute every resulting native target pose from final bytes.
+        inward=1.0-8.0*np.finfo(np.float32).eps
+        corrected=(realized[3:]/np.linalg.norm(realized[3:]))*inward
         u[3:]=corrected.astype(np.float32)
         realized=u.astype(np.float64)
+        nonexact=True
         if np.linalg.norm(realized[3:])>1+numerical_guard:
             return refused("ROTATION_STILL_OUTSIDE_NATIVE_UNIT_BALL",nonexact=True)
     physical_pos=low+(realized[:3]+1)*(high-low)/2
