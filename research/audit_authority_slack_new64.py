@@ -118,6 +118,24 @@ def audit(folder):
                   "new policy pretraining","general robotics safety","superiority over strong task-conditioned baseline unless measured"]
     }
 
+def tagged_nonfinite(v):
+    """Preserve honestly unrepresentable raw source limits as tagged strings.
+
+    Original Python JSON can represent Infinity (not RFC 8259). Public audit
+    uses strict, portable JSON, and does not erase the source hash or claim
+    a finite certified command where the actual solver refused.
+    """
+    if isinstance(v,float) and not math.isfinite(v):
+        if math.isnan(v):
+            raise ValueError("Invalid NaN in native PhysX source evidence")
+        return "UNREPRESENTABLE_POSITIVE_INFINITY" if v>0 else "UNREPRESENTABLE_NEGATIVE_INFINITY"
+    if isinstance(v,list):
+        return [tagged_nonfinite(x) for x in v]
+    if isinstance(v,dict):
+        return {k:tagged_nonfinite(x) for k,x in v.items()}
+    return v
+
+
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("--artifacts",type=Path,required=True)
@@ -125,7 +143,7 @@ def main():
     a=p.parse_args()
     result=audit(a.artifacts)
     a.out.parent.mkdir(parents=True,exist_ok=True)
-    a.out.write_text(json.dumps(result,indent=2,sort_keys=True,allow_nan=False)+"\n")
+    a.out.write_text(json.dumps(tagged_nonfinite(result),indent=2,sort_keys=True,allow_nan=False)+"\n")
     print("AUTHORITY_SLACK_PROSPECTIVE_REAL64_AUDIT",json.dumps({
         "states":result["n_distinct_physical_reset_states"],
         "physx_worlds":result["genuine_native_controller_worlds"],
