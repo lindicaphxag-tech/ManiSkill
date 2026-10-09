@@ -24,18 +24,33 @@ class Model:
     probe_preserves_repair: bool=True
 
 def validate(m: Model):
-    assert m.repairs and set(m.repairs)==set(m.probe_truth)
-    assert m.alphabet and len(set(m.alphabet))==len(m.alphabet)
-    assert set(m.probe_truth.values())<=set(m.alphabet)
-    assert all(type(s) is str and s for s in list(m.repairs)+list(m.repairs.values())+list(m.alphabet))
-    assert m.probe_preserves_repair,'unattested changing probe forbidden'
-    assert 1<=m.probe_cost<=m.read_cost<=100
-    assert 0<=m.max_probes<=6 and 0<=m.corruption_budget<=2
-    assert 1<=len(m.repairs)<=8
+    # Assertions DISAPPEAR under python -O. Model integrity is part of the
+    # safety-critical proof contract, so EVERY guard is an explicit exception.
+    if not isinstance(m.repairs,Mapping) or not isinstance(m.probe_truth,Mapping):
+        raise ValueError('missing finite response model')
+    if not (1<=len(m.repairs)<=8) or set(m.repairs)!=set(m.probe_truth):
+        raise ValueError('incomplete history/probe response map')
+    if not isinstance(m.alphabet,tuple) or not m.alphabet or len(set(m.alphabet))!=len(m.alphabet):
+        raise ValueError('invalid response alphabet')
+    if not all(type(s) is str and s for s in
+               list(m.repairs)+list(m.repairs.values())+
+               list(m.probe_truth.values())+list(m.alphabet)):
+        raise ValueError('non-string or blank model identifier')
+    if not set(m.probe_truth.values())<=set(m.alphabet):
+        raise ValueError('response outside model alphabet')
+    if m.probe_preserves_repair is not True:
+        raise ValueError('unauthorized repair-changing public probe')
+    if (type(m.probe_cost) is not int or type(m.read_cost) is not int or
+            not 1<=m.probe_cost<=m.read_cost<=100):
+        raise ValueError('invalid probe/read cost')
+    if (type(m.max_probes) is not int or type(m.corruption_budget) is not int or
+            not 0<=m.max_probes<=6 or not 0<=m.corruption_budget<=2):
+        raise ValueError('invalid depth or corruption bound')
     return tuple(sorted((h,0) for h in m.repairs))
 
 def post(m,belief,observed):
-    assert observed in m.alphabet
+    if observed not in m.alphabet:
+        raise ValueError('response not in declared alphabet')
     return tuple(sorted((h,spent+(observed!=m.probe_truth[h]))
         for h,spent in belief if spent+(observed!=m.probe_truth[h])<=m.corruption_budget))
 
@@ -83,10 +98,12 @@ def verify(m,proof):
             if set(node.get('branches',{}))!=set(should):raise ValueError('missing outcome')
             cost=m.probe_cost+max(visit(node['branches'][a],b,remaining-1) for a,b in should.items())
         else:raise ValueError('forged action')
-        if node.get('worst_cost')!=cost:raise ValueError('falsified cost')
+        if type(node.get('worst_cost')) is not int or node['worst_cost']!=cost:
+            raise ValueError('falsified cost or wrong integer type')
         return cost
     cost=visit(proof['root'],initial,m.max_probes)
-    if cost!=proof.get('cost'):raise ValueError('wrong root cost')
+    if type(proof.get('cost')) is not int or cost!=proof['cost']:
+        raise ValueError('wrong root cost or integer type')
     @lru_cache(None)
     def brute(b,remaining):
         if unique_repair(m,b) is not None:return 0
