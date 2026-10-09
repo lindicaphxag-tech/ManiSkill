@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/libero-native-target-abi-check.yml'
       - 'research/vla_beliefbridge/probe_libero_target_memory.py'
+      - 'research/vla_beliefbridge/native_goal_reference_gate.py'
   workflow_dispatch:
 permissions:
   contents: read
@@ -88,6 +89,14 @@ jobs:
             --output real_vla_libero_evidence/native_controller_abi.json \
             2>&1 | tee real_vla_libero_evidence/native_controller_abi_stdout.log
           test -s real_vla_libero_evidence/native_controller_abi.json
+      - name: Reject unsupported target-memory bridge using verified native source AST
+        run: |
+          set -euo pipefail
+          python -m research.vla_beliefbridge.native_goal_reference_gate --self-test
+          python -m research.vla_beliefbridge.native_goal_reference_gate \
+            --input real_vla_libero_evidence/native_controller_abi.json \
+            --output real_vla_libero_evidence/native_target_history_adapter_authorization.json
+          test -s real_vla_libero_evidence/native_target_history_adapter_authorization.json
       - name: Save original controller source provenance
         if: always()
         run: |
