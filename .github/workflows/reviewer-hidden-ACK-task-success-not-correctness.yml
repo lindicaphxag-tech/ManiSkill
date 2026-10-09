@@ -1,0 +1,43 @@
+name: "Reviewer counterexample actual task SUCCESS with FALSE confident latent controller pose"
+on:
+  push:
+    branches: [research/matched-public-bayes-native16-20261009]
+    paths:
+      - research/reviewer_counterexample_task_success_not_state_correctness.py
+      - .github/workflows/reviewer-hidden-ACK-task-success-not-correctness.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reproducible_original_false_confident_source_truth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require byte-frozen first actual physics source/independent full64 auditor and unchanged counterexample code
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/reviewer_counterexample_task_success_not_state_correctness.py)" = 9b09d88cdb960037149847d8ec1426b27f6ce30c
+          test "$(git hash-object research/frozen_policy_transfer/evidence/matched_same_public_bayes_original64_1760001_1770032/bayes_same_public_pull_cube_chunk2_original8.json)" = 8df61b0e0bc8726f5dd631bc7566494eb98fb664
+          test "$(git hash-object research/frozen_policy_transfer/evidence/matched_same_public_bayes_original64_1760001_1770032/first_original_full64_audit.json)" = 79e6138f9c53b76c4c845d28eac411dea56e6871
+          python -m py_compile research/reviewer_counterexample_task_success_not_state_correctness.py
+          python -m research.reviewer_counterexample_task_success_not_state_correctness --output /tmp/original_task_success_but_wrong_6cm_pose.json
+          python - <<'PY'
+          import json
+          x=json.load(open("/tmp/original_task_success_but_wrong_6cm_pose.json"))
+          assert x["original_frozen_physx_worlds"]==640
+          assert x["seed"]==1760020
+          assert x["wrong_pose_error_position_m"]>.06
+          assert x["public_set_method"]["official_task_success"]
+          assert x["public_set_method"]["wrong"]
+          assert x["same_public_normalized_residual_weight_method"]["confident"] is False
+          print("PASS source-frozen false history with true official PPO task success")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-verified-task-success-wrong-6cm-controller-target
+          path: /tmp/original_task_success_but_wrong_6cm_pose.json
+          retention-days: 90
