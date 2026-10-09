@@ -1,0 +1,76 @@
+{
+  "schema": "preregistered_task_gated_multi_ack_frozen_PPO_20261009_v1",
+  "phase": "FROZEN_BEFORE_ANY_NEW_520001_530001_PHYSX_OUTCOMES",
+  "research_question": "Does a task-preselected query rule (selective on PullCube; mandatory read at t=4 on StackCube) preserve task success of the full mandatory strategy while spending fewer private memory reads on an entirely unseen 64-state cohort?",
+  "motivation_development_only": {
+    "prior_original_run": 37900209486,
+    "prior_audit_run": 37900694213,
+    "prior_physical_results": "Pull selective 32/32 fixed 32/32; Stack selective 13/32 fixed 23/32; this selection is retrospective to the DEVELOPMENT cohort and requires a new heldout test"
+  },
+  "frozen_source": {
+    "commit": "b7670dd17037bbb94d208a40a1e068ce972b5484",
+    "runner_blob": "99836af14205fe3e95e52a2e0d68237c7c8a9045",
+    "certifier_blob": "36707a177549104ba5b4bd9bcebc76518f0d2840",
+    "prior_source_blob": "1dc653cdc44e422c8340475ad00f828b3a41eb4f",
+    "prior_certifier_blob": "bb5fd155b7291fb127f94138fca321201c8271c3"
+  },
+  "third_party_frozen_PPO": {
+    "hub_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+    "pull_sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+    "stack_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c",
+    "no_training": true
+  },
+  "untouched_cohorts": {
+    "pull_cube": {
+      "start": 520001,
+      "end": 520032,
+      "shards": 4
+    },
+    "stack_cube": {
+      "start": 530001,
+      "end": 530032,
+      "shards": 4
+    },
+    "distinct_original_reset_states": 64,
+    "matched_native_PhysX_worlds_per_state": 7,
+    "worlds_total_if_complete": 448
+  },
+  "intervention": {
+    "controller": "Panda pd_ee_delta_pose source to pd_ee_target_delta_pose destination",
+    "native_fault": "two consecutive arm target holds / zero arm deltas, at steps t=2,t=3; gripper unchanged",
+    "ack": "unknown, not real lost network packets",
+    "step_horizon": 50,
+    "pos_budget_m": 0.05,
+    "rot_budget_rad": 0.05
+  },
+  "precommitted_router": {
+    "pull_cube": "fault_robust_then_single_privileged_query",
+    "stack_cube": "fault_always_single_privileged_query",
+    "selection_time": "before environment reset, based ONLY on known task ID; no test-outcome access",
+    "cost": "exact decision-time privileged get_state calls; oracle continuous privileged access not zero",
+    "implementation": "task-gated selected trajectory is the actual native PhysX rollout of its selected comparator, which is run among seven paired worlds on every original seed (not a synthesized hybrid trajectory)"
+  },
+  "comparators": [
+    "original no fault",
+    "full always-read-once",
+    "full selective read-if-uncertified",
+    "never-read bounded",
+    "optimistic assume delivered",
+    "continuous privileged oracle"
+  ],
+  "primary_endpoints": [
+    "64 paired official native task success flags and separate PullCube/StackCube results",
+    "query counts of task-gated vs always-read and always-selective",
+    "paired discordant wins / losses, exact two-sided exploratory McNemar test",
+    "all original SHA256 and emitted physical setpoint audits, including masked commands",
+    "four candidate target-memory states actually reached"
+  ],
+  "methodological_limits": [
+    "Route only has two known tasks; this is explicit per-task specialization not learned policy and not evidence of task-general information planning",
+    "Source task policy models are only 2 PPOs in one Panda controller family; 64 reset seeds are not 64 independent robots",
+    "Reusing original comparator outcomes is valid only because the route fixes choice before reset and selects an *entire actually executed* control trajectory; we make no claims for counterfactual mid-episode splices",
+    "No clinical/hardware/robot trajectory safety or true network ACK loss",
+    "Outside-run independent replication must come from an actual third-party investigator"
+  ],
+  "decision_rule": "If the new task-conditioned policy is worse than full mandatory readback on PullCube or pooled task success, report failure; no retuning on these 64 seeds. If task success ties, compare actual reads; no statistical noninferiority claim unless a priori equivalence margin with adequate power exists."
+}
