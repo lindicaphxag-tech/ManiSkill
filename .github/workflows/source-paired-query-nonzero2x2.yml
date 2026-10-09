@@ -1,0 +1,45 @@
+name: True 2x2 NONZERO-ACK original-source paired query statistics (NO physics rerun)
+on:
+  push:
+    branches: [analysis/paired-query-evidence-nonzero2x2-20261009]
+    paths:
+      - 'research/paired_nonzero_ack_query_source_audit.py'
+      - '.github/workflows/source-paired-query-nonzero2x2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-paired-source-inference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze both earlier original independent PhysX audit objects (no simulation)
+        run: |
+          set -euo pipefail
+          DIR=research/frozen_policy_transfer/evidence/true_two_by_two_nonzero_ack64_1340001_1350032
+          test "$(git hash-object "$DIR/first_original_64_full_audit.json")" = a606de7a2bcb1efc61c47dbca0e353c597840128
+          test "$(git hash-object "$DIR/second_independent_64_full_audit.json")" = a606de7a2bcb1efc61c47dbca0e353c597840128
+          cmp "$DIR/first_original_64_full_audit.json" "$DIR/second_independent_64_full_audit.json"
+          python -m research.paired_nonzero_ack_query_source_audit --self-test
+      - name: Exact sign and paired source evidence; retain original HH losses
+        run: |
+          set -euo pipefail
+          mkdir -p reviewer_paired_query
+          python -m research.paired_nonzero_ack_query_source_audit \
+            --output reviewer_paired_query/original_nonzero2x2_paired_read_evidence.json \
+            2>&1 | tee reviewer_paired_query/full_original_source_stats.log
+          git rev-parse HEAD > reviewer_paired_query/source_analysis_git_commit.txt
+          git hash-object research/paired_nonzero_ack_query_source_audit.py > reviewer_paired_query/analysis_blob.txt
+          printf '%s\n' 'Original unmodified 64-reset physical CI https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37921809790' > reviewer_paired_query/original_physx_run.txt
+          (cd reviewer_paired_query && sha256sum *.json *.txt *.log > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TRUE_2x2_nonzero_ACK64_paired_source_statistical_audit
+          path: reviewer_paired_query/
+          retention-days: 90
+
+# Paired query evidence is EXPLORATORY; cannot prove total sensing-cost dominance.
