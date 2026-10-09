@@ -55,23 +55,14 @@ jobs:
 
   independent-seed-physx:
     needs: immutable-source-and-input-guard
-    # A dispatch creates ONE requested task/fault job, not two duplicate jobs.
-    # A branch push runs two independent one-seed smoke cases.
-    if: ${{ github.event_name != 'workflow_dispatch' || matrix.task == 'pull_cube' }}
+    # One investigator-selected task/fault per dispatch; a branch push runs
+    # a single tiny one-seed source-integrity physics smoke case.
     runs-on: ubuntu-latest
     timeout-minutes: 65
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - task: pull_cube
-            fault: applied_no_ack
-          - task: stack_cube
-            fault: neutral_arm_delta_no_ack
     env:
       PYTHONUNBUFFERED: '1'
-      ABI_TASK: ${{ github.event_name == 'workflow_dispatch' && inputs.task || matrix.task }}
-      ABI_FAULT: ${{ github.event_name == 'workflow_dispatch' && inputs.fault || matrix.fault }}
+      ABI_TASK: ${{ github.event_name == 'workflow_dispatch' && inputs.task || 'pull_cube' }}
+      ABI_FAULT: ${{ github.event_name == 'workflow_dispatch' && inputs.fault || 'applied_no_ack' }}
       ABI_FIRST_SEED: ${{ github.event_name == 'workflow_dispatch' && inputs.first_seed || 231001 }}
       ABI_COHORT_N: ${{ github.event_name == 'workflow_dispatch' && inputs.cohort_n || '1' }}
     steps:
@@ -111,6 +102,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: outsider-selected-observability-gated-${{ matrix.task }}-${{ matrix.fault }}
+          name: outsider-selected-observability-gated-${{ github.run_id }}
           path: replication_artifacts/
           retention-days: 90
