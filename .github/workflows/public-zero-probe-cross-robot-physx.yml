@@ -1,0 +1,95 @@
+name: Prospective Panda/xArm6 public zero-probe dynamics falsification
+on:
+  push:
+    branches:
+      - research/public-probe-observability-contract-20261009
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-preoutcome-source-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require BEFORE-results prereg, true robot controllers and executable source
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/PUBLIC_ZERO_PROBE_CROSS_ROBOT_PREOUTCOME_V1.json)" = "e862a731b02d718c7e405f380b848f9b85ce7af4"
+          test "$(git hash-object research/cross_robot_ack_physics.py)" = "3b2faf44e5f413911eae25ccfd0c51fbbe2d5fe7"
+          test "$(git hash-object research/action_abi_history_observer.py)" = "2aa52e477c202386fb6a7e43586d246026b6041d"
+          grep -q '^class XArm6Robotiq(BaseAgent):' mani_skill/agents/robots/xarm6/xarm6_robotiq.py
+          python -m py_compile research/public_probe_observability_contract.py research/public_zero_probe_cross_robot_physics.py research/audit_public_zero_probe_cross_robot.py
+          python -m unittest discover -s tests -p test_public_probe_observability_contract.py -v
+
+  two-real-robot-heldout-physx:
+    needs: independent-preoutcome-source-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    strategy:
+      fail-fast: false
+      matrix:
+        robot: [panda, xarm6_robotiq]
+        chunk: [0, 1]
+    env:
+      ROBOT_UID: ${{ matrix.robot }}
+      CHUNK_ID: ${{ matrix.chunk }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official ManiSkill CPU PhysX
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Fetch the ACTUAL xArm6 robot asset
+        if: matrix.robot == 'xarm6_robotiq'
+        run: python -m mani_skill.utils.download_asset xarm6 -y
+      - name: Independently step the applied and held physically real ACK histories
+        run: |
+          set -o pipefail
+          git rev-parse HEAD > public_probe_source_commit.txt
+          PYTHONPATH="$PWD:$PWD/research" python research/public_zero_probe_cross_robot_physics.py --robot "$ROBOT_UID" --chunk "$CHUNK_ID" 2>&1 | tee public_zero_probe_physx.log
+          test -s "public_zero_probe_${ROBOT_UID}_chunk${CHUNK_ID}_original4.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: public-probe-real-${{ matrix.robot }}-chunk-${{ matrix.chunk }}
+          path: |
+            public_zero_probe_*.json
+            public_zero_probe_physx.log
+            public_probe_source_commit.txt
+          retention-days: 90
+
+  full-original-calibration-heldout-audit:
+    needs: two-real-robot-heldout-physx
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: public-probe-real-*
+          path: /tmp/public-probe-real
+          merge-multiple: true
+      - name: Audit every 16 original seed states and NEVER train on heldout
+        run: |
+          python -m research.audit_public_zero_probe_cross_robot --source-dir /tmp/public-probe-real --output /tmp/public_zero_probe_FULL_SOURCE_AUDIT.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: public-probe-panda-xarm6-complete-original-and-audit
+          path: |
+            /tmp/public-probe-real/*.json
+            /tmp/public_zero_probe_FULL_SOURCE_AUDIT.json
+          retention-days: 90
