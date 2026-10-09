@@ -1,0 +1,85 @@
+{
+  "schema": "prospective_cross_robot_ack_command_amplitude_shift_v1",
+  "status": "FROZEN_BEFORE_RUNNER_IMPLEMENTATION_AND_TEST_OUTCOMES",
+  "date": "2026-10-09",
+  "scientific_hypothesis": "Does public EE-response classification trained at one fixed normalized native arm-command amplitude remain valid when the truth-hidden command amplitude changes? Falsify 32/32 original within-distribution success without retraining, optionally test an independently predeclared affine command-aware class-center rule.",
+  "independent_robots": [
+    "panda",
+    "xarm6_robotiq"
+  ],
+  "native_mode": "pd_ee_target_delta_pose",
+  "sim_backend": "physx_cpu",
+  "task": "PickCube-v1",
+  "source_model": "No learned PPO or new training; same prior fixed eight calibration seeds per robot and frozen reference model",
+  "calibration_original_archive": "research/frozen_policy_transfer/evidence/cross_robot_online_public_proprio_new32_480001_490008",
+  "calibration_source_seeds": {
+    "panda": [
+      420001,
+      420008
+    ],
+    "xarm6_robotiq": [
+      430001,
+      430008
+    ]
+  },
+  "new_test_seeds": {
+    "panda": [
+      540001,
+      540004
+    ],
+    "xarm6_robotiq": [
+      550001,
+      550004
+    ]
+  },
+  "ack_truths": [
+    "applied",
+    "held"
+  ],
+  "amplitude_multipliers": [
+    0.4,
+    1
+  ],
+  "truth_delivery_step": 2,
+  "common_proprio_probe_step": 3,
+  "controller_native_arm_movement": "Original exact normalized native requested_native(t) steps t0/t1 unmodified; multiply only requested_native(2) by declared factor if actually applied, else deliver zero; t3 common native zero probe; t4 action calculated to restore held commanded target POSITION.",
+  "observed_feature": "public achieved EE_xyz(t3)-public achieved EE_xyz(t1)",
+  "no_private_getter_before_correction": true,
+  "privileged_target_getter_only_after_corrective_physical_step": true,
+  "three_way_baselines": [
+    "original_training_scale_only_envelopes_NO_RETRAIN",
+    "declared_linear_command_conditioned_mean_with_training_scale_only",
+    "optimistic_uninformed",
+    "pessimistic_uninformed"
+  ],
+  "decision_if_ambiguous": "refuse correction; count abstention and failure",
+  "distances": "euclidean XYZ from public EE motion to empirical truth response model",
+  "fixed_margin_m": 0.002,
+  "linear_command_conditioned_mean": "held_calibrated_mean + amplitude*(applied_calibrated_mean_at_1.0 - held_calibrated_mean); hold class mean unchanged; all empirical training class radii unchanged, no look at heldout labels",
+  "reject_negative": "0/32 confident mistakes has no statistical zero-risk meaning; all false confident authorizations and abstentions are disclosed even if commanded target error is small",
+  "budget": {
+    "total_physical_unknown_ack_truth_cases": 32,
+    "calibration_reads_each_robot": 0,
+    "decision_private_target_reads_all_methods": 0,
+    "each_arm_uses_same_native_zero_probe_step": true,
+    "each_robot_has_exactly_4_new_reset_seeds": true,
+    "truths_each_seed": 2,
+    "amplitudes_each_seed": 2,
+    "controllers_per_truth": 4,
+    "real_physx_worlds": 128
+  },
+  "metrics": [
+    "per_robot_amplitude_truth_seed_correct_position_target_linf<=1e-4m_after_physical_action",
+    "per_method_public_classification_confident_wrong_and_abstain",
+    "fixed_scale_vs_amplitude_conditioned paired discordances",
+    "actual native arm action and physical probe xyz logged",
+    "source calibration hash and original seed-split provenance",
+    "no-private-target-getter-at-decision and post-physics-only audit"
+  ],
+  "adversarial_gate": "Original 32/32 result was for one fixed command schedule: do NOT claim generic robot/controller OOD or task policy success. If either method confidently wrong, report exact raw case, do not tune training radius/offset on this evaluation.",
+  "hardware": false,
+  "real_packet_loss": false,
+  "real_robot": false,
+  "learned_policy_transfer": false,
+  "external_replication": false
+}
