@@ -28,7 +28,7 @@ def group(dic):
 
 def source(inp):
     obj=json.loads(inp.read_text())
-    if obj["original_all_256_descriptive_end_to_end"]["n_original_task_truth_conditions"]!=256:
+    if obj["all_original_256_descriptive_end_to_end"]["n_original_task_truth_conditions"]!=256:
         raise ValueError("Not 256 physical source-backed task condition audits")
     all_=obj["all_original_256_descriptive_end_to_end"]
     same=obj["observed_predecision_native_motor_equal_192_CONDITIONAL_NOT_CAUSAL"]
