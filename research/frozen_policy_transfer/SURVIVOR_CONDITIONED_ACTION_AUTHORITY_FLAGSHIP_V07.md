@@ -44,6 +44,15 @@ The *new method* was registered before its source implementation: [frozen protoc
 
 **Zero paired success discordances** versus the strong task-labelled comparator: both succeeded on **28** identical original seeds, both failed on **4** identical original seeds. **10/32** model-approved, originally action-history-derived *complete* target poses; zero observed wrong confident full-pose history labels; all 32 registered public-controller arms received both native t2/t3 physical fault interventions. Full original run: [37914343195](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37914343195) (all eight physical task shards + independent complete denominator audit green).
 
+**Important task-stratified heterogeneity (all 32 original source states, NO selective exclusions):**
+
+| Task stratum | Public unique full-target histories | New method task success / target reads | Strong task-aware comparator task success / target reads |
+| --- | ---: | ---: | ---: |
+| PullCube (16 resets) | **3/16** | **16/16, 13 reads** | **16/16, 11 reads** |
+| StackCube (16 resets) | **7/16** | **12/16, 9 reads** | **12/16, 16 reads** |
+
+**The aggregate five-read advantage is NOT uniform across tasks.** PullCube spends TWO MORE trusted target reads than its strongest genuinely executed task-labelled alternative, whereas StackCube saves SEVEN. This is a task-heterogeneous controller-state information frontier; any paper claim of uniform reduced query cost is FALSE. The matched task outcome is identical separately in BOTH task strata. Source: [permanent original full-denominator PhysX audit](./evidence/survivor_fullpose_original32_860001_870016/full_original_survivor_fullpose_new32_audit.json).
+
 **Protocol amendment honestly disclosed:** the first physical attempt [37913956732](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37913956732) interrupted several sharded episode outputs due a Python `NameError` in the *after-actuation audit-only* variable that graded true candidate histories. One binding restoration (`winners=ev["accepted_position_indices"]`) corrected the source, with exactly the same observed-state method, original preregistration and source reset seeds. [Disclosure](https://github.com/lindicaphxag-tech/ManiSkill/blob/main/research/SURVIVOR_FULLPOSE_FIRST_RUN_SOURCE_AMENDMENT.md). The full successful run is an *implementation-repaired preregistered cohort*, not independent untouched confirmatory replication.
 
 ### Actual information-cost sensitivity, not a hidden free-observation claim
