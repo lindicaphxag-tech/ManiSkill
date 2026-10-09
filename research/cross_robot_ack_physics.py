@@ -81,12 +81,23 @@ def get_arm(env):
 
 
 def stepping(env,ctrl,native6):
-    grip=ctrl.controllers["gripper"]
-    gshape=grip.single_action_space.shape
-    act=ctrl.from_action_dict({
-        "arm":torch.as_tensor(native6,dtype=torch.float32),
-        "gripper":torch.zeros(gshape,dtype=torch.float32)
-    }).reshape(1,-1)
+    # Panda: arm + gripper; xArm6: arm + gripper_active +
+    # gripper_passive. This is genuine robot-controller interface diversity.
+    # Preserve every original controller's zero gripper command (including
+    # passively controlled joints with zero action dimensions) instead of
+    # silently substituting a Panda controller for xArm6.
+    required={"arm","gripper"} if env.unwrapped.agent.uid=="panda" else {
+        "arm","gripper_active","gripper_passive"}
+    if set(ctrl.controllers)!=required:
+        raise RuntimeError("Unverified robot controller mapping; refuse")
+    parts={
+        key: (torch.as_tensor(native6,dtype=torch.float32)
+              if key=="arm" else
+              torch.zeros(ctrl.controllers[key].single_action_space.shape,
+                          dtype=torch.float32))
+        for key in ctrl.controllers
+    }
+    act=ctrl.from_action_dict(parts).reshape(1,-1)
     obs,reward,term,trunc,info=env.step(act)
     if info.get("success") is None:
         raise RuntimeError("Official ManiSkill state/task flag missing")
@@ -98,6 +109,7 @@ def one_seed(robot,seed):
     rows=dict(robot_uid=robot,seed=seed,task=TASK,control_mode=ARM_MODE,
               real_physx_cpu=True,source_policy_trained=False,
               native_command_ack_visible="unknown",
+              actual_action_controller_keys={},
               xarm6_is_not_a_Panda_relabel=robot=="xarm6_robotiq",
               commanded_target_residual_by_step={}, probe={},
               official_task_success_by_truth={},
@@ -112,6 +124,7 @@ def one_seed(robot,seed):
             sims[truth]=env
         states={truth:get_arm(env) for truth,env in sims.items()}
         initials={truth:pose_from(arm.ee_pose_at_base) for truth,(_,arm) in states.items()}
+        rows["actual_action_controller_keys"]={truth:list(ctrl.controllers) for truth,(ctrl,arm) in states.items()}
         reset_l2=pose_residual(initials["applied"],initials["held"])["l2_m"]
         if reset_l2>1e-5:
             raise RuntimeError(f"Paired robot reset achieved pose mismatch {reset_l2}")
