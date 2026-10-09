@@ -1,0 +1,111 @@
+name: 'AMENDED causal four-truth same-seed experiment: single-process fixed reset and exact hash gate'
+on:
+  push:
+    branches: [research/paired-four-truth-singleprocess-reset-audit-20261009]
+    paths:
+      - research/PAIRED_ACK_SINGLE_PROCESS_RESET_REPAIR_DISCLOSURE.json
+      - research/run_same_seed_four_truth_in_one_process.py
+      - .github/workflows/paired-ack-sameprocess-fourtruth-physx.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source_frozen_original_and_failed_first_run_disclosed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reject modified source native controller/PPO fault policy and precommitted reset identity
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/frozen_ppo_same_reset_factorial_physx.py)" = 14882a4efcd36351f8cb5873e706488788446f32
+          test "$(git hash-object research/run_same_reset_ack_factorial.py)" = 1e506bc8474369172fab9a9935f7587b1ab08c44
+          test "$(git hash-object research/PAIRED_COUNTERFACTUAL_2X2_PPO128_PREOUTCOME_V1.json)" = 56dcb937a8a92b5cab3ee5977ce97c6bacfc10ab
+          test "$(git hash-object research/run_same_seed_four_truth_in_one_process.py)" = 71101d5e4221946038bf9c9be66082e8141d41ee
+          python -m py_compile research/run_same_seed_four_truth_in_one_process.py research/audit_same_reset_ack_factorial.py
+          python - <<'PY'
+          from research.run_same_seed_four_truth_in_one_process import audit_source_freeze
+          from research.run_same_reset_ack_factorial import select
+          audit_source_freeze()
+          for task in ('pull_cube','stack_cube'):
+              assert len([s for c in range(2) for s in select(task,c)])==16
+          print('AMENDED_PROVENANCE: first 37930607707 original all-shards but hash-failed; algorithm unchanged')
+          PY
+  same_process_actual_four_truth_physical_controller_worlds:
+    needs: source_frozen_original_and_failed_first_run_disclosed
+    runs-on: ubuntu-latest
+    timeout-minutes: 170
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+      PYTHONUNBUFFERED: '1'
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install actual native ManiSkill CPU PhysX and official original PPO checkpoint
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Preserve actual original fixed source, dependencies and honest amended result
+        run: |
+          git rev-parse HEAD > original_amended_same_process_source_commit.txt
+          python -m pip freeze --all > original_amended_same_process_packages.txt
+      - name: Physically step all 4 ACK truth conditions under SAME Python process, identical RNG/seed, strict identical SHA256
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_same_seed_four_truth_in_one_process.py --task "$ABI_TASK" --chunk "$CHUNK" 2>&1 | tee original_amended_native_physx.log
+          test -s "sameprocess_${ABI_TASK}_chunk${CHUNK}_true4_hash_provenance.json"
+          test "$(find . -maxdepth 1 -name "factorial_${ABI_TASK}_chunk${CHUNK}_truth*_original8.json" | wc -l)" -eq 4
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: amended-real-fourtruth-sameprocess-${{ matrix.task }}-chunk${{ matrix.chunk }}
+          path: |
+            factorial_*_original8.json
+            factorial_*_audit.json
+            sameprocess_*_true4_hash_provenance.json
+            original_amended_native_physx.log
+            original_amended_same_process_source_commit.txt
+            original_amended_same_process_packages.txt
+          retention-days: 90
+  independent_full_original_128_cells_32_clusters_review:
+    needs: same_process_actual_four_truth_physical_controller_worlds
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: amended-real-fourtruth-sameprocess-*
+          merge-multiple: true
+          path: /tmp/real_sameprocess_sources
+      - name: Honor the original ALL 32 SAME START task seeds with exactly four actual physical truth combinations
+        run: |
+          set -euo pipefail
+          python -m research.audit_same_reset_ack_factorial --source-dir /tmp/real_sameprocess_sources --output /tmp/complete_amended_real_physx_128_truths.json
+          test -s /tmp/complete_amended_real_physx_128_truths.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: all-128-real-fourtruth-physx-amended-sameprocess-full-independent-review
+          path: |
+            /tmp/real_sameprocess_sources/factorial_*.json
+            /tmp/real_sameprocess_sources/sameprocess_*_true4_hash_provenance.json
+            /tmp/complete_amended_real_physx_128_truths.json
+          retention-days: 90
