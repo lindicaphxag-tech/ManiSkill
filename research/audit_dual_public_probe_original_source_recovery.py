@@ -179,7 +179,7 @@ def audit(folder):
     if len(per)!=64 or len({(r["task"],r["seed"]) for r in per})!=64:
         raise ValueError("Incomplete original 64 physical states")
     outcomes={}
-    for task in TASKS:
+    for task in START:
         for truth in ("AA","AH","HA","HH"):
             rr=[r for r in per if r["task"]==task and r["joint_true"]==truth]
             if len(rr)!=8:raise ValueError("Full four-joint physical ACK group not balanced")
