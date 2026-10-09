@@ -1,0 +1,121 @@
+name: "Prospective SAME-SEED ACK 2x2 native PhysX factorial (32 seeds x 4 truths x 9 worlds)"
+on:
+  push:
+    branches: [research/prospective-same-reset-ack-factorial-20261009]
+    paths:
+      - research/PAIRED_COUNTERFACTUAL_2X2_PPO128_PREOUTCOME_V1.json
+      - research/frozen_ppo_same_reset_factorial_physx.py
+      - research/run_same_reset_ack_factorial.py
+      - research/audit_same_reset_ack_factorial.py
+      - tests/test_same_reset_ack_factorial.py
+      - .github/workflows/same-reset-ack-factorial-physx.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prereg-source-freeze-and-adversarial-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze old model and pre-outcome factorial source identity
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/TWO_UNKNOWN_ACK_TRUE_2X2_PPO64_PREOUTCOME_V1.json)" = 21465042519333ae948274a7f5ef02014efc6d19
+          test "$(git hash-object research/frozen_ppo_true_twoack_2x2_physx.py)" = d9f1c435e6ad58ea4dc03189e51d532ac15ed351
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          test "$(git hash-object research/PAIRED_COUNTERFACTUAL_2X2_PPO128_PREOUTCOME_V1.json)" = 56dcb937a8a92b5cab3ee5977ce97c6bacfc10ab
+          test "$(git hash-object research/frozen_ppo_same_reset_factorial_physx.py)" = 14882a4efcd36351f8cb5873e706488788446f32
+          test "$(git hash-object research/run_same_reset_ack_factorial.py)" = 1e506bc8474369172fab9a9935f7587b1ab08c44
+          test "$(git hash-object research/audit_same_reset_ack_factorial.py)" = f741efcb7e08673b18ddb7c8215f6ea2381cfcea
+          python -m py_compile research/frozen_ppo_same_reset_factorial_physx.py research/run_same_reset_ack_factorial.py research/audit_same_reset_ack_factorial.py
+      - name: Simulator-free falsification gates and seed-cluster statistics
+        run: |
+          python -m pip install pytest
+          python -m pytest -q tests/test_same_reset_ack_factorial.py
+
+  physically-step-all-four-conditions-per-source-seed:
+    needs: prereg-source-freeze-and-adversarial-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1]
+        truth_index: [0, 1, 2, 3]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+      ABI_TRUTH_INDEX: ${{ matrix.truth_index }}
+      PYTHONUNBUFFERED: '1'
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install original frozen PPO and actual ManiSkill PhysX simulator
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Save original source identity and runtime provenance
+        run: |
+          git rev-parse HEAD > FACTORIAL_SOURCE_COMMIT.txt
+          python -m pip freeze --all > FACTORIAL_RUNTIME_PACKAGES.txt
+      - name: Step eight reset IDs under one precommitted ACK truth condition
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_same_reset_ack_factorial.py \
+            --task "$ABI_TASK" --chunk "$CHUNK" --truth-index "$ABI_TRUTH_INDEX" \
+            2>&1 | tee factorial_physics_stdout.log
+          test -s "factorial_${ABI_TASK}_chunk${CHUNK}_truth${ABI_TRUTH_INDEX}_original8.json"
+          test -s "factorial_${ABI_TASK}_chunk${CHUNK}_truth${ABI_TRUTH_INDEX}_audit.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: factorial-${{ matrix.task }}-chunk${{ matrix.chunk }}-truth${{ matrix.truth_index }}
+          path: |
+            factorial_*_original8.json
+            factorial_*_audit.json
+            factorial_physics_stdout.log
+            FACTORIAL_SOURCE_COMMIT.txt
+            FACTORIAL_RUNTIME_PACKAGES.txt
+          retention-days: 90
+
+  independent-all-population-paired-factorial-audit:
+    needs: physically-step-all-four-conditions-per-source-seed
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: factorial-*
+          merge-multiple: true
+          path: /tmp/ack_factorial_sources
+      - name: Verify all 32 original same-seed clusters contain all four real physical truths
+        run: |
+          set -euo pipefail
+          python -m research.audit_same_reset_ack_factorial \
+            --source-dir /tmp/ack_factorial_sources \
+            --output /tmp/full_matched_factorial_128_native_physx_audit.json
+          test -s /tmp/full_matched_factorial_128_native_physx_audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ORIGINAL_same_seed_factorial_32clusters_128cells_1152worlds
+          path: |
+            /tmp/ack_factorial_sources/*.json
+            /tmp/full_matched_factorial_128_native_physx_audit.json
+          retention-days: 90

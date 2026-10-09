@@ -1,0 +1,75 @@
+{
+  "schema": "prospective_same_reset_full_2x2_physical_ack_factorial_v1",
+  "registered_utc_date": "2026-10-09",
+  "status": "PRE_OUTCOME__NEVER_REPORT_UNRUN_AS_COMPLETE",
+  "parent_experiment": "research/TWO_UNKNOWN_ACK_TRUE_2X2_PPO64_PREOUTCOME_V1.json",
+  "question": "Holding robot task, frozen checkpoint, exact reset seed, ACK-uncertainty handling, controller observations and neutral-probe schedule fixed, how do four genuinely dispatched t2/t3 physical Applied/Held outcomes change task success, public history identification, and paid private state reads?",
+  "tasks": {
+    "pull_cube": {
+      "task_id": "PullCube-v1",
+      "start": 1310001,
+      "end": 1310016,
+      "checkpoint_sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7"
+    },
+    "stack_cube": {
+      "task_id": "StackCube-v1",
+      "start": 1320001,
+      "end": 1320016,
+      "checkpoint_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+    }
+  },
+  "conditions": [
+    {
+      "index": 0,
+      "t2": "held",
+      "t3": "held",
+      "name": "HH"
+    },
+    {
+      "index": 1,
+      "t2": "applied",
+      "t3": "held",
+      "name": "AH"
+    },
+    {
+      "index": 2,
+      "t2": "held",
+      "t3": "applied",
+      "name": "HA"
+    },
+    {
+      "index": 3,
+      "t2": "applied",
+      "t3": "applied",
+      "name": "AA"
+    }
+  ],
+  "n_independent_source_reset_identifiers": 32,
+  "n_task_seed_truth_cells": 128,
+  "n_separate_physx_worlds": 1152,
+  "physical_arms_per_cell": 9,
+  "seeds_per_task": 16,
+  "seeds_per_shard": 8,
+  "required_shards": "2 tasks * 2 chunks * 4 truth patterns = 16; never drop any and do not regard 128 condition cells as 128 independent seed clusters",
+  "registered_exclusions": "No outcome-based exclusions, no dropping early refusals, false positives, task failures or missing step3/step4; where fault not reached report intact ITT denominator and exposure.",
+  "immutable_predecessor_git_blobs": {
+    "previous_native_source": "d9f1c435e6ad58ea4dc03189e51d532ac15ed351",
+    "previous_response_classifier": "064bb46831b61af73ad445bc836326837ec5468f",
+    "previous_preoutcome": "21465042519333ae948274a7f5ef02014efc6d19"
+  },
+  "policy_training": "No retraining; exact externally released frozen PPO checkpoints and pinned revision as parent study",
+  "physical_execution": "Two unknown-ACK native 6DOF controller actions at zero-based steps 2,3, independently applied or replaced with a physically dispatched zero-hold command; oracle accesses audit-only",
+  "neutral_probe": "One extra known-delivered zero arm-command neutral hold at zero-based step4 for faulted arms that reach step4; every failed early-stop remains a negative result. Public method uses two publicly achieved EE XYZ samples.",
+  "outcome_primary": "Official ManiSkill task success, paired method discordances and private target reads, reported by seed, task, physical truth and exposure ITT",
+  "outcome_secondary": "Observed public complete-history selection and wrong-confident selection, public XYZ sensing costs, protected initial physical observation equivalence, pre-fault negative outcomes and refusal reasons",
+  "statistical_design": "Condition is fully crossed within each task/seed. Compare methods paired within a seed-condition, cluster 4 conditions by source seed. Exact paired discordant analysis per truth/task when possible; bootstrap/permutation CI uses seed clusters, not 128 independent cells. Any superiority or noninferiority needs predeclared threshold and power; this protocol contains no such claim.",
+  "honesty_gates": [
+    "Original 64 truth cases were each on different initial seeds. This new study is prospective, not reinterpretation of those logs.",
+    "Same initial observation hash/allowed tolerance must be verified for each arm within condition, and initial source observation hash identical for the four conditions of a source seed; hash mismatch fails experiment.",
+    "No state read in classification; audit-only private getter is never decision input",
+    "Equal neutral probe arm action for all main competitors that reach t4; early refuses must remain visible and cannot be advertised as probe-exposed",
+    "Cannot label this ActionShift/DualABI baseline; actual matched-budget active comparator remains a separate work item",
+    "No hardware, network transport, end-to-end VLA or safety guarantee and no third-party replication claims",
+    "Do not publish task-success outcomes unless 16/16 original source and all-population independent audit jobs complete"
+  ]
+}
