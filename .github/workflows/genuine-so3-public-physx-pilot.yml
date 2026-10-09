@@ -1,0 +1,117 @@
+name: Native PhysX publicly measured SO3 channel prospective pilot
+on:
+  push:
+    branches: [research/so3-genuine-public-motion-channel-pilot-20261009]
+    paths:
+      - research/frozen_ppo_so3_signal_pilot_physx.py
+      - research/SO3_PUBLIC_MOTION_FEASIBILITY_PREOUTCOME_V1.json
+      - research/run_so3_public_signal_pilot.py
+      - .github/workflows/genuine-so3-public-physx-pilot.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prereg_and_source_lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Fail closed on actual prereg, experimental code and previous classifier
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/frozen_ppo_so3_signal_pilot_physx.py)" = 41f22c785814a8d016c41a16cc34572ee0ed1457
+          test "$(git hash-object research/SO3_PUBLIC_MOTION_FEASIBILITY_PREOUTCOME_V1.json)" = d63ae9d010bcb6db2b2ae6edc1c849701d0e6fb1
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          python -m py_compile research/frozen_ppo_so3_signal_pilot_physx.py research/run_so3_public_signal_pilot.py
+          python - <<'PY'
+          import json
+          from research.run_so3_public_signal_pilot import pin,SEED_FIRST
+          pin()
+          pre=json.load(open("research/SO3_PUBLIC_MOTION_FEASIBILITY_PREOUTCOME_V1.json"))
+          for t,s in SEED_FIRST.items():
+              assert pre["new_seeds"][t] == {"start":s,"end":s+7}
+              assert len({(k-1)%4 for k in range(s,s+8)})==4
+          print("PROSPECTIVE_PUBLIC_SO3_SOURCE_FROZEN")
+          PY
+  actual_16_new_frozen_PPO_PhysX:
+    needs: prereg_and_source_lock
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      PYTHONUNBUFFERED: '1'
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Genuine CPU native PhysX and third-party frozen PPO model
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Record original runtime provenance
+        run: |
+          git rev-parse HEAD > physical_source_commit.txt
+          python -m pip freeze --all > physical_dependencies.txt
+      - name: Real physical 8 times 10 simulated controller steps and charged EE SO3 public observations
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_so3_public_signal_pilot.py --task "$ABI_TASK" 2>&1 | tee original_so3_physics.log
+          test -s so3_physical_"$ABI_TASK"_original8.json
+          test -s so3_physical_"$ABI_TASK"_audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: physical-so3-original-${{ matrix.task }}
+          path: |
+            so3_physical_*_original8.json
+            so3_physical_*_audit.json
+            original_so3_physics.log
+            physical_source_commit.txt
+            physical_dependencies.txt
+          retention-days: 90
+  independent_original_16_denominator_audit:
+    needs: actual_16_new_frozen_PPO_PhysX
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: physical-so3-original-*
+          merge-multiple: true
+          path: /tmp/original_physx_so3
+      - name: Recompute both original per-eight auditors with source-level duplicate rejection
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          from research.run_so3_public_signal_pilot import audit_raw,SEED_FIRST
+          folder=Path("/tmp/original_physx_so3")
+          report={}
+          for task in SEED_FIRST:
+              original=folder/("so3_physical_"+task+"_original8.json")
+              source=json.loads(original.read_text())
+              recomputed=audit_raw(source,task)
+              recomputed["original_native_physx_json_sha256"]=hashlib.sha256(original.read_bytes()).hexdigest()
+              supplied=json.loads((folder/("so3_physical_"+task+"_audit.json")).read_text())
+              if supplied!=recomputed: raise ValueError("Original physical SO3 audit mismatch")
+              report[task]={"seeds":8,"worlds":80,"real_public_quat_pairs":recomputed["physical_so3_probes_completed"]}
+          assert len(report)==2
+          Path("original_so3_16_results.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print("ORIGINAL_NATIVE_PHYSX_SO3_FEASIBILITY_AUDIT",json.dumps(report,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: complete-original-16-new-public-SO3-evidence
+          path: original_so3_16_results.json
+          retention-days: 90
