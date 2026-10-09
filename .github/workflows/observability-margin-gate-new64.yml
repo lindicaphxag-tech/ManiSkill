@@ -71,7 +71,7 @@ jobs:
         run: |
           mkdir -p originals
           set -o pipefail
-          PYTHONPATH="$PWD:$PWD/research" python -m research.frozen_ppo_matched_public_bayes_physx 2>&1 | tee originals/actual_native_physx.log
+          PYTHONPATH="$PWD:$PWD/research" python -m research.frozen_ppo_observability_margin_physx 2>&1 | tee originals/actual_native_physx.log
           mv "mixed_ack_${{ matrix.task }}_original8.json" originals/
       - name: Fail closed on missing physical prefixes, source truth, samples or success
         run: |
