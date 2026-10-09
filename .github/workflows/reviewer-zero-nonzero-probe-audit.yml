@@ -1,0 +1,35 @@
+name: Zero vs nonzero dual-robot SOURCE-only adversarial reviewer tests
+
+on:
+  push:
+    branches: [research/dualrobot-nonzero-probe-identifiability-20261009, main]
+    paths:
+      - 'tests/test_zero_nonzero_probe_source_integrity.py'
+      - 'research/audit_zero_nonzero_probe_two_robots.py'
+      - '.github/workflows/reviewer-zero-nonzero-probe-audit.yml'
+  pull_request:
+    paths:
+      - 'tests/test_zero_nonzero_probe_source_integrity.py'
+      - 'research/audit_zero_nonzero_probe_two_robots.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit-source-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Zero dependency adversarial 64-source ledger tests
+        run: |
+          python -m py_compile research/audit_zero_nonzero_probe_two_robots.py
+          python -m unittest discover -s tests -p test_zero_nonzero_probe_source_integrity.py -v
