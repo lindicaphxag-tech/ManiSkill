@@ -1,0 +1,117 @@
+{
+  "schema": "prospective_cross_robot_zero_vs_common_nonzero_probe_identifiability_v1",
+  "status": "PRECOMMITTED_BEFORE_NEW_METHOD_CODE_AND_ORIGINAL_PHYSX_OUTCOMES",
+  "date": "2026-10-09",
+  "research_question": "Does a physically executed bounded NONZERO known-delivered common native arm translation improve public achieved-XYZ diagnosis of UNKNOWN execution acknowledgement compared with an equally long known-delivered ZERO probe, in different robot morphology/controller charts?",
+  "hypothesis_and_null": {
+    "linear_model": "x_next=x+alpha*(M_h+u-x)+e where same fixed alpha for both candidate histories; if e distribution/effective radius independent of u, observation-center separation is alpha*(M_applied-M_held), independent of a common probe u",
+    "null": "The nonzero probe is not predicted to increase worst-case between-history public observation separation in this restricted common-gain model; native/contact nonlinearities can violate the model",
+    "expected_study_value": "A genuine heldout test of zero-versus-nonzero probe response identifiability and falsification of the common-gain approximation, NOT a novel theorem or assured nonzero advantage"
+  },
+  "frozen_native_source": {
+    "control_mode": "pd_ee_target_delta_pose",
+    "original_source": "research/cross_robot_ack_physics.py",
+    "original_source_git_sha1": "pending_pin_real_source_blob_checked_by_workflow",
+    "robot_uids": [
+      "panda",
+      "xarm6_robotiq"
+    ],
+    "environment": "PickCube-v1 for both robot bodies, but scripted native controller actions, no policy weights or task-completion claims",
+    "actual_physics": "ManiSkill physx_cpu with robot-specific real URDF/gripper mapping"
+  },
+  "calibration": {
+    "panda": [
+      420001,
+      420008
+    ],
+    "xarm6_robotiq": [
+      430001,
+      430008
+    ],
+    "both_truths": [
+      "applied",
+      "held"
+    ],
+    "both_probes": [
+      "zero",
+      "nonzero_x"
+    ],
+    "classifier": "For each robot × probe independently, fit the two prior-truth public displacement means, max L2 residual and add 0.002m fixed margin; exactly one compatible mean ball authorizes, both/neither refuse",
+    "not_a_physical_safety_envelope": true
+  },
+  "new_original_blind_seeds": {
+    "panda": [
+      660001,
+      660008
+    ],
+    "xarm6_robotiq": [
+      670001,
+      670008
+    ]
+  },
+  "physical_fault": {
+    "step": 2,
+    "truths": [
+      "applied",
+      "held"
+    ],
+    "actual_hold": "zero native arm target delta delivered in held truth, rather than requested native action",
+    "ack_visible_to_method": false
+  },
+  "probes": {
+    "time_step": 3,
+    "known_delivered": true,
+    "baseline_zero_native6": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "intervention_nonzero_native6": [
+      0.15,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "physical_steps_identical": 4,
+    "native_gripper_action": "exactly zero with all original robot-specific controls",
+    "probe_magnitude_and_contact_duration_are_not_matched": true
+  },
+  "original_trial_structure": {
+    "robots": 2,
+    "training_seed_per_robot": 8,
+    "test_seed_per_robot": 8,
+    "two_execution_truths": true,
+    "two_probe_arms": true,
+    "total_new_independent_reset_seeds": 16,
+    "total_new_physx_truth_probe_worlds": 64,
+    "total_prior_calibration_truth_probe_worlds": 64,
+    "shards": "2 robot × 2 four-seed chunks; calibration per robot shared and frozen before its fresh test"
+  },
+  "measurements": [
+    "public end-t3 XYZ minus end-t1 XYZ",
+    "actual known-delivered native probe identity",
+    "empirical two-truth label and abstention, falsely confident labels",
+    "probe-specific calibration means/width and observed physical separation",
+    "native t4 restored commanded-target position error after physically applied correction",
+    "true delivery for hidden physics branch and scorer only",
+    "audit-only privileged getter never included in method input",
+    "all original seed/task/world source files, calibrated model hash, terminal logs, full denominator independent audit"
+  ],
+  "claims_veto": [
+    "NO optimization-selected probing action tested: comparison is prechosen fixed nonzero action versus fixed zero",
+    "NO fair equal total actuation norm/probe energy; physical step count only equal",
+    "NO actual network packet loss",
+    "NO physical collision/force/grasp safety",
+    "NO full achieved pose orientation correction, only commanded XYZ target",
+    "NO trained PPO/VLA policy transfer or episode task success",
+    "NO true model envelope certificate; empirical calibration may be invalid",
+    "NO 64 independent policies; correlated arms/truths by seed",
+    "NO source/threshold adjustment or seed exclusion after original outcomes"
+  ],
+  "acceptance": "Even if zero and nonzero perform equally, publish as genuine physical negative evidence. Reject any predeclared source/fault/probe/complete-denominator mismatch rather than excluding it."
+}
