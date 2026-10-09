@@ -1,0 +1,60 @@
+name: Honest source-backed 32-cluster statistical risk of true four-ACK PhysX 128
+on:
+  push:
+    branches: [research/isolated-query-factorial-128-20261009]
+    paths:
+      - 'research/review_original_factorial128_cluster_risk.py'
+      - 'tests/test_original_factorial128_cluster_risk.py'
+      - '.github/workflows/review-original-factorial128-cluster-risk.yml'
+  pull_request:
+    paths:
+      - 'research/review_original_factorial128_cluster_risk.py'
+      - 'tests/test_original_factorial128_cluster_risk.py'
+      - '.github/workflows/review-original-factorial128-cluster-risk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-sha-and-exact-independent-reset-risk:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ['3.11','3.13']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Audited real 1280-world source and adversarial clustered binomial tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile research/review_original_factorial128_cluster_risk.py
+          python -m unittest discover -s tests -p test_original_factorial128_cluster_risk.py -v
+          python -m research.review_original_factorial128_cluster_risk --output SOURCE_FIRST_128_CLUSTER_RISK.json
+          python - <<'PY'
+          import json
+          r=json.load(open('SOURCE_FIRST_128_CLUSTER_RISK.json'))
+          assert r['real_task_reset_independent_sample_units']==32
+          assert r['actual_native_PhysX_controller_worlds']==1280
+          A=r['pooled']['strategy']['fault_public_t3_fourhistory_or_t4_query']
+          B=r['pooled']['strategy']['fault_same_public_posterior_or_query']
+          C=r['pooled']['strategy']['fault_always_single_privileged_query']
+          assert [t['official_successes'] for t in (A,B,C)]==[104,104,104]
+          assert [t['true_target_reads'] for t in (A,B,C)]==[102,122,127]
+          assert A['accepted_events']==26 and A['accepted_clusters']==20
+          assert A['wrong_events']==0
+          assert A['exact_one_sided_95pct_upper_any_wrong_in_authorizing_reset_if_iid'] > .13
+          assert r['per_task']['pull_cube']['strategy']['fault_public_t3_fourhistory_or_t4_query']['accepted_clusters']==10
+          assert r['per_task']['stack_cube']['strategy']['fault_public_t3_fourhistory_or_t4_query']['accepted_clusters']==10
+          print('SOURCE-LOCKED CLUSTER-RISK HONEST: 32 resets, 128 correlated ACK truths, 0 wrong among 20 authorized clusters; NOT risk<10%')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 1280-native-physx-32cluster-statistical-audit-${{ matrix.os }}-${{ matrix.python }}
+          path: SOURCE_FIRST_128_CLUSTER_RISK.json
