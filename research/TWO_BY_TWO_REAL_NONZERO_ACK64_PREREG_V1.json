@@ -1,0 +1,75 @@
+{
+  "schema": "independent_two_by_two_nonzero_physical_ack_truth_frozen_ppo_v1",
+  "date_utc": "2026-10-09",
+  "outcome_state": "REGISTERED_BEFORE_IMPLEMENTATION_AND_BEFORE_ORIGINAL_PHYSX",
+  "scientific_hypothesis": "Four actual independent t2/t3 applied/held ACK truth patterns with a deliberately real nonzero second target-relative command may invalidate earlier public motion histories; preserve wrong confident identifications and compare exact matched PPO success + privileged controller-target reads, with no tuning.",
+  "unseen_task_seeds": {
+    "pull_cube": {
+      "start": 1340001,
+      "end": 1340032
+    },
+    "stack_cube": {
+      "start": 1350001,
+      "end": 1350032
+    }
+  },
+  "n_reset_states": 64,
+  "worlds_per_original_state": 9,
+  "planned_actual_native_physx_worlds": 576,
+  "physical_fault_protocol": {
+    "t2": "Policy-derived transformed native command physically APPLIED for seed%4 in (2,3), else HELD (target unchanged). Adapter ACK unknown.",
+    "t3": "Injected fixed and explicitly disclosed controller-native target delta normalized6=[0.40,0,0,0,0,0], physically APPLIED when seed%4 in (1,3), otherwise HELD. Command selection independent of private target/state, seed and policy outcome; adapter ACK unknown.",
+    "four_true_patterns_by_seed_modulo4": {
+      "0": "t2 HELD, t3 HELD",
+      "1": "t2 HELD, t3 APPLIED",
+      "2": "t2 APPLIED, t3 HELD",
+      "3": "t2 APPLIED, t3 APPLIED"
+    },
+    "t4": "ONE known-delivered neutral zero six-dimensional native delta dispatched in ALL faulted controller worlds after t3; cancels one source-PPO native action opportunity for all comparator controllers, and serves as common public achieved-XYZ response observation interval. Source unfaulted PPO continues normally.",
+    "t5": "First authorized resume step: public whole-history observer selects if empirical prior frozen position response epsilon plus fixed 0.002m gap isolate exactly one complete SE(3) history, else one counted private target read; fixed-timing comparator reads its target exactly here.",
+    "failure_exposure": "Every original state must reach t2, t3 AND neutral t4 with no selection; if not, mark failure and do not prune; audit applied command actually changes commanded target by >= 1e-4m and held remains unchanged to 1e-4m."
+  },
+  "control_methods": [
+    "source_no_fault",
+    "fault_oracle_private_target",
+    "fault_optimistic_unverified_ack",
+    "fault_strict_common_exact",
+    "fault_robust_two_history_without_query",
+    "fault_robust_then_single_privileged_query",
+    "fault_always_single_privileged_query",
+    "fault_assume_held_without_query",
+    "fault_public_t3_fourhistory_or_t4_query"
+  ],
+  "strong_baselines": [
+    "per-task original geometry selective PullCube or fixed-t5 StackCube",
+    "fixed-read-after-common-neutral-t5",
+    "always-assume-held-zero-read",
+    "optimistic-no-read",
+    "native controller read oracle"
+  ],
+  "frozen_sources": {
+    "precedent_mixed_native_physx_runner_git_blob": "36e672446407435e656cbf8aba6fa2de7c1e9d0e",
+    "prior_disjoint_full64_protocol_blob": "68443c6a0913f4b6a988e3a0cda74a650c86273f",
+    "empirical_response_classifier_blob": "064bb46831b61af73ad445bc836326837ec5468f",
+    "PPO_checkpoint_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+    "pull_PPO_sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+    "stack_PPO_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c",
+    "no_model_or_threshold_training": true,
+    "native_chart_panda_target_relative": true
+  },
+  "primary_outcomes": [
+    "original official paired PPO success versus task-aware, fixed-read, always-held",
+    "cost of private target memory reads and extra public samples and suppressed policy action",
+    "correct/wrong confidential selection of complete position+quaternion history",
+    "stratify each t2-t3 truth and each task, including failures",
+    "source-only action provenance and audit-only actual target difference for applied/held, with four executed truths before labeling experiment succeeded"
+  ],
+  "integrity_gates": [
+    "Require 8 episodes per original task shard including failures",
+    "Do not relabel t3 applied if dispatched controller sixD delta is zero or actual target stays static",
+    "Fail physical experiment gate if positive history selects audit-only wrong full-pose truth",
+    "Do not delete mismatched results or optimize ε on new cohorts",
+    "No claim of equal total information, safe contact, hardware VLA, actual transport packet loss, peer review or independent lab"
+  ],
+  "expected_result": "NONE; legitimate outcome includes loss of task success and unsafe confident histories; publish the null/negative exactly as observed."
+}
