@@ -69,17 +69,33 @@ def independent_eight(record,task,chunk):
             row["original_precommitted_physical_t3_execution_truth"]!=
             ("applied" if intended in (2,3) else "held")):
             raise ValueError("Physically executed ACK truth violates preoutcome balance")
+        # Actual original controller actions decide experiment exposure.
+        # An audit must never infer full 2x2 exposure from the intended seed
+        # parity alone: a genuine frozen PPO can refuse BEFORE t2 or t3.
         censor=row.get("pre_t3_reference_censored",{})
-        no_full_exposure=bool(censor)
+        reference_faults=row.get("faults",{}).get(A,[])
+        observed_steps=[f.get("step") for f in reference_faults]
+        if observed_steps not in ([],[2],[2,3]):
+            raise ValueError("Unexpected actual public ACK physical event prefix")
+        no_full_exposure=(observed_steps!=[2,3])
         if no_full_exposure:
-            if set(censor)!={B,C} or len(row.get("faults",{}).get(A,[]))>=2:
-                raise ValueError("Failed t3 pre-reference must explicitly censor BOTH matching arms")
-            if not all(v.get("reason")=="PUBLIC_ARM_NEVER_DISPATCHED_T3" and
-                       v.get("true_double_ACK_physics_not_exposed") is True
-                       for v in censor.values()):
-                raise ValueError("Fake censored comparison, missing physical source evidence")
+            if observed_steps==[2]:
+                if set(censor)!={B,C} or not all(
+                    v.get("reason")=="PUBLIC_ARM_NEVER_DISPATCHED_T3" and
+                    v.get("true_double_ACK_physics_not_exposed") is True
+                    for v in censor.values()):
+                    raise ValueError("After-t2 early exit must disclose both censored comparator branches")
+            elif observed_steps==[]:
+                if censor or row.get("refusals",{}).get(A,{}).get("reason") not in (
+                    "NATIVE_HISTORY_PREPARE_UNREPRESENTABLE",
+                    "ROBUST_BOUND_OR_REPRESENTABILITY_REJECTED"):
+                    raise ValueError("No t2 physics without an explicit original method refusal")
+                if any(row.get("faults",{}).get(n,[]) for n in (B,C)):
+                    raise ValueError("Other comparator executed faults that public reference did not")
             censored_count+=1
         else:
+            if censor:
+                raise ValueError("Claimed pre-t3 censor despite genuine complete source t2/t3")
             exposed+=1
         succ=row.get("success_once",{})
         reads=row.get("privileged_target_readback_decision_count",{})
@@ -101,6 +117,8 @@ def independent_eight(record,task,chunk):
             witnesses.append({"task":task,"seed":seed,"true_fault_pattern":intended,
                 "valid_original_two_faults_and_matched_prefix":False,
                 "pre_t3_reference_censored":True,
+                "physical_reference_fault_steps_observed":observed_steps,
+                "original_early_source_refusal":row.get("refusals",{}).get(A),
                 "unexposed_retained_as_original_not_deleted":True,
                 "official_task_success":{n:succ[n] for n in (A,B,C)},
                 "private_reads":{n:reads[n] for n in (A,B,C)},
