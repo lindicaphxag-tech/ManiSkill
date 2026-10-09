@@ -94,6 +94,14 @@ class TestNativeLatentRiskCoverage(unittest.TestCase):
               tasks=["pull_cube","stack_cube"],thresholds=[0.],
               risk_cap=.2,minimum_coverage=.2)
 
+    def test_numerically_stable_at_large_4096_reset_calibration(self):
+        for n in (1024,2048,4096):
+            hi=upper_cp(0,n,.003125)
+            lo=lower_cp(n//4,n,.003125)
+            self.assertTrue(0 < hi < .01,(n,hi))
+            self.assertTrue(.20 < lo < .25,(n,lo))
+        self.assertLess(upper_cp(0,4096,.003125),upper_cp(0,1024,.003125))
+
     def test_prospectively_required_accepted_count_calculation(self):
         n=required_zero_error_authorizations(risk_cap=.05,delta=.05,
                                               threshold_count=4,task_count=2)
