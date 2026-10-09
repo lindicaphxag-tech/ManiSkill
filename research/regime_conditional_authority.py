@@ -172,10 +172,10 @@ class RegimeConditionalAuthority:
 
     def choose_probe(self)->CandidatePlan:
         if not self.trusted:
-            return CandidatePlan(None,"READ_AUTHORITATIVE","UNMODELED_OR_UNTRUSTED_CONTRACT",0,
+            return CandidatePlan(None,"READ_AUTHORITATIVE",0.0,0,
                                  "Untrusted complete history, chart or separately trained observation model",self.histories,False)
         if len(self.histories)==1:
-            return CandidatePlan(None,"UNIQUE_HISTORY","INFINITY_SINGLETON",0,
+            return CandidatePlan(None,"UNIQUE_HISTORY",float("inf"),0,
                                  "No ambiguous execution history",self.histories,True)
         ranked=[]
         for probe in self.probes.values():
