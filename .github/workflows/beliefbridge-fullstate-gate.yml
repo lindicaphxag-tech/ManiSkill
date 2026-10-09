@@ -1,0 +1,24 @@
+name: BeliefBridge full-hidden-state research audit
+
+on:
+  pull_request:
+    paths:
+      - "research/audit_full_state_four_truth_submission.py"
+      - ".github/workflows/beliefbridge-fullstate-gate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-state-source-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile offline full-state checker
+        run: python -m py_compile research/audit_full_state_four_truth_submission.py
+      - name: Validate fail-closed artificial source rows (not new PhysX)
+        run: python research/audit_full_state_four_truth_submission.py --self-test
