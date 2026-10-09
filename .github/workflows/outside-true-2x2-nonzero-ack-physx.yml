@@ -1,0 +1,99 @@
+name: 'OUTSIDE investigator real 2x2 NONZERO second ACK native PhysX frozen PPO eight-seed challenge'
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: Published unchanged source PPO task
+        required: true
+        type: choice
+        default: stack_cube
+        options: [stack_cube, pull_cube]
+      first_seed:
+        description: First of eight genuinely UNUSED consecutive reset IDs in 1600000..9999992
+        required: true
+        type: number
+        default: 1600000
+  push:
+    branches: [main]
+    paths: [.github/workflows/outside-true-2x2-nonzero-ack-physx.yml]
+permissions:
+  contents: read
+jobs:
+  trusted_unmodified_original_source_and_seed_preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      TASK: ${{ inputs.task || 'stack_cube' }}
+      FIRST_SEED: ${{ inputs.first_seed || 1600000 }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: lindicaphxag-tech/ManiSkill
+          ref: d651df1b4d348b37b9fddda227a39e635da85f16
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze authors original exact native/registration/outsider entry and validate physical four-combination seeds
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = d651df1b4d348b37b9fddda227a39e635da85f16
+          test "$(git hash-object research/frozen_ppo_true_double_nonzero_ack_physx.py)" = 6188853f918bd338b289d771ebdd4d4c037e0a77
+          test "$(git hash-object research/TWO_BY_TWO_REAL_NONZERO_ACK64_PREREG_V1.json)" = 9209ecbfb8129e15de9ffc7441e8a196f53acaf4
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          test "$(git hash-object research/outside_true_two_by_two_nonzero_ack_physx.py)" = 67db4d1c2797aacd56bcf20c6e6283397bcb3824
+          python -m py_compile research/outside_true_two_by_two_nonzero_ack_physx.py research/frozen_ppo_true_double_nonzero_ack_physx.py
+          python - <<'PY'
+          import os,sys
+          sys.path.insert(0,"research")
+          from outside_true_two_by_two_nonzero_ack_physx import select
+          ids=select(os.environ["TASK"],int(os.environ["FIRST_SEED"]))
+          assert len(ids)==8 and len({(i%4) for i in ids})==4
+          print("OUTSIDE_SOURCE_VERIFIED_SELECT_EIGHT_PRE_PHYSICS",ids)
+          PY
+  genuine_physx_eight_original_new_truths:
+    needs: trusted_unmodified_original_source_and_seed_preflight
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TASK: ${{ inputs.task }}
+      FIRST_SEED: ${{ inputs.first_seed }}
+      PYTHONUNBUFFERED: '1'
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: lindicaphxag-tech/ManiSkill
+          ref: d651df1b4d348b37b9fddda227a39e635da85f16
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install actual original CPU PhysX and official frozen PPO dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Record true independent operator identity, unchanged source and package versions before any native PhysX
+        run: |
+          mkdir -p external_four_truth
+          git rev-parse HEAD > external_four_truth/EXACT_AUTHOR_PHYSICS_SOURCE_COMMIT.txt
+          python -m pip freeze --all > external_four_truth/ACTUAL_PACKAGE_FREEZE.txt
+          printf "operator=%s original_fork=%s task=%s first_seed=%s source_pinned=true\n" "$GITHUB_ACTOR" "$GITHUB_REPOSITORY" "$TASK" "$FIRST_SEED" > external_four_truth/BEFORE_ORIGINAL_OPERATOR.txt
+      - name: Execute 8 new true 2x2 ACK applied/held original PPO resets with 72 physical native comparator worlds
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/outside_true_two_by_two_nonzero_ack_physx.py --task "$TASK" --first-seed "$FIRST_SEED" --output external_four_truth 2>&1 | tee external_four_truth/COMPLETE_ORIGINAL_PHYSICS_STDOUT.log
+          test -s external_four_truth/OUTSIDE_REAL_NATIVE_FOUR_TRUTH_EIGHT_AUDIT.json
+      - name: Preserve every original positive/negative physical world and operator provenance with SHA256
+        if: always()
+        run: |
+          (cd external_four_truth && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS) || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: truly-outside-operator-original-72-native-physx-four-truth-ack-full-source
+          path: external_four_truth/
+          retention-days: 90
