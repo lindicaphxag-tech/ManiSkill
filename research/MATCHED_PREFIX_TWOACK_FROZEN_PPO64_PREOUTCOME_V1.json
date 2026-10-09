@@ -1,0 +1,47 @@
+{
+  "schema": "prospective_matched_prefix_native_two_ACK_full_truth_v1",
+  "date": "2026-10-09",
+  "preregistration_status": "BEFORE_1380001_1390001_SIMULATION",
+  "research_question": "Causal information-only ablation: can public full target history identification replace the target readback with identical predecision physical command traces?",
+  "contamination_disclosure": "Prior actual 2x2 seeds 1280001-1290032 were seen; found t3 applied actions differ for new vs fixed; this study compares entirely new resets.",
+  "seeds": {
+    "pull_cube": {
+      "start": 1380001,
+      "end": 1380032
+    },
+    "stack_cube": {
+      "start": 1390001,
+      "end": 1390032
+    }
+  },
+  "total_resets": 64,
+  "physical_worlds": 576,
+  "ppo_models": "same two frozen published PPO checkpoints and original model SHA values",
+  "true_physical_ACK_patterns": [
+    "held/held",
+    "applied/held",
+    "held/applied",
+    "applied/applied"
+  ],
+  "truth_schedule": "(seed-1)%4, 8 original reset states per truth pattern per task, adapter does not observe truth",
+  "common_physical_prefix": "Source no-fault initial matching. At t2 the public vs fixed native dispatched six axes must match; at t3 the fixed comparator dispatches byte-identical public-native arm command, without consulting private target or invalid memory. At t4 both receive same known delivered neutral physical probe. Immediately before t5 their achieved SE(3) and commanded target must pass strict audit-only parity check. No physics result is valid without this.",
+  "method": "At t5 public unique whole 6D history if response envelope admits it, otherwise exactly 1 counted controller target read; fixed comparator always makes 1 counted target read. Same frozen native compiler and policy, no model retraining or response refit.",
+  "baselines": "All previous seven other actual native controls retained; only prefix of fixed-reader treatment intentionally altered for causal control.",
+  "primary_endpoints": [
+    "full 64 original task success paired new vs fixed",
+    "target-private decision read count",
+    "public confident history and wrong history audit",
+    "actual t2/t3 executed arm 6D parity",
+    "predecision public position and target pose identity",
+    "per truth task success",
+    "all failures retained"
+  ],
+  "no_conclusions": [
+    "no zero-error guarantee",
+    "no general population noninferiority",
+    "no active-probe baseline equivalence",
+    "no outside lab hardware or real VLA"
+  ],
+  "if_prefix_fails": "Reject causal claim and preserve all failure records; no post-result retune",
+  "manifest": "Pin protocol and source SHA blobs before new physical rollouts; source-only gate then 8 genuine native shards then independent full 64 audit"
+}
