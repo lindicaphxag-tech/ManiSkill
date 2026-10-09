@@ -169,7 +169,7 @@ def main():
     parser.add_argument("--chunk",choices=(0,1),type=int,required=True)
     args=parser.parse_args()
     original=Path(PROTO).read_bytes()
-    if hashlib.sha1(b"blob "+str(len(original)).encode()+b"\0"+original).hexdigest()!="REPLACE_PROTOCOL_BLOB":
+    if hashlib.sha1(b"blob "+str(len(original)).encode()+b"\0"+original).hexdigest()!="4e10a144cdf5b2a3b5186629e93e1091d879cd64":
         raise RuntimeError("Before-outcome robot/seed/fault protocol unexpectedly changed")
     seeds=list(range(SEED_FIRST[args.robot]+4*args.chunk,SEED_FIRST[args.robot]+4*args.chunk+4))
     rows=[one_seed(args.robot,seed) for seed in seeds]
