@@ -1,0 +1,48 @@
+name: "Preserve FAILED strict same-reset 2x2 audit: original 1152 native PhysX parity diagnostic"
+on:
+  push:
+    branches: [research/factorial-initial-parity-falsifier-20261009]
+    paths:
+      - research/audit_failed_initial_parity_original128.py
+      - .github/workflows/review-failed-factorial-initial-parity-original128.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  all-original-physics-source-sha-diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 37930607707
+          repository: lindicaphxag-tech/ManiSkill
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pattern: "factorial-original-*"
+          merge-multiple: true
+          path: /tmp/factorial_original128
+      - name: Diagnose all original 16 native source-shard initial hashes without rerunning physics
+        run: |
+          set -euo pipefail
+          python -m py_compile research/audit_failed_initial_parity_original128.py
+          python -m research.audit_failed_initial_parity_original128 \
+            --source-dir /tmp/factorial_original128 \
+            --out /tmp/ORIGINAL_128_NATIVE_PHYSX_FAILED_INITIAL_SHA_PARITY_DIAGNOSTIC.json
+          python - <<'PY'
+          import json
+          x=json.load(open('/tmp/ORIGINAL_128_NATIVE_PHYSX_FAILED_INITIAL_SHA_PARITY_DIAGNOSTIC.json'))
+          assert x['all_128_original_true_PhysX_cells']==128
+          assert x['FAIL_CLOSED_original_all_population_audit'] is True
+          assert x['not_valid_as_exact_same_initial_state_causal_experiment'] is True
+          assert x['numeric_tolerance_parity_CANNOT_BE_DETERMINED_from_SHA_alone'] is True
+          assert x['by_task']['stack_cube']['four_truth_nonidentical_initial_SHA_clusters']>=1
+          print("CONFIRMED: PHYSICS RAN, BUT STRICT PAIRING FAILS; CANNOT CLAIM EQUAL INITIAL PHYSICS")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: original128_physx_1152world_FAILED_strict_initial-parity_investigation
+          path: /tmp/ORIGINAL_128_NATIVE_PHYSX_FAILED_INITIAL_SHA_PARITY_DIAGNOSTIC.json
