@@ -1,0 +1,65 @@
+name: Publish two genuinely source-derived reviewer falsification vector SVGs
+on:
+  push:
+    branches: [evidence/shared-compiler-causal-original64-20261009]
+    paths:
+      - research/figures/render_reviewer_falsifiers.py
+      - .github/workflows/publish-native-negative-source-reviewer-vectors.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  verified_original_physx_causal_figures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: {path: main_source}
+      - uses: actions/checkout@v4
+        with:
+          ref: evidence/genuine-so3-public-16-pilot-20261009
+          path: actual_so3_originals
+      - uses: actions/checkout@v4
+        with:
+          ref: audit/forensic-factorial-reset-identity-20261009
+          path: original_failed_factorial
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Minimal pinned scientific vector renderer
+        run: python -m pip install 'numpy>=1.26,<3' 'matplotlib>=3.8,<4'
+      - name: Compute original physical 16-state SO3 matrix and 32-state factorial false-pairing diagram
+        working-directory: main_source
+        run: |
+          set -euo pipefail
+          python -m research.figures.render_reviewer_falsifiers \
+            --so3-root ../actual_so3_originals \
+            --factorial-root ../original_failed_factorial
+          python - <<'PY'
+          import json, xml.etree.ElementTree as ET
+          from pathlib import Path
+          root=Path("research/figures/generated")
+          manifest=json.loads((root/"SOURCE_AUTHENTICATED_NEGATIVE_FIGURES_SHA256.json").read_text())
+          assert len(manifest["vector_images_sha256"])==2
+          for name in manifest["vector_images_sha256"]:
+              source=root/name
+              assert ET.parse(source).getroot().tag.endswith("svg")
+              assert source.stat().st_size>1000
+              print("SOURCE_AUTHENTICATED_PAPER_EDITABLE_VECTOR",source)
+          PY
+      - name: Commit two original physics data-derived professional source-lock vector illustrations
+        working-directory: main_source
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/figures/generated/figure4_actual_public_SO3_negative.svg
+          git add research/figures/generated/figure5_initial_source_identity_failure.svg
+          git add research/figures/generated/SOURCE_AUTHENTICATED_NEGATIVE_FIGURES_SHA256.json
+          git commit -m "Figures: genuine physical SO3 negative and invalid same-seed 1152-world causal pairing"
+          git push origin HEAD:evidence/shared-compiler-causal-original64-20261009
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: author_owned_original_160_and_1152_PhysX_scientific_vector_figures
+          path: main_source/research/figures/generated/
+          retention-days: 90
