@@ -100,6 +100,24 @@ class RecedingHorizonVLAGateway:
         self.pos_budget=float(max_pos_error_m);self.rot_budget=float(max_rot_error_rad)
         if not all(np.isfinite(v) for v in self.low+self.high+self.rot_scale):
             raise ContractViolation("Invalid controller translation/rotation chart")
+        if not all(np.asarray(self.high)>np.asarray(self.low)) or any(abs(x)<=1e-12 for x in self.rot_scale):
+            raise ContractViolation("Degenerate native controller action normalization")
+        # The certificate computes native actions with THIS chart, while
+        # UncertainDeliveryBelief predicts dispatch using its OWN actual
+        # mapping. These must be bitwise-scale compatible; otherwise a
+        # seemingly certified command may act through a different physical
+        # controller (and invalidate the promised setpoint bound).
+        mapping=getattr(belief,"mapping",None)
+        try:
+            actual_low=np.broadcast_to(np.asarray(mapping.low,dtype=float),(3,))
+            actual_high=np.broadcast_to(np.asarray(mapping.high,dtype=float),(3,))
+            actual_rot=np.broadcast_to(np.asarray(mapping.rot_scale,dtype=float),(3,))
+        except (AttributeError,TypeError,ValueError) as exc:
+            raise ContractViolation("Controller belief lacks verifiable native action chart") from exc
+        if (not np.allclose(actual_low,self.low,rtol=0,atol=1e-12)
+                or not np.allclose(actual_high,self.high,rtol=0,atol=1e-12)
+                or not np.allclose(actual_rot,self.rot_scale,rtol=0,atol=1e-12)):
+            raise ContractViolation("Native controller action chart differs from belief propagation chart")
         if not (0<self.pos_budget<=.5 and 0<self.rot_budget<=np.pi):
             raise ContractViolation("Invalid research tolerance budgets")
         self.last_episode=None;self.last_step=-1
