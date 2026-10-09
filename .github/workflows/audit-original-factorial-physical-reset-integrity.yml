@@ -1,0 +1,98 @@
+name: Audit original SAME-SEED 128 physical truth cells WITHOUT claiming false matching
+on:
+  push:
+    branches: [audit/factorial-real-reset-mismatch-itt-20261009]
+    paths:
+      - research/audit_original_factorial_reset_hash_mismatches.py
+      - .github/workflows/audit-original-factorial-physical-reset-integrity.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  forensic-rederive-all-original-physical-cells:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify original frozen physics and model were NEVER changed
+        run: |
+          set -euo pipefail
+          python -m py_compile research/audit_original_factorial_reset_hash_mismatches.py
+          python - <<'PY'
+          from research.run_same_reset_ack_factorial import assert_preoutcome
+          assert_preoutcome()
+          print("UNALTERED_FROZEN_PHYSICS_AND_PRESPECIFIED_TASK_SEEDS")
+          PY
+      - name: Retrieve ACTUAL 16 unmodified original native 1152-world PhysX shard artifacts
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 37930607707
+          github-token: ${{ github.token }}
+          pattern: original-factorial-*
+          merge-multiple: true
+          path: /tmp/authentic_original_factorial
+      - name: Independently verify all 128 genuine original outcomes and pre-fault observation hash mismatch
+        run: |
+          set -euo pipefail
+          python -m research.audit_original_factorial_reset_hash_mismatches \
+            --source-dir /tmp/authentic_original_factorial \
+            --output /tmp/authentic_reset_hash_forensics.json
+          test -s /tmp/authentic_reset_hash_forensics.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("/tmp/authentic_reset_hash_forensics.json").read_text())
+          assert r["all_original_truth_cells_including_bad_matches"]==128
+          assert r["all_genuine_native_physx_worlds_not_rerun"]==1152
+          assert r["original_complete_physical_shards"]==16
+          assert r["initial_observation_hash_mismatched_clusters"]>0
+          assert r["exact_input_observation_hash_all_4_conditions"] is False
+          print("ORIGINAL_FAILED_MATCHING_GATE_HONESTLY_PRESERVED")
+          PY
+      - name: Source SHA-archive original 32 shards and scientific false-match forensics permanently
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import shutil,hashlib
+          src=Path("/tmp/authentic_original_factorial")
+          dst=Path("research/frozen_policy_transfer/evidence/original_same_seed_factorial_mismatched_reset128")
+          dst.mkdir(parents=True,exist_ok=True)
+          expected={f"factorial_{task}_chunk{k}_truth{truth}_{kind}.json"
+                    for task in ("pull_cube","stack_cube") for k in range(2)
+                    for truth in range(4) for kind in ("original8","audit")}
+          found={p.name for p in src.glob("factorial_*.json")}
+          if found!=expected: raise RuntimeError("Original 32 JSON files missing or supplemented")
+          for name in sorted(expected): shutil.copyfile(src/name,dst/name)
+          shutil.copyfile("/tmp/authentic_reset_hash_forensics.json",dst/"original_128_real_physx_reset_forensics.json")
+          (dst/"README.md").write_text(
+              "# Genuine original 1,152 native PhysX worlds: 128 source cells but incomplete physical reset matching\n\n"
+              "Original CI: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37930607707\n\n"
+              "All sixteen genuine physical shard jobs passed; independent complete audit FAILED because at least one StackCube source seed had different exact initial policy-observation SHA256 across its four actual physical ACK execution truths. "
+              "The original failure has not been relabelled success. The separate source-only audit rederives every original trial and its method failures, gives both matched-hash and mismatched-hash cohort summaries, and preserves all 128 originally planned truth cells. "
+              "The original archive has only SHA digests, not raw before-fault pose vectors, so the exact magnitude/cause of mismatch cannot be recovered from those digests. "
+              "Subgroup results are posthoc/exploratory and DO NOT establish a valid full factorial treatment effect. "
+              "Same seed is not a verified identical reset, and matching policy-observation hashes alone would not certify identical hidden native simulator states. "
+              "All source/controller/policy/fault truths remain frozen; NO simulator rerun. This is author-operated simulation, not third-party independent reproduction.\n"
+          )
+          files=sorted(p for p in dst.iterdir() if p.is_file())
+          with (dst/"ORIGINAL_SHA256SUMS").open("w") as out:
+              for f in files:
+                  out.write(hashlib.sha256(f.read_bytes()).hexdigest()+"  "+f.name+"\n")
+          print("ORIGINAL_ALL_SOURCE_WITH_NEGATIVES_PRESERVED",len(expected))
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/frozen_policy_transfer/evidence/original_same_seed_factorial_mismatched_reset128
+          git commit -m "Archive real 128-case physically mismatched initial reset counterexample"
+          git push origin HEAD:audit/factorial-real-reset-mismatch-itt-20261009
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original_1152_physx_factorial_failed_reset_matching_falsifier
+          path: research/frozen_policy_transfer/evidence/original_same_seed_factorial_mismatched_reset128/
+          retention-days: 90
