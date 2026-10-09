@@ -1,0 +1,139 @@
+name: Preserve source-identical original new32 full-target survivor PhysX evidence
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/archive-survivor-fullpose-new32-original.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  independently-recompute-complete-original-physx-and-archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require one specific entirely completed original 256-real-PhysX-source run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37914343195 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37914343195 --jq .head_sha)" = "e67443e708db863cd46e36b52a19736ca32e54e8"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37914343195/jobs?per_page=100 --jq '[.jobs[] | select(.name | startswith("eight-separate-four-seed-genuine-frozen-PPO-physics")) | select(.conclusion == "success")] | length')" -eq 8
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37914343195/jobs?per_page=100 --jq '[.jobs[] | select(.name == "independent-all32-256-real-native-controller-audit") | select(.conclusion == "success")] | length')" -eq 1
+          test "$(git hash-object research/SURVIVOR_CONDITIONED_SO3_NEW32_PRECOMMIT_V1.json)" = "a51b01d66e2211058854015a31138f6a838eec71"
+          test "$(git hash-object research/frozen_ppo_survivor_full_pose_new32.py)" = "52addb52d627ea600f847ecffa38c0fad9df97ad"
+          test "$(git hash-object research/survivor_full_pose_public_gate.py)" = "c19ace7a61ff2ebc20f101151c5e9f01f61c84cd"
+
+      - name: Download untouched full 32 originals from exact successful source-run artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/fullpose_original_native32
+          gh run download 37914343195 --repo "$GITHUB_REPOSITORY" \
+            --name complete-survivor-fullpose-original-256-physx-worlds \
+            --dir /tmp/fullpose_original_native32
+          for task in pull_cube stack_cube; do
+            for c in 0 1 2 3; do
+              test "$(find /tmp/fullpose_original_native32 -name "survivor_fullpose_${task}_chunk${c}_original4.json" -type f | wc -l)" -eq 1
+              test "$(find /tmp/fullpose_original_native32 -name "survivor_fullpose_${task}_chunk${c}_audit.json" -type f | wc -l)" -eq 1
+            done
+          done
+          test "$(find /tmp/fullpose_original_native32 -name full_original_survivor_fullpose_new32_audit.json -type f | wc -l)" -eq 1
+
+      - name: Completely recompute original 32-state all-controls, hidden-full-pose errors and paired results
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$PWD:$PWD/research" python -m research.audit_survivor_fullpose_new32 \
+            --source-dir /tmp/fullpose_original_native32 \
+            --output /tmp/recomputed_survivor_original32.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.load(open('/tmp/recomputed_survivor_original32.json'))
+          src=json.load(open('/tmp/fullpose_original_native32/full_original_survivor_fullpose_new32_audit.json'))
+          assert d==src, 'Raw source program originals disagree with aggregate source audit'
+          assert d['genuine_source_physx_reset_states']==32
+          assert d['genuine_physics_controller_worlds']==256
+          assert d['complete_double_fault_gate_passes'] is True
+          assert d['double_fault_exposure_population']==32
+          assert d['public_confident_authorizations']==10
+          assert d['model_confident_wrong']==0
+          assert d['paired_discordances']=={
+            'new_only':0,'task_gate_only':0,'both':28,'neither':4}
+          t=d['outcomes_total']
+          assert t['new_public']=={'success':28,'privileged_reads':22}
+          assert t['task_preselected']=={'success':28,'privileged_reads':27}
+          assert t['fixed_t4']=={'success':28,'privileged_reads':32}
+          print('REAL_FROZEN_PPO_SOURCE_SURVIVOR_FULLPOSE32_AUDIT_VERIFIED',
+            {'n':32,'matched_success':28,'public_only_unique':10,
+             'wrong_confident':0,'selective_reads':22,'task_gate_reads':27,
+             'mandatory_reads':32})
+          PY
+
+      - name: Archive unchanged original 17 source JSON bytes, exact source links and SHA-256 manifest
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/survivor_fullpose_original32_860001_870016
+          mkdir -p "$dest"
+          cp /tmp/fullpose_original_native32/*.json "$dest/"
+          (cd "$dest" && sha256sum ./*.json > SHA256SUMS)
+          cat > "$dest/README.md" <<'EOF'
+          # Original full-SE3 survived controller memory under TWO unknown ACKs
+          Source original true official ManiSkill PhysX: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37914343195
+          Actual source run Git SHA e67443e708db863cd46e36b52a19736ca32e54e8
+          Original prospective protocol git commit 1f68f3d788525e555b9170437161554a20138cde
+          Source frozen two external released PPOs, PullCube-v1 and StackCube-v1, 32 NEW
+          registered original reset seeds (860001..860016 and 870001..870016).
+          Native PD target command updates and TWO physical held native arm commands
+          at steps 2 and 3; both ACKs unknown to policy adapter. Actual seven
+          comparator arms and the NEW public full-target history arm were independently
+          simulated, 8 controller worlds per state, 256 actual PhysX worlds.
+          8 original four-seed PhysX JSON files, their 8 original source audit JSONs,
+          and the original complete independent audit JSON have been COPIED BYTE-UNCHANGED.
+          All 17 files protected by the SHA256SUMS manifest.
+
+          THE AUDITED RESULT:
+          - Public full-target history unique from public achieved XYZ in 10/32 states,
+            with zero observed wrong confident full-pose labels.
+          - NEW fullpose survivor OR true target read: 28/32 official task successes,
+            22 actual privileged controller-target decision reads.
+          - Strong TASK-IDENTITY prechosen selective PullCube / fixed StackCube genuine
+            physical comparator: 28/32 task successes, 27 privileged reads.
+          - Fixed t4 actual target read: 28/32 successes, 32 reads.
+          - EXACT paired task outcomes against task-aware method: both 28 successes,
+            both 4 failures, 0 independent method-only wins.
+          - 32/32 NEW public-controller worlds have both actual physical t2/t3 faults.
+
+          Original first partial-source run 37913956732 had a downstream, AUDIT-ONLY
+          Python NameError. Its single-variable repair is disclosed in
+          research/SURVIVOR_FULLPOSE_FIRST_RUN_SOURCE_AMENDMENT.md;
+          the successful full original run above uses the same original
+          preregistration, thresholds, full source population and frozen PPOs.
+          An entirely different cohort remains necessary for independent confirmation.
+
+          IMPORTANT NONCLAIMS: Empirical public motion dynamics were not certified
+          against arbitrary contact, gain shift, noise or different robots. This is NOT
+          a novel mathematical SO(3) theorem, universal robot/force/collision safety,
+          trained VLA policy result, network packet loss, official ManiSkill upstream
+          acceptance, peer-reviewed publication or independently executed outside lab.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dest"
+          if git diff --cached --quiet; then echo 'Already permanently archived'; exit 0; fi
+          git commit -m 'evidence: preserve full 32 new fullpose survivor source PPO real PhysX task records'
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then exit 0; fi
+          done
+          echo 'Concurrent main updates prevented archive; do not claim it succeeded'
+          exit 1
