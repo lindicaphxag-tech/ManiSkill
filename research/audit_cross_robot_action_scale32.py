@@ -211,7 +211,7 @@ def audit(folder):
       "not_ppo_task_success_not_real_robot":True,
       "not_external_independent_lab":True,
       "aggregate_scores":global_counts,"groups":groups,
-      "limitations":"No native PPO task success, no end-effector achieved pose safety, no SO3 restoration, no unseen robot type outside Panda/xArm6, no actual network ACK packet loss"}
+      "limitations":"No native PPO task success, no end-effector achieved pose safety, no SO3 restoration, no unseen robot type outside Panda/xArm6, no actual network ACK packet loss"
     }
 
 
