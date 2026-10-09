@@ -96,6 +96,9 @@ A defensible stronger paper result must pass this actual full-population test, i
 
 ## 6. Provenance and reproduction
 
+- [One-click *outsider-run* canonical 10-arm frozen PPO eight-fresh-seed physical replication workflow](https://github.com/lindicaphxag-tech/ManiSkill/actions/workflows/outside-canonical-readback-physx.yml). An independent investigator should fork, choose StackCube or PullCube and eight unused seeds beginning at an integer >=1000001, then run and retain the unmodified ZIP. The source-only integrity self-test passed on the author's fork in [GitHub Actions #37915781007](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37915781007); the **physical run was intentionally skipped during this push validation**, so this is NOT independent replication or new task-efficacy data.
+- [Reviewer's Python-standard-library standalone original-source/outsider audit](https://github.com/lindicaphxag-tech/ManiSkill/blob/main/research/outside_canonical_readback_replication.py), with original audit manifest fingerprints and full read/query ledger. The script checks all eight original worlds and strict StackCube native-step equivalence.
+
 - [Canonical corrected fixed-query 64-state original source and static-evidence archive](https://github.com/lindicaphxag-tech/ManiSkill/tree/main/research/frozen_policy_transfer/evidence/canonical_post_read_original64_970001_980032)
 - [Canonical 10/10 real physical simulation experiment + independent complete-source audit](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37914020907)
 - [Independent archival re-audit, nine pinned ZIP digests, five adversarial evidence mutations](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37915107133)
