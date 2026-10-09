@@ -28,8 +28,8 @@ def test_preregistration_is_fixed_full_factorial():
     for c in range(2):
         a.update(select("pull_cube", c))
         b.update(select("stack_cube", c))
-    assert a == set(range(2110001, 1310017))
-    assert b == set(range(2120001, 1320017))
+    assert a == set(range(2110001, 2110017))
+    assert b == set(range(2120001, 2120017))
     assert a.isdisjoint(b)
     assert len({(s, t) for s in a | b for t in range(4)}) == 128
 
