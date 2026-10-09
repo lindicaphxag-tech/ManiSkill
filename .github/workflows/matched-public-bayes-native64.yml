@@ -1,0 +1,113 @@
+name: "Prospective real 64 matched-prefix 10-arm PhysX same-public Bayesian heuristic falsifier"
+on:
+  push:
+    branches: [research/matched-public-bayes-native16-20261009]
+    paths:
+      - research/MATCHED_PUBLIC_BAYES_NEW64_PREOUTCOME_V1.json
+      - research/run_matched_public_bayes_new64.py
+      - research/audit_matched_public_bayes_new64.py
+      - .github/workflows/matched-public-bayes-native64.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  before_outcome_full64_source_and_protocol_freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Original immutable 64-state prereg, native PPO source, untouched likelihood heuristics and true four-truth new seeds
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/MATCHED_PUBLIC_BAYES_NEW64_PREOUTCOME_V1.json)" = 9c758954f28cd0f3a99480f43828ab2a024c805a
+          test "$(git hash-object research/frozen_ppo_matched_public_bayes_physx.py)" = 6e039af56006827fc2fe063b541cfa3dcd1ddc89
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          test "$(git hash-object research/run_matched_public_bayes_new64.py)" = 06c27fde75e37c0ab79fd7a2ec374c5249a76447
+          test "$(git hash-object research/audit_matched_public_bayes_new64.py)" = 2dbd461fa6db985d0f536080548e295151154936
+          python -m py_compile research/frozen_ppo_matched_public_bayes_physx.py research/run_matched_public_bayes_new64.py research/audit_matched_public_bayes_new64.py
+          python - <<'PY'
+          from research.run_matched_public_bayes_new64 import accepted,pin_sources
+          pin_sources()
+          for task,prior in (("pull_cube",1700001),("stack_cube",1710001)):
+              seeds=[v for ch in range(4) for v in accepted(task,ch)]
+              assert len(seeds)==32 and set(seeds).isdisjoint(range(prior,prior+8))
+              assert len({(v-1)%4 for v in seeds})==4
+              assert all(sum((v-1)%4==m for v in seeds)==8 for m in range(4))
+          print("PASS: true NEW64, previous posterior-heuristic frozen, no prior-pilot seed")
+          PY
+  actual_ten_comparator_controller_worlds_each_of_64_unseen_reset_states:
+    needs: before_outcome_full64_source_and_protocol_freeze
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+      PYTHONUNBUFFERED: '1'
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install same native CPU PhysX and released third-party frozen PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Capture physical source commit and original environment before any new PPO rollouts
+        run: |
+          git rev-parse HEAD > original_physx_source_commit.txt
+          python -m pip freeze --all > original_physx_dependencies.txt
+      - name: Step 80 actual independent native controller worlds and separately audit original outcomes
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_matched_public_bayes_new64.py --task "$ABI_TASK" --chunk "$CHUNK" 2>&1 | tee original_physx_terminal.log
+          test -s "bayes_same_public_${ABI_TASK}_chunk${CHUNK}_original8.json"
+          test -s "bayes_same_public_${ABI_TASK}_chunk${CHUNK}_audit.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-new64-matched-public-${{ matrix.task }}-chunk${{ matrix.chunk }}
+          path: |
+            bayes_same_public_*_original8.json
+            bayes_same_public_*_audit.json
+            original_physx_terminal.log
+            original_physx_source_commit.txt
+            original_physx_dependencies.txt
+          retention-days: 90
+  all_64_unseen_source_complete_independent_audit:
+    needs: actual_ten_comparator_controller_worlds_each_of_64_unseen_reset_states
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-new64-matched-public-*
+          merge-multiple: true
+          path: /tmp/actual_matched_public_original64
+      - name: Independently score every original PhysX failure and actual paired/latent outcome
+        run: |
+          set -euo pipefail
+          python -m research.audit_matched_public_bayes_new64 --source-dir /tmp/actual_matched_public_original64 --output /tmp/complete_first_audit.json
+          test -s /tmp/complete_first_audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: first-complete-new64-640-real-physx-full-original-audit
+          path: |
+            /tmp/actual_matched_public_original64/*.json
+            /tmp/complete_first_audit.json
+          retention-days: 90
