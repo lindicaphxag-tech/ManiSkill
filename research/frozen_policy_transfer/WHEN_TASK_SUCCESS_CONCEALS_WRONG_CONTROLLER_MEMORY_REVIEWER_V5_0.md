@@ -226,3 +226,18 @@ The current research earns credit for source-frozen fault-injection experimental
 7. A venue-compliant anonymous eight-page main paper with source-derived figures and scholarly citations, whose central claims are actually supported before submission.
 
 **Current publication ceiling:** a carefully falsified, unusually source-auditable study of *observability versus authority under unknown command execution* in frozen simulated manipulation policies. Future method breakthroughs may lift it toward an outstanding main paper, but cannot be asserted prospectively. This manuscript is a research draft, not accepted, published or externally replicated.
+
+
+### Source-verified reviewer figures and current scientific status
+
+The following **actual source-derived, editable vector SVGs** were generated automatically from original author-executed PhysX data; the underlying original task/source SHA256s are recorded in the figure manifest:
+
+- [Figure 2a — same predecision source and downstream compiler, 53/64 tasks with 48 versus 64 private target reads](https://github.com/lindicaphxag-tech/ManiSkill/blob/evidence/shared-compiler-causal-original64-20261009/research/figures/generated/figure2a_matched_compiler_read_budget.svg).
+- [Figure 2b — actual four ACK-execution truth patterns and task-specific history admission](https://github.com/lindicaphxag-tech/ManiSkill/blob/evidence/shared-compiler-causal-original64-20261009/research/figures/generated/figure2b_true_execution_strata.svg).
+- [Figure 3 — exact negative of deterministic same-XYZ 0.65 reweighting under original physical task/read outcomes](https://github.com/lindicaphxag-tech/ManiSkill/blob/evidence/shared-compiler-causal-original64-20261009/research/figures/generated/figure3_same_residual_gate_negative.svg).
+- [Figure 4 — actual prospective quaternion-vs-XYZ source-truth argmin diagnostic (SO3 7/16, XYZ 13/16)](https://github.com/lindicaphxag-tech/ManiSkill/blob/evidence/shared-compiler-causal-original64-20261009/research/figures/generated/figure4_actual_public_SO3_negative.svg).
+- [Figure 5 — actual 1,152-world full-factorial audit FAIL, seven nonmatching StackCube nominal source-state seeds](https://github.com/lindicaphxag-tech/ManiSkill/blob/evidence/shared-compiler-causal-original64-20261009/research/figures/generated/figure5_initial_source_identity_failure.svg).
+
+[Original source SHA-to-vector SHA manifest for Figures 4 and 5](https://github.com/lindicaphxag-tech/ManiSkill/blob/evidence/shared-compiler-causal-original64-20261009/research/figures/generated/SOURCE_AUTHENTICATED_NEGATIVE_FIGURES_SHA256.json), [reproducible source-only Figure 4/5 vector renderer CI](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37933361508).
+
+**Writing integrity note:** This v5.0 source-complete working manuscript deliberately includes detailed reviewer-source appendices and is **not yet constrained to the final eight-page venue format**. Before a real double-blind review submission, choose one primary causal source cohort, cite the stronger tuned same-XYZ comparator in main, show at least one actual source falsifier and failure denominator in main, and move the remaining data tables/links to a venue-compliant anonymized appendix. There is not yet a verified outstanding main-track result.
