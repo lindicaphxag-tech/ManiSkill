@@ -70,7 +70,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: original-query-time-${dollar}{{ matrix.task }}-chunk${dollar}{{ matrix.chunk }}
+          name: original-query-time-${{ matrix.task }}-chunk${{ matrix.chunk }}
           path: |
             query_time_*.json
             original_query_time_physx.log
