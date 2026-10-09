@@ -219,6 +219,11 @@ class RecedingHorizonVLAGateway:
         self._flush_policy_queue()
 
     def reset_episode(self,target,*,evidence:str):
+        # An ACK can arrive after a software episode transition. Clearing
+        # its ticket here would silently discard uncertainty about a command
+        # which the physical controller may still execute.
+        if self.pending is not None or self.belief.pending is not None:
+            raise ContractViolation("Cannot reset episode with pending native action acknowledgement")
         if evidence!="authoritative_controller_reset" or not isinstance(target,self.pose_type):
             raise ContractViolation("Episode reset requires authoritative target initialization")
         self.belief.reset(target)
