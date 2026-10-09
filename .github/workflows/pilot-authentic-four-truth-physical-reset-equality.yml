@@ -1,0 +1,49 @@
+name: Native PhysX four-truth seed physical reset equality PILOT (NO task outcomes)
+on:
+  push:
+    branches: [audit/factorial-real-reset-mismatch-itt-20261009]
+    paths:
+      - research/pilot_actual_physx_reset_identical_four_conditions.py
+      - .github/workflows/pilot-authentic-four-truth-physical-reset-equality.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-real-native-controller-reset-identity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [stack_cube, pull_cube]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install actual CPU PhysX and native ManiSkill original robotics
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e . huggingface_hub
+      - name: Measure exact initial state under 4 real controller resets with/without global RNG resetting
+        run: |
+          set -euo pipefail
+          if [ "$ABI_TASK" = stack_cube ]; then seed=1320001; else seed=1310001; fi
+          PYTHONPATH="$PWD:$PWD/research" python research/pilot_actual_physx_reset_identical_four_conditions.py \
+            --seeds "$seed" --output "actual_native_reset_${ABI_TASK}.json" \
+            2>&1 | tee "original_native_reset_${ABI_TASK}.log"
+          test -s "actual_native_reset_${ABI_TASK}.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-actual-source-reset-identity-${{ matrix.task }}
+          path: |
+            actual_native_reset_*.json
+            original_native_reset_*.log
+          retention-days: 90
