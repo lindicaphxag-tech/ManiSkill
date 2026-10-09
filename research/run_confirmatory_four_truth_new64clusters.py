@@ -184,7 +184,7 @@ def validate(d,task,chunk,truth_index):
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--task",choices=tuple(TASKS),required=True)
-    ap.add_argument("--chunk",type=int,choices=range(2),required=True)
+    ap.add_argument("--chunk",type=int,choices=range(4),required=True)
     ap.add_argument("--truth-index",type=int,choices=range(4),required=True)
     args=ap.parse_args()
     assert_preoutcome()
