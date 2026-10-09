@@ -1,0 +1,113 @@
+name: "Prospective full-hypothesis public ACK observability: new 64 frozen PPO tasks and real native PhysX"
+on:
+  push:
+    branches: [research/ppo-hypothesis-identifiability-new64-20261009]
+    paths:
+      - 'research/PPO_DISCRETE_HYPOTHESIS_NEW64_PREOUTCOME_V2.json'
+      - 'research/frozen_ppo_discrete_history_v2_physx.py'
+      - 'research/run_public_discrete_hypothesis_new64.py'
+      - 'research/audit_public_discrete_hypothesis_new64.py'
+      - '.github/workflows/discrete-hypothesis-new64-real-ppo-physx.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-original-prereg-and-frozen-identity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require exact original before-outcome method, new seed bank and source chart
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/PPO_DISCRETE_HYPOTHESIS_NEW64_PREOUTCOME_V2.json)" = b8c5205ca949720a2d39396c9f8c711e65d7982b
+          test "$(git hash-object research/frozen_ppo_discrete_history_v2_physx.py)" = 23b8c4838f51dfef3617bf0ab739c4167586b8aa
+          test "$(git hash-object research/run_public_discrete_hypothesis_new64.py)" = b0d5b7c7a70df290dabb29535456f6e373ca66d7
+          test "$(git hash-object research/audit_public_discrete_hypothesis_new64.py)" = ee3bbf5fd43f0359bb7abb3567cfba9f7a6382f0
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = ddfaf4522d49f73ce926e4c6d77c7ca755f8e1b6
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          python -m py_compile research/frozen_ppo_discrete_history_v2_physx.py research/run_public_discrete_hypothesis_new64.py research/audit_public_discrete_hypothesis_new64.py
+          python - <<'PY'
+          from research.run_public_discrete_hypothesis_new64 import check_sources,accepted
+          check_sources()
+          seeds={(task,x) for task in ('pull_cube','stack_cube') for chunk in range(4) for x in accepted(task,chunk)}
+          assert len(seeds)==64
+          assert {x for task,x in seeds if task=='pull_cube'}==set(range(840001,840033))
+          assert {x for task,x in seeds if task=='stack_cube'}==set(range(850001,850033))
+          print('BEFORE_PHYSX_COMPLETE64_DISJOINT_PPO_IDENTITIES',True)
+          PY
+
+  eight-shards-genuine-frozen-PPO-native-physx:
+    needs: independent-original-prereg-and-frozen-identity
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install real CPU ManiSkill PhysX and original external frozen PPO loader
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Freeze exact actual simulated source and runtime before first action
+        run: |
+          git rev-parse HEAD > frozen_original_code_commit.txt
+          python -m pip freeze --all > frozen_original_dependencies.txt
+      - name: Actually execute 8 native control worlds for 8 registered new reset states
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_public_discrete_hypothesis_new64.py --task "$TASK" --chunk "$CHUNK" 2>&1 | tee full_native_physx.log
+          test -s "public_hypothesis_${TASK}_chunk${CHUNK}_original8.json"
+          test -s "public_hypothesis_${TASK}_chunk${CHUNK}_audit.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-discrete-v2-${{ matrix.task }}-${{ matrix.chunk }}
+          path: |
+            public_hypothesis_*_original8.json
+            public_hypothesis_*_audit.json
+            full_native_physx.log
+            frozen_original_code_commit.txt
+            frozen_original_dependencies.txt
+          retention-days: 90
+
+  independent-complete-64-task-512-physical-world-audit:
+    needs: eight-shards-genuine-frozen-PPO-native-physx
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-discrete-v2-*
+          path: /tmp/full64-original-physx
+          merge-multiple: true
+      - name: Independent full source redo with all negatives, wrong labels, double-fault exposure and public observations
+        run: |
+          python -m research.audit_public_discrete_hypothesis_new64 --source-dir /tmp/full64-original-physx --output /tmp/independent_new64_full_source_audit.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: original-new64-full512-physx-with-complete-independent-audit
+          path: |
+            /tmp/full64-original-physx/*.json
+            /tmp/independent_new64_full_source_audit.json
+          retention-days: 90
