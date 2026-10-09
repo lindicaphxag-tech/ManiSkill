@@ -1,0 +1,141 @@
+name: Prospective Panda xArm6 known-action-amplitude ACK response OOD native PhysX
+
+on:
+  push:
+    branches: [research/cross-robot-action-scale-prospective-20261009]
+    paths:
+      - '.github/workflows/cross-robot-action-scale-prospective32.yml'
+      - 'research/CROSS_ROBOT_ACTION_SCALE_32_PRECOMMIT_V1.json'
+      - 'research/cross_robot_action_scale_physx.py'
+      - 'research/audit_cross_robot_action_scale32.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: prospectively-locked-robot-amplitude-ack-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  freeze-and-falsify-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify protocol precommitted before runner and source frozen to already audited public evidence
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/CROSS_ROBOT_ACTION_SCALE_32_PRECOMMIT_V1.json)" = "d1035ed70228375e84895716b894e756e0dc3612"
+          test "$(git hash-object research/cross_robot_action_scale_physx.py)" = "2bfb8c29bd3b4d62c68186579ad0785689c83f27"
+          test "$(git hash-object research/audit_cross_robot_action_scale32.py)" = "3333c526ce7a010ada0683e45b66b4ee728cf72b"
+          test "$(git hash-object research/cross_robot_ack_calibration_portability.py)" = "743f0990cf4d72838c77e78a3fc78d0414496969"
+          test "$(git hash-object research/frozen_policy_transfer/evidence/cross_robot_online_public_proprio_new32_480001_490008/SHA256SUMS)" = "bf731f19efb35228b8702f1a3f7b5251d7825afa"
+          python -m py_compile research/cross_robot_action_scale_physx.py research/audit_cross_robot_action_scale32.py
+      - name: Revalidate all prior original calibration truth sources and declared novel scale/seed cohort
+        run: |
+          python - <<'PY'
+          import json
+          from research.cross_robot_ack_calibration_portability import study
+          x=study()
+          assert x['pooled']['0']['abstain']==32
+          assert x['pooled']['1']['correct_confident']==32
+          p=json.load(open('research/CROSS_ROBOT_ACTION_SCALE_32_PRECOMMIT_V1.json'))
+          q=p['true_physx_evaluation']
+          assert q['native_fault_amplitude_scales']==[.6,1.35]
+          assert q['reset_seed_panda']==[610001,610002,610003,610004]
+          assert q['reset_seed_xarm6_robotiq']==[620001,620002,620003,620004]
+          assert q['physical_execution_truths']==['applied','held']
+          assert q['source_release_models_used'] is False
+          print('PROTOCOL_LOCKED_BEFORE_NEW_ACTUAL_32_ORIGINAL_PHYSX_TRIALS')
+          PY
+
+  four-independent-native-robot-physx-shards:
+    needs: freeze-and-falsify-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 85
+    strategy:
+      fail-fast: false
+      matrix:
+        robot: [panda, xarm6_robotiq]
+        scale: ['0.6','1.35']
+    env:
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install actual maintained ManiSkill native CPU PhysX controller
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+      - name: Download genuine xArm6 model, no fake Panda relabel
+        if: matrix.robot == 'xarm6_robotiq'
+        run: python -m mani_skill.utils.download_asset xarm6 -y
+      - name: Perform 4 previously UNSEEN actual robot reset states x two fault truths x six control strategies
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD" python research/cross_robot_action_scale_physx.py \
+            --robot "${{ matrix.robot }}" --scale "${{ matrix.scale }}" \
+            2>&1 | tee "cross_robot_amplitude_${{ matrix.robot }}_${{ matrix.scale }}.log"
+          filename="cross_robot_ack_scale_${{ matrix.robot }}_${{ matrix.scale }}_original8.json"
+          filename="${filename//./p}"
+          # Only the numeric scale dot is replaced in the real artifact file.
+          test -s "cross_robot_ack_scale_${{ matrix.robot }}_${{ matrix.scale == '0.6' && '0p6' || '1p35' }}_original8.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-action-scale-ack-${{ matrix.robot }}-${{ matrix.scale }}
+          path: |
+            cross_robot_ack_scale_*_original8.json
+            cross_robot_amplitude_*.log
+          retention-days: 90
+
+  original-all32-independent-physical-source-audit:
+    needs: four-independent-native-robot-physx-shards
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-action-scale-ack-*
+          path: /tmp/all-original-cross-robot-action-scale
+          merge-multiple: true
+      - name: Audit all 32 actually executed six-arm PhysX conditions without excluding failures
+        run: |
+          set -euo pipefail
+          python -m research.audit_cross_robot_action_scale32 \
+            --input-dir /tmp/all-original-cross-robot-action-scale \
+            --output /tmp/complete_original_cross_robot_action_scale32_audit.json
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/complete_original_cross_robot_action_scale32_audit.json'))
+          assert d['actual_original_physx_conditions']==32
+          assert d['distinct_reset_seeds_across_robots']==8
+          assert d['six_actual_independent_physx_arms_per_condition']
+          for control,z in d['aggregate_scores'].items():
+              assert z['confident']+z['refusal']==32,control
+              assert z['wrong_confident']<=z['confident']
+              assert z['actual_native_target_position_restored']<=z['confident']
+          print('TRUE_NEW_SEED_NATIVE_CROSS_ROBOT_ACTION_SCALE_FULL32_AUDIT',
+              d['aggregate_scores'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-full32-action-scale-physx-sources-and-audit
+          path: |
+            /tmp/all-original-cross-robot-action-scale/*.json
+            /tmp/all-original-cross-robot-action-scale/*.log
+            /tmp/complete_original_cross_robot_action_scale32_audit.json
+          retention-days: 90
