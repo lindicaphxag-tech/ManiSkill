@@ -8,7 +8,9 @@ def cert(p,r,auth=True):
 
 class AuthoritySlackPrecommitTests(unittest.TestCase):
     def test_authorizes_continue_below_threshold_without_query(self):
-        self.assertEqual(proactive_authority_slack(cert(.02,.01),step=4),(False,.4))
+        decide,ratio=proactive_authority_slack(cert(.02,.01),step=4)
+        self.assertFalse(decide)
+        self.assertAlmostEqual(ratio,.4)
 
     def test_queries_within_budget_before_it_is_too_late(self):
         decision,ratio=proactive_authority_slack(cert(.04,.01),step=4)
