@@ -32,11 +32,11 @@ def audit(folder:Path):
             recalculated=validate(source,task,chunk)
             recalculated.update(schema="matched_prefix_true_2x2_shard_source_audit_v1",
                 physical_original_sha256=digest,
-                prereg_git_blob=__import__("research.run_true_two_ack_2x2_new64",fromlist=["blob"]).blob(
-                    "research/TWO_UNKNOWN_ACK_TRUE_2X2_PPO64_PREOUTCOME_V1.json"),
-                new_runner_git_blob=__import__("research.run_true_two_ack_2x2_new64",fromlist=["blob"]).blob(
-                    "research/frozen_ppo_true_pairedprefix_2x2_physx.py"),
-                unchanged_response_model_git_blob=__import__("research.run_true_two_ack_2x2_new64",fromlist=["blob"]).blob(
+                prereg_git_blob=__import__("research.run_matched_prefix_twoack_new64",fromlist=["blob"]).blob(
+                    "research/MATCHED_PREFIX_TWOACK_FROZEN_PPO64_PREOUTCOME_V1.json"),
+                new_runner_git_blob=__import__("research.run_matched_prefix_twoack_new64",fromlist=["blob"]).blob(
+                    "research/frozen_ppo_matched_prefix_twoack_2x2_physx.py"),
+                unchanged_response_model_git_blob=__import__("research.run_matched_prefix_twoack_new64",fromlist=["blob"]).blob(
                     "research/empirical_probe_response_classifier.py"))
             original_audit=folder/f"{basename}_audit.json"
             if json.loads(original_audit.read_bytes())!=recalculated:
