@@ -8,7 +8,7 @@ from __future__ import annotations
 import argparse, hashlib, importlib, json, os, subprocess, sys
 from pathlib import Path
 
-CONTROL_SHA="00945e31902f33feac21edb88f135cbdff8426ae"
+CONTROL_SHA="df37a5ea9a7d4264097b04b7bbb2c481b9d3c166"
 BASE_SHA="ddfaf4522d49f73ce926e4c6d77c7ca755f8e1b6"
 PROTO="research/EXTERNAL_PUBLIC_FOURHISTORY_REPLICATION_V1.json"
 TASKS={"pull_cube":"PullCube-v1","stack_cube":"StackCube-v1"}
