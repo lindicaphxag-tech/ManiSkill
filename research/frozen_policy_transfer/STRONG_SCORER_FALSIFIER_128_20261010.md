@@ -17,6 +17,16 @@ This new **separate code branch** reuses *all existing immutable public residual
 | **B' score 0.60/read, offline counterfactual on fixed public observations** | **NOT evaluated** | **25 hypothetical** | **0 hypothetical** | **103 predicted (128 - 25)** | **18** |
 | C: original mandatory true target getter, physically executed | 104/128 | n/a | n/a | 127 real (one early stop) | n/a |
 
+### Paired authorization decisions on the exact same 128 physical conditions
+
+| Both A and retrospective 0.60 B' authorize | A only | B' only | Neither |
+|---:|---:|---:|---:|
+| **22** | **4** | **3** | **99** |
+
+The **four A-only** conditions are one PullCube and three StackCube, while the **three B'-only** cases are all PullCube. These are *the same public observations*, not a rerun of the downstream native controller. This heterogeneous disagreement is not captured by the 26-versus-25 totals. No observed wrong-history labels occur for either method at these particular settings, but the small sample does not justify method risk superiority.
+
+The paired decision-table gate and all 16 physical-source shards passed in [CI run #37960058430](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37960058430) on the revised exact analysis head.
+
 The previous **20-read** advantage against B collapses to **only one predicted request** against B' with equal public measurements. This is not a proof that A is better than B': B' was not run in a separate physically executed closed-loop trajectory, did not execute its downstream native controller commands, and its result was not registered before the original 128-cell outcome. The historical 0.60 setting was previously tuned on separate development data but is *post hoc* as applied here.
 
 The 25 B' admissions arise from 18 separate reset IDs (PullCube 15 condition cells; StackCube 10). Zero observed incorrect B' labels is not a population safety certificate: an illustrative one-sided 95% binomial bound for at least one wrong B' admission within an authorizing independent reset is ~15.3% under the restrictive cluster-IID assumption. A's 26 admissions arise from 20 clusters with ~13.9% analogous upper bound. The numerators being zero does not demonstrate one is safer. No total-energy/time or network/hardware utility improvement is established.
