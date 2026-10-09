@@ -43,29 +43,49 @@ def read_verified_sources(folder):
                 for q in d["episodes"]:
                     strong=PULL_STRONG if task=="pull_cube" else FIXED
                     probes=q.get("shared_neutral_probe_step4",{})
+                    per_arm_probe={}
                     for n in (PUBLIC,strong,FIXED):
                         z=probes.get(n)
-                        if (not isinstance(z,dict) or
-                            z.get("physically_dispatched") is not True or
-                            z.get("native_six_dim_arm")!=[0.0]*6 or
-                            z.get("step")!=4 or
-                            z.get("known_delivered_no_new_unknown_ack") is not True):
-                            raise ValueError(f"Main actual method {n} did not pay identical physical t4 neutral probe on {task} {q['seed']} truth{t}")
-                    expected=q.get("public_motion_observation_cost_samples",{}).get(PUBLIC)
-                    if expected!=2:raise ValueError("Public source did not pay actual before/after achieved XYZ samples")
+                        per_arm_probe[n]=isinstance(z,dict)
+                        if per_arm_probe[n]:
+                            if (z.get("physically_dispatched") is not True or
+                                z.get("native_six_dim_arm")!=[0.0]*6 or
+                                z.get("step")!=4 or
+                                z.get("known_delivered_no_new_unknown_ack") is not True):
+                                raise ValueError("Non-neutral, uncharged or invalid actual probe")
+                        else:
+                            # A continuing main arm missing t4 probe is fatal;
+                            # an actually EARLY-refusing policy is an ITT
+                            # failure and must be retained, not invented into
+                            # the population of equally probed worlds.
+                            f=q.get("refusals",{}).get(n)
+                            if not (isinstance(f,dict) and f.get("step",99)<4 and
+                                    q["steps"][n]<=4):
+                                raise ValueError("Missing main probe without witnessed early refusal")
+                    public_samples=q.get("public_motion_observation_cost_samples",{}).get(PUBLIC,0)
+                    if public_samples!=(2 if per_arm_probe[PUBLIC] else 0):
+                        raise ValueError("Public sensor events not accounted exactly")
                     a2,a3=command(q,PUBLIC,2),command(q,PUBLIC,3)
                     b2,b3=command(q,strong,2),command(q,strong,3)
                     c2,c3=command(q,FIXED,2),command(q,FIXED,3)
-                    if any(x is None for x in (a2,a3,b2,b3,c2,c3)):
-                        raise ValueError("Actually injected native t2/t3 physical action absent; do not substitute nominal fault label")
+                    if a2 is None or b2 is None or c2 is None:
+                        raise ValueError("At least first unknown ACK must be physically reached")
+                    def paired(a,b):
+                        return same(a,b) if a is not None and b is not None else None
                     records.append({
                        "task":task,"seed":q["seed"],"actual_execution_truth_condition":t,
-                       "public_and_strong_t2_native_identical":same(a2,b2),
-                       "public_and_strong_t3_native_identical":same(a3,b3),
-                       "public_and_fixed_t2_native_identical":same(a2,c2),
-                       "public_and_fixed_t3_native_identical":same(a3,c3),
-                       "public_strong_fixed_t4_physically_neutral_steps_all_dispatched":True,
-                       "public_before_after_achieved_xyz_samples_paid":2,
+                       "public_and_strong_t2_native_identical":paired(a2,b2),
+                       "public_and_strong_t3_native_identical":paired(a3,b3),
+                       "public_and_fixed_t2_native_identical":paired(a2,c2),
+                       "public_and_fixed_t3_native_identical":paired(a3,c3),
+                       "public_t3_physically_reached":a3 is not None,
+                       "strong_t3_physically_reached":b3 is not None,
+                       "fixed_t3_physically_reached":c3 is not None,
+                       "all_three_probe_steps_reached":all(per_arm_probe.values()),
+                       "public_probe_reached":per_arm_probe[PUBLIC],
+                       "strong_probe_reached":per_arm_probe[strong],
+                       "fixed_probe_reached":per_arm_probe[FIXED],
+                       "public_before_after_achieved_xyz_samples_paid":public_samples,
                        "method_successes":{
                           "public":q["success_once"][PUBLIC],
                           "strong":q["success_once"][strong],
@@ -83,14 +103,21 @@ def read_verified_sources(folder):
                 "matched_public_vs_strong_t3":sum(r["public_and_strong_t3_native_identical"] for r in rows),
                 "matched_public_vs_fixed_t2":sum(r["public_and_fixed_t2_native_identical"] for r in rows),
                 "matched_public_vs_fixed_t3":sum(r["public_and_fixed_t3_native_identical"] for r in rows),
-                "all_three_actual_neutral_probes_physically_identical":len(rows),
+                "all_three_actual_neutral_probes_physically_identical":sum(r["all_three_probe_steps_reached"] for r in rows),
+                "public_fault_t3_real_exposures":sum(r["public_t3_physically_reached"] for r in rows),
+                "public_t4_physical_probe_receipts":sum(r["public_probe_reached"] for r in rows),
+                "public_achieved_xyz_sample_events":sum(r["public_before_after_achieved_xyz_samples_paid"] for r in rows),
                 "public_vs_strong_paired_task_discordances":sum(r["method_successes"]["public"]!=r["method_successes"]["strong"] for r in rows)}
-    by={key:sum(r[key] for r in records) for key in (
-        "public_and_strong_t2_native_identical",
-        "public_and_strong_t3_native_identical",
-        "public_and_fixed_t2_native_identical",
-        "public_and_fixed_t3_native_identical"
-    )}
+    keys=("public_and_strong_t2_native_identical",
+          "public_and_strong_t3_native_identical",
+          "public_and_fixed_t2_native_identical",
+          "public_and_fixed_t3_native_identical")
+    by={key:sum(r[key] is True for r in records) for key in keys}
+    elig={key:sum(r[key] is not None for r in records) for key in keys}
+    probes_count={n:sum(r[n+"_probe_reached"] for r in records) for n in ("public","strong","fixed")}
+    t3_exposed={n:sum(r[n+"_t3_physically_reached"] for r in records) for n in ("public","strong","fixed")}
+    num_samples=sum(r["public_before_after_achieved_xyz_samples_paid"] for r in records)
+    all_neutral=sum(r["all_three_probe_steps_reached"] for r in records)
     # This is a truly NEW original source cohort. Never assume its
     # physical action-parity counts match the older exposed 131/132 cohort.
     # All observed actions remain in the denominator whether equal or not.
@@ -102,14 +129,17 @@ def read_verified_sources(folder):
        "numerical_initial_source_observations_matched_under_precommitted_tolerance":True,
        "original_actual_seed_clusters":32,
        "actual_source_truth_cells":128,
-       "all_three_main_controllers_identical_physically_stepped_neutral_probe":128,
-       "public_extra_achieved_xyz_sample_events":256,
+       "all_three_main_controllers_identical_physically_stepped_neutral_probe":all_neutral,
+       "real_t4_probe_receipts_by_method":probes_count,
+       "physically_exposed_second_fault_event_by_method":t3_exposed,
+       "physical_action_parity_eligible_denominators":elig,
+       "public_extra_achieved_xyz_sample_events":num_samples,
        "native_dispatched_command_identical_counts":by,
        "per_task_truth":summary,
        "original_per_condition":records,
-       "not_identical_actions_prior_to_decision_for_all_competitors": any(x<128 for x in by.values()),
+       "not_identical_actions_prior_to_decision_for_all_competitors": any(by[k]<elig[k] for k in keys),
        "scientific_claim":"The original task-success and private-read differences may include actually different native t3 motor commands BEFORE t5 information selection. Report counts as measured and do not attribute a task win solely to public target history information.",
-       "zero_all_faulted_neutral_probe_not_relevant_to_three_main_comparators":"Strict-common-exact arm refuses earlier and does not probe; all THREE primary comparators actually probed 128/128.",
+       "equal_neutral_probe_claim_is_conditional":"Every probe RECEIVED is known-delivered neutral, but some main methods refuse before t4; per-method exposure denominators and public sensor costs are reported without replacing missing probes.",
        "no_policy_superiority_established":"New disjoint 32-cluster exact two-sided sensitivity p=.0556640625 (> .05), as independently audited.",
        "source_truth_used_ONLY_for_audit_after_actual_PhysX":True
     }
