@@ -1,0 +1,139 @@
+name: Permanently archive original new64 matched-public PhysX sources and SHA256
+on:
+  push:
+    branches: [research/matched-public-bayes-new64-20261009]
+    paths:
+      - '.github/workflows/archive-matched-public-bayes-new64.yml'
+permissions:
+  actions: read
+  contents: write
+jobs:
+  verify-and-permanently-archive-original-64:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: true}
+      - name: Download the EXACT successful ORIGINAL 640-world execution artifacts
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 37924335444
+          pattern: original-new64-*
+          path: /tmp/original_eight_shards
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download the untouched first all64 source aggregation
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 37924335444
+          name: new64-original-640world-native-physx-full-audit
+          path: /tmp/original_full_aggregate
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Reject missing original rows, false labels, changed source hashes; never rerun Physics
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import collections,hashlib,json,shutil,subprocess
+          base=Path("/tmp/original_eight_shards")
+          output=Path("research/frozen_policy_transfer/evidence/matched_public_bayes_original64_1720001_1730032")
+          orig=sorted(base.rglob("mixed_ack_*_original8.json"))
+          assert len(orig)==8,("Only",len(orig),"raw shards")
+          original_audit=json.loads(Path("/tmp/original_full_aggregate/new64_actual_physx_full_audit.json").read_text())
+          assert original_audit["n"]==64 and original_audit["controller_worlds_physically_stepped"]==640
+          assert (original_audit["pub_success"],original_audit["post_success"],original_audit["fixed_success"])==(53,54,54)
+          assert (original_audit["pub_reads"],original_audit["post_reads"],original_audit["fixed_reads"])==(48,62,64)
+          assert (original_audit["pub_unique"],original_audit["post_unique"],original_audit["pub_wrong"],original_audit["post_wrong"])==(16,2,1,0)
+          out=collections.Counter()
+          orig_hashes={}
+          seen=set()
+          strata=collections.Counter()
+          bad=[]
+          for f in orig:
+            folder=f.parent
+            manifest=folder/"SHA256SUMS"
+            assert manifest.exists()
+            subprocess.run(["sha256sum","-c",str(manifest)],cwd=folder,check=True,capture_output=True)
+            a=json.loads(f.read_text())
+            assert a["real_physx_simulator"] is True and len(a["episodes"])==8
+            task="pull_cube" if a["task"]=="PullCube-v1" else "stack_cube"
+            head=int(a["original_seed_population"][0])
+            assert head in ((1720001,1720009,1720017,1720025) if task=="pull_cube" else
+                            (1730001,1730009,1730017,1730025))
+            for e in a["episodes"]:
+              id=(task,e["seed"])
+              assert id not in seen,id
+              seen.add(id)
+              truth=(e["original_precommitted_physical_t2_execution_truth"],e["original_precommitted_physical_t3_execution_truth"])
+              strata[(task,*truth)]+=1
+              pe=e["public_t3_evidence"]; qe=e["same_sensor_posterior_evidence"]
+              public="fault_public_t3_fourhistory_or_t4_query"
+              post="fault_same_public_posterior_or_query"
+              fixed="fault_always_single_privileged_query"
+              for name,k in (("pub",public),("post",post),("fixed",fixed)):
+                out[name+"_success"]+=int(e["success_once"][k])
+                out[name+"_reads"]+=e["privileged_target_readback_decision_count"][k]
+                assert len(e["faults"][k])==2
+              out["pub_unique"]+=int(pe["authorized"])
+              out["post_unique"]+=int(qe["authorized"])
+              out["pub_wrong"]+=int(pe["wrong_confident"])
+              out["post_wrong"]+=int(qe["wrong_confident"])
+              assert e["public_motion_observation_cost_samples"][public]==2
+              assert e["public_motion_observation_cost_samples"][post]==2
+              for k in ("matched_prefix_physical_audit","matched_posterior_prefix_audit"):
+                r=e[k];assert r["valid_exact_prefix"]
+                assert max(r["native_fault_dispatch_linf_each"])<=5e-5
+                assert r["pre_t5_target_position_max_abs_m"]<=5e-5
+                assert r["pre_t5_achieved_position_max_abs_m"]<=5e-5
+              if pe["wrong_confident"]:
+                bad.append({"task":task,"seed":e["seed"],"truth":truth,
+                  "residuals_m":pe["candidate_residuals_m"],"authorized_index":pe["selected_candidate_index"],
+                  "true_indices":pe["audit_only_true_candidate_indices"],
+                  "public_success":e["success_once"][public],
+                  "posterior_success":e["success_once"][post]})
+            orig_hashes[f.name+"_"+str(head)]=hashlib.sha256(f.read_bytes()).hexdigest()
+          expect={("pull_cube",x) for x in range(1720001,1720033)}
+          expect|={("stack_cube",x) for x in range(1730001,1730033)}
+          assert seen==expect and len(strata)==8 and all(n==8 for n in strata.values())
+          for k in ("pub_success","post_success","fixed_success","pub_reads","post_reads","fixed_reads","pub_unique","post_unique","pub_wrong","post_wrong"):
+            assert out[k]==original_audit[k],(k,out[k],original_audit[k])
+          assert len(bad)==1 and bad[0]["seed"]==1730027,bad
+          output.mkdir(parents=True,exist_ok=True)
+          for f in orig:
+            a=json.loads(f.read_text())
+            task="pull_cube" if a["task"]=="PullCube-v1" else "stack_cube"
+            head=a["original_seed_population"][0]
+            shutil.copyfile(f,output/f"{task}_{head}_original8.json")
+            shutil.copyfile(f.parent/"SHA256SUMS",output/f"{task}_{head}_original_artifact_manifest.txt")
+          shutil.copyfile("/tmp/original_full_aggregate/new64_actual_physx_full_audit.json",output/"first_original_source_aggregate.json")
+          summary={"schema":"matched_public_bayes_64_permanent_immutable_original_source_audit_v1",
+            "raw_source_ids":sorted([f.name for f in output.glob("*original8.json")]),
+            "original_source_git_head":"94bf0ee593ac551aad2a1e5113106cf9539038f6",
+            "original_workflow_run":37924335444,
+            "source_episodes":len(seen),"separate_native_physx_worlds":640,
+            "task_truth_strata":{"/".join(k):n for k,n in strata.items()},
+            "verified_outcomes":dict(out),"single_wrong_confident":bad,
+            "independence_boundary":"author-operated CI only, not independently replicated by an external researcher"}
+          (output/"second_original_source_audit.json").write_text(json.dumps(summary,indent=2,sort_keys=True)+"\n")
+          (output/"README.md").write_text("# Original genuine PhysX 64-reset same-public comparison\n\n"
+            "Source run: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37924335444\n\n"
+            "Original per-shard PhysX JSONs were copied byte-for-byte from that source run, with all failures; "
+            "the audit was independently recomputed from original rows but NO new PhysX was executed. "
+            "Frozen original method source and preoutcome registration remain in the parent research PR #149. "
+            "Results: 53/64 private 48 vs same-XYZ posterior 54/64 private 62 vs fixed read 54/64 private 64; "
+            "one original wrong confident StackCube latent-history decision. "
+            "Author-operated, no claim of independent third-party reproduction, official ActionShift comparison or hardware safety.\n")
+          files=sorted(x for x in output.iterdir() if x.is_file() and x.name!="SHA256SUMS")
+          with open(output/"SHA256SUMS","w") as ledger:
+            for f in files:ledger.write(hashlib.sha256(f.read_bytes()).hexdigest()+"  "+f.name+"\n")
+          print("PASS: 64 complete original rows, all 8 stratified physical truths, complete original SHA evidence, wrong confidently admitted failure preserved")
+          print(json.dumps(summary,sort_keys=True)[:4500])
+          PY
+          (cd research/frozen_policy_transfer/evidence/matched_public_bayes_original64_1720001_1730032 && sha256sum -c SHA256SUMS)
+      - name: Commit permanent exact original evidence to this research branch (not upstream validation)
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/frozen_policy_transfer/evidence/matched_public_bayes_original64_1720001_1730032
+          git commit -m "evidence: permanently archive 64 original same-public PPO PhysX trials and wrong-confidence witness"
+          git push origin HEAD:research/matched-public-bayes-new64-20261009
