@@ -1,0 +1,113 @@
+name: Actual task-tuned SmolVLA native LIBERO closed-loop episode (pilot; NO ACK faults)
+on:
+  push:
+    branches:
+      - research/real-vla-libero-closedloop-pilot-20261009
+    paths:
+      - '.github/workflows/real-vla-libero-closedloop-pilot.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: vla-libero-real-pilot
+  cancel-in-progress: true
+jobs:
+  authentic-libero-episode:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    env:
+      PYTHONUNBUFFERED: '1'
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      HF_HUB_DOWNLOAD_TIMEOUT: '120'
+      MUJOCO_GL: osmesa
+      PYOPENGL_PLATFORM: osmesa
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      TOKENIZERS_PARALLELISM: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate evidence auditor without robotics dependencies
+        run: |
+          set -euo pipefail
+          python -m research.vla_beliefbridge.audit_official_libero_eval --self-test
+      - name: Install CPU headless MuJoCo and pin exact original LeRobot source
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y libosmesa6 libgl1 libegl1 libglfw3 libglew2.2
+          git clone --filter=blob:none https://github.com/huggingface/lerobot.git /tmp/official-lerobot
+          git -C /tmp/official-lerobot checkout b9cb121cb7d4e3e26ec5c906d08dda68d151ba52
+          python -m pip install --upgrade pip
+          python -m pip install -e '/tmp/official-lerobot[smolvla,libero,evaluation]'
+          mkdir -p real_vla_libero_evidence
+          git rev-parse HEAD > real_vla_libero_evidence/maniskill_source_commit.txt
+          git -C /tmp/official-lerobot rev-parse HEAD > real_vla_libero_evidence/official_lerobot_source_commit.txt
+          git hash-object research/vla_beliefbridge/audit_official_libero_eval.py > real_vla_libero_evidence/auditor_source_blob.txt
+          python -m pip freeze --all > real_vla_libero_evidence/python_environment.txt
+      - name: Resolve genuine task-tuned SmolVLA immutable Hub commit and download snapshot
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from huggingface_hub import HfApi, snapshot_download
+          model_id = "HuggingFaceVLA/smolvla_libero"
+          rev = HfApi().model_info(model_id).sha
+          if not isinstance(rev,str) or len(rev)!=40 or any(c not in "0123456789abcdef" for c in rev):
+              raise RuntimeError("Could not resolve immutable released model revision")
+          path = snapshot_download(repo_id=model_id,revision=rev,local_dir="/tmp/locked_vla_checkpoint")
+          if not (Path(path)/"config.json").is_file():
+              raise RuntimeError("Model snapshot missing original config.json")
+          Path("real_vla_libero_evidence/checkpoint_identity.json").write_text(
+              json.dumps({"model_id":model_id,"immutable_model_sha":rev,
+                          "checkpoint_path":"/tmp/locked_vla_checkpoint",
+                          "checkpoint_source":"official Hugging Face Hub"},
+                         indent=2,sort_keys=True)+"\n")
+          print("RELEASED_CHECKPOINT_LOCKED",model_id,rev)
+          PY
+      - name: ONE real native MuJoCo LIBERO full task rollout with task-tuned VLA
+        run: |
+          set -euo pipefail
+          mkdir -p real_vla_libero_evidence/task0
+          lerobot-eval \
+            --policy.path=/tmp/locked_vla_checkpoint \
+            --policy.device=cpu \
+            --policy.use_amp=false \
+            --policy.n_action_steps=1 \
+            --env.type=libero \
+            --env.task=libero_spatial \
+            --env.task_ids='[0]' \
+            --env.control_mode=relative \
+            --env.init_states=true \
+            --env.hard_reset=true \
+            --env.max_parallel_tasks=1 \
+            --eval.batch_size=1 \
+            --eval.n_episodes=1 \
+            --seed=1180001 \
+            --output_dir=real_vla_libero_evidence/task0 \
+            2>&1 | tee real_vla_libero_evidence/official_full_rollout.log
+          test -s real_vla_libero_evidence/task0/eval_info.json
+      - name: Audit original environment success even when it is FALSE
+        run: |
+          set -euo pipefail
+          python -m research.vla_beliefbridge.audit_official_libero_eval \
+            --input real_vla_libero_evidence/task0/eval_info.json \
+            --output real_vla_libero_evidence/official_libero_closedloop_audit.json
+      - name: Preserve full original outcome, failure logs and SHA256 ledger
+        if: always()
+        run: |
+          set +e
+          find real_vla_libero_evidence -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 -r sha256sum > real_vla_libero_evidence/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-locked-real-vla-libero-pilot
+          path: real_vla_libero_evidence/
+          if-no-files-found: warn
+          retention-days: 60
+
+# SCIENTIFIC LIMIT: green CI means task rollout/audit completed, NOT successful manipulation.
+# No unknown ACK, no private target-memory readbacks, no BeliefBridge recovery.
