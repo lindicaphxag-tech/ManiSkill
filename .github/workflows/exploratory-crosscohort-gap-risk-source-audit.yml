@@ -1,0 +1,58 @@
+name: "Audited cross-cohort 128 original PhysX risk/coverage (exploratory only)"
+on:
+  push:
+    branches: [research/observability-margin-gate-new64-20261009]
+    paths:
+      - research/audit_public_gap_crosscohort_development.py
+      - .github/workflows/exploratory-crosscohort-gap-risk-source-audit.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-128-source-only-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: analysis
+          ref: research/observability-margin-gate-new64-20261009
+      - uses: actions/checkout@v4
+        with:
+          path: original_train
+          ref: research/shared-compiler-evidence-original64-20261009
+      - uses: actions/checkout@v4
+        with:
+          path: original_challenge
+          ref: research/matched-public-bayes-new64-20261009
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Recompute 128 physical original records and public admission risk directly from frozen original JSON
+        run: |
+          set -euo pipefail
+          python -m py_compile analysis/research/audit_public_gap_crosscohort_development.py
+          python analysis/research/audit_public_gap_crosscohort_development.py \
+            --cohort1 original_train/research/frozen_policy_transfer/evidence/shared_compiler_twoack_original64_1480001_1490032 \
+            --cohort2 original_challenge/research/frozen_policy_transfer/evidence/matched_public_bayes_original64_1720001_1730032 \
+            --out exploratory_old128_source_authenticated_risk_coverage.json
+          python - <<'PY'
+          import json
+          x=json.load(open('exploratory_old128_source_authenticated_risk_coverage.json'))
+          a=x["source_populations"]["development_148_149"]["all_64"]
+          b=x["source_populations"]["challenge_172_173_already_seen_when_gate_chosen"]["all_64"]
+          assert (a["original_public_admissions"],a["original_public_wrong"])==(16,0)
+          assert (b["original_public_admissions"],b["original_public_wrong"])==(16,1)
+          assert a["counterfactual_gap_admissions"]==16
+          assert b["counterfactual_gap_admissions"]==15
+          assert b["counterfactual_wrong"]==0
+          assert b["gap_rule_task_success"] is None
+          assert x["no_task_outcome_counterfactual_inference"] is True
+          assert x["training_rule_posthoc_selected_after_second_cohort"] is True
+          assert len(x["all_128_original_source_cases"])==128
+          print("PASS 128 original physically stepped task states, never claim retrospective online success")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: old128-original-native-source-hashed-public-gap-exploratory-only
+          path: exploratory_old128_source_authenticated_risk_coverage.json
+          retention-days: 90
