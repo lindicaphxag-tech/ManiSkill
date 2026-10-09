@@ -1,0 +1,120 @@
+name: 'Archive independently authenticated amended 32 same-seed four-ACK real PhysX 1152 worlds'
+on:
+  push:
+    branches: [research/paired-four-truth-singleprocess-reset-audit-20261009]
+    paths: [.github/workflows/archive-amended-same-seed-fourtruth-physx.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  permanent_raw_source_and_cluster_statistical_reconstruction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pin exact original source and FIVE byte-identical archive inputs; retain first failed attempt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37931800065 --jq .head_sha)" = 3e084c78999fe92ac5a35cf252d8337768cc4760
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37931800065 --jq .conclusion)" = success
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37930607707 --jq .conclusion)" = failure
+          test "$(git hash-object research/frozen_ppo_same_reset_factorial_physx.py)" = 14882a4efcd36351f8cb5873e706488788446f32
+          test "$(git hash-object research/PAIRED_COUNTERFACTUAL_2X2_PPO128_PREOUTCOME_V1.json)" = 56dcb937a8a92b5cab3ee5977ce97c6bacfc10ab
+          test "$(git hash-object research/reviewer_amended_same_seed_2x2_interaction.py)" = 7d802df3ea8d3073037dd716d89db8f267611a97
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11617310967 --jq .digest)" = "sha256:4d2ae0ca4f2e0550122c0f2b1e0d8ea8e0b0391acc9da7730daa6b4820a1dabb"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11616586986 --jq .digest)" = "sha256:a7d3dec8c118d40e8054694785d9c1bb01c5c3b37cd68c59ca0507ef428052f0"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11616452535 --jq .digest)" = "sha256:8785a304f34433a58edaca7047b51e04dda35631bb65aa002b9bafd2f7d1566c"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11616188277 --jq .digest)" = "sha256:dda5532f3d62e0515fd3b743294f26915b33cd5530c8e3a62b99e03497f9ca6b"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11616069813 --jq .digest)" = "sha256:d5ed9cb5490d57728f845aed7050ca0e963e15fe79f0151fec1b89ecfb8af674"
+          python -m py_compile research/audit_same_reset_ack_factorial.py research/reviewer_amended_same_seed_2x2_interaction.py
+      - name: Retrieve byte-preserved original 4 actual within-process physical shards and original full128 audit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/physical_zip /tmp/physical_original /tmp/orig_full
+          gh run download 37931800065 --repo "$GITHUB_REPOSITORY" --pattern 'amended-real-fourtruth-sameprocess-*' --dir /tmp/physical_zip
+          gh run download 37931800065 --repo "$GITHUB_REPOSITORY" --name all-128-real-fourtruth-physx-amended-sameprocess-full-independent-review --dir /tmp/orig_full
+          find /tmp/physical_zip -type f -name 'factorial_*.json' -exec cp '{}' /tmp/physical_original/ \;
+          find /tmp/physical_zip -type f -name 'sameprocess_*_true4_hash_provenance.json' -exec cp '{}' /tmp/physical_original/ \;
+          test "$(find /tmp/physical_original -type f -name 'factorial_*.json' | wc -l)" -eq 32
+          test "$(find /tmp/physical_original -type f -name 'sameprocess_*_true4_hash_provenance.json' | wc -l)" -eq 4
+          test -s /tmp/orig_full/complete_amended_real_physx_128_truths.json
+      - name: Independently recompute all same-seed 128 native PhysX cells and 32-cluster uncertainty, reject five source fabrications
+        run: |
+          set -euo pipefail
+          python -m research.audit_same_reset_ack_factorial --source-dir /tmp/physical_original --output /tmp/second_complete.json
+          python -m research.reviewer_amended_same_seed_2x2_interaction --source-dir /tmp/physical_original --output /tmp/reviewer_cluster_interaction.json
+          python - <<'PY'
+          import json,shutil,tempfile
+          from pathlib import Path
+          from research.audit_same_reset_ack_factorial import audit
+          a=json.loads(Path('/tmp/orig_full/complete_amended_real_physx_128_truths.json').read_text())
+          b=json.loads(Path('/tmp/second_complete.json').read_text())
+          c=json.loads(Path('/tmp/reviewer_cluster_interaction.json').read_text())
+          assert a==b,'Independent amended original source full128 differs'
+          assert a['registered_source_reset_clusters']==32 and a['registered_task_seed_truth_cells']==128
+          assert a['separate_physx_worlds']==1152 and a['same_initial_physical_source_observation_hash_per_truth_verified']
+          assert a['primary_outcomes']['public']['official_task_success']==111
+          assert a['primary_outcomes']['strong_task']['official_task_success']==104
+          assert a['primary_outcomes']['public']['decision_private_reads']==95
+          assert a['primary_outcomes']['strong_task']['decision_private_reads']==116
+          assert abs(a['seed_cluster_exact_swap_two_sided_sensitivity_p_not_randomized_proof']-0.1484375)<1e-12
+          assert c['original_physical_reset_condition_cells']==128
+          for tamper in ('missing_original','repeat_seed','change_task_success','forge_initial_hash','invent_private_reads'):
+              with tempfile.TemporaryDirectory() as td:
+                  dest=Path(td)/'source';shutil.copytree('/tmp/physical_original',dest)
+                  f=sorted(dest.glob('*_original8.json'))[0]
+                  if tamper=='missing_original':f.unlink()
+                  else:
+                      d=json.loads(f.read_text());episode=d['episodes'][0]
+                      if tamper=='repeat_seed':episode['seed']=d['episodes'][1]['seed']
+                      elif tamper=='change_task_success':
+                          n='fault_public_t3_fourhistory_or_t4_query'
+                          episode['success_once'][n]=not episode['success_once'][n]
+                      elif tamper=='forge_initial_hash':episode['initial_source_physical_obs_sha256']='0'*64
+                      elif tamper=='invent_private_reads':episode['privileged_target_readback_decision_count']['fault_public_t3_fourhistory_or_t4_query']=2
+                      f.write_text(json.dumps(d))
+                  try:audit(dest)
+                  except (ValueError,AssertionError,KeyError,TypeError):continue
+                  raise AssertionError('Falsified actual native PhysX source ACCEPTED: '+tamper)
+          print('PASS true 32 seed clusters, full 128 matched cells, original/independent SHA and 5 falsified-source rejections')
+          PY
+      - name: Commit all original immutable true-PhysX source JSON, reviewer uncertainty and SHA256 provenance
+        run: |
+          set -euo pipefail
+          dst=research/frozen_policy_transfer/evidence/amended_same_seed_fourtruth_original128_1310001_1320016
+          mkdir -p "$dst"
+          cp /tmp/physical_original/*.json "$dst/"
+          cp /tmp/orig_full/complete_amended_real_physx_128_truths.json "$dst/first_original_full128_audit.json"
+          cp /tmp/second_complete.json "$dst/second_original_full128_independent_audit.json"
+          cp /tmp/reviewer_cluster_interaction.json "$dst/source_only_reviewer_32cluster_statistics.json"
+          (cd "$dst" && sha256sum -- *.json > ORIGINAL_SOURCE_SHA256SUMS && sha256sum -c ORIGINAL_SOURCE_SHA256SUMS)
+          cat > "$dst/README.md" <<'EOF'
+          # 32 original matched seeds × all 4 actually executed native ACK truths = 128 conditional cells
+          Amended execution: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37931800065 (6/6 successful); original first attempt https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37930607707 FAILED same-seed exact initial hash match for 7 of 16 StackCube source seeds. This archive MUST NOT be reported as pristine first-outcome prospective verification.
+          Four real physical applied/held ACK truth combinations are stepped under same Python process and explicit common RNG. 32 original independent task-reset seeds, 128 within-seed truth cells and 1152 individually instantiated CPU PhysX native-controller treatment worlds; exact initial observation hash matching verified across all four truth arms. No PPO training or response epsilon tuning.
+          Genuine official tasks: **public complete-history method 111/128**, task-aware strong comparator **104/128**, fixed t5 read **105/128**, no-read always-held **70/128**. Paired public-vs-strong: 102 jointly succeed, 15 both fail, 9 public-only, 2 strong-only. Public **95 private reads** vs strong **116** and fixed **128**. Under the **32 source reset cluster** sign-swap, two-sided sensitivity **p=0.1484375**: NOT statistically demonstrated task-superiority. All failures and early unexposed trajectories kept in 128 ITT source cells.
+          Source/physical independent audit and original-hash SHA256, reviewer same-seed/fault-stratified confidence interaction, and five deliberately falsified original source files rejected. No ActionShift official equal-budget active probing, other target-relative robot family, true packet loss, physical safety, actual VLA recovery or outside independent scientist run.
+          Source-only: python -m research.reviewer_amended_same_seed_2x2_interaction --source-dir research/frozen_policy_transfer/evidence/amended_same_seed_fourtruth_original128_1310001_1320016 --output /tmp/reviewer.json
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dst"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'research evidence: real amended four-ACK within-seed 1152 PhysX source originals and exact 32 cluster limits'
+          for i in 1 2 3; do
+            git fetch origin research/paired-four-truth-singleprocess-reset-audit-20261009
+            if ! git rebase origin/research/paired-four-truth-singleprocess-reset-audit-20261009; then git rebase --abort; exit 1; fi
+            if git push origin HEAD:research/paired-four-truth-singleprocess-reset-audit-20261009; then echo 'Original source archived'; exit 0; fi
+          done
+          exit 1
