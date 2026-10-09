@@ -1,0 +1,94 @@
+name: "Source-lock and permanently archive untouched 64-case / 256-PhysX-world amplitude OOD ACK evidence"
+on:
+  push:
+    branches: [research/ack-ood-native-amplitude-falsifier-20261009]
+    paths:
+      - '.github/workflows/archive-ood-ack-amplitude-original64.yml'
+permissions:
+  contents: write
+jobs:
+  verify-original-and-preserve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ORIGINAL_RUN: '37909760484'
+      ORIGINAL_ARTIFACT_ID: '11605439061'
+      EXPECTED_ARCHIVE_SHA256: '0083872480a96ad6b66f0b9ba833d53625163df71990486c2625f40cee3c1c77'
+      ARCHIVE_DIR: 'research/frozen_policy_transfer/evidence/ack_ood_amplitude_original64_680001_691008'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify actual ORIGINAL succeeded, source frozen and no new result selection
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$ORIGINAL_RUN" --jq '.conclusion')" = 'success'
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$ORIGINAL_RUN" --jq '.head_sha')" = '73eb3e925ec85af4eb4dde1eec42e2c9ff1bd7c6'
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/artifacts/"$ORIGINAL_ARTIFACT_ID" --jq '.digest')" = "sha256:$EXPECTED_ARCHIVE_SHA256"
+          test "$(git hash-object research/OOD_ACK_PUBLIC_MOTION_PROSPECTIVE_V1.json)" = d1f017d8ca994ec6be62daf3dc6940f038b8dff4
+          test "$(git hash-object research/ack_ood_native_amplitude_physx.py)" = 5a91d8f31d7b14d0538b93b396c3230bc15a65f7
+          test "$(git hash-object research/ood_ack_motion_response.py)" = b0b2f9b69ddc68d4ed770f63128e636b6a42a863
+          test "$(git hash-object research/audit_ack_ood_native_physx.py)" = b29661a560e4a8b9ee0cd5c3fc66c2b4792a3267
+      - name: Download exact original GitHub Actions artifact and verify ZIP digest
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$ORIGINAL_ARTIFACT_ID/zip" \
+            -o /tmp/ood-original-artifact.zip
+          echo "$EXPECTED_ARCHIVE_SHA256  /tmp/ood-original-artifact.zip" | sha256sum --check -
+          mkdir -p /tmp/ood-verified
+          unzip -q /tmp/ood-original-artifact.zip -d /tmp/ood-verified
+          test "$(find /tmp/ood-verified -type f -name '*.json' | wc -l)" -eq 9
+          test -s /tmp/ood-verified/complete_real_ood_ack64.json
+      - name: Recompute independent full source auditor without PhysX or deep learning dependency
+        run: |
+          set -euo pipefail
+          python -m research.audit_ack_ood_native_physx \
+            --input-dir /tmp/ood-verified/original-ood-physx --output /tmp/ood-recomputed.json
+          python - <<'PY'
+          import json
+          recorded=json.load(open('/tmp/ood-verified/complete_real_ood_ack64.json'))
+          independent=json.load(open('/tmp/ood-recomputed.json'))
+          if recorded!=independent:
+              raise SystemExit('Original full-audit JSON cannot be independently reproduced')
+          assert independent["physically_realized_ack_truth_cases"]==64
+          assert independent["separately_actuated_physx_worlds"]==256
+          assert sum(d["gain_segment_empirical"]["restored"] for d in independent["by_robot_scale"].values())==64
+          assert sum(d["frozen_old_empirical"]["restored"] for d in independent["by_robot_scale"].values())==32
+          print("BYTE_IDENTICAL_ORIGINAL_AND_SOURCE_RECOMPUTED_RESULTS", True)
+          PY
+      - name: Preserve every byte-identical actual physical original, negatives and SHA256SUMS in Git
+        run: |
+          set -euo pipefail
+          mkdir -p "$ARCHIVE_DIR"
+          cp /tmp/ood-verified/original-ood-physx/*.json "$ARCHIVE_DIR"/
+          cp /tmp/ood-verified/complete_real_ood_ack64.json "$ARCHIVE_DIR"/
+          (
+            cd "$ARCHIVE_DIR"
+            sha256sum *.json > SHA256SUMS
+          )
+          cat > "$ARCHIVE_DIR"/README.md <<'EOF'
+          # Original 64 hidden-ACK truth cases / 256 genuine Panda+xArm6 PhysX controller executions
+          
+          Pure research-contributor executed real native CPU PhysX, no frozen PPO task completion or genuine packet-loss hardware.
+          Pre-outcome protocol Git blob d1f017d8ca994ec6be62daf3dc6940f038b8dff4; original source success run: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37909760484; frozen executed source commit 73eb3e925ec85af4eb4dde1eec42e2c9ff1bd7c6.
+          Original GitHub Actions combined raw-artifact ID 11605439061 and zipped artifact sha256:0083872480a96ad6b66f0b9ba833d53625163df71990486c2625f40cee3c1c77.
+          
+          REAL execution of 32 distinct robot×amplitude×seed initial states and both applied/held physical native truths = 64 truth cases. Each truth had 4 independently physically stepped target-correction controls: 256 worlds.
+          Panda and xArm6 Robotiq, 0.55× and 1.45× native t2 command shifts. Previously frozen fixed absolute-Delta class envelopes: 32/64 physical target-position restorations and 32/64 abstentions; new physically conditioned gain-interval public response: 64/64 physical target-position restorations, 0/64 wrong confident classifications; optimistic and pessimistic each 32/64 restorations but 32 wrong latent history labels.
+          Position-only commanded-target threshold is 1e-4m AFTER actual correction dispatch, not achieved EE pose, SO(3), real safety, collision, contact force, PPO/VLA task performance or new external laboratory adoption.
+          Empirical response envelopes, previously calibrated from independent old physical states, are NOT deterministic externally attested bounds; new method and old fixed method use different available motion-history representations and per-robot calibration-set sizes, so comparison is NOT a fully equal-information policy performance claim.
+          Exactly 8 original physical-shard JSONs and 1 full-source independent audit are preserved byte-for-byte. Verify SHA256SUMS before citing results.
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$ARCHIVE_DIR"
+          git diff --cached --quiet && exit 0
+          git commit -m "evidence: permanently preserve 64 original ACK truth cases and 256 native PhysX worlds"
+          git push origin HEAD:research/ack-ood-native-amplitude-falsifier-20261009
