@@ -1,0 +1,48 @@
+name: Immutable original two-fault PhysX K-history stdout review
+
+on:
+  pull_request:
+    paths:
+      - "research/frozen_policy_transfer/audit_original_multi_ack_16_stdout.py"
+      - "research/frozen_policy_transfer/evidence/two_ack_khistory_new16_230001_240008/**"
+      - "tests/test_multi_ack_stdout_archive.py"
+      - ".github/workflows/audit-multi-ack-stdout16.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-two-fault-source-archive-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Recompute pinned Git blob original source from both real PhysX job logs
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_multi_ack_stdout_archive.py -v
+          python -m research.frozen_policy_transfer.audit_original_multi_ack_16_stdout | tee original_Khistory16.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path("original_Khistory16.json").read_text())
+          assert x["original_16_physical_states"]==16
+          assert x["all_original_method_success_counts"]["fault_robust_then_single_privileged_query"]==15
+          assert x["source_target_decision_readbacks"]["fault_robust_then_single_privileged_query"]==9
+          assert x["authentic_K4_history_decisions_selective"]==99
+          assert x["authentic_K4_commanded_setpoints_physically_dispatched_and_audited"]==92
+          print("PASS: source-pinned genuine two-fault PhysX, 16 original seeds, 99 K4 observations, 92 actually dispatched verified setpoint actions.")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: immutable-original-twofault-16-review-python-${{ matrix.python-version }}
+          path: original_Khistory16.json
+          if-no-files-found: error
+          retention-days: 90
