@@ -1,0 +1,89 @@
+name: "Independent investigator: own 8 new true-Panda-drive-PhysX × 4 ACK full histories"
+on:
+  push:
+    branches: [research/dynamics-shift-anchor-ack-new64-20261009]
+    paths:
+      - 'research/outside_independent_ood_anchor_physx_replication.py'
+      - '.github/workflows/outside-ood-ack-physx-replication.yml'
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Existing unchanged released public frozen PPO task"
+        required: true
+        type: choice
+        options: [pull_cube, stack_cube]
+        default: stack_cube
+      first_seed:
+        description: "Choose 8 consecutive brand-new states; first divisible by 8 in 980000..999992, BEFORE simulation"
+        required: true
+        type: number
+        default: 980000
+permissions:
+  contents: read
+jobs:
+  source-only-method-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify source pin and 8 independent original reset states balance over OOD and four ACK histories
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/frozen_ppo_ood_known_anchor_physx_v6.py)" = 01663775035813e4f87f06171ff3cae0eaebc442
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = ddfaf4522d49f73ce926e4c6d77c7ca755f8e1b6
+          python -m py_compile research/outside_independent_ood_anchor_physx_replication.py
+          python - <<'PY'
+          from research.outside_independent_ood_anchor_physx_replication import registered_unseen_seeds
+          assert registered_unseen_seeds(980000)==list(range(980000,980008))
+          try:registered_unseen_seeds(980001)
+          except ValueError:pass
+          else:raise AssertionError("Incorrect precommit allowed seed misalignment")
+          print("OUTSIDE_RESEARCHER_OWN_CHOICE_OF_8_PREDECLARED_OOD_PHYSX_SOURCE_ONLY_CHECKED_NO_SIMULATOR_ALREADY_RAN",True)
+          PY
+          echo "ACTUAL_ACCOUNT_REPOSITORY=$GITHUB_REPOSITORY OPERATOR=$GITHUB_ACTOR"
+          echo "No independent validation claim for workflow existing on original-author fork."
+
+  true-researcher-owned-eight-original-seeds-eighty-worlds:
+    needs: source-only-method-gate
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TASK: ${{ inputs.task }}
+      FIRST_SEED: ${{ inputs.first_seed }}
+      PYTHONUNBUFFERED: '1'
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install native real ManiSkill Panda CPU PhysX and old unchanged checkpoint
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Operator records original source and actual physics environment BEFORE any new action
+        run: |
+          mkdir -p outside_physical_dynamics_ood_original
+          git rev-parse HEAD > outside_physical_dynamics_ood_original/source_execution_commit.txt
+          printf 'operator=%s repo=%s task=%s first=%s\n' "$GITHUB_ACTOR" "$GITHUB_REPOSITORY" "$TASK" "$FIRST_SEED" > outside_physical_dynamics_ood_original/DECLARED_BEFORE_ANY_PHYSX.txt
+          python -m pip freeze --all > outside_physical_dynamics_ood_original/physx_dependency_versions.txt
+      - name: Actually modify/read back seven Panda arm joint gains and step 80 real controller worlds
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/outside_independent_ood_anchor_physx_replication.py --task "$TASK" --first-seed "$FIRST_SEED" --output outside_physical_dynamics_ood_original 2>&1 | tee outside_physical_dynamics_ood_original/complete_native_physx_stdout.log
+      - name: Immutable original evidence including ALL task failures
+        if: always()
+        run: |
+          (cd outside_physical_dynamics_ood_original && sha256sum *.json *.txt *.log > SHA256SUMS) || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: physical-Panda-ood-external-operator-eight-real-PhysX-task-truths
+          path: outside_physical_dynamics_ood_original/
+          retention-days: 90

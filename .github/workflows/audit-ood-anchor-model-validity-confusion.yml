@@ -1,0 +1,23 @@
+name: "True 640 PhysX OOD model-validity detector false positives and misses, source byte pinned"
+on:
+  push:
+    branches: [research/dynamics-shift-anchor-ack-new64-20261009]
+    paths:
+      - 'research/audit_original_ood_t1_anchor_validity_detection.py'
+      - '.github/workflows/audit-ood-anchor-model-validity-confusion.yml'
+permissions:
+  contents: read
+jobs:
+  original-only-640-physx-model-validity-confusion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify exact original 17 physical JSON sources and source-only failure detector calibration evidence
+        run: |
+          set -euo pipefail
+          (cd research/frozen_policy_transfer/evidence/ood_pd_drive_known_ack_anchor_original64_960101_970132 && sha256sum -c SHA256SUMS)
+          python -m research.audit_original_ood_t1_anchor_validity_detection

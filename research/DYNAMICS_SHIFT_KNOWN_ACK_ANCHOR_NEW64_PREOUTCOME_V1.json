@@ -1,0 +1,73 @@
+{
+  "schema": "preregistered_true_physx_dynamics_shift_known_target_anchor_validity_vs_frozen_public_ack_v1",
+  "date": "2026-10-09",
+  "phase": "BEFORE_ANY_NEW_960101_970101_PHYSICAL_OUTCOMES",
+  "scientific_goal": "OOD physical dynamics perturbation of native joint drive gains, held-out new seeded true double ACK fault cohort, and deployment-available PRE-fault known-ACK response witness to gate latent controller target authority. The previous static failure rates were obtained only under one nominal drive tuning; this explicitly shifts the physical system while leaving the native action ABI fixed.",
+  "heldout": {
+    "tasks": {
+      "pull_cube": [
+        960101,
+        960132
+      ],
+      "stack_cube": [
+        970101,
+        970132
+      ]
+    },
+    "task_physical_truth": "16 fully held and 16 physically applied t2 and 16 t3 per task; 8 AA/AH/HA/HH per task",
+    "reset_states": 64,
+    "execution_truth_t2": "native arm physical command APPLIED iff seed even",
+    "execution_truth_t3": "APPLIED iff floor(seed/2) even",
+    "controller_methods_physically_stepped_per_state": 10,
+    "total_native_simulated_controller_worlds": 640,
+    "two_released_third_party_PPO_no_retraining": true,
+    "public_inference_not_receiving_true_ACK": true,
+    "native_fault_is_physical_command_zero_replacement_not_true_network_drop": true
+  },
+  "physical_dynamics_domain_precommit": {
+    "changed_quantity": "for EACH Panda arm joint panda_joint1..panda_joint7, modify PhysX PD drive stiffness and damping via ManiSkill articulated joint wrapper API AFTER reset BEFORE first physical step. Force limit remains 100.",
+    "nominal_source": "official ManiSkill Panda stiffness 1000 damping 100 force_limit 100; source and ALL nine destination controller worlds are modified identically for a matched source competence check and actual control dynamic comparison",
+    "assignment": "if floor(seed/4)%2==0: slow-drive stiffness=500,damping=70; else fast-drive stiffness=1500,damping=130. Each of the four ACK truth classes appears with 4 slow and 4 fast states per task.",
+    "modes": {
+      "slow": {
+        "stiffness": 500,
+        "damping": 70,
+        "force_limit": 100
+      },
+      "fast": {
+        "stiffness": 1500,
+        "damping": 130,
+        "force_limit": 100
+      }
+    },
+    "physical_joints": "must find exactly seven panda_joint1..panda_joint7 and independently read back postsetter physical stiffness/damping from each world. Failing to apply or verify drive gain is injection failure; do not hide such cases or count as success.",
+    "constant_under_prospective_population": true
+  },
+  "new_method": {
+    "name": "Known-ACK Anchor Validity Gate (KAVG)",
+    "old_model": "original prior publicly calibrated task-specific fixed response epsilon for frozen public t4 after actual known neutral arm action, Pull 0.006944262561376447m Stack 0.00719087965534261m and competitor gap 0.002m",
+    "anchor_timing": "Step 1 BEFORE any uncertain ACK; action is physically delivered and acknowledged, so an observer's complete native target is already known from its OWN publicly tracked action history. Measure achieved XYZ before/after real physical native step1. Obtain predicted target XYZ solely from the observer's acknowledged action history, never from native private target getter.",
+    "anchor_decision": "Compute Euclidean shortest distance from publicly observed after-XYZ to scalar segment from preXYZ to the KNOWN tracked native target XYZ, with alpha in [0,1]. Accept anchor as model-valid only if planned native target displacement >= 0.01m and residual <= predeclared original task epsilon; otherwise abstain from public history identification at t4. Anchor validity must NOT use any hidden native state getter or ACK injection truth.",
+    "final_public_step4": "At common known-delivered native ZERO t4, compute original public four-history nearest segment and competitor margin. Public authority is permitted only when BOTH original t4 full history separation AND valid PRE-fault t1 known-target response anchor. Otherwise use ONE counted private controller memory getter at t5.",
+    "old_frozen_public_comparator": "Identical physical step1/t4 native actions, same unchanged old empirical epsilon, but no t1 anchor gating and exactly two public XYZ samples at t4. Account anchor's two extra public achieved XYZ measurements as a real cost.",
+    "other_controls": "the existing 8 real stepped source, continuously private oracle, optimistic ACK, exact refusal, bounded no query, task-sensitive selective read, always-query t5 and always-held zero-read world",
+    "prevent_input_leakage": "policy knows which t1 target it issued and received ACK to; training/evaluation source native target may be read ONLY post-physical audit. No source policy action differences except the method deciding query vs native history at t5."
+  },
+  "fixed_hypotheses": {
+    "primary": "In changed physical joint-drive regime, model-validity (true t4 history residual within old epsilon), false confident native target-history label, explicit privileged target reads, official task successes and material disaggregated gate behavior under slow/fast × task × all four ACK execution combinations.",
+    "null": "The t1 anchor may have no predictive power for t4 validity, thus extra public observations and readbacks with zero observed risk improvement; report as negative if so.",
+    "strong_controls": "same task-specific selected comparator and fixed t5 read; no actual full ActionShift active method run — do not falsely name as such.",
+    "no_PPO_checkpoint_or_native_controller_chart_change": true,
+    "no_test_time_parameters_or_threshold_tuning": true,
+    "exact_precommit_prior_eps": true
+  },
+  "nonclaims": [
+    "No general OOD guarantee or certified dynamics model",
+    "No hardware/force/collision safety",
+    "No genuine packet loss",
+    "No general VLA policy success",
+    "No external third party replication or top-tier accept",
+    "Additional t1 public observations are NOT free",
+    "Four ACK true patterns but just one Panda controller family and two policies"
+  ]
+}
