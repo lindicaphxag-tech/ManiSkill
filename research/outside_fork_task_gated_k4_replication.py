@@ -23,7 +23,7 @@ from pathlib import Path
 from math import comb
 
 ORIGINAL_SHA={
-    "research/frozen_ppo_compound_ack_multi_belief.py":
+    "research/frozen_sources/frozen_ppo_compound_ack_multi_belief_v3.py":
         "99836af14205fe3e95e52a2e0d68237c7c8a9045",
     "research/multi_ack_se3_bounded.py":
         "36707a177549104ba5b4bd9bcebc76518f0d2840",
@@ -185,7 +185,15 @@ def main():
     # Original PPO policy and seven physical actor worlds are run unchanged.
     os.environ["ABI_TASK"]=args.task
     sys.path.insert(0,str(root/"research"))
-    runner=importlib.import_module("frozen_ppo_compound_ack_multi_belief")
+    # The mutable main-branch module advanced after the original study.
+    # ALWAYS load the byte-identical frozen original runner from a separate
+    # preserved file; never overwrite other studies' newer source.
+    pinned_runner=root/"research/frozen_sources/frozen_ppo_compound_ack_multi_belief_v3.py"
+    spec=importlib.util.spec_from_file_location("original_frozen_double_ack_controller_v3",str(pinned_runner))
+    if spec is None or spec.loader is None:
+        raise RuntimeError("Frozen original policy runner unavailable")
+    runner=importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runner)
     if (
         runner.TASK!=args.task or runner.FAULT_STEPS!=(2,3)
         or runner.POS_BUDGET!=.05 or runner.ROT_BUDGET!=.05
