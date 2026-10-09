@@ -98,7 +98,7 @@ class ReviewCausalIsolationPreregistration(unittest.TestCase):
     def test_posthoc_threshold_tuning_forbidden(self):
         q=fabricated_original()
         q["episodes"][0]["same_sensor_posterior_evidence"]["posterior_threshold_predeclared"]=.60
-        with self.assertRaisesRegex(ValueError,"threshold tuned"):validate_shard(q,"pull_cube",0,0)
+        with self.assertRaisesRegex(ValueError,"score tuned after protocol"):validate_shard(q,"pull_cube",0,0)
     def test_cluster_swap_never_treats_128_cells_as_independent(self):
         self.assertAlmostEqual(_swap_exact([1,1,0,0]),.5)
         self.assertEqual(_swap_exact([0]*32),1.)
