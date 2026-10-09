@@ -111,6 +111,38 @@ class RealNativeBeliefIntegration(unittest.TestCase):
         fresh(g,1)
         self.assertEqual(g.decide().code,"SEND_CERTIFIED")
 
+    def test_live_smolvla_queue_is_dropped_after_dispatch_and_resync(self):
+        class Policy:
+            def __init__(self):self.queued=5;self.events=0
+            def drop_queued_actions(self):self.queued=0;self.events+=1
+            def count_queued_actions(self):return self.queued
+        p=Policy();g=gateway()
+        g.bind_live_policy(p)
+        self.assertEqual(p.queued,0)
+        p.queued=49  # A real SmolVLA select_action can cache a whole chunk.
+        fresh(g,0);d=g.decide()
+        self.assertEqual(d.code,"SEND_CERTIFIED")
+        self.assertEqual(p.queued,0)
+        p.queued=13
+        g.acknowledge(d.ticket,applied=None)
+        self.assertEqual(p.queued,0)
+        p.queued=21
+        g.trusted_controller_resync(
+            TargetPose.from_arrays([0]*3,[0,0,0,1]),
+            evidence="authoritative_controller_target_readback")
+        self.assertEqual(p.queued,0)
+        self.assertGreaterEqual(p.events,4)
+
+    def test_live_policy_with_unverifiable_queue_rejected(self):
+        class BrokenPolicy:
+            def drop_queued_actions(self):pass
+            def count_queued_actions(self):return 49
+        g=gateway()
+        with self.assertRaisesRegex(ContractViolation,"Stale"):
+            g.bind_live_policy(BrokenPolicy())
+        with self.assertRaises(ContractViolation):
+            gateway().bind_live_policy(object())
+
     def test_exact_root_left_compose_uses_achieved_pose_not_private_target(self):
         # A 90-degree rotation around X followed by a command around Z must
         # be pre-multiplied in the root frame, not right-multiplied.
