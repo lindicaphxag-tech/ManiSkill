@@ -1,3 +1,15 @@
+# Two unknown acknowledgements: independent four-history PhysX replication (NEW)
+
+**Primary original-method replication now supports TWO actual command holds** (zero-indexed steps 2 and 4), up to four possible previous controller-target histories, and a maximum of two independently counted privileged controller memory reads. The frozen [source method PR #91](https://github.com/lindicaphxag-tech/ManiSkill/pull/91), [original double-ACK true PhysX 16-seed evidence](TWO_UNKNOWN_ACK_KHISTORY_PROSPECTIVE16.md), and [merged outside-fork one-click PR #99](https://github.com/lindicaphxag-tech/ManiSkill/pull/99) are all public.
+
+[**Run your own two-ACK seven-arm original PhysX experiment**](https://github.com/lindicaphxag-tech/ManiSkill/actions/workflows/external-two-ack-physx.yml) · [**Successful contributor-operated original-model smoke CI**](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37896391183)
+
+To run **independently**: fork `lindicaphxag-tech/ManiSkill`, enable Actions on your own fork, and select **OUTSIDE-fork one-click TWO missing ACKs genuine seven-arm PhysX**. Use task `pull_cube` or `stack_cube`; declare the first of **eight previously unused consecutive** reset seeds (e.g. `330001`). The workflow will pin and verify all actual method dependencies (original pretrained-policy adapter, root-left multi-target certificate, uncertain-delivery state machine and target observer), install official genuine CPU PhysX, execute all **seven physical controller arms × eight original reset states**, and upload the *byte-identical native trial JSON*, all failures and refused/missed faults, true queried controller states, source checkpoints, execution actor, environment and full SHA256 evidence. Do not present the workflow's contributor-executed default seed 300001–300008 as a second undisclosed *fresh* original cohort. Readers can publish an independent fork run URL, including negative results; the contributor cannot manufacture outside-lab adoption by executing their own fork.
+
+**Original source finding (not yet independently re-executed outside this account):** two published frozen ActionShift PPOs, 16 genuinely new native PhysX seeds, selective **15/16 task successes with 9** private target reads vs mandatory **15/16 with 32**, zero-query bounded **7/16**; 99 K=4 *decision steps*, of which 92 correspond to physically dispatched, audited bounded commands. These are **not** 99 independent task trials. No task-success superiority over mandatory, real network packet-loss experiment, or motor collision/force safety guarantee.
+
+---
+
 # Latest external replica: SELECTIVE READBACK real frozen-PPO PhysX (seven arms)
 
 **This is the current primary fork-clickable original research replication.** It exercises seven *original unchanged* pretrained PPO/ManiSkill PhysX control arms, including **bounded correction / query only when the certificate fails**. It is **not** a simulation-free tally, research-independent evidence until another person's fork executes it, hardware safety, or real network packet loss.
