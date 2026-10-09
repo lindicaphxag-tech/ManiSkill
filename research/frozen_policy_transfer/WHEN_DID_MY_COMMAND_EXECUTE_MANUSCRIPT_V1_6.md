@@ -1,0 +1,154 @@
+# When Did My Command Execute?
+## Public Motion Witnesses for Stateful Frozen-Policy Transport under Missing Acknowledgements
+
+*Research manuscript v1.6 · 9 October 2026 · source-authenticated author-run PhysX; not peer-reviewed, externally adopted or accepted*
+
+**Zhibo Zhang** · Hangzhou Dianzi University  
+**Manuscript authorship and any collaborators must be confirmed before submission.**
+
+### Abstract
+
+Robot policies pretrained for achieved-pose-relative actions can fail when deployed on controllers that apply increments to their **previous commanded targets**. A missing execution acknowledgement makes the target a latent state: silence reveals neither that a command executed nor that it was held. We study a narrower problem than generic action-interface discovery: given the controller's known action semantics but uncertain command execution, can ordinary achieved end-effector motion identify an entire candidate target history without reading controller-private state? Our adapter enumerates complete SE(3) target histories, compares their public-position motion compatibility under a separately frozen empirical response envelope, and selects one full history only when it is uniquely supported. Otherwise it performs a counted authoritative target read before further native action translation. Two prospectively frozen **all-held** studies using released PPOs and 96 distinct ManiSkill PullCube/StackCube resets produced 86/96 successful tasks with either method's task-aware comparator, using **61 versus 84** privileged reads across **separately tested, related methods**; this is descriptive, not a pooled homogeneous treatment estimate. To challenge the all-held shortcut, a further prospective study physically varied the first command between applied and held while holding the second; a subsequent **64-reset-identity-disjoint** replication achieved **57/64 tasks and 33 privileged reads**, versus **56/64 and 52** with a task-precommitted strong route. Across that last cohort, 31 whole histories were selected with zero observed incorrect confident labels; the observed one-task win is not statistically established superiority. Both mixed-truth studies still physically held the **second** uncertain command, so the four possible belief histories are **not** four tested physical execution combinations. This is empirical information economy under a frozen controller/fault protocol, not a safety certificate, demonstrated network-loss resilience, VLA rollout, or independent researcher adoption.
+
+**Keywords:** robot learning; controller semantics; latent execution state; command acknowledgement; set-membership identification; frozen-policy transfer; selective observation.
+
+---
+
+## 1. Problem: execution truth is neither action syntax nor observable tool pose
+
+The third-party source PPO policy \(\pi\) issues an achieved-relative end-effector action \(a_t\) based on the observation \(o_t\). The destination's native `pd_ee_target_delta_pose` controller instead maintains a *previous commanded target* \(M_t\). With an uncertain execution indicator \(z_t\), the native target update can be written
+
+\[
+M_{t+1}=
+\begin{cases}
+F(M_t,u_t), & z_t=1,\\
+M_t, & z_t=0.
+\end{cases}
+\]
+
+A missing acknowledgement does not disclose \(z_t\). Two missing acknowledgements can therefore leave up to four distinguishable commanded-target histories, even when the action chart \(F\) is completely known. Using achieved pose as the previous commanded target, or treating silence as a successful execution acknowledgement, is not a logically justified reconstruction. For a frozen policy this can invalidate the meaning of every subsequent native command.
+
+The question addressed here is deliberately narrower than discovering arbitrary unknown robot-action interfaces: *given a known native controller chart and complete candidate histories, when can an ordinary public motion measurement replace an explicit privileged target-state read without sacrificing observed manipulation-task completion?*
+
+## 2. Method: identify a complete discrete history, not independent pose coordinates
+
+Let \(H_t=\{h_1,\ldots,h_K\}\) denote the complete set of possible native commanded-target poses computed from documented initial-state evidence and acknowledged/unknown native actions. Each \(h_i\) contains **both** XYZ target position and a quaternion target orientation. No simulator-private actual target getter enters its construction.
+
+A known-delivered neutral native target-delta is executed at the second unknown-ACK fault step. Let \(x\) and \(y\) be the public achieved XYZ positions immediately before and after that *actual* physical step. The frozen response model is
+
+\[
+y=x+\alpha(M_i^{xyz}-x)+e,\quad
+\alpha\in[0,1],\qquad \|e\|_2\le\epsilon_{task}.
+\]
+
+For each candidate history \(h_i\), compute the minimum Euclidean residual \(r_i\) between observed \(y\) and the complete interval of public positions predicted by \(h_i\). The task-specific empirical model tolerances were frozen from different historical PhysX seeds: \(\epsilon_{Pull}=0.0069443\,m\) and \(\epsilon_{Stack}=0.0071909\,m\). No test-set calibration or PPO updates are allowed.
+
+**Authorize the complete latent history index \(i^*\)** only when exactly one residual \(r_{i^*}\le\epsilon_{task}\), and **every** competing history has \(r_j>\epsilon_{task}+0.002\,m\). The chosen history includes its own full target orientation. It is *not necessary* that all possible histories have identical orientations. This is a straightforward finite set-membership compatibility result, not a novel identifiability theorem: if two candidate public observation sets intersect, no position-only classifier can guarantee differentiation for a shared observation.
+
+If no unique history meets the predeclared test, the adapter reads the authoritative native target exactly once at step four and resynchronizes. Every actual native command remains subject to the existing 0.05m positional and 0.05rad orientation **commanded-setpoint** admission contract. An action may pass this contract without assuring trajectory tracking, safe contacts, or task completion.
+
+The public measurement is not free: the new controller explicitly uses two achieved-XYZ samples per task. It adds **no extra actuated probe step**, as the measured motion occurs during the common physical fault protocol. The experiments count private target reads separately from public sample access, simulator audit-only target getters, and actual native action dispatch.
+
+### Failure and observability boundary
+
+Two histories with identical XYZ target positions but different target orientations are not distinguishable under the position-only response model above. More generally, an empirical motion envelope can fail when contact, load, phase, actuation delay or observation noise changes; an erroneously unique hypothesis can then be harmful. Our physical study records every such confident mistake against a private target getter **only after** real physical execution, never as the method's decision input.
+
+## 3. Prospective experiment: 64 frozen PPO reset states, 512 physical controller worlds
+
+The [protocol was fixed before new execution](../PPO_DISCRETE_HYPOTHESIS_NEW64_PREOUTCOME_V2.json) (Git blob `b8c5205ca949720a2d39396c9f8c711e65d7982b`), selecting PullCube reset seeds `840001–840032` and StackCube `850001–850032`. Both original third-party released PPOs and their SHA-256 hashes were checked before physical rollout. The action interface is the real ManiSkill Panda controller, with source `pd_ee_delta_pose` converted to destination `pd_ee_target_delta_pose`.
+
+In each of 64 new reset states we stepped **eight separate actual native PhysX controller-policy worlds** with the identical reset seed and relevant native fault pattern: no-fault source context, fully privileged oracle, optimistic unknown-ACK assumption, exact-or-refuse, bounded zero-query, geometry-triggered selective query, fixed step-four authoritative read, and the new public-identify-or-read controller. Actual native target holds occur at steps two and three, with gripper unchanged and missing ACK conveyed to the adapter. The test represents a **physical zero/hold injection**, not genuine network packet loss; 64 separate reset states are not 64 independently learned policies or robot embodiments.
+
+The principal non-strawman baseline uses a **frozen task-only rule selected before the new seeds**: choose the previously developed geometric selective-query policy on PullCube and the fixed step-four query policy on StackCube. The source code physically runs both competitors and selects the entire corresponding native trajectory per registered task before any outcomes. It does not splice favorable per-timestep results after observation.
+
+Every trial is retained, including refusals and both injected faults. We separately record official task success, privileged controller target reads, the number and audit-only correctness of confident latent-history assignments, public XYZ reads, native setpoint checks and all injected command masks.
+
+## 4. Main results
+
+All eight physical execution shards and the **independent full-population source auditor** completed successfully. The actual original source execution is [GitHub Actions #37913661619](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37913661619).
+
+| Actual native PhysX policy | Task successes /64 | Counted privileged target reads |
+|:--|--:|--:|
+| **Full discrete-history public evidence + selective authoritative read (this method)** | **58** | **39** |
+| **Strong pre-registered task-dependent route** | **58** | **57** |
+| Fixed readback at step four | 58 | 64 |
+| Original geometry-triggered read | 46 | 42 |
+| Bounded control without reads | 8 | 0 |
+
+The new method and the strong task-gated comparator have **identical paired official task outcomes**: 58 states were successful under both, six failed under both, and neither strategy uniquely won a state. Their source-audited *actual* private read counts were **39 versus 57**, a reduction of 18 (**31.6%**) relative to this strong policy; against always-query, 39 versus 64 is **39.1%** fewer. The data do not show higher task success than the strong comparator, and a 64-state identical success vector is insufficient to establish general statistical noninferiority.
+
+The observer encountered the intended two physical native target holds on **64/64** registered trials and observed four candidate history targets on each. It resolved a unique whole-history candidate in **25/64** cases (zero observed wrong confident identifications); the remaining 39 used one counted authoritative native target read. With fixed prior empirical parameters, the per-task physical observations were:
+
+| Task | Public unique-history cases | New method / task-gated successes | New privileged reads | Task-gated privileged reads |
+|:--|--:|--:|--:|--:|
+| PullCube (32 states) | 15 | 32 / 32 | 17 | 25 |
+| StackCube (32 states) | 10 | 26 / 26 | 22 | 32 |
+| **Total (64 states)** | **25** | **58 / 58** | **39** | **57** |
+
+*The above task-specific figures are reconciled from all eight original physical execution shards. For exact original per-trial data and independent auditor, use the source archive linked below.*
+
+### The necessary negative control
+
+Our previous **separately prospectively executed** 32-state task study required the rotation targets of *all competing hypotheses* to agree before permitting a position-only public witness. It produced **zero** confident identification, **24/32** real task successes with **32** privileged reads, compared with **24/32** successes and **26** reads for the strong task-aware comparator. All 32 true double native fault exposures were reached, so this is a genuine negative mechanism result rather than a failed injection campaign ([original 32-state raw evidence](evidence/public_fourhistory_frozen_ppo_original32_780001_790016/)).
+
+A **retrospective, outcome-exposed** diagnostic of those old 32 original motion trajectories revealed 12 unique complete-history indexes with no observed false labels, but **no improved controller was actually executed on that old population**. The new 64-state trial was frozen afterward, on different new seeds, before implementing and executing the improved full-hypothesis admission rule. This preserves the distinction between hypothesis development and prospective task validation.
+
+## 4.1. Separately preregistered 32-state external-facing prospective replication cohort
+
+A second protocol (rather than unregistered extra trials of the first one) froze new PullCube reset states `860001–860016` and StackCube `870001–870016`, prior PPO checkpoint SHA-256 identities, both actual native target-hold faults, the same empirically trained public-XYZ residual envelope and 2mm competing-hypothesis clearance, and a complete-hypothesis SO(3) survivor gate *before* the new source task outcomes. The protocol and eight independent four-state physical source jobs are [#37914343195](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37914343195). Its **32/32 double-fault exposures**, **256 actually independently stepped native PhysX controller worlds**, and independent full-denominator audit are GREEN. The complete unchanged original file archive is [survivor_fullpose_original32_860001_870016](evidence/survivor_fullpose_original32_860001_870016/).
+
+| Replication cohort, preregistered rule | Task success / 32 | Counted authoritative target reads | Public uniquely resolved histories | Incorrect confident histories observed |
+|:--|--:|--:|--:|--:|
+| Complete full-SE(3) history survivor + query on unresolved | **28** | **22** | **10** | **0** |
+| Preselected task-aware opponent, actually executed | **28** | **27** | — | — |
+| Fixed at-step-four authoritative read | 28 | 32 | — | — |
+| Older generic geometric-selective read | 24 | 18 | — | — |
+| Bounded zero-query alternative | 6 | 0 | — | — |
+
+The new adapter and the task-aware comparator have **exactly the same paired success/failure vector**: 28 successes for both, four failures for both, zero exclusive wins. In this second cohort, the information-cost difference is **task dependent**. On PullCube, both succeed **16/16**, but the proposed adapter reads **13** times whereas the task-gated method reads **11**, i.e., the proposed method is **worse by two privileged reads**. On StackCube, both succeed **12/16**, but the new adapter reads **9** versus **16**, saving seven. These counterexamples are not diluted or hidden by the favorable overall count.
+
+The primary 64-state and second 32-state studies used **distinct** reset seeds and related but separately implemented discrete-history authorization code. A descriptive sum across studies is **96 task-reset conditions (768 physically stepped simulator/controller worlds), 86/96 task successes for each task-aware comparator, 61 versus 84 privileged reads, 35 public-history selections and zero observed false confident selections**. This is not a single prospective 96-case pooled method test or 96 independent robots, and the two different model versions must NOT be used to claim a single statistically established population effect. Their separately frozen source results are the primary evidence.
+
+### Statistical accuracy is neither zero-error proof nor population equivalence
+
+The 25/25 correct confidently selected histories in the first study and 10/10 in the second do NOT identify a zero population error rate. Under a hypothetical independent identically distributed Bernoulli trial model **within each studied task mixture**, the exact *one-sided* 95% upper bound for an unobserved wrong-history probability with zero observed errors among `n` confident decisions is `1 - 0.05^(1/n)`: approximately **11.3%** for 25 original confident decisions and **25.9%** for 10. These are **conditional iid sensitivity calculations**, not valid distribution-free certificates when the controller, samples, task or sensor model shifts.
+
+Likewise, zero paired success discordances among 64 and 32 task states does **not** demonstrate noninferiority or equality of future policy success. Under the same hypothetical iid paired-outcome model, the one-sided upper bounds on a *binary discordance event* are approximately **4.57%** (64) and **8.94%** (32). Without IID across controller/task resets, such parametric bounds need not apply; with only two separately released pretrained PPOs, broader task-level generalization remains untested. Neither study quantified real robot network latency, wall-clock query cost, contact force, collision risk or physiological safety.
+
+The [source-only two-cohort reviewer audit](review/verify_two_prospective_history_cohorts.py) refuses altered/missing original JSON hashes, independently recomputes every original seed's native task success and controller target-read count, checks both real native hold interventions on the new arm, and verifies complete-history decisions against the saved source and original individual-study independent audit. Its [adversarial test suite](https://github.com/lindicaphxag-tech/ManiSkill/blob/publication/reviewer-paired96-unbiased-verification-20261009/tests/test_two_prospective_history_cohorts.py) also refuses mutated source records or hidden denominators. **This is an independent re-analysis of the contributor's original data, not independent external laboratory execution.**
+
+## 4.2. Necessary fault-truth falsification and reset-disjoint 64-state reproduction (new in v1.6)
+
+The two all-held PPO cohorts above show that public motion can reduce controller-private reads, but do **not** rule out a cheap controller that blindly assumes every missing-ACK command was held. We therefore ran an additional first-ACK **physically mixed** falsifier, separately sourced in [original 64 mixed-ACK study #37915263314](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37915263314). Its method completed **58/64** official tasks with **31** private target reads, compared with a preselected task-aware route at **58/64, 58 reads** and a genuinely stepped zero-read always-held comparator at **43/64**. The original mixed cohort reused **32 reset identities** previously used in the separate 32-state full-pose study, so it is not a completely new set of 64 initial states relative to all earlier studies. That overlap is disclosed, not erased.
+
+To repair that identity overlap, the [separately frozen disjoint protocol](https://github.com/lindicaphxag-tech/ManiSkill/blob/research/replicate-mixedack-disjoint64-20261009/research/DISJOINT_MIXED_T2_PPO64_PREOUTCOME_V1.json) precommitted wholly different PullCube seeds `1180001–1180032` and StackCube `1190001–1190032`. The exact same original native simulator runner Git blob `36e672446407435e656cbf8aba6fa2de7c1e9d0e`, original frozen two PPO checkpoints, empirical public-motion classifier and task route were reused. All eight genuine nine-controller-world PhysX shards and the separate all-population auditor passed: [original workflow #37916917436](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37916917436), **64 distinct resets / 576 actually stepped simulator-controller worlds**.
+
+| Cohort: independently reset, fixed first-ACK mixed truth, second ACK physically held | Proposed official task successes | Task-aware strong task successes | Proposed private target reads | Strong private target reads | Public unique full-history selections / wrong confident |
+|:--|--:|--:|--:|--:|--:|
+| PullCube 32 | **32** | 31 | **11** | 20 | 21 / 0 |
+| StackCube 32 | 25 | 25 | **22** | 32 | 10 / 0 |
+| **All 64 (same treatment; same frozen checkpoint per task)** | **57** | **56** | **33** | **52** | **31 / 0** |
+
+The actual paired task result is **56 both succeed, seven both fail, one new-only succeeds, zero task-aware-only succeeds**; the fixed mandatory-read comparator obtained **57/64 tasks with 64** target reads. The method saves **19/52 = 36.5%** controller-private reads against the strong route and preserves its official task successes on this particular source cohort. We do **not** claim significant task-success superiority, formally established noninferiority, independent lab reproducibility or zero future wrong-history risk. Even under a hypothetical within-cohort iid model, zero errors among 31 confident histories implies a one-sided 95% binomial upper risk of about 9.2%, not zero. The two achieved-XYZ observations per public-method trial, public-model computation, physical actuation and audit-only private getters are **different resources** from decision-time private readbacks.
+
+**The crucial remaining generalization gap:** in both physically mixed datasets the **second** command was always physically held as a known neutral motion probe. The latent belief may contain four candidate target histories, but actual delivered-command truth covers only `(APPLIED, HELD)` and `(HELD, HELD)`. We have not tested independently physically executed `(HELD, APPLIED)` or `(APPLIED, APPLIED)`, nor an external competing active probe with a matched sensing/actuation budget. Proper 2×2 truth testing requires a **separate, known delivered neutral probe step** offered to every comparator, recalibration or conservative abstention when the frozen envelope fails, and independent unseen reset IDs. See [falsifier and source-integrity report](DISJOINT_MIXED_ACK_PPO64_SOURCE_RESULT_20261009.md) for the archived original result, incomplete permanent Git tracking and explicit next decision gates.
+
+## 5. Limitations and comparison with related methods
+
+Our geometrical observation-set test draws on standard set-membership reasoning. Existing [ActionShift](https://github.com/Archerkattri/actionshift) and [ActionABI](https://github.com/Archerkattri/actionabi) studies already investigate action-interface identification, belief updates, active probes and abstention; this work does not claim to invent those broad concepts. The narrower empirical target is an **otherwise known action ABI with missing execution truth**, in which the prior commanded target is a state variable distinct from observed achieved pose.
+
+All positive and negative experiments are **author-operated within ManiSkill CPU PhysX**, mostly on the same Panda robot and two released PPO policies. The public-response tolerances are prior empirical samples, not a certified deterministic world-model envelope. Our environment deliberately masks arm commands at known steps; it does not simulate real network transport, arbitrary interrupted execution, delayed bursts, contact-force safety or robot hardware. The new method receives additional public achieved XYZ samples, so the cost comparison is explicitly about **privileged hidden target reads**, not total system information or exact wall-clock computation. Full SE(3) proprioceptive models, contact-dependent disturbances, task-general active-query opponents and genuinely independent laboratory/fork re-executions remain unproven.
+
+In particular, 25 correct observed history labels are not proof that the probability of a wrong confident assignment is zero on new systems, and zero paired discordances on 64 trials are not proof of task noninferiority under an arbitrary population shift. A strong ActionShift-style alternative given the same public motion samples, actuation opportunities and query cost must be executed before making any state-of-the-art comparison claim.
+
+## 6. Reproduction, negative evidence and external reviewer challenge
+
+- **Full new64 source-frozen actual physical experiment and 10-job independent audit:** https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37913661619
+- **Original source/data archive (17 original PhysX JSON and SHA256SUMS, when automated archival is complete):** [full new64 original source evidence](evidence/discrete_hypothesis_ppo_original64_840001_850032/)
+- **Fresh-run original protocol and physical controller source:** [PPO_DISCRETE_HYPOTHESIS_NEW64_PREOUTCOME_V2.json](../PPO_DISCRETE_HYPOTHESIS_NEW64_PREOUTCOME_V2.json), [frozen_ppo_discrete_history_v2_physx.py](../frozen_ppo_discrete_history_v2_physx.py), [independent source auditor](../audit_public_discrete_hypothesis_new64.py).
+- **Earlier correctly preserved negative experiment:** [original new32 source](evidence/public_fourhistory_frozen_ppo_original32_780001_790016/), [registered initial 32-state experiment](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37912591209), [reproducible retrospective pilot (NOT PhysX intervention)](../audit_development_old32_full_history_index.py).
+- **External researcher-owned fork entry:** [independent eight-reset PhysX workflow](../../.github/workflows/outside-discrete-history-v2-physx.yml) and [source-locked runner](../outside_discrete_history_v2_replication.py). This workflow being available is **not** an external laboratory replication.
+
+**Current conclusion.** A complete finite controller-execution history can, in this tested fault regime, be conditionally reconstructed from ordinary public tool motion even when the competing histories have different orientations. Selectively replacing a private commanded-target read with this evidence saved actual privileged reads without changing observed frozen PPO task success on an independent, before-outcome 64-state physical simulation cohort. The credible next step is not another prettier self-fork merge, but a matched-information, independently operated fault-domain transfer study.
+
+*Do not call this result an accepted top-tier paper, independent outside validation, a new set-membership theorem or hardware safety certificate.*
