@@ -29,7 +29,7 @@ jobs:
           test "$(git hash-object research/run_confirmatory_four_truth_new64clusters.py)" = 2a9fcf978a84d22b1125930c26041c36f58ef418
           test "$(git hash-object research/audit_confirmatory_four_truth_new64clusters.py)" = 861100f728a4e0f7a8ac1f8ad027dc299c09de95
           python -m py_compile research/audit_confirmatory_four_truth_new64clusters.py research/run_confirmatory_four_truth_new64clusters.py
-          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37934425888/artifacts --jq '[.artifacts[] | select(.name | startswith("factorial-"))] | length')" = 32
+          test "$(gh api 'repos/'"$GITHUB_REPOSITORY"'/actions/runs/37934425888/artifacts?per_page=100' --jq '[.artifacts[] | select(.name | startswith("factorial-"))] | length')" = 32
       - name: Download ALL 32 original physically stepped shards without modification
         env:
           GH_TOKEN: ${{ github.token }}
