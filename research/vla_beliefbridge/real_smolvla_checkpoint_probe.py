@@ -56,7 +56,7 @@ def main():
     policy=SmolVLAPolicy.from_pretrained(MODEL_ID,revision=model_rev).to("cpu").eval()
     t1=time.monotonic()
     preprocess,postprocess=make_pre_post_processors(
-        policy.config,MODEL_ID,
+        policy.config,MODEL_ID,pretrained_revision=model_rev,
         preprocessor_overrides={"device_processor":{"device":"cpu"}},
     )
     # Must load REAL frames. The model card recommends "lerobot/libero".
