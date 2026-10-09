@@ -60,6 +60,7 @@ jobs:
           python -m py_compile research/finite_risk_authority.py
           python -m unittest discover -s tests -p test_finite_risk_authority.py -v
       - name: Keep original real-PhysX confident-wrong history, forbid retrospective rebranding as calibration
+        shell: bash
         run: |
           python -m research.audit_original640_public_risk_score --output original640_development_only.json
           python - <<'PY'
