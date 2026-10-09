@@ -1,0 +1,162 @@
+name: "Prospective entirely unseen 64 same-public Bayes vs history PhysX PPO (640 native worlds)"
+on:
+  push:
+    branches: [research/matched-public-bayes-new64-20261009]
+    paths:
+      - 'research/MATCHED_PUBLIC_BAYES_NEW64_PREOUTCOME_V1.json'
+      - 'research/frozen_ppo_matched_public_bayes_physx.py'
+      - '.github/workflows/matched-public-bayes-new64.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prereg-freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Check frozen-before-new-results protocol and algorithm exact blobs
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/MATCHED_PUBLIC_BAYES_NEW64_PREOUTCOME_V1.json)" = "6e54ae1c9c65da08f7a20fc4d69eeaff100c599e"
+          test "$(git hash-object research/frozen_ppo_matched_public_bayes_physx.py)" = "ef9cd994ceb5f4435feb24c2d597cff5a3ec93fb"
+          python -m py_compile research/frozen_ppo_matched_public_bayes_physx.py
+          python - <<'PY'
+          import json
+          a=json.load(open("research/MATCHED_PUBLIC_BAYES_NEW64_PREOUTCOME_V1.json"))
+          assert a["frozen_before_new64_outcomes"] and a["all_n"]==64
+          assert a["seed_shards"]=={"pull_cube":[1720001,1720009,1720017,1720025],"stack_cube":[1730001,1730009,1730017,1730025]}
+          print("PASS: source/hash, two released policies, 0.95 posterior gate frozen for all new64 before execution")
+          PY
+  real-native-physx:
+    needs: prereg-freeze
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {task: pull_cube, first: 1720001}
+          - {task: pull_cube, first: 1720009}
+          - {task: pull_cube, first: 1720017}
+          - {task: pull_cube, first: 1720025}
+          - {task: stack_cube, first: 1730001}
+          - {task: stack_cube, first: 1730009}
+          - {task: stack_cube, first: 1730017}
+          - {task: stack_cube, first: 1730025}
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      ABI_FIRST_SEED: ${{ matrix.first }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install official CPU PhysX and frozen released PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Run ten independently stepped actual controller worlds per registered original state
+        run: |
+          mkdir -p originals
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python -m research.frozen_ppo_matched_public_bayes_physx 2>&1 | tee originals/actual_native_physx.log
+          mv "mixed_ack_${{ matrix.task }}_original8.json" originals/
+      - name: Fail closed on missing physical prefixes, source truth, samples or success
+        run: |
+          python - <<'PY'
+          import json,os,pathlib
+          t=os.environ["ABI_TASK"]; f=int(os.environ["ABI_FIRST_SEED"])
+          d=json.load(open(f"originals/mixed_ack_{t}_original8.json"))
+          assert d["original_seed_population"]==list(range(f,f+8))
+          assert d["real_physx_simulator"] is True and len(d["episodes"])==8
+          A="fault_public_t3_fourhistory_or_t4_query"
+          B="fault_same_public_posterior_or_query"
+          F="fault_always_single_privileged_query"
+          agg=dict(task=t,first=f,n=8,pub_success=0,post_success=0,fixed_success=0,
+                   pub_reads=0,post_reads=0,fixed_reads=0,pub_unique=0,post_unique=0,
+                   pub_wrong=0,post_wrong=0,prefix_ok=True)
+          for r in d["episodes"]:
+            assert r["seed"] in range(f,f+8)
+            idx=(r["seed"]-1)%4
+            assert (r["original_precommitted_physical_t2_execution_truth"],r["original_precommitted_physical_t3_execution_truth"]) == (
+                "applied" if idx in (1,3) else "held","applied" if idx in (2,3) else "held")
+            for name in (A,B,F):
+              assert [q["step"] for q in r["faults"][name]]==[2,3]
+              assert type(r["success_once"][name]) is bool
+              assert type(r["privileged_target_readback_decision_count"][name]) is int
+            assert r["public_motion_observation_cost_samples"][A]==2
+            assert r["public_motion_observation_cost_samples"][B]==2
+            assert r["public_motion_observation_cost_samples"][F]==0
+            for key in ("matched_prefix_physical_audit","matched_posterior_prefix_audit"):
+              c=r[key]
+              assert c["valid_exact_prefix"] is True
+              assert max(c["native_fault_dispatch_linf_each"])<=5e-5
+              assert c["pre_t5_achieved_position_max_abs_m"]<=5e-5
+              assert c["pre_t5_target_position_max_abs_m"]<=5e-5
+            pe=r["public_t3_evidence"]; be=r["same_sensor_posterior_evidence"]
+            assert be["posterior_threshold_predeclared"]==0.95
+            assert abs(sum(be["posterior_weights"])-1)<1e-5
+            assert r["privileged_target_readback_decision_count"][A]==int(not pe["authorized"])
+            assert r["privileged_target_readback_decision_count"][B]==int(not be["authorized"])
+            for key,name in ((A,"pub"),(B,"post"),(F,"fixed")):
+              agg[name+"_success"]+=int(r["success_once"][key])
+              agg[name+"_reads"]+=r["privileged_target_readback_decision_count"][key]
+            agg["pub_unique"]+=int(pe["authorized"])
+            agg["post_unique"]+=int(be["authorized"])
+            agg["pub_wrong"]+=int(pe["wrong_confident"])
+            agg["post_wrong"]+=int(be["wrong_confident"])
+          pathlib.Path("originals/original8_verified_summary.json").write_text(json.dumps(agg,indent=2,sort_keys=True))
+          print("NEW64_TRUE_NATIVE_PHYXS_SHARD",json.dumps(agg,sort_keys=True))
+          PY
+      - name: Preserve original sources with SHA-256 and exact source pin
+        if: always()
+        run: |
+          mkdir -p originals
+          git rev-parse HEAD > originals/GIT_SOURCE_SHA.txt
+          (cd originals && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS) || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-new64-${{ matrix.task }}-${{ matrix.first }}
+          path: originals/
+          retention-days: 90
+  source-complete-original64-audit:
+    needs: real-native-physx
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-new64-*
+          path: /tmp/new64_orig
+      - name: Verify exact all64 population without dropping contrary outcomes
+        run: |
+          python - <<'PY'
+          import pathlib,json,collections
+          root=pathlib.Path("/tmp/new64_orig")
+          shard=list(root.rglob("original8_verified_summary.json"))
+          assert len(shard)==8,(len(shard),shard)
+          rows=[json.loads(p.read_text()) for p in shard]
+          expected={("pull_cube",x) for x in (1720001,1720009,1720017,1720025)}|{("stack_cube",x) for x in (1730001,1730009,1730017,1730025)}
+          assert {(r["task"],r["first"]) for r in rows}==expected
+          assert all(r["n"]==8 and r["prefix_ok"] for r in rows)
+          out={k:sum(r[k] for r in rows) for k in
+             ("n","pub_success","post_success","fixed_success","pub_reads","post_reads","fixed_reads","pub_unique","post_unique","pub_wrong","post_wrong")}
+          assert out["n"]==64
+          out["source_kind"]="AUTHOR_OPERATED_ACTUAL_NATIVE_PHYSX_NOT_EXTERNAL_REPRODUCTION"
+          out["controller_worlds_physically_stepped"]=640
+          out["public_XYZ_samples_each_method"]=128
+          out["task_strata"]=rows
+          pathlib.Path("new64_actual_physx_full_audit.json").write_text(json.dumps(out,indent=2,sort_keys=True))
+          print("NEW64_ACTUAL_PHYSX_FULL_SOURCE_AUDIT",json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: new64-original-640world-native-physx-full-audit
+          path: new64_actual_physx_full_audit.json
