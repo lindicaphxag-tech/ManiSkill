@@ -73,6 +73,8 @@ jobs:
           assert r['status']=='IID_BINARY_MODEL_MATHEMATICS_NOT_PHYSX'
           assert abs(q['repeated_probe_error']-.028)<1e-10
           assert abs(q['average_probe_cost']-2.18)<1e-10
+          assert abs(r['correlated_error_stress_at_10pct']['0.5']['all_probes_wrong_prob']-.064)<1e-10
+          assert abs(r['correlated_error_stress_at_10pct']['1.0']['all_probes_wrong_prob']-.1)<1e-10
           print('PASS_EXACT_IID_MODEL_NOT_ROBOT_SAFETY')
           PY
       - uses: actions/upload-artifact@v4
