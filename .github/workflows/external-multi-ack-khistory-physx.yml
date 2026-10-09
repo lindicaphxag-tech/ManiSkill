@@ -1,0 +1,104 @@
+name: Outside-fork genuine four-history two-unknown-ACK original PhysX
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: Original frozen PPO task
+        required: true
+        type: choice
+        default: pull_cube
+        options: [pull_cube, stack_cube]
+      first_seed:
+        description: First of exactly eight NEW consecutive physical reset seeds (>=300001)
+        required: true
+        type: number
+        default: 300001
+  push:
+    branches: [research/external-four-history-original-physx-20261009]
+    paths:
+      - 'research/external_multi_ack_khistory_replication.py'
+      - '.github/workflows/external-multi-ack-khistory-physx.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  precommit-independent-evidence-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      SELECT_TASK: ${{ github.event_name == 'workflow_dispatch' && inputs.task || 'pull_cube' }}
+      SELECT_SEED: ${{ github.event_name == 'workflow_dispatch' && inputs.first_seed || 300001 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze exact original two-ACK method, original released policy, target/rotation certifier and six destructive tests
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/frozen_ppo_multi_ack_khistory.py)" = "3b502befd8940da51506ae18ed474726642f1a6d"
+          test "$(git hash-object research/multi_history_authority.py)" = "b7103c05b073a161793b454087956eb7210e5a1b"
+          test "$(git hash-object research/action_abi_uncertain_delivery_belief.py)" = "e554f1897557075def1c871dfe0bc3c6ae58f676"
+          test "$(git hash-object research/MULTI_ACK_K_HISTORY_PREOUTCOME_V1.json)" = "4107c00a5359da78542bbaafa922e2f4196f11fd"
+          python -m py_compile research/external_multi_ack_khistory_replication.py
+          python research/external_multi_ack_khistory_replication.py --self-test
+          python - <<'PY'
+          import sys,os
+          sys.path.insert(0,'research')
+          from external_multi_ack_khistory_replication import registered_seeds
+          x=registered_seeds(os.environ['SELECT_TASK'],int(os.environ['SELECT_SEED']))
+          assert len(x)==8 and x[-1]==x[0]+7
+          print('PASS: source frozen and eight external investigator-chosen reset seeds',x)
+          PY
+
+  original-pretrained-PPO-real-two-ACK-PhysX:
+    needs: precommit-independent-evidence-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      SELECT_TASK: ${{ github.event_name == 'workflow_dispatch' && inputs.task || 'pull_cube' }}
+      SELECT_SEED: ${{ github.event_name == 'workflow_dispatch' && inputs.first_seed || 300001 }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install actual ManiSkill PhysX CPU and released external original frozen PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Commit exact original source, selected seeds, actor, model and package identity to output BEFORE simulation
+        run: |
+          mkdir -p external_multi_ack_artifacts
+          git rev-parse HEAD > external_multi_ack_artifacts/runner_fork_commit.txt
+          git hash-object research/frozen_ppo_multi_ack_khistory.py > external_multi_ack_artifacts/original_frozen_PPO_runner_blob.txt
+          git hash-object research/multi_history_authority.py > external_multi_ack_artifacts/original_all_history_authority_blob.txt
+          git hash-object research/MULTI_ACK_K_HISTORY_PREOUTCOME_V1.json > external_multi_ack_artifacts/original_pre_outcome_protocol_blob.txt
+          python -m pip freeze --all > external_multi_ack_artifacts/python_environment.freeze.txt
+          printf 'task=%s first_seed=%s cases=8 two_physx_target_hold_fault_steps=2,4 budget=2 native_architecture=unchanged original_frozen_pretrained_model=true no_training=true github_actor=%s github_repository=%s\n' "$SELECT_TASK" "$SELECT_SEED" "$GITHUB_ACTOR" "$GITHUB_REPOSITORY" > external_multi_ack_artifacts/original_run_identity.txt
+      - name: Run all seven ACTUAL native controller worlds, both physical faults, all eight resets, all failures and refusals
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/external_multi_ack_khistory_replication.py \
+            --task "$SELECT_TASK" --first-seed "$SELECT_SEED" \
+            --output-dir external_multi_ack_artifacts \
+            2>&1 | tee external_multi_ack_artifacts/complete_true_native_physx.log
+          test -s external_multi_ack_artifacts/reviewer_summary.json
+          test -s "external_multi_ack_artifacts/two_unknown_ACK_original_${SELECT_TASK}_${SELECT_SEED}_8cases.json"
+      - name: Record SHA-256 for original source records, logs and environment even on errors
+        if: always()
+        run: |
+          (cd external_multi_ack_artifacts && sha256sum *.json *.txt *.log > SHA256SUMS) || true
+      - name: Preserve COMPLETE genuine native PhysX reviewer fork output (including failures)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: independent-investigator-source-locked-twoACK-eight-seed-physx
+          path: external_multi_ack_artifacts/
+          if-no-files-found: warn
+          retention-days: 90
