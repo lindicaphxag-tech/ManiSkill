@@ -6,8 +6,10 @@ on:
       - research/authority_probe_minimax.py
       - research/adversarial_probe_budget.py
       - research/reliability_cost_tradeoff.py
+      - research/group_fault_probe_minimax.py
       - tests/test_authority_probe_minimax.py
       - tests/test_adversarial_probe_budget.py
+      - tests/test_group_fault_probe_minimax.py
       - .github/workflows/authority-aware-minimax.yml
   workflow_dispatch:
 permissions:
@@ -34,6 +36,25 @@ jobs:
         run: python -m unittest discover -s tests -p test_adversarial_probe_budget.py -v
       - name: Verify proof model still fail-closed with all Python asserts DISABLED
         run: python -O -m unittest discover -s tests -p test_adversarial_probe_budget.py -v
+      - name: Cross-sensor GROUP adversarial model + sixty random finite games
+        run: |
+          python -m py_compile research/group_fault_probe_minimax.py tests/test_group_fault_probe_minimax.py
+          python -m unittest discover -s tests -p test_group_fault_probe_minimax.py -v
+          python -O -m unittest discover -s tests -p test_group_fault_probe_minimax.py -v
+      - name: Generate complete correlated-sensor group model-only certificate
+        shell: bash
+        run: |
+          python -m research.group_fault_probe_minimax > grouped_corruption_model_only.json
+          python - <<'PY'
+          import json
+          x=json.load(open('grouped_corruption_model_only.json'))
+          assert x['status']=='PASS_CORRELATED_FAULT_FINITE_MODEL_ONLY'
+          assert x['K1_3_distinct_groups_cost']==3
+          assert x['K1_repeated_1_group_cost']==5
+          assert x['K1_2_distinct_groups_cost']==5
+          assert x['K_plus_1_corruption_produces_wrong_repair']
+          print('GROUP_FAULT_MODEL_ONLY_NOT_PHYSX_PASS')
+          PY
       - name: Output synthetic-only decision certificates for human audit
         shell: bash
         run: |
@@ -86,4 +107,5 @@ jobs:
             synthetic_minimax_certificates.json
             k1_corruption_minimax_model_only.json
             iid_reliability_model_only.json
+            grouped_corruption_model_only.json
           if-no-files-found: error
