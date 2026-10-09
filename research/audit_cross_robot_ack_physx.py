@@ -33,6 +33,14 @@ def audit(d,robot,chunk):
             or row.get("both_private_target_reads_for_audit_only") is not True
             or row.get("xarm6_is_not_a_Panda_relabel") is not (robot=="xarm6_robotiq")):
             raise ValueError("Robot body or truthful observer state identity was altered")
+        # Actual physical robot controller ABI must differ; falsified
+        # Panda labels can never be counted as an xArm6 experiment.
+        expected_keys=(["arm","gripper"] if robot=="panda"
+                       else ["arm","gripper_active","gripper_passive"])
+        act_keys=row.get("actual_action_controller_keys",{})
+        if (set(act_keys)!={"held","applied"} or
+            any(list(act_keys[t])!=expected_keys for t in ("held","applied"))):
+            raise ValueError("Genuine controller joint/gripper ABI does not match declared robot")
         cmds=row.get("native_requested_commands")
         if (not isinstance(cmds,list) or len(cmds)!=6 or len(cmds[2])!=6
             or cmds[2]==[0.]*6 or cmds[3]!=[0.]*6):
