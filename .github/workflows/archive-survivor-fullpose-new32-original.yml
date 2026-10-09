@@ -48,18 +48,32 @@ jobs:
             done
           done
           test "$(find /tmp/fullpose_original_native32 -name full_original_survivor_fullpose_new32_audit.json -type f | wc -l)" -eq 1
+          # gh run download may preserve a subdirectory from the original
+          # multi-shard artifact. Flatten filenames without changing bytes
+          # BEFORE invoking the original auditor (which expects *.json here).
+          mkdir -p /tmp/fullpose_flat_exact_bytes
+          for task in pull_cube stack_cube; do
+            for c in 0 1 2 3; do
+              for type in original4 audit; do
+                name="survivor_fullpose_${task}_chunk${c}_${type}.json"
+                cp "$(find /tmp/fullpose_original_native32 -name "$name" -type f)" /tmp/fullpose_flat_exact_bytes/
+              done
+            done
+          done
+          cp "$(find /tmp/fullpose_original_native32 -name full_original_survivor_fullpose_new32_audit.json -type f)" /tmp/fullpose_flat_exact_bytes/
+          test "$(find /tmp/fullpose_flat_exact_bytes -maxdepth 1 -name '*.json' -type f | wc -l)" -eq 17
 
       - name: Completely recompute original 32-state all-controls, hidden-full-pose errors and paired results
         run: |
           set -euo pipefail
           PYTHONPATH="$PWD:$PWD/research" python -m research.audit_survivor_fullpose_new32 \
-            --source-dir /tmp/fullpose_original_native32 \
+            --source-dir /tmp/fullpose_flat_exact_bytes \
             --output /tmp/recomputed_survivor_original32.json
           python - <<'PY'
           import json
           from pathlib import Path
           d=json.load(open('/tmp/recomputed_survivor_original32.json'))
-          src=json.load(open('/tmp/fullpose_original_native32/full_original_survivor_fullpose_new32_audit.json'))
+          src=json.load(open('/tmp/fullpose_flat_exact_bytes/full_original_survivor_fullpose_new32_audit.json'))
           assert d==src, 'Raw source program originals disagree with aggregate source audit'
           assert d['genuine_source_physx_reset_states']==32
           assert d['genuine_physics_controller_worlds']==256
@@ -84,7 +98,7 @@ jobs:
           set -euo pipefail
           dest=research/frozen_policy_transfer/evidence/survivor_fullpose_original32_860001_870016
           mkdir -p "$dest"
-          cp /tmp/fullpose_original_native32/*.json "$dest/"
+          cp /tmp/fullpose_flat_exact_bytes/*.json "$dest/"
           (cd "$dest" && sha256sum ./*.json > SHA256SUMS)
           cat > "$dest/README.md" <<'EOF'
           # Original full-SE3 survived controller memory under TWO unknown ACKs
