@@ -1,0 +1,123 @@
+name: Archive native Panda xArm6 amplitude shift real PhysX 32-case original proof
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/archive-cross-robot-amplitude-ood32.yml'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-cross-robot-amplitude-ood32.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  readonly-frozen-source-and-negative-controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Demand exact original producer identity, source ZIP digest, all 32 native cases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/CROSS_ROBOT_ACK_AMPLITUDE_SHIFT_PREOUTCOME_V1.json)" = "24ac966eecb765a609b3f5601c755216b24501c3"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37909572930 --jq .head_sha)" = "6d99a4eab32a164fc62950b54ab47385f66b416f"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37909572930 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11606365314 --jq .digest)" = "sha256:4fffcee5d8365d6d2825b8839fb5a8489975202d60034764f9ebded2f441e4d1"
+          mkdir -p /tmp/amp-original-download /tmp/amp-verified-source
+          gh run download 37909572930 --repo "$GITHUB_REPOSITORY" --name complete-32-native-cross-robot-amplitude-ood-original --dir /tmp/amp-original-download
+          for robot in panda xarm6_robotiq; do
+            for tag in nominal100 shift040; do
+              name="cross_robot_amp_${robot}_${tag}_original8.json"
+              mapfile -t found < <(find /tmp/amp-original-download -type f -name "$name")
+              test "${#found[@]}" -eq 1
+              cp "${found[0]}" "/tmp/amp-verified-source/$name"
+            done
+          done
+          mapfile -t aud < <(find /tmp/amp-original-download -type f -name "full_32_ood_audit.json")
+          test "${#aud[@]}" -eq 1
+          cp "${aud[0]}" /tmp/amp-verified-source/full_32_ood_audit.json
+          python -m research.audit_cross_robot_amp_shift \
+            --input-dir /tmp/amp-verified-source \
+            --output /tmp/independent_original_amp_audit.json
+          cmp /tmp/independent_original_amp_audit.json /tmp/amp-verified-source/full_32_ood_audit.json
+          python -m unittest discover -s tests -p test_cross_robot_amp_shift.py -v
+          
+
+  trusted-main-original-byte-archive:
+    if: github.event_name != 'pull_request'
+    needs: readonly-frozen-source-and-negative-controls
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reverify original exact source ZIP/protocol and recompute all cases independently
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/CROSS_ROBOT_ACK_AMPLITUDE_SHIFT_PREOUTCOME_V1.json)" = "24ac966eecb765a609b3f5601c755216b24501c3"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37909572930 --jq .head_sha)" = "6d99a4eab32a164fc62950b54ab47385f66b416f"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37909572930 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11606365314 --jq .digest)" = "sha256:4fffcee5d8365d6d2825b8839fb5a8489975202d60034764f9ebded2f441e4d1"
+          mkdir -p /tmp/amp-original-download /tmp/amp-verified-source
+          gh run download 37909572930 --repo "$GITHUB_REPOSITORY" --name complete-32-native-cross-robot-amplitude-ood-original --dir /tmp/amp-original-download
+          for robot in panda xarm6_robotiq; do
+            for tag in nominal100 shift040; do
+              name="cross_robot_amp_${robot}_${tag}_original8.json"
+              mapfile -t found < <(find /tmp/amp-original-download -type f -name "$name")
+              test "${#found[@]}" -eq 1
+              cp "${found[0]}" "/tmp/amp-verified-source/$name"
+            done
+          done
+          mapfile -t aud < <(find /tmp/amp-original-download -type f -name "full_32_ood_audit.json")
+          test "${#aud[@]}" -eq 1
+          cp "${aud[0]}" /tmp/amp-verified-source/full_32_ood_audit.json
+          python -m research.audit_cross_robot_amp_shift \
+            --input-dir /tmp/amp-verified-source \
+            --output /tmp/independent_original_amp_audit.json
+          cmp /tmp/independent_original_amp_audit.json /tmp/amp-verified-source/full_32_ood_audit.json
+          python -m unittest discover -s tests -p test_cross_robot_amp_shift.py -v
+          
+      - name: Preserve original five JSON byte strings and their exact SHA256s on public main
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/cross_robot_native_command_amplitude_shift_new32_540001_550004
+          mkdir -p "$dest"
+          cp /tmp/amp-verified-source/*.json "$dest/"
+          (cd "$dest" && sha256sum *.json > SHA256SUMS && sha256sum -c SHA256SUMS)
+          cat > "$dest/README.md" <<'EOF'
+          # Original prospective real PhysX Panda + xArm6 ACK command-amplitude shift falsification
+
+          These are AUTHOR-OPERATED genuine native CPU PhysX controller states, NOT physical hardware, pretrained PPO task successes, a new robot action policy, independent external replication, or a safety certificate. Each of 8 unique robot/seed reset states contributes 2 physical execution truths x 2 native command amplitudes, 32 trial truth conditions, 4 actually stepped controller arms per condition = 128 native PhysX worlds. Paired within reset: NOT 32 independent seeds.
+
+          Prior model calibrated from independent eight pre-existing original physically simulated states PER ROBOT at the reference native scale 1.0, with unmodified envelopes; no new labels or test results fit into the model. ORIGINAL before-implementation prereg commit eba1eb14005d3770eb347e02633d0c496a513605; protocol Git blob 24ac966eecb765a609b3f5601c755216b24501c3.
+
+          Exact ORIGINAL complete all-6-green producer CI run 37909572930, source commit 6d99a4eab32a164fc62950b54ab47385f66b416f. Complete original FIVE-JSON source Actions artifact 11606365314, ZIP sha256:4fffcee5d8365d6d2825b8839fb5a8489975202d60034764f9ebded2f441e4d1. All five JSONs copied byte-for-byte from that single successful producer: 4 original task x amplitude trial files + 1 original independently recomputed complete source auditor JSON. All original physical negative, refused or wrong confident decisions included. SHA256SUMS freezes the exact five JSON byte strings.
+
+          Achieved public EE motion Δ(t3 − t1) evaluated at known Panda/xArm6 controller target chart and old robot-specific calibration only. At normalized amplitude 100% both frozen prior and command-conditioned affine means restore exact commanded target XYZ in 16/16 paired robot/truth conditions. At 40%, frozen 100%-calibrated class envelopes correctly ABSTAIN on 8/16 and restore 8/16; prespecified affine command conditioning restores 16/16 with no privileged target getter during action decisions. Total restored: command-conditioned 32/32, fixed model 24/32, optimistic 16/32 and pessimistic 16/32. No confident wrong history labels for either selective estimator were observed here, but 32/32 does NOT statistically prove zero future error.
+
+          No trained PPO/VLA deployed on second robot. Correction success means AFTER real native corrective controller step target_pose XYZ error <=1e-4m, not achieved EE position tracking, trajectory equivalence, task success or safe contacts. The result covers exactly two fixed command scales (40%, 100%), one scripted fault step and one zero-native active response step; no unknown controller semantics, arbitrary orientations/amplitudes, real ROS network loss, actuator disturbance or real hardware safety.
+
+          Reproduce: (cd HERE && sha256sum -c SHA256SUMS); python -m research.audit_cross_robot_amp_shift --input-dir research/frozen_policy_transfer/evidence/cross_robot_native_command_amplitude_shift_new32_540001_550004 --output /tmp/source-audit.json.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dest"
+          if git diff --cached --quiet; then echo "Original source already archived"; exit 0; fi
+          git commit -m 'evidence: immutable all-original 32 PhysX ACK amplitude shift truth cases and SHA256SUMS'
+          git pull --rebase origin main
+          git push origin HEAD:main
