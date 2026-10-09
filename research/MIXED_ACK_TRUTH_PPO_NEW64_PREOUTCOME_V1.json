@@ -1,0 +1,82 @@
+{
+  "schema": "prospective_mixed_actual_ack_first_fault_held_vs_applied_new64_v1",
+  "frozen_before_implementation_or_any_new_860001_870001_physx": true,
+  "date": "2026-10-09",
+  "scientific_gap": "Prior 64 new frozen PPO task cases had the physically executed ACK truth HELD at BOTH t2 and t3, so hard-coding that pattern could be a stronger zero-read baseline than inferred response. Disambiguate with blinded precommitted actual first ACK executed vs held and explicitly include deterministic always-held native observer baseline.",
+  "previous_results_development_only": {
+    "source": "research/frozen_policy_transfer/evidence/discrete_hypothesis_ppo_original64_840001_850032/",
+    "success_new": 58,
+    "reads_new": 39,
+    "success_task_gated": 58,
+    "reads_task_gated": 57,
+    "public_correct_unique": 25,
+    "no_wrong": 0
+  },
+  "unseen_population": {
+    "tasks": {
+      "pull_cube": {
+        "start": 860001,
+        "end": 860032
+      },
+      "stack_cube": {
+        "start": 870001,
+        "end": 870032
+      }
+    },
+    "eight_shards_four_per_task": true,
+    "seeds_per_shard": 8,
+    "reset_states": 64,
+    "independent_actual_native_controllers_per_seed": 9,
+    "total_native_physx_worlds": 576
+  },
+  "frozen_external_policy": {
+    "revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+    "pull_sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+    "stack_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c",
+    "no_retraining": true
+  },
+  "physical_execution_truth": {
+    "t2": "APPLIED if original integer seed even; HELD if odd. Precommitted deterministic 16 applied and 16 held cases per task; the adapter sees UNKNOWN regardless.",
+    "t3": "HELD for all physically executed worlds, native arm zero, same zero-DELTA probe, ACK UNKNOWN to adapter. This is a one-mixed-one-held regime, NOT two fully independently randomized ACKs.",
+    "gripper": "unchanged source policy",
+    "controller": "Panda source pd_ee_delta_pose -> target pd_ee_target_delta_pose",
+    "real_physx_cpu": true,
+    "horizon_steps": 50,
+    "not_network_fault_emulation": true
+  },
+  "frozen_methods": {
+    "v2_full_discrete_history_public": "research/frozen_ppo_discrete_history_v2_physx.py (existing trained-free method implementation unchanged except only physical truth fork and ninth baseline)",
+    "public_observation": "two achieved XYZ before/after t3 actually dispatched zero arm command, zero EXTRA physically actuated probing steps",
+    "model": "research/empirical_probe_response_classifier.py old Pull eps .006944262561376447; Stack eps .00719087965534261, gain 0..1 and nonwinner margin +.002m, no test refinement",
+    "new_baseline": "fault_assume_held_without_query: source-documented deterministic native target history observer, speculatively call acknowledge(applied=False) on both missing ACKs, no private reads. It is not told parity or physical t2 truth.",
+    "strong_opponent": "task-ID rule chosen BEFORE reset: Pull geometry-triggered bounded/query; Stack fixed target read at t4; actual separately stepped native PhysX whole trajectories",
+    "other_comparators": [
+      "source_no_fault",
+      "continuously privileged oracle",
+      "always_applied_optimist",
+      "strict_exact_refuse",
+      "no_query_bounded",
+      "geometry_selective_read",
+      "fixed_read_t4"
+    ]
+  },
+  "primary_endpoints": [
+    "official task completion paired new public-v2 versus task-ID strong comparator on same all64 seeds",
+    "paired new public-v2 versus always-held zero-read assumption on same all64 seeds",
+    "counts of privileged target readbacks, public XYZ samples, candidate-history identifications, wrong confident labels",
+    "report each task and each t2 APPLIED/HELD stratum, no pooling misleadingly",
+    "verify actual native t2 action was dispatched according to parity, before/after native commanded target audit-only",
+    "verify actual physical t3 command HOLD and 2 unknown acknowledgement notifications on each exposed trial",
+    "all refusals and pre-fault native invalids retained in full denominator",
+    "record exact typed action representability, no claims of physical-force/collision safety"
+  ],
+  "analysis_boundaries": [
+    "t2 parity is public rule in original protocol, a deployed observer MUST NOT consume seed parity or injection truth; if it does experimental validity is lost",
+    "strong always-held baseline can dominate previous static all-held regime, must disclose rather than omit",
+    "no true network loss, no hardware, no outside lab, not mixed four fully realized t2/t3 ACK combinations",
+    "reusing old empirical threshold on new mixed truth is prospective, failures must not lead to test-set threshold tuning",
+    "successful paired episode outcomes do not statistically prove safety or universal noninferiority",
+    "if any precondition/physical exposure fails, report failed experiment not advantageous selective denominator"
+  ],
+  "analysis_policy": "No tuning based on new outcomes; report both injected truth subgroups, and question whether generic unknown-ACK authority is justified at all if mixed execution invalidates public response calibration."
+}
