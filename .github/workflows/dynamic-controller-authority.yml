@@ -1,0 +1,45 @@
+name: Dynamic controller authority and action transition minimax contracts
+on:
+  push:
+    branches: [research/dynamic-ack-transition-shield-20261010]
+    paths:
+      - research/dynamic_authority_shield.py
+      - tests/test_dynamic_authority_shield.py
+      - .github/workflows/dynamic-controller-authority.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  adversarial-transition-model-only:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Compile original and dynamic authority engines and tests
+        run: python -m py_compile research/authority_probe_minimax.py research/dynamic_authority_shield.py tests/test_dynamic_authority_shield.py
+      - name: Falsify wrong repairs, probe-induced unsafe transitions, stale certificates, and cost claims
+        run: python -m unittest discover -s tests -p test_dynamic_authority_shield.py -v
+      - name: Preserve THREE synthetic cases with independent checker
+        shell: bash
+        run: |
+          python - <<'PY'
+          from research.dynamic_authority_shield import cases, synthesize, check
+          import json
+          d={}
+          for name, model in cases().items():
+              plan=synthesize(model)
+              check(model,plan)
+              d[name]={'model_only':True,'worst_abstract_cost':plan['worst_abstract_cost'],'first_decision':plan['root']['kind'],'model_sha256':plan['model_sha256']}
+          assert d['shifting_repair']['first_decision']=='probe'
+          assert d['unsafe_probe_veto']['first_decision']=='read'
+          assert d['costly_uninformative_probe']['first_decision']=='read'
+          print('DYNAMIC_SYNTHETIC_ONLY',json.dumps(d,sort_keys=True))
+          PY
