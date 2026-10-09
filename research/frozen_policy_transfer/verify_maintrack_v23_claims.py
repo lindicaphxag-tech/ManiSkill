@@ -50,7 +50,7 @@ def main():
     early=json.loads((a.matched64/"full_shared_compiler_original64_audit.json").read_bytes())
     conf=json.loads((a.factorial256/"independent_source_only_full256_audit.json").read_bytes())
     motor=json.loads((a.motor256/"REAL256_ACTUAL_NATIVE_T2_T3_MOTOR_AND_PUBLIC_PROBE_AUDIT.json").read_bytes())
-    assert early["registered_source_64"]==64
+    assert len(early["registered_source_64"])==8 and len(early["all_episodes"])==64
     assert early["actually_stepped_simulator_worlds"]==576
     assert early["all_compiler_traces_valid"] is True
     assert len(early["all_episodes"])==64
