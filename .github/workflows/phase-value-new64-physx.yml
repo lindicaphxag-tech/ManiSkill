@@ -1,0 +1,89 @@
+name: Fresh64 task-phase info query (9 real native PhysX controller worlds)
+on:
+  push:
+    branches: [research/phase-value-query-fresh64-20261009]
+    paths:
+      - '.github/workflows/phase-value-new64-physx.yml'
+      - 'research/run_phase_information_new64.py'
+      - 'research/frozen_ppo_phase_value_query.py'
+      - 'research/phase_information_gate.py'
+      - 'tests/test_phase_information_gate.py'
+      - 'research/PHASE_VALUE_QUERY_NEW64_PREREG_V1.json'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: phase-value-physx-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  freeze-and-falsify-query-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Strong fail-closed tests and source freeze before any unobserved seed
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p 'test_phase_information_gate.py' -v
+          python -m research.run_authority_slack_new64 --self-test
+          python -m py_compile research/frozen_ppo_phase_value_query.py research/run_phase_information_new64.py
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = '99836af14205fe3e95e52a2e0d68237c7c8a9045'
+          test "$(git hash-object research/multi_ack_se3_bounded.py)" = '36707a177549104ba5b4bd9bcebc76518f0d2840'
+          test "$(git hash-object research/frozen_ppo_phase_value_query.py)" = '7de4ef9be172c2e4e63bd043318f53e9e2ede688'
+          test -s research/PHASE_VALUE_QUERY_NEW64_PREREG_V1.json
+  native-eight-world-source-shards:
+    needs: freeze-and-falsify-query-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 95
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      PYTHONUNBUFFERED: '1'
+      TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: CPU true PhysX with original ManiSkill and hash-verified ActionShift PPO weights
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e . huggingface_hub
+      - name: Record source and exact software before unknown physical results
+        run: |
+          mkdir -p phase_value_originals
+          git rev-parse HEAD > phase_value_originals/current_commit.txt
+          git hash-object research/frozen_ppo_phase_value_query.py > phase_value_originals/phase_runner_blob.txt
+          git hash-object research/frozen_ppo_compound_ack_multi_belief.py > phase_value_originals/unchanged_base_runner_blob.txt
+          git hash-object research/PHASE_VALUE_QUERY_NEW64_PREREG_V1.json > phase_value_originals/preregistered_protocol_blob.txt
+          python -m pip freeze --all > phase_value_originals/environment.txt
+          printf 'original_task=%s original_shard=%s eight_physx_worlds=true fault_steps=2,3 phase_query_rule=low_margin_on_Pull_fixed_read_on_Stack\n' "$TASK" "$CHUNK" > phase_value_originals/source_identity.txt
+      - name: Execute all native controller worlds and actual protected setpoint audits
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_phase_information_new64.py \
+            --task "$TASK" --chunk "$CHUNK" \
+            --out phase_value_originals 2>&1 | tee phase_value_originals/actual_physx.log
+          test -s "phase_value_originals/phase_information_${TASK}_chunk${CHUNK}_original8.json"
+          test -s phase_value_originals/summary.json
+      - name: Preserve failures and all raw SHA256 proof
+        if: always()
+        run: |
+          (cd phase_value_originals && sha256sum *.json *.txt *.log > SHA256SUMS) || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phaseinfo-${{ matrix.task }}-${{ matrix.chunk }}-${{ github.run_id }}
+          path: phase_value_originals/
+          retention-days: 90
+
+# NO task labels in proactive triggering; task identity only chooses original PPO checkpoint.
+# Publisher-facing claims require whole-denominator source audit and strong task-routed comparator.
