@@ -29,7 +29,7 @@ jobs:
       - name: Validate source blobs, original native actions, SHA, actual controller reads, margins and paired strong baseline
         run: |
           set -o pipefail
-          python -m research.audit_authority_slack_new64 \
+          python -m research.audit_phase_information_new64 \
             --artifacts actual_native64_artifacts \
             --out phase_value_native64_full_audited.json 2>&1 | tee phase_value_original_audit.log
       - name: Preserve all 64 original state results, failure logs and provenance
