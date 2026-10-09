@@ -1,0 +1,133 @@
+name: Archive original 32-state physically intervened query timing source evidence
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/archive-query-time-causal-real32.yml'
+      - 'research/QUERY_TIME_CAUSAL_FRESH32_PREOUTCOME_V1.json'
+      - 'research/audit_query_time_causal_fresh32.py'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-query-time-causal-real32.yml'
+      - 'research/QUERY_TIME_CAUSAL_FRESH32_PREOUTCOME_V1.json'
+      - 'research/audit_query_time_causal_fresh32.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  original-immutable-source-evidence-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Read-only check exact original PhysX producer SHA and 9 original source JSONs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/QUERY_TIME_CAUSAL_FRESH32_PREOUTCOME_V1.json)" = "bdf19f7c0f75cee1bd0b0f30a3316e7cd29e3acc"
+          test "$(git hash-object research/frozen_ppo_ack_bounded_query.py)" = "1dc653cdc44e422c8340475ad00f828b3a41eb4f"
+          test "$(git hash-object research/two_history_se3_robust.py)" = "bb5fd155b7291fb127f94138fca321201c8271c3"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37896219598 --jq .head_sha)" = "26f64c55c92dd8c65f99d17b8f26a9eaae475341"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37896219598 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11600591401 --jq .digest)" = "sha256:3a0536500c4e46a75091e026365c0db558c80a4bc725f6d4978549cce10794d3"
+          mkdir -p /tmp/query-time-original-download /tmp/query-time-source
+          gh run download 37896219598 --repo "$GITHUB_REPOSITORY" --name complete-original-new32-query-time-causal-evidence --dir /tmp/query-time-original-download
+          for task in pull_cube stack_cube; do
+            for chunk in 0 1 2 3; do
+              name="query_time_${task}_chunk${chunk}_original4.json"
+              mapfile -t files < <(find /tmp/query-time-original-download -type f -name "$name")
+              test "${#files[@]}" -eq 1
+              cp "${files[0]}" "/tmp/query-time-source/$name"
+            done
+          done
+          mapfile -t aggregates < <(find /tmp/query-time-original-download -type f -name "full_query_time_audit.json")
+          test "${#aggregates[@]}" -eq 1
+          cp "${aggregates[0]}" /tmp/query-time-source/full_query_time_audit.json
+          python -m research.audit_query_time_causal_fresh32 --input-dir /tmp/query-time-source --output /tmp/query-time-recomputed-audit.json
+          cmp /tmp/query-time-recomputed-audit.json /tmp/query-time-source/full_query_time_audit.json
+          python -m unittest discover -s tests -p 'test_query_time_causal_fresh32.py' -v
+          
+
+  trusted-main-byte-identical-permanent-archive:
+    if: github.event_name != 'pull_request'
+    needs: original-immutable-source-evidence-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reaudit exact ORIGINAL producer, frozen protocol and all 32 source trials
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/QUERY_TIME_CAUSAL_FRESH32_PREOUTCOME_V1.json)" = "bdf19f7c0f75cee1bd0b0f30a3316e7cd29e3acc"
+          test "$(git hash-object research/frozen_ppo_ack_bounded_query.py)" = "1dc653cdc44e422c8340475ad00f828b3a41eb4f"
+          test "$(git hash-object research/two_history_se3_robust.py)" = "bb5fd155b7291fb127f94138fca321201c8271c3"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37896219598 --jq .head_sha)" = "26f64c55c92dd8c65f99d17b8f26a9eaae475341"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37896219598 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11600591401 --jq .digest)" = "sha256:3a0536500c4e46a75091e026365c0db558c80a4bc725f6d4978549cce10794d3"
+          mkdir -p /tmp/query-time-original-download /tmp/query-time-source
+          gh run download 37896219598 --repo "$GITHUB_REPOSITORY" --name complete-original-new32-query-time-causal-evidence --dir /tmp/query-time-original-download
+          for task in pull_cube stack_cube; do
+            for chunk in 0 1 2 3; do
+              name="query_time_${task}_chunk${chunk}_original4.json"
+              mapfile -t files < <(find /tmp/query-time-original-download -type f -name "$name")
+              test "${#files[@]}" -eq 1
+              cp "${files[0]}" "/tmp/query-time-source/$name"
+            done
+          done
+          mapfile -t aggregates < <(find /tmp/query-time-original-download -type f -name "full_query_time_audit.json")
+          test "${#aggregates[@]}" -eq 1
+          cp "${aggregates[0]}" /tmp/query-time-source/full_query_time_audit.json
+          python -m research.audit_query_time_causal_fresh32 --input-dir /tmp/query-time-source --output /tmp/query-time-recomputed-audit.json
+          cmp /tmp/query-time-recomputed-audit.json /tmp/query-time-source/full_query_time_audit.json
+          python -m unittest discover -s tests -p 'test_query_time_causal_fresh32.py' -v
+          
+      - name: Persist nine exact source JSONs and original file SHA-256s
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/query_timing_causal_new32_280001_290016
+          mkdir -p "$dest"
+          cp /tmp/query-time-source/*.json "$dest/"
+          (cd "$dest" && sha256sum *.json > SHA256SUMS && sha256sum -c SHA256SUMS)
+          cat > "$dest/README.md" <<'EOF'
+          # Original 32 task-reset physically executed query-time causal intervention
+
+          This is contributor-run genuine ManiSkill CPU PhysX simulation, not third-party independent replication or a hardware safety certificate.
+
+          Source method frozen preregistration: commit 8535cb64090e0eeaada36ee504786ef737f3a7b5, protocol Git blob bdf19f7c0f75cee1bd0b0f30a3316e7cd29e3acc.
+          Actual original full green 10-job CI: 37896219598, source commit 26f64c55c92dd8c65f99d17b8f26a9eaae475341.
+          Original all-9 JSON aggregate ZIP Actions artifact 11600591401, GitHub digest sha256:3a0536500c4e46a75091e026365c0db558c80a4bc725f6d4978549cce10794d3.
+
+          All 9 original JSONs were copied byte-for-byte from that original successful original run, and audited by an independent full-denominator stdlib checker. SHA256SUMS pins source bytes individually.
+
+          PullCube new seeds 280001–280016: no-query robust 15/16; adaptive target read on demand 16/16, 1 private target read; fixed query at t3 16/16 (16 reads), fixed at t5 16/16 (16), fixed at t6 15/16 (15); source native 16/16.
+          StackCube new seeds 290001–290016: no-query robust 9/16; adaptive 15/16 (6 reads); fixed t3 15/16 (16 reads), fixed t5 16/16 (16), fixed t6 12/16 (13); native source 14/16.
+          Pooled: adaptive 31/32 with 7 reads; fixed t3 31/32 with 32 reads; fixed t5 32/32 with 32 reads; fixed t6 27/32 with 28 reads; no-query robust 24/32 with 0 reads.
+
+          One earlier same-seed run 37895711069 successfully ran every PhysX experiment but accidentally used identical literal output artifact names for all jobs, so the external complete-source aggregator was incomplete. Only the workflow artifact name expression changed; model, physical method, threshold, seeds and fault were NOT tuned or changed. The successful 37896219598 run is a TECHNICAL COLLECTION RERUN, NOT additional independent new task-state population.
+
+          Queries read the controller PRIVATE commanded-target state and thus give EXTRA INFORMATION. Fixed t6 arms may refuse before the intended query. This is native zero-arm-delta simulated fault, NOT real packet loss, full SE(3) state identification, arbitrary robot-policy transfer or collision/contact safety. Exact official native PhysX binary task success is recorded in all eight original shard JSONs. Query timing result does not demonstrate universal optimality; fixed t5 gets one MORE success but consumes 32 vs 7 reads.
+
+          Recheck: sha256sum -c SHA256SUMS; python -m research.audit_query_time_causal_fresh32 --input-dir research/frozen_policy_transfer/evidence/query_timing_causal_new32_280001_290016 --output /tmp/recomputed.json.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dest"
+          if git diff --cached --quiet; then echo "Previously archived exact source"; exit 0; fi
+          git commit -m 'evidence: permanent original 32-state controlled query-time PhysX JSONs and SHA256SUMS'
+          git pull --rebase origin main
+          git push origin HEAD:main
