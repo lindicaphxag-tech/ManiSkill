@@ -1,0 +1,74 @@
+{
+  "schema": "prospective_32_state_active_native_nonzero_vs_passive_zero_ack_real_PPO_v1",
+  "date": "2026-10-09",
+  "publication_gate": "PILOT_DO_NOT_TREAT_AS_MAIN_CONFERENCE_PERFORMANCE_PROOF",
+  "scientific_question": "Does one bounded NONZERO actually delivered native controller perturbation induce useful public response evidence about one of FOUR unknown-ACK controller target histories, compared with zero arm probe under the same physical step count and unchanged frozen PPO?",
+  "source_policy": "original public pretrained ManiSkill frozen PPO; use untouched task checkpoints PullCube sha256 74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7 and StackCube sha256 e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c, published HF revision 6bdeb28810330ab5425ccd629bb561c58a56ff85, NO retraining",
+  "source_native_history_frozen_git_blob": "ddfaf4522d49f73ce926e4c6d77c7ca755f8e1b6",
+  "heldout_seed_bank": {
+    "pull_cube": [
+      1200101,
+      1200116
+    ],
+    "stack_cube": [
+      1210101,
+      1210116
+    ]
+  },
+  "pilot_total_states": 32,
+  "task_states": 16,
+  "t2_physical_execution": "APPLIED iff seed%2==0; else HELD",
+  "t3_physical_execution": "APPLIED iff floor(seed/2)%2==0; else HELD",
+  "actual_truth_cells": "Four AA/AH/HA/HH each 4 genuine new reset states per task",
+  "total_controller_worlds_if_complete": 352,
+  "real_simulator": "mani_skill CPU SAPIEN PhysX, Panda pd_ee_target_delta_pose adapter, original source policy pd_ee_delta_pose",
+  "action_cost_accounting": {
+    "physical_probe_step": 4,
+    "common_step_count": "ONE physical known-delivered t4 step for every still-active controller world, but nonzero target perturbation causes extra native displacement, which MUST be recorded separately",
+    "zero_probe_native_normalized_6d": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "active_probe_native_normalized_6d": [
+      0.12,
+      -0.09,
+      0.07,
+      0,
+      0,
+      0
+    ],
+    "bound": "native normalized action components within [-1,1], 6D arm SO3 unchanged, no gripper probe; this is a pre-specified fixed excitation, NOT an optimized information-theoretic or collision-certified probe",
+    "privileged_native_target_getters": "count only any native target getter the policy actually consumes at t5; post-step audit private target getters never enter public method decisions",
+    "public_observations": "two achieved public XYZ readings at t4 before and after exactly one physical step for each of two public methods; query control uses no public pose to select hidden native target"
+  },
+  "methods": {
+    "M0": "zero t4 native 6D action, four-hypothesis public XYZ model with original frozen per-task epsilon and competitor margin 0.002m, or 1 counted target read at t5",
+    "M1": "fixed nonzero t4 known delivered native action, update all four complete target histories with same acknowledged 6D probe, then public XYZ residual to shifted hypotheses with SAME frozen original epsilon and margin; if no unique winner, 1 counted target read at t5",
+    "M2": "fixed nonzero SAME t4 known delivered native action, always one counted authoritative native target getter at t5, physically independent PPO/controller state",
+    "other_actual_physx_controls": "unchanged source, always-private oracle, optimistic, exact common safety refusal, robust no read, selective robust-then-read, fixed query after neutral zero, assume-held zero-read",
+    "model_warning": "Old response epsilon calibrated on zero neutral action; transferring it to a nonzero native perturbation is unverified and may increase model miscoverage. Source auditor MUST score wrong confident history against real after-step target and retain all failures.",
+    "physics_safety": "Normalized command clipping is NOT collision/force safety certification; no real hardware or real transport loss"
+  },
+  "evaluation_primary": [
+    "actual frozen PPO task success by same seed and all four true ACK histories",
+    "privileged native target getter counts and read latency if available",
+    "public authorizations and wrong-confident full history labels (after-step audit target is ONLY audit)",
+    "physical actual t4 target change and achieved XYZ displacement for nonzero probe, one vs zero",
+    "matched nonzero-probe explicit query comparator M2, not a zero-probe always-read baseline alone",
+    "all 32 true physical initial states; no discarded intervention failures"
+  ],
+  "decision": "This is a *pilot*. If M1 improves no valid outcome, record negative and STOP. If novel gains observed, freeze method as-is and launch a DISTINCT >=64-state prospective confirmatory cohort, with outside seeds, second controller family and strong competing action-selection probe; do NOT promote pilot alone into a main-paper claim.",
+  "not_claimed": [
+    "certified online safety",
+    "actual network packet loss",
+    "ActionShift algorithm truly implemented, only task-relevant comparator group",
+    "external lab reproduction",
+    "task noninferiority established",
+    "novel action selector or optimal probe",
+    "accepted top-tier publication"
+  ]
+}
