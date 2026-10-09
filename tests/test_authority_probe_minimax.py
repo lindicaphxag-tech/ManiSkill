@@ -66,6 +66,34 @@ class AuthorityProbeMinimax(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"cost"):
             certify(m,altered)
 
+    def test_forged_self_consistent_but_nonoptimal_certificate_is_rejected(self):
+        # This attack formerly passed certify(): the branch and cost are
+        # internally valid, but there is a distinguishing one-unit probe.
+        m=Model({"a":"A","b":"B"},
+                (Probe("split",1,{"a":("left",),"b":("right",)}),),
+                authoritative_read_cost=5,max_probe_depth=1)
+        true_plan=synthesize(m)
+        self.assertEqual(true_plan["worst_cost_units"],1)
+        self.assertEqual(certify(m,true_plan)["independent_optimal_cost"],1)
+        forged=copy.deepcopy(true_plan)
+        forged["root"]={"kind":"read","belief":["a","b"],"worst_remaining_cost":5}
+        forged["worst_cost_units"]=5
+        with self.assertRaisesRegex(ValueError,"NOT globally minimax"):
+            certify(m,forged)
+        # Conversely a verifier that only checks an expected root number
+        # would miss a nonoptimal *internal subtree*.
+        m2=Model({"a":"A","b":"B","c":"C"},
+                 (Probe("first",1,{"a":("a",),"b":("bc",),"c":("bc",)}),
+                  Probe("second",1,{"a":("a",),"b":("b",),"c":("c",)})),
+                 authoritative_read_cost=5,max_probe_depth=2)
+        correct=synthesize(m2)
+        self.assertEqual(certify(m2,correct)["independent_optimal_cost"],1)
+        other=copy.deepcopy(correct)
+        other["root"]={"kind":"read","belief":["a","b","c"],"worst_remaining_cost":5}
+        other["worst_cost_units"]=5
+        with self.assertRaisesRegex(ValueError,"NOT globally minimax"):
+            certify(m2,other)
+
     def test_unsafe_probes_or_incomplete_responses_fail_closed(self):
         m=Model({"a":"A","b":"B"},
                 (Probe("p",1,{"a":("x",),"b":("y",)},preserves_repair=False),),5,1)
