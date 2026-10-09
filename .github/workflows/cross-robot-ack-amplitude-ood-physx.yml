@@ -1,0 +1,97 @@
+name: Prospective native PhysX two-robot command amplitude shift ACK falsification
+on:
+  push:
+    branches: [research/cross-robot-amplitude-shift-falsifier-20261009]
+  pull_request:
+    paths:
+      - '.github/workflows/cross-robot-ack-amplitude-ood-physx.yml'
+      - 'research/CROSS_ROBOT_ACK_AMPLITUDE_SHIFT_PREOUTCOME_V1.json'
+      - 'research/cross_robot_ack_amplitude_physx.py'
+      - 'research/cross_robot_ack_amplitude_inference.py'
+      - 'research/audit_cross_robot_amp_shift.py'
+      - 'tests/test_cross_robot_amp_shift.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-protocol-and-adversarial-pure-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Prove original experimental protocol frozen before runner and no label-dependent calibration
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/CROSS_ROBOT_ACK_AMPLITUDE_SHIFT_PREOUTCOME_V1.json)" = "24ac966eecb765a609b3f5601c755216b24501c3"
+          python -m py_compile research/cross_robot_ack_amplitude_physx.py research/audit_cross_robot_amp_shift.py research/cross_robot_ack_amplitude_inference.py
+          python -m unittest discover -s tests -p test_cross_robot_amp_shift.py -v
+
+  four-real-physx-robot-and-amplitude-groups:
+    needs: frozen-protocol-and-adversarial-pure-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    strategy:
+      fail-fast: false
+      matrix:
+        robot: [panda, xarm6_robotiq]
+        amplitude: [shift040, nominal100]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install actual ManiSkill CPU PhysX runtime and public controller URDFs
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+          python -m mani_skill.utils.download_asset xarm6 -y
+      - name: Execute all physical native Panda/xArm6 applied and held worlds including full negatives
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/cross_robot_ack_amplitude_physx.py \
+            --robot "${{ matrix.robot }}" --amplitude-tag "${{ matrix.amplitude }}" \
+            2>&1 | tee original_amplitude_physx.log
+          test -s "cross_robot_amp_${{ matrix.robot }}_${{ matrix.amplitude }}_original8.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-amp-${{ matrix.robot }}-${{ matrix.amplitude }}
+          path: |
+            cross_robot_amp_*.json
+            original_amplitude_physx.log
+          retention-days: 90
+
+  complete-original-32-case-audit:
+    needs: four-real-physx-robot-and-amplitude-groups
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-amp-*
+          path: /tmp/amp-ood-all-source
+          merge-multiple: true
+      - name: Recompute all 32 original truth×amplitude×robot rows and wrong-authorizations directly from public motions
+        run: |
+          python -m research.audit_cross_robot_amp_shift \
+            --input-dir /tmp/amp-ood-all-source \
+            --output /tmp/full_32_ood_audit.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: complete-32-native-cross-robot-amplitude-ood-original
+          path: |
+            /tmp/amp-ood-all-source/*.json
+            /tmp/full_32_ood_audit.json
+          retention-days: 90
