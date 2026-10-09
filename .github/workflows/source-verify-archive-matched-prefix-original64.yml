@@ -1,0 +1,85 @@
+name: "Source-only verify and permanently archive original matched-prefix 2x2 PPO64"
+on:
+  push:
+    branches: [research/matched-prefix-audit-original64-20261009]
+    paths:
+      - research/audit_matched_prefix_twoack_new64.py
+      - .github/workflows/source-verify-archive-matched-prefix-original64.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  reverify-completed-physics-no-reexecution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Confirm ORIGINAL prereg, physical runner and corrected source auditor
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/MATCHED_PREFIX_TWOACK_FROZEN_PPO64_PREOUTCOME_V1.json)" = c750f8022e1895f5af5d516405b2602474b5ef6d
+          test "$(git hash-object research/frozen_ppo_matched_prefix_twoack_2x2_physx.py)" = 1ae3be647a55606560ab9d95295e6cb8c6c61310
+          test "$(git hash-object research/run_matched_prefix_twoack_new64.py)" = fd85e4ce3c8ef4fec30d1658ef649b0a09388a8c
+          test "$(git hash-object research/audit_matched_prefix_twoack_new64.py)" = 85a6a37cd85f1337cd80ffa3dbde96446cf51dc1
+          python -m py_compile research/frozen_ppo_matched_prefix_twoack_2x2_physx.py research/run_matched_prefix_twoack_new64.py research/audit_matched_prefix_twoack_new64.py
+          python - <<'PY'
+          from research.run_matched_prefix_twoack_new64 import assert_preoutcome
+          assert_preoutcome()
+          print('ORIGINAL_PHYSICS_UNALTERED_SOURCE_AUDITOR_ONLY_REPAIRED')
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 37921574816
+          repository: lindicaphxag-tech/ManiSkill
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pattern: original-matched-prefix-*
+          merge-multiple: true
+          path: /tmp/original_matched_prefix64
+      - name: Independent full 64 source-only audit over 16 ORIGINAL PhysX JSONs
+        run: |
+          set -euo pipefail
+          python -m research.audit_matched_prefix_twoack_new64 --source-dir /tmp/original_matched_prefix64 --output /tmp/full_matched_prefix_original64_audit.json
+          test -s /tmp/full_matched_prefix_original64_audit.json
+          python - <<'PY'
+          import json, pathlib
+          a=json.loads(pathlib.Path('/tmp/full_matched_prefix_original64_audit.json').read_text())
+          assert a['unique_source_reset_states']==64
+          assert a['actually_stepped_simulator_worlds']==576
+          assert len(a['four_truth_strata'])==8
+          assert a['public_both_fault_events_exposed']==64
+          assert all(x['pre_t5_matched'] is True for x in a['all_episodes'])
+          assert sum(x['new_success'] for x in a['all_episodes'])==a['outcomes']['public']['task_success']
+          print('64_REAL_PHYSX_MATCHED_PREFIX_FULL_INDEPENDENT_SOURCE_AUDIT_SUCCESS')
+          PY
+      - name: Preserve original byte-identical source files, independent audit and SHA-256
+        run: |
+          set -euo pipefail
+          folder=research/frozen_policy_transfer/evidence/matched_prefix_twoack_original64_1380001_1390032
+          mkdir -p "$folder"
+          cp /tmp/original_matched_prefix64/pairedprefix_*_original8.json "$folder/"
+          cp /tmp/original_matched_prefix64/pairedprefix_*_audit.json "$folder/"
+          cp /tmp/full_matched_prefix_original64_audit.json "$folder/"
+          cd "$folder"
+          sha256sum ./*.json | LC_ALL=C sort -k2 > SHA256SUMS
+          cat > README.md <<'EOF'
+          # Original source-authenticated matched-prefix true 2x2 frozen-PPO PhysX
+          This is a byte-exact archive of **original** 64 native PhysX reset-state executions from author-controlled GitHub Actions run [#37921574816](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37921574816), each with nine genuinely independently stepped controller-policy arms and all four physical t2/t3 ACK-execution truths. The first 8-shard physics successfully ran and passed its own shard audits, but its first full auditor failed from a **module import typo**; the typo was corrected separately and this archive contains the **re-audit of the unchanged original 16 PhysX source JSON files**. Do not call this an independently conducted physical replication, a new 576-world experiment, a hardware/VLA result, or an external research endorsement.
+          
+          The public vs fixed-read treatment **physically dispatches identical t2/t3 normalized commands** and shares the same neutral step4 probe. Equality of public achieved pose and private target-state before the first branch at t5 was checked under audit-only access: every one of 64 matched pairs must meet declared 5e-5 position/orientation thresholds or the complete source auditor rejects the study. The alternate controller/method still uses a different post-t5 observer implementation, so even successful prefix equality alone does not prove perfectly identical downstream compiler behavior.
+          
+          Report complete official task-success pairing, decision-time privileged reads, all physical truth strata, public sensor samples and all confident errors from original full-audit JSON. The source uses 2 original frozen third-party PPOs on Panda/PullCube/StackCube only. Do not claim formal noninferiority, OOD safety, real packet loss or outside-lab independent adoption. Strict-exact common-action refusal can stop before probe; avoid saying all nine controls necessarily probed.
+          
+          Run `sha256sum -c SHA256SUMS` here; source auditor from repo root: `python -m research.audit_matched_prefix_twoack_new64 --source-dir <this-folder> --output /tmp/reaudit.json`.
+          EOF
+          cd -
+          git add "$folder"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "evidence: permanently archive original matched-prefix PPO64 2x2 PhysX and corrected source-only audit"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
