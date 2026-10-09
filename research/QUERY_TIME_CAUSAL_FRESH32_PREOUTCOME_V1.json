@@ -1,0 +1,75 @@
+{
+  "schema": "query_time_causal_intervention_new32_physx_preoutcome_v1",
+  "status": "FROZEN_PRIOR_TO_NEW_RUNNER_AND_ALL_PHYSX_OUTCOMES",
+  "date": "2026-10-09",
+  "original_fixed_source_git_blob": "1dc653cdc44e422c8340475ad00f828b3a41eb4f",
+  "original_robust_se3_certifier_blob": "bb5fd155b7291fb127f94138fca321201c8271c3",
+  "source_checkpoint_hf_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+  "tasks": {
+    "pull_cube": {
+      "task": "PullCube-v1",
+      "seeds": [
+        280001,
+        280016
+      ],
+      "checkpoint_sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7"
+    },
+    "stack_cube": {
+      "task": "StackCube-v1",
+      "seeds": [
+        290001,
+        290016
+      ],
+      "checkpoint_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+    }
+  },
+  "physical_fault": {
+    "zero_based_step": 2,
+    "actual_delivered_arm": "native 6D zero delta target hold",
+    "acknowledgment": "UNKNOWN",
+    "source_policy": "frozen third-party PPO unchanged",
+    "gripper": "same commanded policy",
+    "native_physx": true,
+    "real_packet_loss": false
+  },
+  "paired_arms": [
+    "source_no_fault",
+    "fault_oracle_private_target",
+    "fault_optimistic_unverified_ack",
+    "fault_robust_two_history_without_query",
+    "fault_robust_then_single_privileged_query",
+    "fault_fixed_query_t3",
+    "fault_fixed_query_t5",
+    "fault_fixed_query_t6"
+  ],
+  "fixed_step_query_condition": "A fixed query arm reads the private target exactly once at global zero-based step 3, 5 or 6 only IF still alive and no earlier refusal, otherwise a planned query is not performed; every source trial remains in the denominator.",
+  "adaptive_query_condition": "Original frozen robust commanded-pose target residual tolerance 0.05m / 0.05 rad, query once only upon first robust command authorization rejection, may query after step 3.",
+  "policy_frame": "Panda achieved-relative source -> accumulated-target-relative destination, exactly unchanged",
+  "horizon": 50,
+  "unique_reset_seeds": 32,
+  "real_physx_worlds_per_seed": 8,
+  "run_shards": 8,
+  "per_shard_seed_count": 4,
+  "original_source_method_modifications": [
+    "registry task frozen fresh seeds",
+    "add query-at-3, query-at-5, query-at-6 arms",
+    "remove unrelated strict exact/seed-modulo arms",
+    "record all original official success/readback/fault/seed events"
+  ],
+  "primary_endpoints": [
+    "Complete official task successes across all 32 trial seeds for all eight arms",
+    "EXACT count and timing of privileged target reads per arm",
+    "adaptive-only vs fixed-3/5/6-only actual native PhysX successes",
+    "any adaptive-late-only successes when all fixed single-read timing arms fail",
+    "certified bounded commanded-target rather than physical safety",
+    "early refusal / not-reached query counted explicitly",
+    "per-task paired discordance and full original rows"
+  ],
+  "secondary_limits": [
+    "A fixed scheduled query may be unable to run after an earlier refusal; report actual spent reads, do not imply equal realized budgets",
+    "All fixed arms see the same prior observed data, but controller trajectories can diverge; these are NOT offline potential-outcome splices",
+    "Interpret 32 resets and 2 checkpoints only; no real robot, no arbitrary VLA transfer, no hardware collision guarantee",
+    "No post outcome tuning; negative results retained",
+    "Exploratory paired p-values cannot be sold as confirmatory significance"
+  ]
+}
