@@ -27,8 +27,8 @@ jobs:
           import json
           a=json.load(open("research/DUAL_EVIDENCE_HISTORY_NEW64_PREOUTCOME_V1.json"))
           assert a["schema"]=="preoutcome_dual_evidence_gate_frozen_ppo_ack_v1" and a["n"]==64 and a["tau"]==0.65
-          assert a["seed_shards"]=={"pull_cube":[1820001,1820009,1820017,1820025],"stack_cube":[1830001,1830009,1830017,1830025]}
-          print("PASS: source/hash, two released policies, 0.95 posterior gate frozen for all new64 before execution")
+          assert a["registered_seeds"]=={"pull_cube":[1820001,1820009,1820017,1820025],"stack_cube":[1830001,1830009,1830017,1830025]}
+          print("PASS: source/hash, two released policies, 0.65 dual-evidence gate frozen for all new64 before execution")
           PY
   real-native-physx:
     needs: prereg-freeze
