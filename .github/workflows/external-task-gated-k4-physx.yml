@@ -1,0 +1,93 @@
+name: External fork run — frozen 4-history dual-ACK task-gated original PhysX
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'research/outside_fork_task_gated_k4_replication.py'
+      - '.github/workflows/external-task-gated-k4-physx.yml'
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Frozen pretrained PPO task to execute in YOUR fork (not trained again)'
+        required: true
+        type: choice
+        options: [pull_cube, stack_cube]
+        default: pull_cube
+      first_seed:
+        description: 'The next eight never-before-used reset IDs, in 600001..999992; commit/display this INPUT before real task run'
+        required: true
+        type: number
+        default: 600001
+
+permissions:
+  contents: read
+
+jobs:
+  source-integrity-and-seed-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reject changed method and any previously published or invalid seed
+        run: |
+          python -m py_compile research/outside_fork_task_gated_k4_replication.py
+          python research/outside_fork_task_gated_k4_replication.py --self-test
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = "99836af14205fe3e95e52a2e0d68237c7c8a9045"
+          test "$(git hash-object research/multi_ack_se3_bounded.py)" = "36707a177549104ba5b4bd9bcebc76518f0d2840"
+          test "$(git hash-object research/frozen_ppo_ack_bounded_query.py)" = "1dc653cdc44e422c8340475ad00f828b3a41eb4f"
+          test "$(git hash-object research/two_history_se3_robust.py)" = "bb5fd155b7291fb127f94138fca321201c8271c3"
+      - name: Reveal the actual operator and independent-scientific-replication boundary
+        run: |
+          echo "Operator-owned repository is: $GITHUB_REPOSITORY"
+          echo "Workflow actor is: $GITHUB_ACTOR"
+          echo "This action is only independently operated when launched by an independent research group on its own fork."
+          echo "Author-owned execution is NOT external reproducibility or upstream adoption."
+
+  real-seven-world-native-physx:
+    if: github.event_name == 'workflow_dispatch'
+    needs: source-integrity-and-seed-preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    env:
+      TASK: ${{ inputs.task }}
+      FIRST: ${{ inputs.first_seed }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install genuine official native PhysX and frozen third-party checkpoint runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Freeze fork operator environment BEFORE the first physical step
+        run: |
+          set -euo pipefail
+          mkdir -p outside_k4_task_gated_original
+          git rev-parse HEAD > outside_k4_task_gated_original/actual_checked_out_commit.txt
+          printf '%s\n' "$GITHUB_ACTOR" > outside_k4_task_gated_original/who_pressed_run.txt
+          printf '%s\n' "$GITHUB_REPOSITORY" > outside_k4_task_gated_original/operator_github_repository.txt
+          printf 'task=%s first_seed=%s size=8 genuine_PHYSX=true\n' "$TASK" "$FIRST" > outside_k4_task_gated_original/prerun_declared_selection.txt
+          python -m pip freeze --all > outside_k4_task_gated_original/original_python_environment.txt
+      - name: Run all seven actual native PhysX worlds for eight entirely NEW states
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/outside_fork_task_gated_k4_replication.py --task "$TASK" --first-seed "$FIRST" --output-dir outside_k4_task_gated_original             2>&1 | tee outside_k4_task_gated_original/full_native_physx_original.log
+          test -s outside_k4_task_gated_original/independently_recomputed_eight_worlds.json
+      - name: Original SHA-256 source proof including any negative or refused trials
+        if: always()
+        run: |
+          (cd outside_k4_task_gated_original && sha256sum *.json *.txt *.log > ORIGINAL_SOURCE_SHA256SUMS) || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fork-operator-owned-new8-k4-native-physx-evidence
+          path: outside_k4_task_gated_original/
+          retention-days: 90
