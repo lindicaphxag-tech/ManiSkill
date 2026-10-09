@@ -164,7 +164,6 @@ def trial(policy,seed):
         src=arms["source_no_fault"]
         observers={n:observer(arms[n]) for n in (
             "fault_optimistic_unverified_ack",
-            "fault_always_single_privileged_query"
         )}
         beliefs={n:belief(arms[n]) for n in BELIEF_ARMS}
         done={n:False for n in NAMES}
@@ -193,11 +192,6 @@ def trial(policy,seed):
                         result.setdefault("private_readback_steps",{}).setdefault(n,[]).append(step)
                     name_belief=n in beliefs
                     maybe_two=(name_belief and len(beliefs[n].hypotheses)>1)
-                    if n=="fault_always_single_privileged_query" and step==FAULT_STEP+1:
-                        # Explicitly disclose this additional authoritative target read.
-                        actual=privileged_target(arm)
-                        observers[n].reset(actual)
-                        result["privileged_target_readback_decision_count"][n]+=1
                     if maybe_two:
                         desired=desired_source_target(src,arm,native)
                         certificate=geometry(arm,beliefs[n].hypotheses,desired)
