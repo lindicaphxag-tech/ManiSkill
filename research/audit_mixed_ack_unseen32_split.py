@@ -100,7 +100,7 @@ def audit(folder:Path=BASE,repo:Path|None=None):
                     raise ValueError("Wrong confident source label or missing audit-only truth")
                 parity_applied=r["seed"]%2==0
                 physical=r["original_precommitted_physical_t2_execution_truth"]
-                if (physical=="APPLIED")!=parity_applied:
+                if (physical=="applied")!=parity_applied:
                     raise ValueError("Actual precommitted physical truth mismatch")
                 rows.append({
                     "task":task,"seed":r["seed"],
