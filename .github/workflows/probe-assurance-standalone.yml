@@ -1,0 +1,27 @@
+name: Fail-closed active probe finite-sample assurance review
+on:
+  push:
+    branches: [research/low-signal-probe-selection-20261010]
+    paths:
+      - research/probe_calibration_assurance.py
+      - tests/test_probe_calibration_assurance.py
+      - .github/workflows/probe-assurance-standalone.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  adversarial-no-physics:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ['3.11', '3.13']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Prove eight calibration clusters cannot certify 95pct 2-history error
+        run: python -m unittest discover -s tests -p 'test_probe_calibration_assurance.py' -v
