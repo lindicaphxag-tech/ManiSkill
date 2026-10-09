@@ -1,0 +1,59 @@
+name: First real PhysX 2x2 latent-memory indistinguishability witness
+
+on:
+  push:
+    branches: [research/observability-collision-audit-20261009]
+    paths:
+      - 'research/audit_counterfactual_execution_observability.py'
+      - 'tests/test_counterfactual_execution_observability.py'
+      - '.github/workflows/audit-physical-memory-nonidentifiability.yml'
+      - '.gitattributes'
+  pull_request:
+    paths:
+      - 'research/audit_counterfactual_execution_observability.py'
+      - 'tests/test_counterfactual_execution_observability.py'
+      - '.github/workflows/audit-physical-memory-nonidentifiability.yml'
+      - '.gitattributes'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  independent-original-source-and-actual-physics-pair-proof:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 14
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        py: ['3.11','3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.py }}
+      - name: Verify 34 ORIGINAL first-run artifacts/32 paired initial resets and physically executed ACK truths
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile research/audit_counterfactual_execution_observability.py
+          python -m unittest discover -s tests -p test_counterfactual_execution_observability.py -v
+          python -m research.audit_counterfactual_execution_observability --output FACTUAL_OBSERVABILITY_WITNESS.json
+          python - <<'PY'
+          import json
+          r=json.load(open('FACTUAL_OBSERVABILITY_WITNESS.json'))
+          assert r['source_32_reset_clusters']==32
+          assert r['registered_real_ACK_truth_cells']==128
+          assert r['observation_pairs_actually_available']==187
+          assert r['source_original_manifest_SHA256_verified_file_count']==34
+          assert r['exact_six_value_public_XYZ_collisions_with_distinct_hidden_full_pose']==3
+          assert {w['reset_seed'] for w in r['source_frozen_conflict_witnesses']}=={2110003,2110004,2110012}
+          assert all(w['commanded_target_position_separation_m_min_two_audits']>.039
+                     for w in r['source_frozen_conflict_witnesses'])
+          print('PASS exact observed public XYZ indistinguishability versus separated physical hidden controller target histories')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: original-physx-observability-memory-collision-${{ matrix.os }}-${{ matrix.py }}
+          path: FACTUAL_OBSERVABILITY_WITNESS.json
