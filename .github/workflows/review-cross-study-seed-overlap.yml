@@ -5,11 +5,13 @@ on:
     branches: [research/mixed-ack-truth-frozenppo-new64-20261009]
     paths:
       - 'research/audit_cross_study_reset_overlap.py'
+      - 'research/audit_mixed_ack_unseen32_split.py'
       - 'tests/test_cross_study_reset_overlap.py'
       - '.github/workflows/review-cross-study-seed-overlap.yml'
   pull_request:
     paths:
       - 'research/audit_cross_study_reset_overlap.py'
+      - 'research/audit_mixed_ack_unseen32_split.py'
       - 'tests/test_cross_study_reset_overlap.py'
       - '.github/workflows/review-cross-study-seed-overlap.yml'
   workflow_dispatch:
@@ -46,7 +48,21 @@ jobs:
           assert not r['any_prior_task_success_or_baseline_selection_information_leakage_excluded']
           print('PASS: overlap requires disclosure; not 160 wholly independent task/reset states')
           PY
+          python -m research.audit_mixed_ack_unseen32_split --output /tmp/mixed_ack_seen_unseen_original.json
+          python - <<'PY'
+          import json
+          r=json.load(open('/tmp/mixed_ack_seen_unseen_original.json'))
+          a=r['all64']; b=r['reused_reset32']; c=r['not_previously_exposed_reset32']
+          assert a['new_official_task_successes']==a['strong_task_only_successes']==58
+          assert (b['new_official_task_successes'],b['strong_task_only_successes'])==(30,29)
+          assert (c['new_official_task_successes'],c['strong_task_only_successes'])==(28,29)
+          assert (c['new_privileged_target_reads'],c['strong_privileged_target_reads'])==(17,29)
+          assert r['source_sha256_files_verified']==17
+          print('PASS distinct mixed32 reset-ID subgroup: 28/32 with 17 reads vs 29/32 with 29 reads — NEGATIVE task-success stratum')
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: immutable-cross-study-reset-overlap-audit-${{ matrix.python }}
-          path: /tmp/cross_study_reset_overlap.json
+          path: |
+            /tmp/cross_study_reset_overlap.json
+            /tmp/mixed_ack_seen_unseen_original.json
