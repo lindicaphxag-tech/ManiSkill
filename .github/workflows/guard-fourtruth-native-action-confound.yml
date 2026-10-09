@@ -1,0 +1,42 @@
+name: 'Reviewer false causal claim guard: 128 actual native action t3 mismatches and probe costs'
+on:
+  push:
+    branches: [research/paired-four-truth-singleprocess-reset-audit-20261009]
+    paths:
+      - research/audit_amended_fourtruth_actual_native_action_confound.py
+      - .github/workflows/guard-fourtruth-native-action-confound.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  actual_source_dispatched_action_and_public_information_accounting:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reproduce correct stronger comparison and fail if original physical exposure claimed unequal
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/audit_amended_fourtruth_actual_native_action_confound.py)" = 1a95d3d2eb1d6cb9281b11ccd755a97ca24eaee9
+          python -m py_compile research/audit_amended_fourtruth_actual_native_action_confound.py
+          python -m research.audit_amended_fourtruth_actual_native_action_confound --source-dir research/frozen_policy_transfer/evidence/amended_same_seed_fourtruth_original128_1310001_1320016 --output /tmp/actual_128_native_action_prefix_confound.json
+          python - <<'PY'
+          import json
+          x=json.load(open('/tmp/actual_128_native_action_prefix_confound.json'))
+          d=x['native_dispatched_command_identical_counts']
+          assert d['public_and_strong_t2_native_identical']==128
+          assert d['public_and_strong_t3_native_identical']==96
+          assert d['public_and_fixed_t3_native_identical']==64
+          assert x['all_three_main_controllers_identical_physically_stepped_neutral_probe']==128
+          assert x['public_extra_achieved_xyz_sample_events']==256
+          assert x['not_identical_actions_prior_to_decision_for_all_competitors']
+          print('PASS: correct END-TO-END interpretation, no invented information-decision-only causal advantage')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: honest-original-128-native-predecision-action-confound-and-public-sensor-cost
+          path: /tmp/actual_128_native_action_prefix_confound.json
+          retention-days: 90
