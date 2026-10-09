@@ -403,7 +403,7 @@ def trial(policy,seed):
                         for i in range(len(rots)) for j in range(i+1,len(rots))
                     ) if len(rots)>1 else 0.0
                     winners=ev["accepted_position_indices"]
-                    ev["authorized"]=(len(winners)==1 and
+                    ev["authorized"]=bool(len(winners)==1 and
                         all(d>eps+.002 for i,d in enumerate(ev["candidate_residuals_m"])
                             if i!=winners[0]) and
                         ev["max_hypothetical_rotation_spread_rad"]<=1e-5)
@@ -418,7 +418,7 @@ def trial(policy,seed):
                     ev["audit_only_true_candidate_indices"]=[
                         i for i,(pos,rot) in enumerate(errors)
                         if pos<=1e-4 and rot<=1e-3]
-                    ev["wrong_confident"]=(
+                    ev["wrong_confident"]=bool(
                         ev["authorized"] and winners[0] not in
                         ev["audit_only_true_candidate_indices"])
                     ev["audit_only_hidden_target_was_NOT_decision_input"]=True
