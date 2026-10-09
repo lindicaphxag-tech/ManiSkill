@@ -65,7 +65,7 @@ def admit_typed_native_action(
     numerical_native_overshoot_limit: float = 2e-6,
     max_added_translation_setpoint_error_m: float = 1e-5,
     max_added_rotation_setpoint_error_rad: float = 1e-5,
-    strict_interior_guard: float = 1e-8,
+    strict_interior_guard: float = 2e-6,
 )->NativeActionAuthority:
     """Supply the *ACTUAL executable* action or refuse, never claim exactness.
 
