@@ -1,0 +1,107 @@
+name: Outsider-selectable 6-arm observability-gated PhysX reproduction
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Released frozen third-party PPO / official ManiSkill task"
+        required: true
+        type: choice
+        options: [pull_cube, stack_cube]
+        default: pull_cube
+      fault:
+        description: "Actual native arm-command truth despite UNKNOWN ACK"
+        required: true
+        type: choice
+        options: [applied_no_ack, neutral_arm_delta_no_ack]
+        default: applied_no_ack
+      first_seed:
+        description: "Fresh NEW seed >=230001; use a never-tested seed range"
+        required: true
+        type: number
+        default: 231001
+      cohort_n:
+        description: "Number of new consecutive reset seeds"
+        required: true
+        type: choice
+        options: ['4', '8']
+        default: '8'
+  push:
+    branches: [feature/outside-observability-authority-replay-20261009]
+    paths:
+      - '.github/workflows/external-observability-gated-query-replay.yml'
+      - 'research/external_observability_query_replay.py'
+      - 'tests/test_external_observability_query_replay.py'
+
+permissions:
+  contents: read
+
+jobs:
+  immutable-source-and-input-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify actual frozen original source method unchanged before execution
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/frozen_ppo_observability_gated_query_fresh32.py)" = "e0070e5978354917b2a68d5a6230931b5b00cd25"
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = "064bb46831b61af73ad445bc836326837ec5468f"
+          python -m py_compile research/external_observability_query_replay.py
+          python -m unittest discover -s tests -p 'test_external_observability_query_replay.py' -v
+
+  independent-seed-physx:
+    needs: immutable-source-and-input-guard
+    # One investigator-selected task/fault per dispatch; a branch push runs
+    # a single tiny one-seed source-integrity physics smoke case.
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    env:
+      PYTHONUNBUFFERED: '1'
+      ABI_TASK: ${{ github.event_name == 'workflow_dispatch' && inputs.task || 'pull_cube' }}
+      ABI_FAULT: ${{ github.event_name == 'workflow_dispatch' && inputs.fault || 'applied_no_ack' }}
+      ABI_FIRST_SEED: ${{ github.event_name == 'workflow_dispatch' && inputs.first_seed || 231001 }}
+      ABI_COHORT_N: ${{ github.event_name == 'workflow_dispatch' && inputs.cohort_n || '1' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official CPU PhysX and source-pinned published pretrained PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Record exact runner method identity and native Python packages
+        run: |
+          mkdir -p replication_artifacts
+          git rev-parse HEAD > replication_artifacts/source_commit.txt
+          git hash-object research/frozen_ppo_observability_gated_query_fresh32.py > replication_artifacts/frozen_method_git_blob.txt
+          git hash-object research/empirical_probe_response_classifier.py > replication_artifacts/calibrated_classifier_git_blob.txt
+          git hash-object research/external_observability_query_replay.py > replication_artifacts/replication_wrapper_git_blob.txt
+          python -m pip freeze --all > replication_artifacts/environment_freeze.txt
+          echo "task=$ABI_TASK fault=$ABI_FAULT first_seed=$ABI_FIRST_SEED n=$ABI_COHORT_N" > replication_artifacts/investigator_selected_inputs.txt
+      - name: Execute six native controllers in actually stepped official ManiSkill PhysX
+        run: |
+          set -o pipefail
+          python research/external_observability_query_replay.py \
+            --task "$ABI_TASK" --fault "$ABI_FAULT" \
+            --first-seed "$ABI_FIRST_SEED" --count "$ABI_COHORT_N" \
+            --output-dir replication_artifacts \
+            2>&1 | tee replication_artifacts/native_physx_original_stdout.log
+          test "$(find replication_artifacts -maxdepth 1 -name 'external_hybrid_summary_*.json' | wc -l)" -eq 1
+          test "$(find replication_artifacts -maxdepth 1 -name 'UNCHANGED_original_physx_*.json' | wc -l)" -eq 1
+      - name: Preserve complete unchanged original source files and SHA256 provenance, including negative outcomes
+        if: always()
+        run: |
+          (cd replication_artifacts && sha256sum *.json *.txt *.log > SHA256SUMS) || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: outsider-selected-observability-gated-${{ github.run_id }}
+          path: replication_artifacts/
+          retention-days: 90
