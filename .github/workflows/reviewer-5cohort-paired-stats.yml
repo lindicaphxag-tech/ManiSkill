@@ -1,0 +1,55 @@
+name: "Top-conference audit of five original separate PhysX cohorts: paired exact stats, no pooled fake evidence"
+on:
+  push:
+    branches: [research/mainconference-evidence-statistics-20261009]
+    paths:
+      - 'research/reviewer_independent_original_5cohort_stats.py'
+      - '.github/workflows/reviewer-5cohort-paired-stats.yml'
+permissions:
+  contents: read
+jobs:
+  five-original-data-cohorts-independent-exact-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    strategy:
+      matrix:
+        py: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.py }}
+      - name: All per-shard original full source verification where archived
+        run: |
+          set -euo pipefail
+          for d in \
+            research/frozen_policy_transfer/evidence/mixed_ack_truth_frozen_ppo_original64_860001_870032 \
+            research/frozen_policy_transfer/evidence/four_joint_truths_first_physx64_880001_890032 \
+            research/frozen_policy_transfer/evidence/dual_probe_vs_single_physx_original64_900001_910032 \
+            research/frozen_policy_transfer/evidence/validity_first_prior32_new64_physx_original_940001_950032 \
+            research/frozen_policy_transfer/evidence/ood_pd_drive_known_ack_anchor_original64_960101_970132
+          do
+             (cd "$d" && sha256sum --check SHA256SUMS)
+          done
+      - name: Exact frozen 320 original reset identity / matched actual task and risk costs
+        run: |
+          set -euo pipefail
+          python -m py_compile research/reviewer_independent_original_5cohort_stats.py
+          python -m research.reviewer_independent_original_5cohort_stats
+      - name: Anti-overclaim checks, including zero-of-two risk bound
+        run: |
+          python - <<'PY'
+          from research.reviewer_independent_original_5cohort_stats import report,exact_one_sided_clopper_upper
+          z=report()
+          assert z['separate_original_reset_state_population_count']==320
+          d=z['cohorts']['dynamics_ood']['overall']
+          assert d['primary']['unique_full_target_history_authorizations']==2
+          assert d['secondary']['unique_full_target_history_authorizations']==8
+          assert abs(exact_one_sided_clopper_upper(0,2)-(1-.05**.5))<1e-9
+          assert abs(exact_one_sided_clopper_upper(0,8)-(1-.05**.125))<1e-9
+          assert d['paired_task_outcomes']=={'both_real_task_success':56,
+              'primary_only_real_task_success':0,'secondary_only_real_task_success':0,
+              'neither_real_task_success':8}
+          assert z['cohorts']['double_truth']['overall']['primary']['wrong_confident_native_histories']==2
+          print('TOP_REVIEWER_ORIGINAL_SOURCE_RISK_AND_PAIRED_TASK_AUDIT_FULLY_VERIFIED',True)
+          PY
