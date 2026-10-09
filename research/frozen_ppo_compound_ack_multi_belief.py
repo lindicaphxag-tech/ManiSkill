@@ -25,8 +25,8 @@ from research.two_history_se3_robust import Reason
 
 TASK=os.environ.get("ABI_TASK")
 COHORT={
-    "pull_cube":("PullCube-v1",range(380001,380009)),
-    "stack_cube":("StackCube-v1",range(390001,390009))
+    "pull_cube":("PullCube-v1",range(400001,400009)),
+    "stack_cube":("StackCube-v1",range(410001,410009))
 }
 if TASK not in COHORT:
     raise ValueError("ABI_TASK must name one of two frozen task/checkpoint cohorts")
@@ -45,8 +45,8 @@ NAMES=(
     "fault_robust_then_single_privileged_query",
     "fault_always_single_privileged_query"
 )
-BELIEF_ARMS=NAMES[3:6]
-PROTO="research/COMPOUND_ACK_MULTI_HYPOTHESIS_PRECOMMIT_V2.md"
+BELIEF_ARMS=NAMES[3:6]+(NAMES[6],)
+PROTO="research/COMPOUND_ACK_MULTI_HYPOTHESIS_PRECOMMIT_V3.md"
 
 
 def copy_target(pose):
@@ -154,7 +154,6 @@ def trial(policy,seed):
         src=arms["source_no_fault"]
         observers={n:observer(arms[n]) for n in (
             "fault_optimistic_unverified_ack",
-            "fault_always_single_privileged_query"
         )}
         beliefs={n:belief(arms[n]) for n in BELIEF_ARMS}
         done={n:False for n in NAMES}
@@ -179,7 +178,7 @@ def trial(policy,seed):
                     if n=="fault_always_single_privileged_query" and step==max(FAULT_STEPS)+1:
                         # Explicitly disclose this additional authoritative target read.
                         actual=privileged_target(arm)
-                        observers[n].reset(actual)
+                        beliefs[n].require_external_resync(actual)
                         result["privileged_target_readback_decision_count"][n]+=1
                     if maybe_two:
                         desired=desired_source_target(src,arm,native)
@@ -277,8 +276,7 @@ def trial(policy,seed):
                 elif n in observers:
                     # ACK always unknown in experiment. Optimist deliberately
                     # assumes it arrived; query arm invalidates then reinitializes.
-                    ack=None if (step in FAULT_STEPS and
-                        n=="fault_always_single_privileged_query") else True
+                    ack=True  # Only the intentionally optimistic baseline has an observer
                     observers[n].acknowledge(ticket,applied=ack)
                 if certificate is not None and certificate.authorized and step in FAULT_STEPS:
                     # Source-native fault forcibly replaces the authorized command
