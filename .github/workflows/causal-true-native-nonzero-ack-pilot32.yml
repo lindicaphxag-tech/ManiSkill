@@ -39,7 +39,7 @@ jobs:
               assert all(sum(truth(s)==t for s in ids)==4 for t in ("AA","AH","HA","HH"))
           print("PRECOMMITTED_POSITIVE_NONZERO_NATIVE_INTERVENTION_PILOT32_SOURCENATIVE_LOCK",True)
           PY
-  32-truly-new-reset-paired-physical-task-shards:
+  original-32-truly-new-reset-paired-physical-task-shards:
     needs: immutable-source-and-original-fault-truth-precommit
     runs-on: ubuntu-latest
     timeout-minutes: 125
@@ -87,7 +87,7 @@ jobs:
             original_physx_environment_freeze.txt
           retention-days: 90
   external-independent-pilot-original32-source-only-audit:
-    needs: 32-truly-new-reset-paired-physical-task-shards
+    needs: original-32-truly-new-reset-paired-physical-task-shards
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
