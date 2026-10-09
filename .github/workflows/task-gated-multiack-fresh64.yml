@@ -1,0 +1,83 @@
+name: Fresh64 task-gated double-ACK frozen PPO real PhysX
+on:
+  push:
+    branches: [research/task-gated-ack-outside64-20261009]
+    paths:
+      - 'research/TASK_GATED_MULTI_ACK_FRESH64_V1.json'
+      - 'research/run_task_gated_multi_ack_fresh64.py'
+      - '.github/workflows/task-gated-multiack-fresh64.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: task-gated-original-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  source-and-split-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify strict preoutcome task-only query selection and frozen source hashes
+        run: |
+          set -euo pipefail
+          python -m py_compile research/run_task_gated_multi_ack_fresh64.py
+          python research/run_task_gated_multi_ack_fresh64.py --self-test
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = '99836af14205fe3e95e52a2e0d68237c7c8a9045'
+          test "$(git hash-object research/multi_ack_se3_bounded.py)" = '36707a177549104ba5b4bd9bcebc76518f0d2840'
+  native-physx-8-source-shards:
+    needs: source-and-split-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 95
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      PYTHONUNBUFFERED: '1'
+      TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install genuine ManiSkill native PhysX CPU and released third-party PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e . huggingface_hub
+      - name: Record immutable source and original physical backend before all outcomes
+        run: |
+          mkdir -p task_gated_physx_original_evidence
+          git rev-parse HEAD > task_gated_physx_original_evidence/source_commit.txt
+          git hash-object research/frozen_ppo_compound_ack_multi_belief.py > task_gated_physx_original_evidence/original_controller_blob.txt
+          git hash-object research/multi_ack_se3_bounded.py > task_gated_physx_original_evidence/original_certifier_blob.txt
+          git hash-object research/TASK_GATED_MULTI_ACK_FRESH64_V1.json > task_gated_physx_original_evidence/protocol_blob.txt
+          python -m pip freeze --all > task_gated_physx_original_evidence/environment.txt
+          printf 'task=%s chunk=%s double_ACK_at_2_and_3=true frozen_PPO=true task_gate_before_reset=true\n' "$TASK" "$CHUNK" > task_gated_physx_original_evidence/cohort.txt
+      - name: Step seven REAL controller worlds for eight fresh source states, then apply PRECOMMITTED whole-trajectory route
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_task_gated_multi_ack_fresh64.py \
+            --task "$TASK" --chunk "$CHUNK" \
+            --out task_gated_physx_original_evidence 2>&1 | tee task_gated_physx_original_evidence/native_physx.log
+          test -s "task_gated_physx_original_evidence/task_gated_${TASK}_chunk${CHUNK}_original8.json"
+          test -s task_gated_physx_original_evidence/summary.json
+      - name: Preserve even failed native runs
+        if: always()
+        run: |
+          (cd task_gated_physx_original_evidence && sha256sum *.json *.txt *.log > SHA256SUMS) || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: taskgated-${{ matrix.task }}-${{ matrix.chunk }}-${{ github.run_id }}
+          path: task_gated_physx_original_evidence/
+          retention-days: 90
+
+# No model training; 64 independent simulator reset states, NOT 448 independently trained models.
+# No claim of robot hardware safety, independent scientific replication or hardware ACK loss.
