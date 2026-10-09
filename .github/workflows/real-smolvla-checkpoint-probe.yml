@@ -1,0 +1,64 @@
+name: Real SmolVLA official weights and real LIBERO single-frame inference (NO robot commands)
+on:
+  push:
+    branches:
+      - research/beliefbridge-vla-action-contract-20261009
+    paths:
+      - 'research/vla_beliefbridge/real_smolvla_checkpoint_probe.py'
+      - '.github/workflows/real-smolvla-checkpoint-probe.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: real-smolvla-checkpoint-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  pinned-published-model-inference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    env:
+      PYTHONUNBUFFERED: '1'
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      HF_HUB_DOWNLOAD_TIMEOUT: '120'
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Native LeRobot library from exact official source commit plus official SmolVLA dependencies
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/huggingface/lerobot.git /tmp/official-lerobot
+          git -C /tmp/official-lerobot checkout b9cb121cb7d4e3e26ec5c906d08dda68d151ba52
+          python -m pip install --upgrade pip
+          python -m pip install -e '/tmp/official-lerobot[smolvla]'
+      - name: Print source and tensor backend identity before model download
+        run: |
+          set -euo pipefail
+          mkdir -p genuine_smolvla_evidence
+          git rev-parse HEAD > genuine_smolvla_evidence/maniskill_source_commit.txt
+          git -C /tmp/official-lerobot rev-parse HEAD > genuine_smolvla_evidence/official_lerobot_source_commit.txt
+          git hash-object research/vla_beliefbridge/real_smolvla_checkpoint_probe.py > genuine_smolvla_evidence/inference_probe_source_blob.txt
+          python -m pip freeze --all > genuine_smolvla_evidence/python_env.txt
+      - name: ONE real published 450M SmolVLA checkpoint forward pass, real LeRobot LIBERO camera frame
+        run: |
+          set -o pipefail
+          python -m research.vla_beliefbridge.real_smolvla_checkpoint_probe --output genuine_smolvla_evidence/official_pretrained_inference.json 2>&1 | tee genuine_smolvla_evidence/real_inference_full.log
+          test -s genuine_smolvla_evidence/official_pretrained_inference.json
+      - name: Preserve successes AND failed native model execution logs
+        if: always()
+        run: |
+          (cd genuine_smolvla_evidence && sha256sum *.json *.txt *.log > SHA256SUMS) || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: true-published-smolvla-weights-real-libero-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 60
+          path: genuine_smolvla_evidence/
+
+# Explicit limitation: model forward pass is NOT ManiSkill action execution,
+# the output is NOT attested as Panda target-relative Cartesian actions.
+# Upstream SmolVLA base is not a verified controller-specific policy.
