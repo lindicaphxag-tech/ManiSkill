@@ -1,0 +1,25 @@
+name: "Old 32-state source-only development identifiability diagnostic (not new PhysX)"
+on:
+  push:
+    branches: [research/ppo-hypothesis-identifiability-new64-20261009]
+    paths:
+      - 'research/audit_development_old32_full_history_index.py'
+      - '.github/workflows/replay-old32-full-hypothesis-identifiability.yml'
+permissions:
+  contents: read
+jobs:
+  exact-original-retrospective-source-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify 17 original archived physical source objects unchanged and recompute old diagnostic
+        run: |
+          set -euo pipefail
+          cd research/frozen_policy_transfer/evidence/public_fourhistory_frozen_ppo_original32_780001_790016
+          sha256sum --check SHA256SUMS
+          cd ../../../..
+          python -m research.audit_development_old32_full_history_index
