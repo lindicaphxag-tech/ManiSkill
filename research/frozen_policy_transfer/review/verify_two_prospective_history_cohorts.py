@@ -29,7 +29,7 @@ STUDIES = {
         "audit": "independent_new64_full_source_audit.json",
         "per_task": 32, "per_shard": 8, "starts": {"pull_cube": 840001, "stack_cube": 850001},
         "expected": {"new_success": 58,"new_reads": 39,"gated_success": 58,
-                     "gated_reads": 57,"public_unique": 25,"wrong": 0,"fixed": 58},
+                     "gated_reads": 57,"public_unique": 25,"wrong_confident": 0,"fixed_success": 58},
     },
     "replication32": {
         "folder": "survivor_fullpose_original32_860001_870016",
@@ -37,7 +37,7 @@ STUDIES = {
         "audit": "full_original_survivor_fullpose_new32_audit.json",
         "per_task": 16, "per_shard": 4, "starts": {"pull_cube": 860001, "stack_cube": 870001},
         "expected": {"new_success": 28,"new_reads": 22,"gated_success": 28,
-                     "gated_reads": 27,"public_unique": 10,"wrong": 0,"fixed": 28},
+                     "gated_reads": 27,"public_unique": 10,"wrong_confident": 0,"fixed_success": 28},
     }
 }
 
