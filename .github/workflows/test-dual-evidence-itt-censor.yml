@@ -1,0 +1,27 @@
+name: Adversarial genuine-episode censor no-invention tests
+on:
+  push:
+    branches: [audit/dual-model-64-intent-to-treat-recovery-20261009]
+    paths:
+      - research/test_dual_evidence_itt_censor.py
+      - research/run_dual_evidence_ack_new64.py
+      - .github/workflows/test-dual-evidence-itt-censor.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-physics-denominator-and-observation-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify exact unchanged original physical method and response model
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/DUAL_EVIDENCE_ACK_NEW64_PREOUTCOME_V1.json)" = c2c259ba7bb6beb02bf1ad8e9cdc45eeef5941ef
+          test "$(git hash-object research/frozen_ppo_dual_evidence_model_trust_physx.py)" = b97b6d1ed6a710e026f8412eb6286de53ff9bcb6
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          python -m unittest research.test_dual_evidence_itt_censor -v
