@@ -1,0 +1,68 @@
+{
+  "schema": "mixed_ack_cross_cohort_untouched_reset32_holdout_v1",
+  "frozen_before_new_task_outcomes": true,
+  "recorded_date": "2026-10-09",
+  "scientific_purpose": "Resolve exposed initial reset reuse of mixed64 cohort with 32 additional untouched source resets; do not tune thresholds, controller, source PPO or compare after observing new task outcomes",
+  "original_source_protocol_git_blob": "039868da753f6fc37217036ed632bf6dca953228",
+  "source_runner_git_blob": "36e672446407435e656cbf8aba6fa2de7c1e9d0e",
+  "method_precommitted": {
+    "controller": "Panda native pd_ee_delta_pose to pd_ee_target_delta_pose",
+    "physical_fault_truth": "At zero-index step 2 APPLIED iff original seed even, HELD iff odd; second command always HELD at step 3; unknown acknowledgments to policy",
+    "public_response": "Same two real XYZ samples before/after native t3 hold, original task-specific historical calibration and +0.002 m nonwinner margin",
+    "query_control": "One authoritative true target read at t4 on ambiguous or unsupported public complete-pose history; otherwise select exact whole surviving TargetPose",
+    "model_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+    "no_policy_retraining": true,
+    "nine_original_physically_stepped_arms": true,
+    "no_network_packet_emulator": true,
+    "no_robot_hardware_safety_claim": true
+  },
+  "new_reset_states": {
+    "pull_cube": [
+      [
+        980101,
+        980108
+      ],
+      [
+        980109,
+        980116
+      ]
+    ],
+    "stack_cube": [
+      [
+        990101,
+        990108
+      ],
+      [
+        990109,
+        990116
+      ]
+    ]
+  },
+  "n_per_task": 16,
+  "n_tasks": 2,
+  "total_new_reset_state_targets": 32,
+  "worlds_per_seed": 9,
+  "actual_native_physx_worlds_expected": 288,
+  "first_result_bearing_stage": "after immutable pre-outcome protocol committed",
+  "cohort_validity_gates": [
+    "all 32 registered seed/task labels and all nine actually stepped native worlds preserved",
+    "all 32 task states reach both actual first and second prescribed t2/t3 fault interventions in every compared arm",
+    "if any pre-fault action cannot be represented the gate fails; do not delete or replace its initial state",
+    "all source model identities frozen and same original method/checkpoint verified",
+    "report per task, per t2 applied/held truth, exact per-state task successes and actual target readbacks",
+    "do not conflate 32 new reset IDs with 32 distinct trained PPOs",
+    "if source code or frozen threshold changed after any new outcome report and invalidate rather than rebrand"
+  ],
+  "primary_estimands": [
+    "new public-or-query versus task-ID preselected exact paired native PhysX task successes across these 32 states",
+    "observed privileged private target readbacks, public observation sample cost, wrong confident selected full target history",
+    "zero-privileged-read always-assume-held real task baseline, and mandatory t4 query",
+    "paired task discordance; no noninferiority claim without prospective margin/power"
+  ],
+  "posthoc_context_not_trials": {
+    "previous_mixed64": "860001..860032 PullCube and 870001..870032 StackCube, 32 reused from earlier survivor study",
+    "previous_survivor32": "860001..860016 PullCube and 870001..870016 StackCube",
+    "previous_primary64": "840001..840032 PullCube and 850001..850032 StackCube",
+    "original_negative_unseen32_subgroup": "28/32 new, 29/32 strong, 17/29 private reads, exploratory after reset overlap was found"
+  }
+}
