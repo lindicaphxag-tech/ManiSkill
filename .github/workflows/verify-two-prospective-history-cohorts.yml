@@ -3,6 +3,12 @@ name: Independently verify 96 frozen PPO paired PhysX trials and empirical error
 on:
   push:
     branches: [publication/reviewer-paired96-unbiased-verification-20261009]
+  pull_request:
+    paths:
+      - 'research/frozen_policy_transfer/review/verify_two_prospective_history_cohorts.py'
+      - 'tests/test_two_prospective_history_cohorts.py'
+      - 'research/frozen_policy_transfer/DISCRETE_HISTORY_PUBLIC_PPO_MANUSCRIPT_V1_5.md'
+      - '.github/workflows/verify-two-prospective-history-cohorts.yml'
   workflow_dispatch:
 
 permissions:
@@ -36,6 +42,12 @@ jobs:
           assert a['new_success']==a['gated_success']==86
           assert a['public_unique']==35 and a['wrong_confident']==0
           assert a['new_reads']==61 and a['gated_reads']==84
+          assert all(x['source_integrity_original_sha256_files']==17 for x in x['studies'].values())
+          assert all(x['descriptive_paired_full_source']['new_only']==0 and
+                     x['descriptive_paired_full_source']['task_gated_only']==0
+                     for x in x['studies'].values())
+          assert all(x['exact_one_sided_95pct_upper_on_unobserved_future_label_error_CONDITIONAL_iid']>0
+                     for x in x['studies'].values())
           print('ORIGINAL_96_OUTCOME_SOURCE_REVIEWER_VERIFIED',
             {k:a[k] for k in ('n','physical_worlds','new_success','gated_success',
                              'public_unique','wrong_confident','new_reads','gated_reads')})
