@@ -64,7 +64,7 @@ def validate(d,task,chunk):
         or d.get("frozen_model_retrained") is not False
         or d.get("original_external_frozen_checkpoint_sha256")!=CHECKPOINT[task]
         or d.get("real_physx_simulator") is not True
-        or d.get("two_consecutive_unknown_ack_target_hold_steps")!=[2,3]
+        or d.get("two_consecutive_unknown_ack_command_steps")!=[2,3]
         or d.get("both_physical_ack_truths_balanced_over_seed_mod4") is not True
         or d.get("shared_known_delivered_neutral_probe_step4") is not True
         or len(d.get("episodes",[]))!=8):
