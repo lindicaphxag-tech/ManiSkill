@@ -1,0 +1,50 @@
+name: Audit genuine 2304-PhysX conditional native-action confounding of 256 real tasks
+on:
+  push:
+    branches: [analysis/confirmatory256-motor-confound-conditioned-20261009]
+    paths:
+      - research/source_audit_original_256_motor_conditioned_outcomes.py
+      - .github/workflows/original256-motor-conditional-paired-review.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  independent_source_sha_recompute_and_no_fake_query_effect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: primary
+      - uses: actions/checkout@v4
+        with:
+          ref: research/confirmatory256-original-source-audit-20261009
+          path: motor
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Audited original SHA registered physical truth, native six-axis t3 equality and all 256 preserved outcomes
+        working-directory: primary
+        run: |
+          set -euo pipefail
+          python -m py_compile research/source_audit_original_256_motor_conditioned_outcomes.py
+          python -m research.source_audit_original_256_motor_conditioned_outcomes \
+            --original research/frozen_policy_transfer/evidence/confirmatory_64cluster_256truth_orig_3210001_3220032/original_full256_independent_audit.json \
+            --motor ../motor/research/frozen_policy_transfer/evidence/confirmatory256_real_motor_probe_cost_original/REAL256_ACTUAL_NATIVE_T2_T3_MOTOR_AND_PUBLIC_PROBE_AUDIT.json \
+            --output research/frozen_policy_transfer/derived/original256_physical_action_match_stratified_NOT_CAUSAL.json
+          test -s research/frozen_policy_transfer/derived/original256_physical_action_match_stratified_NOT_CAUSAL.json
+      - name: Commit fully auditable ORIGINAL full universe decomposition, NOT new physics
+        working-directory: primary
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/frozen_policy_transfer/derived/original256_physical_action_match_stratified_NOT_CAUSAL.json
+          git commit -m "Evidence: disambiguate 256 positive robot task outcomes from t3 actuator-motor confounding"
+          git push origin HEAD:analysis/confirmatory256-motor-confound-conditioned-20261009
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original_256_true_PhysX_native_motor_conditional_causal_scope
+          path: primary/research/frozen_policy_transfer/derived/original256_physical_action_match_stratified_NOT_CAUSAL.json
+          retention-days: 90
