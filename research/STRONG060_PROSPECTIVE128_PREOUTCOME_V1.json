@@ -1,0 +1,110 @@
+{
+  "schema": "prospective_strong060_true_matched_public_32cluster_128cell_v1",
+  "created_before_any_new_physx_outcome": true,
+  "study_design": "Prospective 32 independent reset clusters (16 per task), every cluster physically tested at 4 ACK truths and 10 original PPO physical controller treatments. Exact source frozen plus only truth scheduler, protocol filename and B threshold 0.95->0.60; no tuning after 311/312 outcomes.",
+  "preregistration_type": "Pre-physics frozen 0.60 same-public score vs unchanged set-membership A and unchanged actual C, previously selected based on disjoint development and retrospective 301/302 analysis; NEW unseen 311/312 cohort only. This does not reset the history of model selection.",
+  "original_matched_public_PPO_runner_git_blob": "6e039af56006827fc2fe063b541cfa3dcd1ddc89",
+  "original_matched_public_FullPose_setmember_score": "identical historical empirical public eps and +0.002m nonwinner compatibility margin",
+  "policies": [
+    "source_no_fault",
+    "fault_oracle_private_target",
+    "fault_optimistic_unverified_ack",
+    "fault_strict_common_exact",
+    "fault_robust_two_history_without_query",
+    "fault_robust_then_single_privileged_query",
+    "fault_public_t3_fourhistory_or_t4_query",
+    "fault_same_public_posterior_or_query",
+    "fault_always_single_privileged_query",
+    "fault_assume_held_without_query"
+  ],
+  "core_matched_pair": [
+    "fault_public_t3_fourhistory_or_t4_query",
+    "fault_same_public_posterior_or_query",
+    "fault_always_single_privileged_query"
+  ],
+  "task_reset_register": {
+    "pull_cube": [
+      3110001,
+      3110016
+    ],
+    "stack_cube": [
+      3120001,
+      3120016
+    ]
+  },
+  "task_per_chunk_eight": 2,
+  "actual_execution_truths": {
+    "0": [
+      "held",
+      "held"
+    ],
+    "1": [
+      "applied",
+      "held"
+    ],
+    "2": [
+      "held",
+      "applied"
+    ],
+    "3": [
+      "applied",
+      "applied"
+    ]
+  },
+  "physical_native_fault_steps": [
+    2,
+    3
+  ],
+  "shared_neutral_known_delivered_t4_step": 4,
+  "t5_private_state_decision_step": 5,
+  "task_success_original_official_only": true,
+  "public_XYZ_probes_per_public_comparator": [
+    2,
+    2
+  ],
+  "private_actual_target_reads_charged": true,
+  "controller_memory_audit_only_not_decision_input": true,
+  "expected_unique_source_task_reset_clusters": 32,
+  "expected_physical_truth_cells": 128,
+  "expected_actual_native_controller_worlds": 1280,
+  "matched_procedure": "For each 8-reset task shard, execute four truth conditions consecutively within ONE Python process; before EACH trial seed Python random, NumPy and Torch using same original reset ID, then reset all 10 PhysX worlds; compare exact initial SOURCE projected observation SHA256 across all four truths for each seed; if any differ abort ALL paired inference. Confirm A/B/C actually dispatched identical native t2/t3 6D arm command and actually completed physical t4 neutral, and check physical SE3 achieved+hidden target position/orientation pre-t5 pair mismatch <=5e-5. Audit-only actual target never enters A or B decision.",
+  "all_registered_cells_in_denominator_even_if_fail": true,
+  "do_not_conclude_from_censored_or_unmatched_prefix": true,
+  "stats_unit": "32 task/reset clusters; four correlated actual truth treatments PER CLUSTER, not 128 independent task samples and never 1280 independent robots",
+  "task_primary_endpoints": [
+    "official_task_success",
+    "wrong_confident_FULL_target_history_authorizations",
+    "privileged_decision_target_reads",
+    "public_achieved_XYZ_events",
+    "actual_probe_physical_steps",
+    "native fault nonexposure or action representability refusals"
+  ],
+  "physical_vs_software_scope": "genuine author-operated ManiSkill CPU PhysX native command applied/held, not actual dropped ROS/TCP ACK or physical robot",
+  "do_not_change_after_results": [
+    "method weights checkpoint epsilon threshold controller chart",
+    "physical truth definitions",
+    "32 source reset IDs",
+    "task membership",
+    "full denominator",
+    "assert identical predecision actual public physical poses target states and t2/t3 native commands among A/B/C",
+    "overall and per-task all-four-truth reporting",
+    "0.60 exact B threshold, chosen before any 311/312 cohort outcome",
+    "Do not re-use 301/302 outcomes as new source",
+    "Do not change 311/312 reset IDs or add favorable cases"
+  ],
+  "first_run_failure_policy": "If exact same reset initial hashes or source-method-before-decision equality fails, label original preregistration invalid; retain original failed run, then only rerun with declared postfailure amendment (NOT pristine prospective). Do not delete failure samples.",
+  "no_new_learned_policy_or_official_DualABI_claim": true,
+  "outside_independent_replication_not_yet": true,
+  "strong_score_B_threshold": 0.6,
+  "previously_exposed_301_302_cohort_excluded": true,
+  "design_decision_prior_to_new_outcome": true,
+  "claim_boundary": [
+    "0.60 score was previously inspected on old 301/302 traces, so current claim is prospective generalization under selected hyperparameter, not parameter-selection-independent discovery",
+    "Author-operated simulator; no external scientific adoption and no hardware result",
+    "All 4 fault truths per original seed correlated; 32 independent reset clusters",
+    "Equal task success in one sample does not prove statistical noninferiority",
+    "A and B identical public XYZ sample count and known delivered native neutral step; C must price additional sensing",
+    "Wrong confident full history must be reported even with apparent task success",
+    "If prefix mismatch, missing truths, stale source hash, or physics failure occurs, label failed source, never silently drop or tune"
+  ]
+}
