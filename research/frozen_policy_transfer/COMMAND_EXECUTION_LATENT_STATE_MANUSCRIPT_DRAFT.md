@@ -1,6 +1,6 @@
 # Command Execution as a Latent State: Evidence-Gated Target Memory for Frozen Robot Policies
 
-**Pre-submission research manuscript draft v1.0 · not peer reviewed, not accepted, no outside replication · 9 October 2026**
+**Pre-submission research manuscript draft v1.1 · not peer reviewed, not accepted, no outside replication · 9 October 2026**
 
 **Authors, affiliation, target venue, final title: intentionally not asserted in this code artifact.**
 
@@ -237,6 +237,8 @@ The *same-state matched* capped-versus-periodic contingency is **13 both success
 [Full original new16 all-case result](TYPED_ADMISSION_NEW16_ACTUAL_PHYSX_RESULT.md) · [merged protocol/runner/source-auditor PR #107](https://github.com/lindicaphxag-tech/ManiSkill/pull/107) · [separate original primary-fault validity auditor](../audit_typed_gate_fresh16.py). An additional trusted-main workflow checks the exact GitHub original artifacts by SHA256 and commits the **byte-identical original** native PhysX JSON plus file manifest, instead of reconstructing trial evidence from logs. That archiving is a reproducibility step, **not** independent outside-lab execution of the physics.
 
 **Methodological implication:** the correct hierarchy is *native action chart representability* → *trusted initial target and complete unknown-ACK history set* → *setpoint-bounded action/privileged observation authorization* → *physical native task outcome*. A query cannot repair an unrepresentable action; a typed admission correction cannot prove history identifiability; and successful task reward cannot prove either hidden-state identification or hardware safety. This hierarchy is a tested system protocol, **not** a claimed novel mathematical impossibility theorem or a proof of cross-robot controller generality.
+
+**Permanent original evidence is now published (completed, not planned):** [Trusted original archive run 37902925803](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37902925803) **SUCCESS** after checking all eight original ZIP SHA-256 artifact digests, the precommitted source HEAD, every one of 64 original task reset states, 1530 actually dispatched command-target residual checks and 192 fault-masked commands that were NOT physically dispatched. [Browse the actual byte-identical eight PhysX shard JSON files, their original SHA256SUMS and the complete independent 64-case audit JSON on the stable main branch](https://github.com/lindicaphxag-tech/ManiSkill/tree/main/research/frozen_policy_transfer/evidence/compound_ack_64_original_native_physx_420001_430032). [Archive PR #111](https://github.com/lindicaphxag-tech/ManiSkill/pull/111) is merged; this is contributor-side original data archiving, **not** an outside physics replication. [Original preregistration](../COMPOUND_ACK_NEW64_PROSPECTIVE_V1.md) and [full original negative finding](COMPOUND_ACK_NEW64_AUTHENTIC_PHYSX_FINDINGS.md) are also now on main. The [strong simple posthoc query baseline #110](ORIGINAL_64_STRONG_QUERY_TIMING_BASELINE_AND_INVARIANT.md) is independently rerunnable on Python 3.11/3.13, but was not itself executed as a new native controller.
 
 ### 4.8 MOST RECENT independent original seed cohort: four-history read timing loses task success under two unknown ACKs
 
