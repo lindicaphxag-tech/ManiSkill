@@ -1,0 +1,33 @@
+name: Native controller typed action representability and measured SO3 distortion
+
+on:
+  pull_request:
+    paths:
+      - "research/typed_native_action_authority.py"
+      - "tests/test_typed_native_action_authority.py"
+      - ".github/workflows/typed-native-action-authority.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-so3-and-float32-native-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    strategy:
+      matrix:
+        python-version: ["3.11","3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install only actual physical chart numerical dependencies
+        run: python -m pip install "numpy>=1.26,<3" "scipy>=1.13,<2"
+      - name: Execute original observer root-frame forward physical chart, precision guard and mandatory refusal
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_typed_native_action_authority.py -v
+          python -m py_compile research/typed_native_action_authority.py
+          echo "PASS source-counterexample float32 native box * SO3 ball admissibility, no task-success or hardware guarantee" >> "$GITHUB_STEP_SUMMARY"
