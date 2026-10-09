@@ -1,0 +1,48 @@
+name: Authority-aware minimax plan and proof-carrying verifier
+on:
+  push:
+    branches: [research/authority-aware-minimax-probe-20261010]
+    paths:
+      - research/authority_probe_minimax.py
+      - tests/test_authority_probe_minimax.py
+      - .github/workflows/authority-aware-minimax.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exhaustive-model-only-check:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Compile exact planner and independent verifier
+        run: python -m py_compile research/authority_probe_minimax.py tests/test_authority_probe_minimax.py
+      - name: Run adversarial certificate checks and 70 exhaustive cross-checks
+        run: python -m unittest discover -s tests -p test_authority_probe_minimax.py -v
+      - name: Output synthetic-only decision certificates for human audit
+        shell: bash
+        run: |
+          python -m research.authority_probe_minimax > synthetic_minimax_certificates.json
+          python - <<'PY'
+          import json
+          d=json.load(open('synthetic_minimax_certificates.json'))
+          assert d['synthetic_only'] is True
+          a=d['examples']
+          assert a['repair_quotient']['worst_cost_units']==0
+          assert a['globally_cheapest_probe']['worst_cost_units']==3
+          assert a['uninformative_actuation']['root']['kind']=='read'
+          print('PASS_SYNTHETIC_ONLY_FINITE_MODEL_CERTIFICATES')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: proof-carrying-synthetic-models-${{ matrix.os }}-py${{ matrix.python }}
+          path: synthetic_minimax_certificates.json
+          if-no-files-found: error
