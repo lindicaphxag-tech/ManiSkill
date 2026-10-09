@@ -84,6 +84,8 @@ def audit(data,task,seeds):
     reached={a:0 for a in ARMS[1:]}
     count_read={S:0,A:0}
     maxK=1
+    selective_four_history_decision_steps=0
+    selective_four_history_physically_dispatched_verified_steps=0
     for j,r in enumerate(rows):
         if r.get("seed")!=seeds[j] or r.get("task")!=ENV[task]:
             raise ValueError("Duplicated/out-of-cohort native reset seed")
@@ -112,6 +114,7 @@ def audit(data,task,seeds):
                     or e.get("controller_execution_ack_seen_by_adapter")!="unknown"):
                     raise ValueError("This must be actual physically executed zero target delta, unknown ACK")
             reached[a]+=int(len(events)==2)
+        selective_K4_steps=set()
         for arm,states in r.get("candidate_history_count",{}).items():
             if arm not in ARMS or not isinstance(states,list):
                 raise ValueError("Unknown history set count")
@@ -120,6 +123,11 @@ def audit(data,task,seeds):
                 if type(k) is not int or not 2<=k<=16:
                     raise ValueError("Untrusted/incomplete history count")
                 maxK=max(maxK,k)
+                if arm==S and k==4:
+                    if state.get("step") in selective_K4_steps:
+                        raise ValueError("Duplicate K=4 certificate decision timestamp")
+                    selective_K4_steps.add(state.get("step"))
+        selective_four_history_decision_steps+=len(selective_K4_steps)
         for arm,events in r.get("certified_intent_suppressed_by_actual_fault",{}).items():
             delivered={q["step"] for q in r.get("faults",{}).get(arm,[])}
             for e in events:
@@ -131,6 +139,8 @@ def audit(data,task,seeds):
             if arm not in ARMS:raise ValueError("Unknown physical command bound verifier")
             delivered={q["step"] for q in r.get("faults",{}).get(arm,[])}
             for e in events:
+                if arm==S and e.get("step") in selective_K4_steps:
+                    selective_four_history_physically_dispatched_verified_steps+=1
                 if e.get("step") in delivered or e.get("only_audit_after_physical_dispatch") is not True:
                     raise ValueError("Rejected command incorrectly audited as actually dispatched")
                 if (e["position_error_m"]>e["worst_case_position_limit_m"]+0.0001
@@ -147,6 +157,9 @@ def audit(data,task,seeds):
         "fully_reached_two_physically_executed_native_faults_by_arm":reached,
         "privileged_target_decision_reads":count_read,
         "maximum_logged_candidate_goal_history_count":maxK,
+        "true_original_K4_candidate_history_decisions":selective_four_history_decision_steps,
+        "physically_DISPATCHED_K4_commands_verified_against_real_native_target":selective_four_history_physically_dispatched_verified_steps,
+        "K4_candidate_decisions_are_not_independent_task_seeds":True,
         "source_is_author_fork_implementation_no_external_rewrite":True,
         "native_arm_target_hold_is_NOT_actual_packet_loss":True,
         "no_motor_safety_certification":True}
@@ -157,7 +170,59 @@ def self_test():
         try:select(*args)
         except ValueError:pass
         else:raise AssertionError("Illegitimate external new seed request accepted")
-    print("PASS original study selection contracts and external minimum unseen first seed")
+    from copy import deepcopy
+    seeds=select("pull_cube",300001)
+    original={
+        "schema":"two_unknown_ack_khistory_certify_query_physx_v1",
+        "task":"PullCube-v1","original_seed_population":list(seeds),
+        "original_external_frozen_checkpoint_sha256":CHECKPOINT["pull_cube"],
+        "frozen_protocol":"research/MULTI_ACK_K_HISTORY_PREOUTCOME_V1.json",
+        "real_physx_simulator":True,"frozen_model_retrained":False,
+        "fault_is_native_target_hold_not_network_loss":True,
+        "multi_target_unknown_fault_steps":[2,4],
+        "all_seven_actual_control_arms":list(ARMS),
+        "no_claim_of_global_multi_rotation_optimality":True,
+    }
+    original["episodes"]=[
+        {
+            "seed":seed,"task":"PullCube-v1",
+            "success_once":{n:n!="fault_strict_common_exact" for n in ARMS},
+            "privileged_target_readback_decision_count":{
+                n:(-1 if n=="fault_oracle_private_target" else 2 if n==A else 0)
+                for n in ARMS
+            },
+            "faults":{n:[
+                {"step":step,"actual_native_arm_command":"all_zero_hold",
+                 "controller_execution_ack_seen_by_adapter":"unknown"}
+                for step in (2,4)] for n in ARMS[1:]},
+            "candidate_history_count":{S:[{"step":5,"count":4}]},
+            "robust_native_target_bound_checks":{},
+        } for seed in seeds
+    ]
+    original["success_counts"]={n:(0 if n=="fault_strict_common_exact" else 8) for n in ARMS}
+    original["fault_reached_counts"]={n:8 for n in ARMS[1:]}
+    original["max_hypotheses_observed"]=4
+    good=audit(original,"pull_cube",seeds)
+    assert good["true_original_K4_candidate_history_decisions"]==8
+    original_mutations=[
+        lambda x:x["episodes"].pop(),
+        lambda x:x["episodes"][1].update(seed=300001),
+        lambda x:x["episodes"][0]["success_once"].update(source_no_fault="yes"),
+        lambda x:x["episodes"][0]["faults"][S][1].update(step=9),
+        lambda x:x["episodes"][0]["privileged_target_readback_decision_count"].update(**{S:3}),
+        lambda x:x["episodes"][0]["robust_native_target_bound_checks"].update(**{
+            S:[{"step":2,"only_audit_after_physical_dispatch":True,
+                "position_error_m":0.0,"worst_case_position_limit_m":0.02,
+                "rot_error_rad":0.0,"worst_case_rot_limit_rad":0.02}]
+        }),
+    ]
+    for i,mutate in enumerate(original_mutations):
+        forged=deepcopy(original);mutate(forged)
+        try:audit(forged,"pull_cube",seeds)
+        except (ValueError,KeyError):pass
+        else:raise AssertionError(f"Original native PhysX audit accepted destructive tamper case {i}")
+    print("PASS locked true 7-arm schema, all eight seed outcomes, four-history decisions and SIX destructive physical-source audit controls")
+
 
 def main():
     p=argparse.ArgumentParser()
