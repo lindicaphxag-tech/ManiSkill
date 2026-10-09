@@ -1,0 +1,107 @@
+name: Archive original dual 0.65 gate negative 64 PhysX source
+on:
+  push:
+    branches: [evidence/dual065-negative-native64-20261009]
+    paths: [.github/workflows/archive-original-dual065-native64.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  archive-with-independent-negative-data-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify unchanged original pre-outcome model / prior / physical simulator
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/DUAL_EVIDENCE_ACK_NEW64_PREOUTCOME_V1.json)" = c2c259ba7bb6beb02bf1ad8e9cdc45eeef5941ef
+          test "$(git hash-object research/frozen_ppo_dual_evidence_model_trust_physx.py)" = b97b6d1ed6a710e026f8412eb6286de53ff9bcb6
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          python -m unittest research.test_dual_evidence_itt_censor -v
+      - name: Retrieve original eight genuinely simulated shard archives
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 37928191282
+          github-token: ${{ github.token }}
+          pattern: original-itt-dual-trust-*
+          merge-multiple: true
+          path: /tmp/actual_original_dual65_physx
+      - name: Retrieve original successful independent full-population audit
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 37928191282
+          github-token: ${{ github.token }}
+          name: original-itt-complete-64-640-physx-audit-with-censor
+          path: /tmp/actual_original_full_audit
+      - name: Independent source recomputation and original byte identity proof
+        run: |
+          set -euo pipefail
+          python -m research.audit_dual_evidence_ack_new64 \
+            --source-dir /tmp/actual_original_dual65_physx \
+            --output /tmp/independently_recomputed64.json
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          from collections import Counter
+          old=list(Path("/tmp/actual_original_full_audit").rglob("complete_first_audit.json"))
+          if len(old)!=1: raise RuntimeError(f"Missing original all-64 auditor bytes: {old}")
+          new=Path("/tmp/independently_recomputed64.json")
+          if old[0].read_bytes()!=new.read_bytes():
+              raise RuntimeError("Original full64 independent audit changed or drifted")
+          d=json.loads(new.read_text())
+          print("ORIGINAL_FULL64_SCORE_SOURCE_KEYS",list(d))
+          if d.get("n_original_reset_states",d.get("all_original_reset_states",64))!=64:
+              raise RuntimeError("Original task denominator changed")
+          PY
+      - name: Commit exact original physics outcomes and all audit results permanently
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import shutil,hashlib,json
+          original=Path("/tmp/actual_original_dual65_physx")
+          target=Path("research/frozen_policy_transfer/evidence/dual065_observer_negative_original64_1820001_1830032")
+          target.mkdir(parents=True,exist_ok=True)
+          expected={f"dual_evidence_{task}_chunk{k}_{suffix}.json" for task in ("pull_cube","stack_cube") for k in range(4) for suffix in ("original8","audit")}
+          found={p.name for p in original.glob("dual_evidence_*.json")}
+          if expected!=found:
+              raise RuntimeError(f"Missing actual original physical source files: {expected-found}; unexpected {found-expected}")
+          for name in sorted(expected): shutil.copyfile(original/name,target/name)
+          shutil.copyfile("/tmp/independently_recomputed64.json",target/"original_all64_independent_audit.json")
+          (target/"README.md").write_text(
+              "# Authentic original 64-state dual 0.65 model-trust rejection-gate negative result\n\n"
+              "Physical native CPU PhysX source: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37928191282\n\n"
+              "64 pre-registered original PullCube/StackCube reset states; 640 genuine native simulated controller worlds; frozen published PPOs; actual t2/t3 applied-or-held commands, four truth groups. "
+              "The original method/threshold, previously developed on a DISJOINT but author-observed wrong-confidence counterexample, were never changed. "
+              "Only the post-run auditor was corrected to keep episodes with absent neutral probe observations as INTENTION TO TREAT censoring. "
+              "The first failed original runs and the audit correction remain public. 2 original states did not receive a fully valid equal-public probe. "
+              "Full-denominator official tasks: original set-membership 54/64, 41 private target reads, 21 confident public admissions, zero observed wrong; "
+              "additional 0.65 deterministic same-XYZ residual score gate 54/64, 45 reads, 17 admissions, zero observed wrong; "
+              "fixed target-reader 55/64, 62 reads. Only 62 original cases have full 2x2 fault and matched public-probe exposure. "
+              "124 public XYZ sampling events each for the two public methods. "
+              "This is a NEGATIVE result for asserted reliability improvement, NOT proof of equivalent success or safety and not a joint sensing-cost improvement. "
+              "A weight derived only from the same XYZ residual is not independent sensor evidence. "
+              "No real packet-loss hardware, independent outside-lab replication, or generic VLA fault recovery. "
+              "Source-only archiver rederived 64 original outcomes and compared original all-population audit BYTES exactly.\n"
+          )
+          files=sorted(p for p in target.iterdir() if p.is_file())
+          with (target/"ORIGINAL_SHA256SUMS").open("w") as fh:
+              for p in files: fh.write(hashlib.sha256(p.read_bytes()).hexdigest()+"  "+p.name+"\n")
+          print("ARCHIVED_IMMUTABLE_ORIGINAL_PHYSX_SHARDS",len(expected))
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/frozen_policy_transfer/evidence/dual065_observer_negative_original64_1820001_1830032
+          git commit -m "Evidence: preserve all authentic 640 PhysX worlds and negative dual trust gate"
+          git push origin HEAD:evidence/dual065-negative-native64-20261009
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: permanently-published-dual065-negative-real-640-native-worlds
+          path: research/frozen_policy_transfer/evidence/dual065_observer_negative_original64_1820001_1830032/
+          retention-days: 90
