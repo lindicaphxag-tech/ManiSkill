@@ -1,0 +1,111 @@
+name: Real serial SAME-RESET native PhysX 16 seeds x 4 ACK truths x 9 controllers
+on:
+  push:
+    branches: [research/serial-reset-same-seed-4truth-physx64-20261009]
+    paths:
+      - research/SERIAL_SAME_PROCESS_FOUR_ACK_NEW64_PREOUTCOME_V1.json
+      - research/run_serial_physx_same_reset_fourtruth_new64.py
+      - research/audit_serial_physx_same_reset_fourtruth_new64.py
+      - .github/workflows/serial-matched-four-true-ack-physx64.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  before_outcome_source_and_protocol_freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Guarantee original robot source, previously calibrated scorer, and new unused reset identities untouched
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/frozen_ppo_same_reset_factorial_physx.py)" = 14882a4efcd36351f8cb5873e706488788446f32
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          python -m py_compile research/run_serial_physx_same_reset_fourtruth_new64.py research/audit_serial_physx_same_reset_fourtruth_new64.py
+          python - <<'PY'
+          import json
+          d=json.load(open("research/SERIAL_SAME_PROCESS_FOUR_ACK_NEW64_PREOUTCOME_V1.json"))
+          assert d["original_seed_clusters"]==16 and d["physical_task_seed_truth_cells"]==64
+          assert d["physically_stepped_worlds_if_complete"]==576
+          assert d["task_seeds"]["pull_cube"]["start"]==1970001
+          assert d["task_seeds"]["stack_cube"]["start"]==1980001
+          print("NEW_PHYSICAL_PROSPECTIVE_16_SEED_CLUSTER_64_CELL_CONTRACT_FROZEN")
+          PY
+  actual_four_truths_sequential_per_task_process:
+    needs: before_outcome_source_and_protocol_freeze
+    runs-on: ubuntu-latest
+    timeout-minutes: 115
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube,stack_cube]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      PYTHONUNBUFFERED: '1'
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install genuine frozen PPO ManiSkill CPU PhysX
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e . huggingface_hub
+      - name: Persist exact simulator and policy process provenance
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > physical_serial_source_commit.txt
+          python -m pip freeze --all > physical_serial_dependencies.txt
+      - name: FOUR original ACK execution patterns in SAME Python process and 8 genuine new robot seeds
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_serial_physx_same_reset_fourtruth_new64.py \
+            --task "$ABI_TASK" --output-dir original_serial64 \
+            2>&1 | tee "native_original_serial_${ABI_TASK}.log"
+          test -s "original_serial64/serial_${ABI_TASK}_all_truth_reset_authenticity.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: authentic-serial-fourtruth-${{ matrix.task }}
+          path: |
+            original_serial64/*.json
+            native_original_serial_*.log
+            physical_serial_source_commit.txt
+            physical_serial_dependencies.txt
+          retention-days: 90
+  independent_all_original_64_true_fault_source_audit:
+    needs: actual_four_truths_sequential_per_task_process
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: authentic-serial-fourtruth-*
+          merge-multiple: true
+          path: /tmp/authentic_serial_source
+      - name: Independently rederive every original 64 physical condition, reset digest and paired cluster outcome
+        run: |
+          set -euo pipefail
+          python -m research.audit_serial_physx_same_reset_fourtruth_new64 \
+            --source-dir /tmp/authentic_serial_source/original_serial64 \
+            --output /tmp/full_original_64_real_serial_physx_audit.json
+          test -s /tmp/full_original_64_real_serial_physx_audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ORIGINAL_NATIVE_MATCHED_RESET_16_CLUSTER_64_TRUTH_FULL_AUDIT
+          path: |
+            /tmp/full_original_64_real_serial_physx_audit.json
+            /tmp/authentic_serial_source/original_serial64/*.json
+          retention-days: 90
