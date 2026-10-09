@@ -1,0 +1,64 @@
+name: "Forensic original 1152 PhysX native command mismatch and probe budget"
+on:
+  push:
+    branches: [research/numeric-initial-parity-2x2-fresh128-20261009]
+    paths:
+      - research/audit_numeric_factorial_real_prequery_action_confound.py
+      - .github/workflows/audit-numeric-factorial-action-confound.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  source-only-all128-original-native-action-confound:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Verify 36-file permanent physical archive SHA, independently original 128 numeric initial parity and real 6-axis action costs
+        run: |
+          set -euo pipefail
+          source_folder=research/frozen_policy_transfer/evidence/numeric_initial_parity_factorial_original128_2110001_2120016
+          (cd "$source_folder" && sha256sum -c SHA256SUMS)
+          python -m py_compile research/audit_numeric_factorial_real_prequery_action_confound.py
+          folder=research/frozen_policy_transfer/evidence/numeric_factorial_actual_action_confound_211_212
+          mkdir -p "$folder"
+          python -m research.audit_numeric_factorial_real_prequery_action_confound \
+            --source-dir "$source_folder" \
+            --output "$folder/FULL128_1152_PHYSX_ACTUAL_NATIVE_ACTION_COST_AUDIT.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('research/frozen_policy_transfer/evidence/numeric_factorial_actual_action_confound_211_212/FULL128_1152_PHYSX_ACTUAL_NATIVE_ACTION_COST_AUDIT.json')
+          d=json.loads(p.read_bytes())
+          assert d['actual_source_truth_cells']==128
+          assert d['original_actual_seed_clusters']==32
+          assert d['numerical_initial_source_observations_matched_under_precommitted_tolerance'] is True
+          assert d['all_three_main_controllers_identical_physically_stepped_neutral_probe']==128
+          assert d['public_extra_achieved_xyz_sample_events']==256
+          for value in d['native_dispatched_command_identical_counts'].values():
+            assert 0<=value<=128
+          print('SUCCESS REAL FACTORED PHYSICAL COMMAND CONFUNDS FROM ORIGINAL JSON',json.dumps(d['native_dispatched_command_identical_counts'],sort_keys=True))
+          PY
+          cd "$folder"
+          sha256sum FULL128_1152_PHYSX_ACTUAL_NATIVE_ACTION_COST_AUDIT.json > SHA256SUMS
+          cat > README.md <<'EOF'
+          # What cannot be claimed from the new 1152-world seed-matched native PhysX factorial
+
+          This is a **second, source-only** re-analysis of all original native PhysX data from the successful fresh numeric-parity 128-cell experiment [37932361044](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37932361044). The original 36-file SHA256 physical source archive was independently rechecked **before** this analysis. No additional task policy rollout happened in this audit.
+
+          It reports actual six-axis motor commands dispatched at both unknown ACK fault steps by the public method and matched source-seed task-aware/fixed comparators, not merely nominal APPLIED/HELD labels. Every task/truth cell is included even when the physical prefix differs between compared algorithms. It independently verifies the main public/strong/fixed arms' actual known-delivered t4 neutral probe exposure and **256 extra public achieved XYZ samples** for 128 public-method trials.
+
+          When actual native t3 actions differ BEFORE public private-target-read decision, the end-to-end task outcome contrast cannot be attributed *only* to different information acquisition. The prior 64-state physically matched-prefix plus same-compiler experiment is the cleaner information-only result. This 128-cell experiment establishes 4-truth within-seed robustness and a positive descriptive end-to-end comparison, not a pure query-only causal treatment, noninferiority, p<.05 superiority, genuine network packet loss, VLA fault recovery, or outside-lab reproduction.
+          EOF
+          cd -
+          git add "$folder"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if ! git diff --cached --quiet; then
+            git commit -m "evidence: source-audit genuine new128 physical t2/t3 motor-prefix confounds and public sensor costs"
+            git push origin HEAD:research/numeric-initial-parity-2x2-fresh128-20261009
+          fi
