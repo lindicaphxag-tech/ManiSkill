@@ -27,6 +27,12 @@ class FirstOriginalPairedPhysicalCausalClusterRisk(unittest.TestCase):
             self.assertEqual(x["accepted_clusters"],10)
             self.assertEqual(x["wrong_clusters"],0)
             self.assertGreater(x["exact_one_sided_95pct_upper_any_wrong_in_authorizing_reset_if_iid"],.25)
+        savings=d["task_stratified_32cluster_bootstrap_getter_savings_EXPLORATORY"]
+        self.assertEqual(savings["A_vs_B"]["observed_total_original_private_getters_saved"],20)
+        self.assertEqual(savings["A_vs_mandatory_C"]["observed_total_original_private_getters_saved"],25)
+        self.assertGreater(savings["A_vs_mandatory_C"]["bootstrap_total_getters_saved_95pct_exploratory"][0],0)
+        self.assertEqual(savings["A_vs_mandatory_C"]["observed_clusters_where_method_spent_more"],0)
+        self.assertEqual(savings["A_vs_mandatory_C"]["total_independent_task_reset_clusters"],32)
         self.assertEqual(d["native_task_paired_differences_A_vs_C"]["A_only"],0)
         self.assertEqual(d["native_task_paired_differences_A_vs_C"]["fixed_only"],0)
 
