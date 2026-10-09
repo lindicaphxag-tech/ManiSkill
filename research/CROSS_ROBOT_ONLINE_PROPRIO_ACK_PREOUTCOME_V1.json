@@ -1,0 +1,98 @@
+{
+  "schema": "prospective_cross_robot_online_proprio_unknowable_ack_v1",
+  "status": "FROZEN_BEFORE_NEW_METHOD_RUNNER_AND_PHYSX_OUTCOMES",
+  "date": "2026-10-09",
+  "source_robot_runner": "research/cross_robot_ack_physics.py",
+  "source_model": "No pretrained PPO / no learned model; scripted native Panda and xArm6 control",
+  "original_calibration_seeds": {
+    "panda": [
+      420001,
+      420002,
+      420003,
+      420004,
+      420005,
+      420006,
+      420007,
+      420008
+    ],
+    "xarm6_robotiq": [
+      430001,
+      430002,
+      430003,
+      430004,
+      430005,
+      430006,
+      430007,
+      430008
+    ]
+  },
+  "new_blind_test_seeds": {
+    "panda": [
+      480001,
+      480002,
+      480003,
+      480004,
+      480005,
+      480006,
+      480007,
+      480008
+    ],
+    "xarm6_robotiq": [
+      490001,
+      490002,
+      490003,
+      490004,
+      490005,
+      490006,
+      490007,
+      490008
+    ]
+  },
+  "fault_step": 2,
+  "probe_step": 3,
+  "fault_truths": [
+    "applied",
+    "held"
+  ],
+  "requested_native_commands_source_hash_locked": false,
+  "controller": "pd_ee_target_delta_pose; root-left Panda and xArm6 native full joint/gripper ABI different",
+  "inference_signal": "public end-effector position delta [actual achieved XYZ at end of t3 zero native arm probe MINUS end of t1 pose], never private target state",
+  "target_private_read_at_decision": 0,
+  "candidate_training": "On independent earlier physical calibration seeds, pair both actually applied/held native robot simulations, record public pose delta, take per-truth mean, maximum L2 residual to the mean, add prespecified margin 0.002m to each. No tuning on new test labels.",
+  "classification": "For NEW seeded robot and two separately real-PhysX executed truths, feed each single observed post-probe pose delta to the robot's calibrated two envelopes; choose class only if contained in exactly ONE envelope. Otherwise REFUSE and abstain. No shared input between physically realized twin worlds in classifier.",
+  "baselines": [
+    "blind_optimistic_always_applied",
+    "blind_pessimistic_always_held",
+    "raw_achieved_position_classification_w_calibrated_balls",
+    "panda_only_response_model_xarm6_zero_shot_secondary"
+  ],
+  "primary_gate": {
+    "calibration_8_seed_each_robot_complete": true,
+    "test_8_new_seed_each_robot_with_both_truths": true,
+    "total_blind_fresh_trial_truth_cases": 32,
+    "all_failed_and_abstained_in_denominator": true,
+    "no_truth_leakage_to_classification": true,
+    "never_use_target_getter_until_AFTER_all_controller_actions": true,
+    "confidence_claim": "empirical support region not a certified lower bound on error",
+    "test_same_source_original_scripted_commands": true
+  },
+  "measurements": [
+    "per-test robot, seed, true delivery only for post-decision scorer",
+    "predicted applied/held/ABSTAIN",
+    "false authorization even if task flag success",
+    "test 32-case coverage and false labels conditional on authorization",
+    "preprobe and postprobe achieved position and physical displacement",
+    "calibration means/radii + hash",
+    "original native private target getter used ONLY in after-physics audit",
+    "robot native controller keys and actual morphology",
+    "zero-shot cross-morph confusion and abstentions"
+  ],
+  "limits": [
+    "scripted actions: NOT frozen trained PPO transfer to xArm6",
+    "no collision/contact/actuator safety; not independent outside lab",
+    "known Panda chart, same framework ManiSkill, no unknown interface semantics",
+    "calibration models incorporate truth-labeled prior PhysX states and therefore are not model-free",
+    "constant scripted command family; not varied unknown fault sizes, task policies, sensors or network delay",
+    "prior 8 calibration seed results were inspected; new held-out seeds preregistered before method implementation; model hyperparameters are fixed in this protocol"
+  ]
+}
