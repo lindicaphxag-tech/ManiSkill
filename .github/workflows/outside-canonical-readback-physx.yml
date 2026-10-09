@@ -1,0 +1,103 @@
+name: External researcher canonical state-readback 80-world physical simulator replay
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: Unchanged public PPO benchmark task
+        required: true
+        type: choice
+        default: stack_cube
+        options: [stack_cube, pull_cube]
+      first_seed:
+        description: Eight genuinely NEW consecutive task reset seeds; first >= 1000001
+        required: true
+        type: number
+        default: 1000001
+  push:
+    branches: [main]
+    paths: [.github/workflows/outside-canonical-readback-physx.yml, research/outside_canonical_readback_replication.py]
+permissions:
+  contents: read
+jobs:
+  source-frozen-offline-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      USER_TASK: ${{ inputs.task || 'stack_cube' }}
+      FIRST_SEED: ${{ inputs.first_seed || 1000001 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pin original source, immutable pre-registration and reviewer audit, reject reused seeds
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/outside_canonical_readback_replication.py)" = "28e5e9ef4c2945f0141bcafa3be81d3bf13d1ce0"
+          test "$(git hash-object research/frozen_ppo_post_read_canonical_new64.py)" = "37c6a478128450a270974f1cb48f1f349b839944"
+          test "$(git hash-object research/authority_slack_query_gate.py)" = "0d19399b8a36f2893e17a25a63f15d2fe2cfd70c"
+          test "$(git hash-object research/phase_information_gate.py)" = "bdc0e04cf9a074aba7c24c883a58688214866d35"
+          test "$(git hash-object research/CANONICAL_POST_READ_FRESH64_PREREG_V1.json)" = "17aecaf25337d2482374f08272bb28ee5bdaebcf"
+          python -m py_compile research/outside_canonical_readback_replication.py research/frozen_ppo_post_read_canonical_new64.py
+          python -m research.outside_canonical_readback_replication --self-test
+          python - <<'PY'
+          import os
+          from research.outside_canonical_readback_replication import select
+          s=select(os.environ['USER_TASK'],int(os.environ['FIRST_SEED']))
+          assert len(s)==8
+          print("PREDECLARED_OUTSIDE_EIGHT_NEW_SEEDS",s)
+          PY
+  physical-frozen-ppo-eight-independent-new-resets:
+    if: github.event_name == 'workflow_dispatch'
+    needs: source-frozen-offline-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      USER_TASK: ${{ inputs.task || 'stack_cube' }}
+      FIRST_SEED: ${{ inputs.first_seed || 1000001 }}
+      ABI_TASK: ${{ inputs.task || 'stack_cube' }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install native ManiSkill CPU PhysX and published frozen PPO dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Freeze public original code and environment before the test
+        run: |
+          mkdir -p outsider_canonical
+          git rev-parse HEAD > outsider_canonical/runner_source_commit.txt
+          python -m pip freeze --all > outsider_canonical/python_environment.txt
+          printf 'actor=%s repo=%s task=%s seed=%s total=8 real_network_loss=false externally_operated_must_be_verified=true\n' "$GITHUB_ACTOR" "$GITHUB_REPOSITORY" "$USER_TASK" "$FIRST_SEED" > outsider_canonical/operator_seed_contract.txt
+      - name: Step ten independent real native PhysX controller worlds per fresh reset seed
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$PWD:$PWD/research"
+          python - <<'PY' 2>&1 | tee outsider_canonical/real_native_physics_full_stdout.log
+          import importlib,os
+          from research.outside_canonical_readback_replication import select
+          task=os.environ['USER_TASK']
+          seeds=tuple(select(task,int(os.environ['FIRST_SEED'])))
+          m=importlib.import_module('research.frozen_ppo_post_read_canonical_new64')
+          m.SEEDS=seeds
+          m.COHORT[task]=(m.TASK_NAME,seeds)
+          m.main()
+          PY
+          cp "canonical_post_read_$USER_TASK""_original8.json" outsider_canonical/
+          python -m research.outside_canonical_readback_replication --task "$USER_TASK" --first-seed "$FIRST_SEED" --input "outsider_canonical/canonical_post_read_$USER_TASK""_original8.json" --output outsider_canonical/independent_full_eight_audit.json
+          test -s outsider_canonical/independent_full_eight_audit.json
+      - name: Fingerprint original successes failures, full physical actions and environment
+        if: always()
+        run: |
+          (cd outsider_canonical && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS) || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: outsider-fresh-eight-80-physical-native-worlds-full-denominator
+          path: outsider_canonical/
+          retention-days: 90
