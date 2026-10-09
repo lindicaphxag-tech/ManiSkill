@@ -1,0 +1,5 @@
+# Authentic original frozen SmolVLA native LIBERO 4+4 pilot evidence
+
+Original author-operated actual MuJoCo with original official LeRobot runner: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37924054645
+
+LIBERO-Spatial Task 1: original official successes [true,true,true,true] (4/4). Task 0: original official successes [false,false,false,true] (1/4). The original official eval_info.json, independent per-task audited JSON, exact genuine Hugging Face model SHA and LeRobot source identities are copied unmodified. Raw video and full runtime logs remain original GitHub Actions artifacts at the source URL (subject to Actions retention). Same task/init-state zero overlaps the earlier exploratory single-episode pilot, so these results are NOT wholly prospective. No ACK faults injected, no BeliefBridge recovery demonstrated, no upstream acceptance or independent outside-lab replication. This is NOT a full LIBERO benchmark or statistically robust general VLA success rate. Native LIBERO robosuite OSC goal position uses current achieved ee_pos and is not target-memory accumulation like ManiSkill's action chart.
