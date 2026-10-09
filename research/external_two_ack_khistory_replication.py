@@ -18,6 +18,12 @@ METHOD_BLOB="3b502befd8940da51506ae18ed474726642f1a6d"
 PROTO_BLOB="4107c00a5359da78542bbaafa922e2f4196f11fd"
 SOURCE_FROZEN_BLOB="1dc653cdc44e422c8340475ad00f828b3a41eb4f"
 CERTIFIER_BLOB="bb5fd155b7291fb127f94138fca321201c8271c3"
+# These are ACTUAL runtime dependencies of the frozen double-ACK method.
+# Pinning only the outer experiment file does not pin the controller semantics.
+MULTI_HISTORY_CERTIFIER_BLOB="b7103c05b073a161793b454087956eb7210e5a1b"
+UNCERTAIN_DELIVERY_BELIEF_BLOB="e554f1897557075def1c871dfe0bc3c6ae58f676"
+ACTION_HISTORY_OBSERVER_BLOB="2aa52e477c202386fb6a7e43586d246026b6041d"
+ORIGINAL_POLICY_CONTROLLER_ADAPTER_BLOB="c0999d7a1da8e370f635a0d7bb8378e4a93020dd"
 ARMS=(
 "source_no_fault",
 "fault_oracle_private_target",
@@ -48,6 +54,10 @@ def original_objects(repo):
         "preoutcome_protocol":("research/MULTI_ACK_K_HISTORY_PREOUTCOME_V1.json",PROTO_BLOB),
         "source_seven_arm_study":("research/frozen_ppo_ack_bounded_query.py",SOURCE_FROZEN_BLOB),
         "original_two_history_certificate":("research/two_history_se3_robust.py",CERTIFIER_BLOB),
+        "actual_multi_history_certifier":("research/multi_history_authority.py",MULTI_HISTORY_CERTIFIER_BLOB),
+        "uncertain_delivery_belief_recursion":("research/action_abi_uncertain_delivery_belief.py",UNCERTAIN_DELIVERY_BELIEF_BLOB),
+        "physical_target_state_observer":("research/action_abi_history_observer.py",ACTION_HISTORY_OBSERVER_BLOB),
+        "original_pretrained_policy_native_adapter":("research/frozen_ppo_action_history_observer.py",ORIGINAL_POLICY_CONTROLLER_ADAPTER_BLOB),
     }
     for name,(path,sha) in names.items():
         got=subprocess.check_output(["git","hash-object",path],text=True,cwd=repo).strip()
