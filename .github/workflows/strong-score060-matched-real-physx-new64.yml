@@ -29,14 +29,14 @@ jobs:
           test "$(git hash-object research/audit_strong_score060_new64.py)" = 6f9f0f44762c8b3d426bcfef364b33ac5193ac6a
           python -m py_compile research/frozen_ppo_strong_tuned_score060_physx.py research/run_strong_score060_new64.py research/audit_strong_score060_new64.py
           python - <<'PY'
-          from research.run_tuned060_ack_new64 import accepted,pin_sources
+          from research.run_strong_score060_new64 import accepted,pin_sources
           pin_sources()
           for task,prior in (("pull_cube",1760001),("stack_cube",1770001)):
               seeds=[v for ch in range(4) for v in accepted(task,ch)]
               assert len(seeds)==32 and set(seeds).isdisjoint(range(prior,prior+8))
               assert len({(v-1)%4 for v in seeds})==4
               assert all(sum((v-1)%4==m for v in seeds)==8 for m in range(4))
-          print("PASS: true NEW64, posthoc development-trained 0.65 dual scorer frozen, no prior-pilot seed")
+          print("PASS: true NEW64, source-trained 0.60 score-only comparator frozen, no prior-pilot seed")
           PY
   actual_ten_comparator_controller_worlds_each_of_64_unseen_reset_states:
     needs: before_outcome_full64_source_and_protocol_freeze
@@ -101,7 +101,7 @@ jobs:
       - name: Independently score every original PhysX failure and actual paired/latent outcome
         run: |
           set -euo pipefail
-          python -m research.audit_tuned060_ack_new64 --source-dir /tmp/actual_matched_public_original64 --output /tmp/complete_first_audit.json
+          python -m research.audit_strong_score060_new64 --source-dir /tmp/actual_matched_public_original64 --output /tmp/complete_first_audit.json
           test -s /tmp/complete_first_audit.json
       - uses: actions/upload-artifact@v4
         if: always()
