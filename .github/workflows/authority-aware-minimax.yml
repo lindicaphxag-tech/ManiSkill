@@ -5,6 +5,7 @@ on:
     paths:
       - research/authority_probe_minimax.py
       - research/adversarial_probe_budget.py
+      - research/reliability_cost_tradeoff.py
       - tests/test_authority_probe_minimax.py
       - tests/test_adversarial_probe_budget.py
       - .github/workflows/authority-aware-minimax.yml
@@ -61,10 +62,24 @@ jobs:
           assert x['forged_one_response_certificate']=='REJECTED'
           print('PASS_BOUNDED_CORRUPTION_FINITE_MODEL_ONLY')
           PY
+      - name: Validate exact iid noise assumptions and 10pct-to-2.8pct modeled response error
+        shell: bash
+        run: |
+          python -m research.reliability_cost_tradeoff > iid_reliability_model_only.json
+          python - <<'PY'
+          import json
+          r=json.load(open('iid_reliability_model_only.json'))
+          q=r['at_10pct_iid_noise']
+          assert r['status']=='IID_BINARY_MODEL_MATHEMATICS_NOT_PHYSX'
+          assert abs(q['repeated_probe_error']-.028)<1e-10
+          assert abs(q['average_probe_cost']-2.18)<1e-10
+          print('PASS_EXACT_IID_MODEL_NOT_ROBOT_SAFETY')
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: proof-carrying-synthetic-models-${{ matrix.os }}-py${{ matrix.python }}
           path: |
             synthetic_minimax_certificates.json
             k1_corruption_minimax_model_only.json
+            iid_reliability_model_only.json
           if-no-files-found: error
