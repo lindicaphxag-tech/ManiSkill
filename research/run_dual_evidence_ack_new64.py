@@ -77,7 +77,15 @@ def independent_eight(record,task,chunk):
         observed_steps=[f.get("step") for f in reference_faults]
         if observed_steps not in ([],[2],[2,3]):
             raise ValueError("Unexpected actual public ACK physical event prefix")
-        no_full_exposure=(observed_steps!=[2,3])
+        # Missing t4 public response is *censoring* even when the two ACK
+        # commands physically executed: a real frozen robot arm may terminate
+        # after t3, before the probe. Preserve its task outcome and every
+        # original sample count; never invent two observations.
+        raw_public_samples=row.get("public_motion_observation_cost_samples",{})
+        probe_pair=(raw_public_samples.get(A)==2 and
+                    raw_public_samples.get(B)==2)
+        fault_pair=(observed_steps==[2,3])
+        no_full_exposure=not (fault_pair and probe_pair)
         if no_full_exposure:
             if observed_steps==[2]:
                 if set(censor)!={B,C} or not all(
@@ -92,6 +100,12 @@ def independent_eight(record,task,chunk):
                     raise ValueError("No t2 physics without an explicit original method refusal")
                 if any(row.get("faults",{}).get(n,[]) for n in (B,C)):
                     raise ValueError("Other comparator executed faults that public reference did not")
+            elif observed_steps==[2,3]:
+                # Both physical ACKs occurred, but at least one public arm
+                # exited before its neutral probe. This is a genuine
+                # observation/censoring failure, not incomplete ACK physics.
+                if censor or probe_pair:
+                    raise ValueError("Invalid real post-second-fault probe censor state")
             censored_count+=1
         else:
             if censor:
@@ -108,16 +122,20 @@ def independent_eight(record,task,chunk):
             cost=samples.get(name)
             if cost not in (0,2):raise ValueError("Public samples unaccounted")
             # Physical probe t4 is equalized; decision-visible cost only A/B.
-            if name in (A,B) and cost!=(0 if no_full_exposure else 2):
-                raise ValueError("A/B use unequal or missing public XYZ samples")
+            if name in (A,B) and not no_full_exposure and cost!=2:
+                raise ValueError("Complete physical exposure must have exactly two public XYZ samples")
             if name==C and cost!=0:
                 raise ValueError("Private-only C was given extra decision public data")
             totals[name]["public_xyz_events"]+=cost
         if no_full_exposure:
             witnesses.append({"task":task,"seed":seed,"true_fault_pattern":intended,
                 "valid_original_two_faults_and_matched_prefix":False,
-                "pre_t3_reference_censored":True,
+                "pre_t3_reference_censored":not fault_pair,
+                "post_t3_public_probe_censored":fault_pair and not probe_pair,
                 "physical_reference_fault_steps_observed":observed_steps,
+                "actual_public_samples_A":samples[A],
+                "actual_public_samples_B":samples[B],
+                "asymmetric_public_samples_detected":samples[A]!=samples[B],
                 "original_early_source_refusal":row.get("refusals",{}).get(A),
                 "unexposed_retained_as_original_not_deleted":True,
                 "official_task_success":{n:succ[n] for n in (A,B,C)},
