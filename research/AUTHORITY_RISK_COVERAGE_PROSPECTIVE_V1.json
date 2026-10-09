@@ -1,0 +1,90 @@
+{
+  "schema": "authority_risk_coverage_promotion_v1",
+  "frozen_before_any_prospective_outcome": true,
+  "goal": "Independent labelled calibration and state-disjoint test of abstaining full-target-history readback authorization. Nontrivial success requires BOTH error risk upper bound and authorization coverage lower bound per task.",
+  "scientific_claim_type": "exact_binomial_union_bound_conditional_on_within_task_independent_exchangeable_resets_not_physical_safety",
+  "public_score_expression": "min((epsilon_m-residual_selected_m)/epsilon_m, (residual_second_best_m-epsilon_m-prior_frozen_margin_m)/epsilon_m)",
+  "source_method_unchanged": "Original unique complete target-history candidate based on public achieved XYZ with original task epsilon/margin; scores cannot promote previously refused candidate",
+  "inputs_runtime_permitted": [
+    "task_id",
+    "full candidate residuals from online achieved XYZ",
+    "original candidate index and original unique authorization",
+    "externally attested sensor/model source freshness",
+    "risk certificate"
+  ],
+  "inputs_runtime_FORBIDDEN": [
+    "true commanded target getter before approval",
+    "physical applied/held ACK truth",
+    "audit-only history match labels",
+    "future task success",
+    "calibration errors per test state"
+  ],
+  "calibration_labels_only_from": "auditor privileged simulator target-memory getter AFTER source episode, never decision-visible",
+  "tasks": [
+    "pull_cube",
+    "stack_cube"
+  ],
+  "truth_patterns": [
+    "held/held",
+    "held/applied",
+    "applied/held",
+    "applied/applied"
+  ],
+  "fixed_joint_truth_rule": "truth_idx = (seed-first_seed) modulo 4",
+  "frozen_threshold_grid": [
+    0,
+    0.25,
+    0.5,
+    1
+  ],
+  "error_risk_cap_conditional_on_acceptance": 0.1,
+  "min_authorization_coverage_lower_confidence_bound_per_task": 0.1,
+  "familywise_failure_probability": 0.05,
+  "simultaneous_confidence_rule": "Exact Clopper Pearson upper wrong/n_accepted and lower n_accepted/n_total each with tail delta/(2*num_tasks*num_thresholds), then choose highest minimum task empirical coverage eligible threshold; no selected threshold -> authority READ instead of accept",
+  "task_calibration": {
+    "pull_cube": [
+      2110001,
+      2110256
+    ],
+    "stack_cube": [
+      2120001,
+      2120256
+    ]
+  },
+  "prospective_task_test": {
+    "pull_cube": [
+      2130001,
+      2130128
+    ],
+    "stack_cube": [
+      2140001,
+      2140128
+    ]
+  },
+  "cohort_boundary": "All calibration and test task reset IDs disjoint from every earlier recorded 2026-10-09 13xxxxx/17xxxxx/18xxxxx benchmark and from each other, but not an unseen task/model/controller",
+  "planned_reset_count_calibration": 512,
+  "planned_reset_count_test": 256,
+  "physical_arms_at_least": [
+    "unchanged original public finite-history readback gate",
+    "risk-gated authority or read",
+    "mandatory true target read"
+  ],
+  "execution_requirements": [
+    "Every compared arm must execute exactly the same fault actions and the same physical pre-inference probe; assert predecision achieved and target full SE3 audit identity",
+    "If a true physical command was never executed due to early refusal, preserve the row and fail confirmatory fault-exposure gate; no post-hoc seed dropping",
+    "Calibration and test original task/reset IDs, all four ACK truth strata, raw PPO checkpoint blob identity and all policy source blobs must be verified before any physics starts",
+    "All controller-origin XYZ observations, physical t4 neutral probe time, getter calls, unsupported public model cases and misidentified full target histories accounted",
+    "No outcome-dependent alterations to runtime features, trust thresholds or minimum coverage",
+    "A constant always-read method must fail nontrivial coverage promotion rather than appear falsely safe",
+    "Every published risk certificate must disclose its exact IID/task-distribution and frozen finite-grid assumptions and source lab attribution"
+  ],
+  "promotion_success_only_if": [
+    "Calibration risk cap and minimum coverage simultaneously pass each registered task with Bonferroni exact limits",
+    "Prospective heldout confidence and task-success/readback results recomputed from EVERY untouched physical source",
+    "No third-party adoption or hardware guarantee inferred from author-run CI",
+    "At least one strong active information-value baseline including original ActionShift-style active task-regret competitor implemented or explicitly marked missing"
+  ],
+  "frozen_failure_policy": "No passing nontrivial calibrated threshold = compulsory getter on all new episodes; study scientific promotion FAILS even if zero misidentifications",
+  "expected_conservative_behavior": "Pilot 1 mistaken among 16 admissions gives exact 95% conditional IID upper ~0.264; cannot meet 0.10 target without much more independent calibration evidence",
+  "independent_external_replication_requirement": true
+}
