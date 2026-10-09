@@ -1,0 +1,74 @@
+{
+  "schema": "prospective_fully_joint_ack_truths_two_faults_followed_by_known_zero_probe_v1",
+  "phase": "BEFORE_FIRST_880001_890001_NATIVE_PHYSX_OUTCOME",
+  "date": "2026-10-09",
+  "rationale": "Earlier all-held and mixed-first fault study left second ACK always held; general unknown ACK claim requires physically execute four joint applied/held patterns, using a common KNOWN-DELIVERED zero native probe AFTER the second uncertain fault. The earlier probe at t3 was itself a fault; cannot interpret it as known delivered in other true execution configurations.",
+  "pre_declared_physical_truth": {
+    "t2": "APPLIED if seed%2==0, HELD otherwise",
+    "t3": "APPLIED if floor(seed/2)%2==0, HELD otherwise",
+    "joint_counts_per_task_32": {
+      "held_held": 8,
+      "held_applied": 8,
+      "applied_held": 8,
+      "applied_applied": 8
+    },
+    "t4": "KNOWN-DELIVERED native arm ZERO action in all nine worlds, independent of t2/t3 histories; no ambiguity in the probe execution itself",
+    "adapter_receipts": "t2 and t3 UNKNOWN, t4 KNOWN-DELIVERED",
+    "regime": "Two fully mixed actual ACK truths with one extra common known-delivered neutral physical probe; NOT arbitrary network loss or real hardware."
+  },
+  "frozen_bank": {
+    "pull_cube": {
+      "first": 880001,
+      "last": 880032
+    },
+    "stack_cube": {
+      "first": 890001,
+      "last": 890032
+    },
+    "shards_per_task": 4,
+    "seeds_per_shard": 8,
+    "distinct_source_reset_states": 64,
+    "matched_control_worlds_per_seed": 9,
+    "actual_physx_control_worlds_total": 576
+  },
+  "frozen_methods": {
+    "source": "research/frozen_ppo_mixed_ack_truth_physx.py original Git blob 36e672446407435e656cbf8aba6fa2de7c1e9d0e",
+    "model": "research/empirical_probe_response_classifier.py historical epsilon Pull=.006944262561376447m Stack=.00719087965534261m, gain [0,1], competing margin .002m, NO additional calibration",
+    "ppo_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+    "ppo_pull_sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+    "ppo_stack_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c",
+    "original_methods": "nine from preceding mixed first ACK PhysX plus same strong task-preselected Pull selective / Stack fixed-t5 and zero-read always-assume-held native policy",
+    "required_timing_adjustment": "physical t4 neutral probe to ALL nine control worlds (one extra action step), public sample exactly before/after t4, target read at t5 if ambiguous. Fixed query comparator also reads at t5; no earlier hidden read for new method",
+    "second_applied_special_branch": "fixed-query comparator invalid observer still receives a concrete predeclared valid native 6D arm action derived from source policy native vector; same native semantics not hidden actual memory; chosen without using hidden target",
+    "information_cost": "count two extra public achieved xyz samples per public arm, exactly one zero neutral probe step across ALL arms, explicit private controller getter decision accesses, and audit-only getter separately",
+    "no_test_seed_tuning": true
+  },
+  "controls": [
+    "source_no_fault",
+    "fault_oracle_private_target",
+    "fault_optimistic_unverified_ack",
+    "fault_strict_common_exact",
+    "fault_robust_two_history_without_query",
+    "fault_robust_then_single_privileged_query",
+    "fault_always_single_privileged_query",
+    "fault_assume_held_without_query",
+    "fault_public_t4_fourhistory_or_t5_query"
+  ],
+  "primary": [
+    "actual original official manipulation task successes, disaggregated by task×four joint truth strata",
+    "new vs frozen task-aware strong paired success and privileged target decision reads",
+    "new vs zero-read always-held comparator paired outcome",
+    "number public unique full-history identification, wrong confident audit-only history labels, model invalid cases, full four joint physical truth verified at both t2/t3",
+    "valid full actual nine-controller PhysX executions; any invalid native action or no fault exposure stays in denominator, no result selection",
+    "full extra t4 common zero probe physical step check, attribution to cost"
+  ],
+  "constraints": [
+    "empirical gain is not externally certified, not a deterministic world physics guarantee",
+    "simulation native action injection, not actual dropped packet transport",
+    "same robot Panda, two tasks PPO, not VLA or cross embodiment",
+    "no real hardware/physical collision safety",
+    "no external independent lab adopted method",
+    "if second applied truth reveals systematic fail or wrong confident labels report negative and do not retune on unseen seeds",
+    "all four response types evaluated but only one physical native action sequence family"
+  ]
+}
