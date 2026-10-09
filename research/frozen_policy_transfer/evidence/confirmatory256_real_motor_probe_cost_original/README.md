@@ -1,0 +1,7 @@
+# Genuine ORIGINAL 256-cell PhysX audit: native executed motor confound and probe cost
+
+Source: the exact 32 original physical shard files, independent original full256 source audit and 64 matched initial reset clusters in [full 2304-PhysX evidence](../confirmatory_fourtruth_original256_3210001_3220032). All original bytes first passed SHA256 verification. No new task physics execution, no new sample selection or model training.
+
+This auditor recomputes exactly what six native arm axes were PHYSICALLY DISPATCHED at t2 and t3, whether each comparator actually reached those events, t4 ACTUAL neutral-probe receipts and charged additional public achieved-position samples. Missing t3/t4 due to genuine early refusal is 'not exposed', never misrepresented as the same physical action nor deleted from the 256 task-success denominator. Pairwise t3 native-action agreement is conditional on BOTH relevant arms having physically reached t3.
+
+**Important causal scope:** the larger end-to-end public-versus-task-aware success gap CANNOT be called a query-only causal effect if physical motor actions already differed before the private-read decision. The separate previously published 64-task same-prequery-motor and shared postquery-compiler evidence is the narrow information-only comparator. This remains an author-owned exact-source-only re-audit, not outside laboratory replication or a hardware/VLA safety result.
