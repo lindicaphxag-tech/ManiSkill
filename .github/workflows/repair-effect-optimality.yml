@@ -1,0 +1,48 @@
+name: Effect-safe repair authority and partial-read optimality certificate
+on:
+  push:
+    branches: [research/repair-effect-observability-certificate-20261010]
+    paths:
+      - research/effect_aware_authority_certificate.py
+      - tests/test_effect_aware_authority_certificate.py
+      - .github/workflows/repair-effect-optimality.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  run-independent-Bellman-and-adversarial-getter-tests:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Compile exact v3 finite-state engine
+        run: python -m py_compile research/effect_aware_authority_certificate.py tests/test_effect_aware_authority_certificate.py
+      - name: Execute independent global optimality and malicious certificate tests
+        run: python -m unittest discover -s tests -p test_effect_aware_authority_certificate.py -v
+      - name: Export three synthetic model getter capability decisions
+        shell: bash
+        run: |
+          python -m research.effect_aware_authority_certificate | tee synthetic_getter_only.txt
+          python - <<'PY'
+          from research.effect_aware_authority_certificate import examples,synthesize,verify_optimality
+          e=examples()
+          assert synthesize(e['aliased_getter'])['root']['kind']=='halt'
+          assert synthesize(e['fresh_discriminating_getter'])['root']['kind']=='read'
+          assert synthesize(e['unattested_getter'])['root']['kind']=='halt'
+          assert all(verify_optimality(m,synthesize(m))['exact_independent_oracle_optimal'] for m in e.values())
+          print('PASS MODEL-ONLY READ ALIAS/FRESHNESS AND GLOBAL OPTIMALITY')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: effect-repair-certificate-${{ matrix.os }}-py${{ matrix.python }}
+          path: synthetic_getter_only.txt
+          if-no-files-found: warn
