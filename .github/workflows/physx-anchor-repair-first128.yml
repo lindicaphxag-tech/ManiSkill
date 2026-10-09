@@ -1,0 +1,112 @@
+name: First prereg real Panda and xArm6 anchored full-SE3 probe-repair factorial 128 PhysX
+on:
+  push:
+    branches: [research/repair-effect-observability-certificate-20261010]
+    paths:
+      - research/PHYSX_ANCHOR_REPAIR_FIRST128_PREOUTCOME_V1.json
+      - research/physx_target_anchor_repair_first128.py
+      - .github/workflows/physx-anchor-repair-first128.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  immutable-before-outcome-provenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fail closed on altered prereg/controller source/experiment
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/PHYSX_ANCHOR_REPAIR_FIRST128_PREOUTCOME_V1.json)" = 2e78bf28f746d9ffa95ca7cf7a8b99646614d8cd
+          test "$(git hash-object research/physx_target_anchor_repair_first128.py)" = bac7c1517adbe9fec97a75f6823592e753065a0a
+          test "$(git hash-object research/cross_robot_ack_physics.py)" = 3b2faf44e5f413911eae25ccfd0c51fbbe2d5fe7
+          test "$(git hash-object research/action_abi_history_observer.py)" = 2aa52e477c202386fb6a7e43586d246026b6041d
+          python -m py_compile research/physx_target_anchor_repair_first128.py
+          echo PASS_FIRST128_ANCHOR_PREREG_BEFORE_ANY_REAL_PHYSX
+  original_128_true_PhysX_worlds:
+    needs: immutable-before-outcome-provenance
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {robot: panda, chunk: 0}
+          - {robot: panda, chunk: 1}
+          - {robot: xarm6_robotiq, chunk: 0}
+          - {robot: xarm6_robotiq, chunk: 1}
+    env:
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install real SAPIEN and ManiSkill native CPU PhysX
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e . huggingface_hub
+      - name: Validate exact frozen protocol and run 32 native PhysX worlds
+        shell: bash
+        run: |
+          set -o pipefail
+          git rev-parse HEAD > original_anchored_source_sha_${{ matrix.robot }}_chunk${{ matrix.chunk }}.txt
+          python -m pip freeze --all > original_anchored_environment_${{ matrix.robot }}_chunk${{ matrix.chunk }}.txt
+          PYTHONPATH="$PWD" python -m research.physx_target_anchor_repair_first128 --mode preflight
+          PYTHONPATH="$PWD" python -m research.physx_target_anchor_repair_first128 --mode trial --robot ${{ matrix.robot }} --chunk ${{ matrix.chunk }} 2>&1 | tee original_anchor_repair_${{ matrix.robot }}_chunk${{ matrix.chunk }}.log
+          test -f anchor_repair_${{ matrix.robot }}_chunk${{ matrix.chunk }}.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: anchor-first128-${{ matrix.robot }}-chunk${{ matrix.chunk }}
+          path: |
+            anchor_repair_${{ matrix.robot }}_chunk${{ matrix.chunk }}.json
+            original_anchor_repair_${{ matrix.robot }}_chunk${{ matrix.chunk }}.log
+            original_anchored_source_sha_${{ matrix.robot }}_chunk${{ matrix.chunk }}.txt
+            original_anchored_environment_${{ matrix.robot }}_chunk${{ matrix.chunk }}.txt
+          retention-days: 90
+  original_full_128_provenance_and_comparison:
+    needs: original_128_true_PhysX_worlds
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: anchor-first128-*
+          path: /tmp/original_anchor_full128
+          merge-multiple: true
+      - name: Strict complete source audit with 16 independent seeds and paired prefixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(find /tmp/original_anchor_full128 -name 'anchor_repair_*.json' | wc -l)" -eq 4
+          python -m research.physx_target_anchor_repair_first128 --mode audit --folder /tmp/original_anchor_full128 --output original_anchor_128_full_source_audit.json | tee original_anchor_128_audit_console.log
+          python - <<'PY'
+          import json
+          d=json.load(open('original_anchor_128_full_source_audit.json'))
+          assert d['original_physx_worlds']==128
+          assert d['independent_seed_clusters']==16
+          assert d['same_repair_prefix_matched_seed_truth_probe_groups']==64
+          assert d['real_task_success_not_established'] is True
+          print('PASS_FIRST_PREREG_REGISTERED_FULL128_NATIVE_SE3_PHYSX')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: first-anchor-repair-128-original-source-review
+          path: |
+            original_anchor_128_full_source_audit.json
+            original_anchor_128_audit_console.log
+          if-no-files-found: warn
