@@ -1,0 +1,60 @@
+name: Publish verified real PhysX journal-grade editable vector figures (source only)
+on:
+  push:
+    branches: [evidence/shared-compiler-causal-original64-20261009]
+    paths:
+      - research/figures/make_beliefbridge_source_figures.py
+      - .github/workflows/publish-native-physx-original-svg-figures.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  source-verified-publication-svg:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: source
+      - uses: actions/checkout@v4
+        with:
+          path: external_dual
+          ref: evidence/dual065-negative-native64-20261009
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install lightweight reproducible vector figure engine
+        run: python -m pip install 'numpy>=1.26,<3' 'matplotlib>=3.8,<4'
+      - name: Generate THREE independent editable SVG publication figures from authentic original PhysX JSON
+        working-directory: source
+        run: |
+          set -euo pipefail
+          python -m research.figures.make_beliefbridge_source_figures --dual-root ../external_dual
+          test -s research/figures/generated/figure2a_matched_compiler_read_budget.svg
+          test -s research/figures/generated/figure2b_true_execution_strata.svg
+          test -s research/figures/generated/figure3_same_residual_gate_negative.svg
+          test -s research/figures/generated/ORIGINAL_DATA_FIGURE_SHA256.json
+          python - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          for path in Path("research/figures/generated").glob("*.svg"):
+              root=ET.parse(path).getroot()
+              if not root.tag.endswith("svg"):
+                  raise ValueError("Invalid real publication SVG: "+str(path))
+              print("SOURCE_LOCKED_VECTOR_SVG",path,path.stat().st_size)
+          PY
+      - name: Commit source-tied SVGs (never modify model, physics or source data)
+        working-directory: source
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/figures/generated/*.svg research/figures/generated/ORIGINAL_DATA_FIGURE_SHA256.json
+          git commit -m "Publication: three native original-source editable SVG figures and SHA256 manifest"
+          git push origin HEAD:evidence/shared-compiler-causal-original64-20261009
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: research_original_PhysX_editable_vector_figures
+          path: source/research/figures/generated/
+          retention-days: 90
