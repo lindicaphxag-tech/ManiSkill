@@ -1,0 +1,110 @@
+name: "Byte-preserve original 640 real PhysX validity-first calibration negative result"
+on:
+  push:
+    branches: [research/validity-first-conformal-ack-new64-20261009]
+    paths:
+      - '.github/workflows/archive-validity-first-original-640.yml'
+permissions:
+  contents: write
+  actions: read
+jobs:
+  fully-revalidate-original-physx-first-success-and-archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ORIGINAL_RUN: '37924240294'
+      ORIGINAL_ARTIFACT: '11612889260'
+      ZIP_SHA256: '3026fe6c18a17bbbb5577f19a3ba6b545bc661a325f313c9cc66f19fe6df65e1'
+      DEST: research/frozen_policy_transfer/evidence/validity_first_prior32_new64_physx_original_940001_950032
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require exact original REAL 640 PhysX world producer commit, preregistration and immutable source
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$ORIGINAL_RUN" --jq '.conclusion')" = success
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$ORIGINAL_RUN" --jq '.head_sha')" = 8828f6e4463d6eb23b9c4e226e9f9b8167052d3a
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/artifacts/"$ORIGINAL_ARTIFACT" --jq '.digest')" = "sha256:$ZIP_SHA256"
+          test "$(git hash-object research/VALIDITY_FIRST_PUBLIC_ACK_NEW64_PREOUTCOME_V1.json)" = b9cc9f50b5c80ae7807062ec8790a23ab9b29ba5
+          test "$(git hash-object research/frozen_ppo_validity_first_motion_physx_v5.py)" = f3c2d346f224dc41039a5548ca9692bfc445a173
+          test "$(git hash-object research/run_validity_first_new64.py)" = 178470323dc699156e4bd079ebb7a83a54f865fe
+          test "$(git hash-object research/audit_validity_first_new64.py)" = 1d33729fe7b66de25ae7e165d7462db75e667eb8
+          test "$(git hash-object research/source_audit_prior_true_residual_calibration.py)" = 19409fccd9824d8f3a0641a92195ea660147a2cd
+      - name: Download original artifact bytes and verify GitHub SHA-256 before parsing native PhysX
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$ORIGINAL_ARTIFACT/zip" \
+            -o /tmp/original_frozen_real_640.zip
+          echo "$ZIP_SHA256  /tmp/original_frozen_real_640.zip" | sha256sum --check -
+          mkdir -p /tmp/original_frozen_real_640
+          unzip -q /tmp/original_frozen_real_640.zip -d /tmp/original_frozen_real_640
+          test "$(find /tmp/original_frozen_real_640 -name '*.json' -type f | wc -l)" -eq 17
+      - name: Independently recompute ALL 64 original true PPO tasks and exact source-level wrong confidence
+        run: |
+          set -euo pipefail
+          SOURCE_DIR="$(dirname "$(find /tmp/original_frozen_real_640 -name 'authority_calibration_pull_cube_chunk0_original8.json' -print -quit)")"
+          ORIGINAL_FULL="$(find /tmp/original_frozen_real_640 -name 'INDEPENDENT_64_VALIDITY_FIRST_ORIGINAL_AUDIT.json' -print -quit)"
+          test -n "$SOURCE_DIR"
+          test -s "$ORIGINAL_FULL"
+          python -m research.audit_validity_first_new64 --source-dir "$SOURCE_DIR" --output /tmp/independent_recomputed_validity640.json
+          ORIGINAL_FULL="$ORIGINAL_FULL" python - <<'PY'
+          import json,os
+          original=json.load(open(os.environ["ORIGINAL_FULL"]))
+          independent=json.load(open("/tmp/independent_recomputed_validity640.json"))
+          if original!=independent:
+              raise SystemExit("Refuse changed source or ANY omitted physical failure")
+          assert independent["genuine_source_physx_reset_states"]==64
+          assert independent["genuine_independently_stepped_native_controller_worlds"]==640
+          r=independent["total"]
+          assert r["narrow_success"]==58==r["calibrated_success"]
+          assert r["strong_success"]==53 and r["fixed_success"]==54
+          assert r["narrow_reads"]==51 and r["calibrated_reads"]==53 and r["strong_reads"]==60
+          assert r["narrow_authorized"]==13 and r["calibrated_authorized"]==11
+          assert r["narrow_wrong_confident"]==0==r["calibrated_wrong_confident"]
+          assert r["narrow_public_xyz_samples"]==128==r["calibrated_public_xyz_samples"]
+          assert independent["paired"]=={"both":58,"calibrated_only":0,"narrow_only":0,"neither":6}
+          assert all(sum(independent["joint_truth_strata"][t][k] for t in ("AA","AH","HA","HH"))==n for k,n in
+                     (("calibrated_success",58),("narrow_success",58),("calibrated_reads",53),("narrow_reads",51)))
+          print("REPRODUCED_FIRST_ORIGINAL_640_NATIVE_PHYSX_NEGATIVE_GLOBAL_RISK_CALIBRATION",True)
+          PY
+      - name: Preserve byte-identical 17 original source JSONs and SHA256 manifest including every failure
+        run: |
+          set -euo pipefail
+          SOURCE_DIR="$(dirname "$(find /tmp/original_frozen_real_640 -name 'authority_calibration_pull_cube_chunk0_original8.json' -print -quit)")"
+          ORIGINAL_FULL="$(find /tmp/original_frozen_real_640 -name 'INDEPENDENT_64_VALIDITY_FIRST_ORIGINAL_AUDIT.json' -print -quit)"
+          mkdir -p "$DEST"
+          cp "$SOURCE_DIR"/*.json "$DEST"/
+          cp "$ORIGINAL_FULL" "$DEST"/
+          (cd "$DEST" && sha256sum *.json > SHA256SUMS)
+          cat > "$DEST/README.md" <<'EOF'
+          # Original 640-world native ManiSkill/PhysX frozen PPO response-calibration study — honest negative
+          
+          Source-preregistered first actual native CPU PhysX 10-job run: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37924240294 (**SUCCESS**, eight matched-controller source shards + independent all64 source audit).
+          EXACT physical source producer head 8828f6e4463d6eb23b9c4e226e9f9b8167052d3a, frozen before-outcome protocol Git blob b9cc9f50b5c80ae7807062ec8790a23ab9b29ba5. EXACT original artifact ID 11612889260, combined ZIP SHA256 3026fe6c18a17bbbb5577f19a3ba6b545bc661a325f313c9cc66f19fe6df65e1.
+          This folder holds all 17 byte-identical JSONs: eight complete real native PhysX eight-seed original source trials for TEN actual controller methods, eight original source shard independent audits, one original full64 audit. SHA256SUMS cryptographically fixes EACH original file, including every failed task and all wrong latent labels.
+          
+          **Offline training-only error calibration:** The older source run from 880001..880032/890001..890032 allowed evaluation of the true native target response-score only AFTER real physical execution. 32 previous scores PER task, from disjoint seeds and immutable source files, yielded max true residual PullCube 0.006776465613231219 m and StackCube 0.02126739483653302 m. Original model eps PullCube 0.006944262561376447 m and StackCube 0.00719087965534261 m. The calibration method takes the MAX of old epsilon and 32 prior true residual scores BEFORE seeing any new holdout outcome. It is a **nominal 1/33 one-sided next-trial marginal score miscoverage argument ONLY under a frozen score and exchangeable future true residuals**, not a certified dynamics bound and not guaranteed under contact/model shift.
+          
+          **Prospective actual NEW 64-state test:** exactly 32 PullCube states 940001..940032 and 32 StackCube states 950001..950032; four physical applied/held ACK joint truths balanced, TEN genuine separately physically stepped native policy controller worlds per seed, two frozen third-party PPOs, one Panda destination controller. Original empirical narrow authority: **58/64 official task successes, 51 privileged controller target reads, 13 public complete-history authorizations and ZERO observed wrong confident**. Conservative prior true-residual calibration: **58/64 successes, 53 private reads, 11 public authorizations and ZERO observed wrong confident**. Their physical task outcome vectors are EXACTLY equal on all new64 states. Strong task-selected query rule 53/64 with 60 reads; fixed t5 54/64. Each method's PUBLIC observer uses two achieved XYZ samples and a common known-delivered neutral t4 native action (unless an earlier controller method refused, which remains a failed task and never gets a fabricated later probe).
+          
+          Therefore the calibration variant was **NOT more effective** on this prospective cohort: it queried twice more without task gain, and BOTH thresholds recorded zero wrong confident histories. Two wrong confident old model authorizations from the different previously seen full-ACK cohort remain an important OOD counterexample; they were used to choose the new research question and were NOT counted as holdout test improvement. Do not claim risk reduction, statistical task noninferiority, a novel conformal theorem, general controller safety, actual dropped ROS/TCP acknowledgements, third-party independent lab adoption or top-tier acceptance.
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$DEST"
+          git diff --cached --quiet && exit 0
+          git commit -m "evidence: preserve all real 640 native PPO controller worlds and negative prior32 response calibration result"
+          git push origin HEAD:research/validity-first-conformal-ack-new64-20261009
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-immutable-real-640-native-physx-calibration-negative-evidence
+          path: research/frozen_policy_transfer/evidence/validity_first_prior32_new64_physx_original_940001_950032/
+          retention-days: 90
