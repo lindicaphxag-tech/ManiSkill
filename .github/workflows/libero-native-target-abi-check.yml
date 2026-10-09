@@ -1,0 +1,101 @@
+name: Real native LIBERO controller target-memory ABI falsifier (NO checkpoint)
+on:
+  push:
+    branches: [research/smolvla-calibrated-denoising-exploratory-20261009]
+    paths:
+      - '.github/workflows/libero-native-target-abi-check.yml'
+      - 'research/vla_beliefbridge/probe_libero_target_memory.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect-native-robot-controller:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      PYTHONUNBUFFERED: '1'
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      HF_HUB_DOWNLOAD_TIMEOUT: '120'
+      MUJOCO_GL: osmesa
+      PYOPENGL_PLATFORM: osmesa
+      LIBERO_CONFIG_PATH: /tmp/real_vla_libero_configuration
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install CPU headless MuJoCo and pin exact original LeRobot source
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y libosmesa6 libgl1 libegl1 libglfw3 libglew2.2
+          mkdir -p real_vla_libero_evidence
+          git clone --filter=blob:none https://github.com/huggingface/lerobot.git /tmp/official-lerobot
+          git -C /tmp/official-lerobot checkout b9cb121cb7d4e3e26ec5c906d08dda68d151ba52
+          python -m pip install --upgrade pip
+          python -m pip install -e '/tmp/official-lerobot[smolvla,libero,evaluation]'
+          # Upstream LIBERO requests stdin on its FIRST import if ~/.libero/config.yaml
+          # is absent. Reproduce its exact default configuration noninteractively.
+          # This is initialization only; do not modify the simulator or policy.
+          python - <<'PY'
+          import importlib.util
+          from pathlib import Path
+          import os
+          import yaml
+
+          spec = importlib.util.find_spec("libero.libero")
+          if spec is None or spec.origin is None:
+              raise RuntimeError("Genuine installed LIBERO package not found")
+          root = Path(spec.origin).resolve().parent
+          paths = {
+              "benchmark_root": root,
+              "bddl_files": root / "bddl_files",
+              "init_states": root / "init_files",
+              "datasets": root.parent / "datasets",
+              "assets": root / "assets",
+          }
+          for name in ("bddl_files", "init_states"):
+              if not paths[name].is_dir():
+                  raise RuntimeError(f"Original LIBERO required directory missing: {name}={paths[name]}")
+          config_dir = Path(os.environ["LIBERO_CONFIG_PATH"])
+          config_dir.mkdir(parents=True, exist_ok=True)
+          configuration = {k: str(v) for k,v in paths.items()}
+          config_file = config_dir / "config.yaml"
+          config_file.write_text(yaml.safe_dump(configuration, sort_keys=True))
+          # hf-libero intentionally omits heavy assets from its PyPI wheel.
+          # Use its OWN upstream asset resolver; never fabricate empty assets.
+          if not paths["assets"].is_dir():
+              from libero.libero import get_assets_path
+              original_assets = Path(get_assets_path()).resolve()
+              if not original_assets.is_dir():
+                  raise RuntimeError(f"Official hf-libero asset download unavailable: {original_assets}")
+              configuration["assets"] = str(original_assets)
+              config_file.write_text(yaml.safe_dump(configuration, sort_keys=True))
+          print("HEADLESS_ORIGINAL_LIBERO_PATHS", configuration)
+          PY
+          mkdir -p real_vla_libero_evidence
+          cp "$LIBERO_CONFIG_PATH/config.yaml" real_vla_libero_evidence/libero_config.yaml
+          git rev-parse HEAD > real_vla_libero_evidence/maniskill_source_commit.txt
+          git -C /tmp/official-lerobot rev-parse HEAD > real_vla_libero_evidence/official_lerobot_source_commit.txt
+          git hash-object research/vla_beliefbridge/audit_official_libero_eval.py > real_vla_libero_evidence/auditor_source_blob.txt
+          python -m pip freeze --all > real_vla_libero_evidence/python_environment.txt
+      - name: Actually reset native LIBERO MuJoCo robot and inspect controller
+        run: |
+          set -euo pipefail
+          python -m research.vla_beliefbridge.probe_libero_target_memory \
+            --output real_vla_libero_evidence/native_controller_abi.json \
+            2>&1 | tee real_vla_libero_evidence/native_controller_abi_stdout.log
+          test -s real_vla_libero_evidence/native_controller_abi.json
+      - name: Save original controller source provenance
+        if: always()
+        run: |
+          mkdir -p real_vla_libero_evidence
+          (cd real_vla_libero_evidence && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 -r sha256sum > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: real-native-libero-target-memory-provenance
+          path: real_vla_libero_evidence/
+          retention-days: 60
