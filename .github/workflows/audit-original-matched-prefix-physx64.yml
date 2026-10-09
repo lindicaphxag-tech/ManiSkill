@@ -1,0 +1,68 @@
+name: Original matched-prefix PhysX 64 source-only audit (NO simulator rerun)
+on:
+  push:
+    branches: [audit/source-only-matched-prefix-import-20261009]
+    paths:
+      - research/audit_matched_prefix_twoack_new64.py
+      - .github/workflows/audit-original-matched-prefix-physx64.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  audit-original-physics-with-corrected-import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Prove immutable physics and protocol unchanged, show audit-only diff
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/MATCHED_PREFIX_TWOACK_FROZEN_PPO64_PREOUTCOME_V1.json)" = c750f8022e1895f5af5d516405b2602474b5ef6d
+          test "$(git hash-object research/frozen_ppo_matched_prefix_twoack_2x2_physx.py)" = 1ae3be647a55606560ab9d95295e6cb8c6c61310
+          test "$(git hash-object research/run_matched_prefix_twoack_new64.py)" = fd85e4ce3c8ef4fec30d1658ef649b0a09388a8c
+          test "$(git hash-object research/frozen_ppo_mixed_ack_truth_physx.py)" = 36e672446407435e656cbf8aba6fa2de7c1e9d0e
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          test "$(git hash-object research/audit_matched_prefix_twoack_new64.py)" = 85a6a37cd85f1337cd80ffa3dbde96446cf51dc1
+          python -m py_compile research/audit_matched_prefix_twoack_new64.py
+          python - <<'PY'
+          import inspect
+          from research import audit_matched_prefix_twoack_new64 as auditor
+          from research import run_matched_prefix_twoack_new64 as runner
+          assert auditor.select is runner.select
+          assert auditor.assert_preoutcome is runner.assert_preoutcome
+          runner.assert_preoutcome()
+          print("ORIGINAL_PHYSICS_SOURCE_LOCKED_AUDIT_ONLY_IMPORT_CORRECTED",inspect.getsourcefile(runner))
+          PY
+      - name: Pull ORIGINAL eight PhysX shard artifacts, not any newly simulated data
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 37921574816
+          github-token: ${{ github.token }}
+          pattern: original-matched-prefix-*
+          merge-multiple: true
+          path: /tmp/original_matched_prefix_2x2
+      - name: Validate all 64 original task trajectories and 576 native worlds fail-closed
+        run: |
+          set -euo pipefail
+          mkdir -p reviewer_audit
+          python -m research.audit_matched_prefix_twoack_new64 \
+            --source-dir /tmp/original_matched_prefix_2x2 \
+            --output reviewer_audit/original_all64_reaudited.json \
+            2>&1 | tee reviewer_audit/audit_stdout.log
+          test -s reviewer_audit/original_all64_reaudited.json
+          printf '%s\n' 'Original physical run: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37921574816' > reviewer_audit/original_source_run.txt
+          git rev-parse HEAD > reviewer_audit/audit_fix_commit.txt
+          (cd reviewer_audit && sha256sum *.json *.txt *.log > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-only-original-matched-prefix-64-audit
+          path: reviewer_audit/
+          if-no-files-found: warn
+          retention-days: 90
+
+# New audit import corrected; immutable PR #142 native physics source NOT edited.
