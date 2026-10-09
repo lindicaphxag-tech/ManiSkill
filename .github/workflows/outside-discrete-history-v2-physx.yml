@@ -1,0 +1,81 @@
+name: "Independent outsider: eight real frozen PPO native PhysX worlds per fresh latent-ACK seed"
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'research/outside_discrete_history_v2_replication.py'
+      - '.github/workflows/outside-discrete-history-v2-physx.yml'
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Frozen third-party PPO task (unchanged)'
+        required: true
+        type: choice
+        options: [pull_cube, stack_cube]
+        default: pull_cube
+      first_seed:
+        description: 'Declare 8 completely unused reset seeds (920001..999992) before opening the outcomes'
+        required: true
+        type: number
+        default: 920001
+permissions:
+  contents: read
+jobs:
+  immutable-source-and-operator-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reject drift from the actual frozen precommitted research algorithm
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/frozen_ppo_discrete_history_v2_physx.py)" = 23b8c4838f51dfef3617bf0ab739c4167586b8aa
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = ddfaf4522d49f73ce926e4c6d77c7ca755f8e1b6
+          python -m py_compile research/outside_discrete_history_v2_replication.py
+          echo "Operator GitHub repo=$GITHUB_REPOSITORY, account=$GITHUB_ACTOR"
+          echo "Only an independent group's own fork, new preselected seeds and original source counts as outside replication."
+
+  real-independent-original-native-physx:
+    needs: immutable-source-and-operator-gate
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TASK: ${{ inputs.task }}
+      FIRST_SEED: ${{ inputs.first_seed }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Set up real official CPU ManiSkill PhysX and published third-party frozen checkpoint
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Freeze exactly who ran code and selected 8 new states, BEFORE any physical actions
+        run: |
+          mkdir -p outside_discrete_v2
+          git rev-parse HEAD > outside_discrete_v2/actual_source_commit.txt
+          printf '%s %s task=%s first_seed=%s\n' "$GITHUB_REPOSITORY" "$GITHUB_ACTOR" "$TASK" "$FIRST_SEED" > outside_discrete_v2/declared_operator_before_physics.txt
+          python -m pip freeze --all > outside_discrete_v2/actual_physics_dependencies.txt
+      - name: Actually step all eight frozen PPO native controller arms under two physical ACK holds
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/outside_discrete_history_v2_replication.py --task "$TASK" --first-seed "$FIRST_SEED" --out outside_discrete_v2 2>&1 | tee outside_discrete_v2/unmodified_actual_physx.log
+      - name: Hash ALL original operator evidence and failed native task cases
+        if: always()
+        run: |
+          (cd outside_discrete_v2 && sha256sum *.json *.txt > SHA256SUMS) || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: genuine-operator-owned-eight-new-state-64-native-physx-worlds
+          path: outside_discrete_v2/
+          retention-days: 90
