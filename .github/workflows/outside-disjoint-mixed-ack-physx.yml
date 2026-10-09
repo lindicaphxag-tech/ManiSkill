@@ -1,0 +1,98 @@
+name: "OUTSIDE fork: fresh mixed-ACK frozen PPO 9-arm real PhysX replication"
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Published third-party unchanged frozen PPO task"
+        required: true
+        type: choice
+        options: [pull_cube, stack_cube]
+        default: pull_cube
+      first_seed:
+        description: "First of 8 not-previously-used new reset IDs from 1200001..2099992; declare BEFORE physics"
+        required: true
+        type: number
+        default: 1200001
+  push:
+    branches: [main]
+    paths: [.github/workflows/outside-disjoint-mixed-ack-physx.yml]
+permissions:
+  contents: read
+jobs:
+  pinned-source-and-public-identity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    env:
+      USER_TASK: ${{ inputs.task || 'pull_cube' }}
+      FIRST_SEED: ${{ inputs.first_seed || 1200001 }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: lindicaphxag-tech/ManiSkill
+          ref: 2acdde5fb8e304a70b1512aec48352611490a27e
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reject method modifications, original fault/drift and prior used reset identities
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 2acdde5fb8e304a70b1512aec48352611490a27e
+          test "$(git hash-object research/frozen_ppo_mixed_ack_truth_physx.py)" = 36e672446407435e656cbf8aba6fa2de7c1e9d0e
+          test "$(git hash-object research/outside_seed_disjoint_mixed_ack_falsifier.py)" = 2293f19d24d61c12a2c98e10a92c0d36476d6423
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          python -m py_compile research/outside_seed_disjoint_mixed_ack_falsifier.py
+          python - <<'PY'
+          import os,sys
+          sys.path.insert(0,"research")
+          from outside_seed_disjoint_mixed_ack_falsifier import validate
+          s=validate(os.environ["USER_TASK"],int(os.environ["FIRST_SEED"]))
+          assert len(s)==8 and min(s)>=1200001
+          print("OUTSIDE_OPERATOR_SEED_CONTRACT",os.getenv("GITHUB_REPOSITORY"),os.getenv("GITHUB_ACTOR"),s)
+          PY
+  actually-step-nine-separate-native-physical-controllers-on-eight-new-resets:
+    needs: pinned-source-and-public-identity
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      USER_TASK: ${{ inputs.task }}
+      FIRST_SEED: ${{ inputs.first_seed }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: lindicaphxag-tech/ManiSkill
+          ref: 2acdde5fb8e304a70b1512aec48352611490a27e
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install actual CPU PhysX native ManiSkill and released original PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Freeze outside actor own-fork identity and new-seed registration BEFORE physical stepping
+        run: |
+          mkdir -p independent_mixed_ack
+          git rev-parse HEAD > independent_mixed_ack/EXACT_FROZEN_AUTHOR_SOURCE_COMMIT.txt
+          python -m pip freeze --all > independent_mixed_ack/EXACT_RUNTIME_ENVIRONMENT.txt
+          printf "operator_repo=%s operator_actor=%s task=%s first_seed=%s count=8 NOT_HARDWARE_OR_NETWORK_ACK=true\n" "$GITHUB_REPOSITORY" "$GITHUB_ACTOR" "$USER_TASK" "$FIRST_SEED" > independent_mixed_ack/INDEPENDENT_OPERATOR_SOURCE_PROVENANCE.txt
+      - name: Physically execute nine genuine separate source/target controller worlds per original new reset seed
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/outside_seed_disjoint_mixed_ack_falsifier.py --task "$USER_TASK" --first-seed "$FIRST_SEED" --output independent_mixed_ack 2>&1 | tee independent_mixed_ack/complete_original_native_physx.log
+          test -s independent_mixed_ack/INDEPENDENT_ORIGINAL_MIXED_ACK_REVIEWER_SUMMARY.json
+      - name: Preserve failed and positive original simulator rows with SHA256 and provenance
+        if: always()
+        run: |
+          (cd independent_mixed_ack && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS) || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reviewer-own-fork-eight-fresh-mixed-ACK-72-real-native-PhysX-worlds
+          path: independent_mixed_ack/
+          retention-days: 90
