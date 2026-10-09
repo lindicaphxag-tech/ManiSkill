@@ -90,8 +90,8 @@ def original_eight(source,task,ch):
             winners=[i for i,(px,theta) in enumerate(zip(
                 new["candidate_residuals_m"],new["so3_public_geodesic_to_candidate_arc_rad"]))
                 if px<=new["prior_training_epsilon_m"]+1e-12 and theta<=.02+1e-12]
-            if new.get("joint_public_SO3_radius_train_selected_rad")!=.02 or
-                    new.get("joint_public_SO3_threshold_NOT_calibrated_risk") is not True:
+            if (new.get("joint_public_SO3_radius_train_selected_rad")!=.02 or
+                    new.get("joint_public_SO3_threshold_NOT_calibrated_risk") is not True):
                 raise ValueError("Post-outcome joint SO3 radius tuning detected")
             if new.get("joint_public_full_SE3_feasible_history_indices")!=winners:
                 raise ValueError("Joint history set used nonpublic private state")
