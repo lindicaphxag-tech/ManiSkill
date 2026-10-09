@@ -1,0 +1,154 @@
+name: Preregistered lower-SNR action-probe selection on two actual robot PhysX controllers
+
+on:
+  push:
+    branches: [research/low-signal-probe-selection-20261010]
+    paths:
+      - 'research/LOW_SIGNAL_PROBE_SELECTION_PREOUTCOME_V1.json'
+      - 'research/low_signal_probe_selection_physx.py'
+      - 'tests/test_low_signal_probe_selection.py'
+      - '.github/workflows/low-signal-two-robot-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  freeze-protocol-before-outcomes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Gate first-stage protocol, original source hash and cohort choice
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/LOW_SIGNAL_PROBE_SELECTION_PREOUTCOME_V1.json)" = 3f2fcd1f3fd40207431b58a105433f839add0ef2
+          python -m py_compile research/low_signal_probe_selection_physx.py
+          python -m unittest discover -s tests -p 'test_low_signal_probe_selection.py' -v
+          python -m research.low_signal_probe_selection_physx --mode preflight
+
+  two-robot-old-physics-calibration:
+    needs: freeze-protocol-before-outcomes
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      matrix:
+        robot: [panda, xarm6_robotiq]
+    env:
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install true native CPU PhysX
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e . huggingface_hub
+      - name: Record first-run source environment and genuinely execute 48 old physical worlds
+        shell: bash
+        run: |
+          set -o pipefail
+          git rev-parse HEAD > low_signal_original_commit_${{ matrix.robot }}.txt
+          python -m pip freeze --all > low_signal_original_env_${{ matrix.robot }}.txt
+          PYTHONPATH="$PWD" python -m research.low_signal_probe_selection_physx --mode calibration --robot "${{ matrix.robot }}" 2>&1 | tee low_signal_calibration_console_${{ matrix.robot }}.log
+          test -f "low_signal_calibration_${{ matrix.robot }}.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: low-signal-cal-${{ matrix.robot }}
+          path: |
+            low_signal_calibration_${{ matrix.robot }}.json
+            low_signal_calibration_console_${{ matrix.robot }}.log
+            low_signal_original_commit_${{ matrix.robot }}.txt
+            low_signal_original_env_${{ matrix.robot }}.txt
+          retention-days: 90
+
+  truly-unseen-original-physical-probe-worlds:
+    needs: two-robot-old-physics-calibration
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {robot: panda, chunk: 0}
+          - {robot: panda, chunk: 1}
+          - {robot: xarm6_robotiq, chunk: 0}
+          - {robot: xarm6_robotiq, chunk: 1}
+    env:
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: low-signal-cal-${{ matrix.robot }}
+          path: /tmp/low_signal_prior_calibration
+      - name: Install unchanged genuine native CPU PhysX
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e . huggingface_hub
+      - name: Physically execute new heldout seeds, both ACK truths and 3 real probes each
+        shell: bash
+        run: |
+          set -o pipefail
+          git rev-parse HEAD > low_signal_original_sha_${{ matrix.robot }}_chunk${{ matrix.chunk }}.txt
+          PYTHONPATH="$PWD" python -m research.low_signal_probe_selection_physx --mode heldout --robot "${{ matrix.robot }}" --chunk "${{ matrix.chunk }}" --calibration /tmp/low_signal_prior_calibration/low_signal_calibration_${{ matrix.robot }}.json 2>&1 | tee low_signal_heldout_console_${{ matrix.robot }}_chunk${{ matrix.chunk }}.log
+          test -f "low_signal_holdout_${{ matrix.robot }}_chunk${{ matrix.chunk }}.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: low-signal-source-${{ matrix.robot }}-chunk${{ matrix.chunk }}
+          path: |
+            low_signal_holdout_${{ matrix.robot }}_chunk${{ matrix.chunk }}.json
+            low_signal_heldout_console_${{ matrix.robot }}_chunk${{ matrix.chunk }}.log
+            low_signal_original_sha_${{ matrix.robot }}_chunk${{ matrix.chunk }}.txt
+          retention-days: 90
+
+  fully-audit-first-original-192-worlds:
+    needs: truly-unseen-original-physical-probe-worlds
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: low-signal-*
+          path: /tmp/low_signal_complete_source
+          merge-multiple: true
+      - name: Refit all old original calibration and reproduce all unseen decisions
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(find /tmp/low_signal_complete_source -name 'low_signal_calibration_*.json' | wc -l)" -eq 2
+          test "$(find /tmp/low_signal_complete_source -name 'low_signal_holdout_*.json' | wc -l)" -eq 4
+          python -m research.low_signal_probe_selection_physx --mode audit --folder /tmp/low_signal_complete_source --output low_signal_all_192_original_physx_audit.json
+          python - <<'PY'
+          import json
+          d=json.load(open('low_signal_all_192_original_physx_audit.json'))
+          assert d['original_physics_worlds_calibration']==96
+          assert d['original_physics_worlds_heldout']==96
+          assert d['independent_heldout_reset_clusters']==16
+          print('PASS FIRST ORIGINAL LOW SIGNAL ALL SOURCE 192 REAL PHYSX',json.dumps(d['result_by_robot'],sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: low-signal-full-source-original-192-audit
+          path: low_signal_all_192_original_physx_audit.json
+          retention-days: 90
