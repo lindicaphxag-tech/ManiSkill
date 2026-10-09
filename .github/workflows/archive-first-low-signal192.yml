@@ -1,0 +1,115 @@
+name: Permanently archive FIRST genuine low-signal Panda xArm6 192-world PhysX source
+
+on:
+  push:
+    branches: [evidence/low-signal-first192-permanent-20261010]
+    paths:
+      - .github/workflows/archive-first-low-signal192.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  immutable-first-physics-source-archive:
+    if: github.repository == 'lindicaphxag-tech/ManiSkill'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze original first-run identity and original method/preoutcome bytes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo=lindicaphxag-tech/ManiSkill
+          test "$(gh api repos/$repo/actions/runs/37974061810 --jq .conclusion)" = success
+          test "$(gh api repos/$repo/actions/runs/37974061810 --jq .head_sha)" = ea3e6572fda7f4097595c9333956fd3b227a6a4f
+          test "$(gh api repos/$repo/actions/runs/37974061810 --jq .run_attempt)" = 1
+          test "$(git hash-object research/LOW_SIGNAL_PROBE_SELECTION_PREOUTCOME_V1.json)" = 3f2fcd1f3fd40207431b58a105433f839add0ef2
+          test "$(git hash-object research/low_signal_probe_selection_physx.py)" = 489a76d403ea0255fa71d6b2347e490f87b62611
+          test "$(git hash-object research/cross_robot_ack_physics.py)" = 3b2faf44e5f413911eae25ccfd0c51fbbe2d5fe7
+          test "$(git hash-object research/cross_robot_online_proprio_classifier.py)" = b0d7a767b93fb9f7cab2ba70494947ccb4027979
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 37974061810
+          github-token: ${{ github.token }}
+          pattern: low-signal-*
+          path: /tmp/low_signal_first_original192
+          merge-multiple: true
+      - name: Audit every first original physics shard on archived immutable source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(find /tmp/low_signal_first_original192 -maxdepth 1 -name 'low_signal_calibration_*.json' | wc -l)" -eq 2
+          test "$(find /tmp/low_signal_first_original192 -maxdepth 1 -name 'low_signal_holdout_*.json' | wc -l)" -eq 4
+          test -f /tmp/low_signal_first_original192/low_signal_all_192_original_physx_audit.json
+          python -m unittest discover -s tests -p 'test_review_low_signal_probe_value.py' -v
+          python -m research.low_signal_probe_selection_physx --mode audit \
+            --folder /tmp/low_signal_first_original192 --output /tmp/recomputed_original192.json
+          python -m research.review_low_signal_probe_value \
+            --source /tmp/low_signal_first_original192 --output /tmp/reviewer_original192.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          base=Path('/tmp/low_signal_first_original192')
+          old=json.loads((base/'low_signal_all_192_original_physx_audit.json').read_text())
+          new=json.loads(Path('/tmp/recomputed_original192.json').read_text())
+          assert old==new, 'First original physical-source aggregate differs under archived audit'
+          r=json.loads(Path('/tmp/reviewer_original192.json').read_text())
+          assert r['all_heldout_physical_truth_probe_worlds']==96
+          assert r['calibration_worlds']==96
+          assert r['heldout_distinct_independent_reset_seeds']==16
+          assert all(r['by_robot'][k]['calibration_selected_nonzero_probe'] in ('x','y') for k in ('panda','xarm6_robotiq'))
+          print('PASS ORIGINAL FIRST 192 SHARDS/REPLAY/PAIRED REVIEW',r['pooled_selected_vs_zero'])
+          PY
+      - name: Byte-preserved permanent source and negative results archive, no force-push
+        shell: bash
+        run: |
+          set -euo pipefail
+          dst=research/frozen_policy_transfer/evidence/low_signal_first192_20261010
+          mkdir -p "$dst"
+          cp -a /tmp/low_signal_first_original192/. "$dst/"
+          cp /tmp/recomputed_original192.json "$dst/ARCHIVE_INDEPENDENT_SOURCE_RECOMPUTATION.json"
+          cp /tmp/reviewer_original192.json "$dst/REVIEWER_PAIRED_RESET_AUDIT.json"
+          cat > "$dst/README.md" <<'EOF'
+          # First ORIGINAL low-signal Panda + xArm6 PhysX: 192 genuine simulator worlds
+          First original completely successful run attempt one:
+          https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37974061810
+          Frozen actual physical first-run head: ea3e6572fda7f4097595c9333956fd3b227a6a4f
+          Source and protocol SHA validation is in this archive's GitHub Actions archival log.
+          Data: 16 independent OLD calibration reset seeds x two actual held/applied truths x three native probe arms (96 PhysX worlds);
+          16 NEW heldout independent reset seeds x two truths x three actual probe arms (96 more PhysX worlds).
+          Source: two complete old calibration original JSON, four original heldout shards, raw console logs,
+          git source/environment manifests when present, original complete audit, recomputed complete audit,
+          paired independent-reset reviewer audit and SHA256 all-file manifest.
+          Zero vs X/Y native probe: NO observed improvement in either Panda or xArm6: each arm
+          identified all original 32 heldout ACK truth cases with no errors or abstention; the nonzero
+          native probes have extra magnitude, not matched actuation work or physical safety.
+          The 8 independent calibration resets per robot plus calibration-selected probe are NOT
+          a distribution-free 95-percent two-history physical accuracy certificate.
+          Author-operated simulator only; no trained PPO/VLA policy task success, contact/force/energy
+          measurement, real dropped network ACK or outside-laboratory independent physics run.
+          EOF
+          if ! grep -Fq "$dst/** -text" .gitattributes; then printf '\n%s/** -text\n' "$dst" >> .gitattributes; fi
+          (cd "$dst" && find . -type f ! -name FIRST_192_SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > FIRST_192_SHA256SUMS)
+          (cd "$dst" && sha256sum -c FIRST_192_SHA256SUMS)
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .gitattributes "$dst"
+          if git diff --cached --quiet; then echo 'Original data already fully archived'; exit 0; fi
+          git commit -m 'evidence: permanently preserve all first original 192 low-signal PhysX worlds and negative active-probe result'
+          for retry in 1 2 3; do
+            git fetch origin "${{ github.ref_name }}"
+            if ! git rebase "origin/${{ github.ref_name }}"; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:"${{ github.ref_name }}"; then exit 0; fi
+          done
+          exit 1
