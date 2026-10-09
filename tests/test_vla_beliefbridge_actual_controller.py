@@ -174,6 +174,26 @@ class RealNativeBeliefIntegration(unittest.TestCase):
         with self.assertRaises(ContractViolation):
             gateway().bind_live_policy(object())
 
+    def test_episode_reset_cannot_launder_outstanding_physical_command(self):
+        g=gateway()
+        fresh(g,0)
+        d=g.decide()
+        self.assertEqual(d.code,"SEND_CERTIFIED")
+        self.assertEqual(g.pending,d.ticket)
+        before_hypotheses=tuple(g.belief.hypotheses)
+        authoritative_zero=TargetPose.from_arrays([0]*3,[0,0,0,1])
+        with self.assertRaisesRegex(ContractViolation,"pending native action"):
+            g.reset_episode(authoritative_zero,evidence="authoritative_controller_reset")
+        self.assertEqual(g.pending,d.ticket)
+        self.assertEqual(tuple(g.belief.hypotheses),before_hypotheses)
+        # A late, unknown ACK must remain valid and preserve its branching
+        # until a genuine acknowledged episode transition occurs.
+        g.acknowledge(d.ticket,applied=None)
+        self.assertGreaterEqual(len(g.belief.hypotheses),2)
+        g.reset_episode(authoritative_zero,evidence="authoritative_controller_reset")
+        self.assertEqual(len(g.belief.hypotheses),1)
+        self.assertIsNone(g.pending)
+
     def test_exact_root_left_compose_uses_achieved_pose_not_private_target(self):
         # A 90-degree rotation around X followed by a command around Z must
         # be pre-multiplied in the root frame, not right-multiplied.
