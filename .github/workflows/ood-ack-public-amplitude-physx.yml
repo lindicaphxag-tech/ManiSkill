@@ -1,0 +1,105 @@
+name: Prospective real PhysX OOD hidden-ACK amplitude shift: Panda+xArm6
+on:
+  push:
+    branches: [research/ack-ood-native-amplitude-falsifier-20261009]
+    paths:
+      - 'research/OOD_ACK_PUBLIC_MOTION_PROSPECTIVE_V1.json'
+      - 'research/ood_ack_motion_response.py'
+      - 'research/ack_ood_native_amplitude_physx.py'
+      - 'research/audit_ack_ood_native_physx.py'
+      - 'tests/test_ack_ood_motion_response.py'
+      - '.github/workflows/ood-ack-public-amplitude-physx.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prereg-and-source-identity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify pre-outcome frozen protocol, previous models, and OOD runner
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/OOD_ACK_PUBLIC_MOTION_PROSPECTIVE_V1.json)" = d1f017d8ca994ec6be62daf3dc6940f038b8dff4
+          test "$(git hash-object research/ack_ood_native_amplitude_physx.py)" = 5a91d8f31d7b14d0538b93b396c3230bc15a65f7
+          test "$(git hash-object research/ood_ack_motion_response.py)" = b0b2f9b69ddc68d4ed770f63128e636b6a42a863
+          test "$(git hash-object research/audit_ack_ood_native_physx.py)" = b29661a560e4a8b9ee0cd5c3fc66c2b4792a3267
+          test "$(git hash-object research/frozen_policy_transfer/evidence/cross_robot_online_public_proprio_new32_480001_490008/cross_robot_proprio_calibration_panda.json)" = f41bd0cc010cdcaf836a6d8ba2722313baf692d3
+          test "$(git hash-object research/frozen_policy_transfer/evidence/cross_robot_online_public_proprio_new32_480001_490008/cross_robot_proprio_calibration_xarm6_robotiq.json)" = e8ec9c607059c3e538d2e1bfe35f0fdf1bd89830
+          python -m py_compile research/ood_ack_motion_response.py research/ack_ood_native_amplitude_physx.py research/audit_ack_ood_native_physx.py
+          python -m unittest discover -s tests -p 'test_ack_ood_motion_response.py' -v
+
+  independently-stepped-actual-robot-physx:
+    needs: prereg-and-source-identity
+    runs-on: ubuntu-latest
+    timeout-minutes: 95
+    strategy:
+      fail-fast: false
+      matrix:
+        robot: [panda, xarm6_robotiq]
+        scale: [low, high]
+        chunk: [0, 1]
+    env:
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+      ROBOT: ${{ matrix.robot }}
+      SCALE: ${{ matrix.scale }}
+      CHUNK: ${{ matrix.chunk }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install genuine CPU PhysX ManiSkill simulator and Vulkan
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+      - name: Download real xArm6 Robotiq robot asset (no substitution)
+        if: matrix.robot == 'xarm6_robotiq'
+        run: python -m mani_skill.utils.download_asset xarm6 -y
+      - name: Execute every new native fault truth under all four physically stepped comparators
+        run: |
+          set -o pipefail
+          git rev-parse HEAD > ood_source_commit.txt
+          PYTHONPATH="$PWD" python research/ack_ood_native_amplitude_physx.py --robot "$ROBOT" --scale "$SCALE" --chunk "$CHUNK" 2>&1 | tee real_ood_physics.log
+          test -s "ood_ack_${ROBOT}_${SCALE}_chunk${CHUNK}_original8.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: real-ood-physx-${{ matrix.robot }}-${{ matrix.scale }}-${{ matrix.chunk }}
+          path: |
+            ood_ack_*_original8.json
+            real_ood_physics.log
+            ood_source_commit.txt
+          retention-days: 90
+
+  full-independent-64-truth-source-audit:
+    needs: independently-stepped-actual-robot-physx
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: real-ood-physx-*
+          merge-multiple: true
+          path: /tmp/original-ood-physx
+      - name: Replay ALL original physical states and source decisions, including failures
+        run: |
+          python -m research.audit_ack_ood_native_physx --input-dir /tmp/original-ood-physx --output /tmp/complete_real_ood_ack64.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: original-ood-64-truth-256-worlds-and-independent-audit
+          path: |
+            /tmp/original-ood-physx/*.json
+            /tmp/complete_real_ood_ack64.json
+          retention-days: 90
