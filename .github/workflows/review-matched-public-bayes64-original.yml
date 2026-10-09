@@ -1,0 +1,73 @@
+name: Independent reviewer check of original 640 native PhysX worlds and wrong-confident history
+
+on:
+  push:
+    branches: [research/reviewer-bayes64-risk-certificate-20261009]
+    paths:
+      - 'research/review_matched_public_bayes64_original.py'
+      - '.github/workflows/review-matched-public-bayes64-original.yml'
+  pull_request:
+    paths:
+      - 'research/review_matched_public_bayes64_original.py'
+      - '.github/workflows/review-matched-public-bayes64-original.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  reviewer-original-source-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Reject source-free toy results before independent audit
+        run: |
+          python -m py_compile research/review_matched_public_bayes64_original.py
+          python - <<'PY'
+          from research.review_matched_public_bayes64_original import one_sided_binomial_upper
+          assert 0.25<one_sided_binomial_upper(1,16)<0.27
+          assert abs(one_sided_binomial_upper(0,1)-0.95)<1e-10
+          PY
+      - name: Fetch exactly the eight FIRST source-frozen genuine native PhysX artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          repo=lindicaphxag-tech/ManiSkill
+          test "$(gh api repos/$repo/actions/runs/37924192162 --jq '.head_sha')" = 'd378e51006fc44626ab5a651ca1ad2dad5a312e0'
+          test "$(gh api repos/$repo/actions/runs/37924192162 --jq '.conclusion')" = success
+          test "$(gh api repos/$repo/actions/runs/37924192162 --jq '.run_attempt')" = 1
+          mkdir -p /tmp/matched_original640
+          gh run download 37924192162 --repo "$repo" --pattern 'original-same-public-Bayes-new64-*' --dir /tmp/matched_original640
+          test "$(find /tmp/matched_original640 -name 'bayes_same_public_*_original8.json' -type f | wc -l)" = 8
+          test "$(find /tmp/matched_original640 -name 'bayes_same_public_*_audit.json' -type f | wc -l)" = 8
+          test "$(find /tmp/matched_original640 -name 'REAL_NATIVE_PHYXS_FULL_LOG.txt' -type f | wc -l)" = 8
+          test "$(find /tmp/matched_original640 -name 'SOURCE_SHA256SUMS' -type f | wc -l)" = 8
+      - name: Validate original per-shard sha, physical prefixes, hidden-source faults and wrong witness
+        run: |
+          set -euo pipefail
+          python -m research.review_matched_public_bayes64_original --source-dir /tmp/matched_original640 --output /tmp/matched_public64_reviewer.json
+          python - <<'PY'
+          import json
+          x=json.load(open('/tmp/matched_public64_reviewer.json'))
+          assert x['original_reset_states']==64 and x['original_native_physx_controller_worlds']==640
+          assert len(x['stratified_eight_task_x_two_ACK_truth'])==8
+          assert len(x['source_original_json_sha256'])==8
+          assert x['wrong_confident_source_episode'][0]['seed']==1760020
+          assert x['paired_task_success_A_vs_C']=={'both_success':52,'both_failure':12,'A_only':0,'C_only':0}
+          assert 0.25<x['one_sided_iid_exact_95pct_upper_wrong_rate_conditional_on_acceptance_A']<0.27
+          print('PASS: 8 * 8 full PhysX source rows, 640 controller-worlds, one WRONG confident A state kept')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: original-640-complete-reviewer-source-audit-${{ matrix.python }}
+          path: /tmp/matched_public64_reviewer.json
