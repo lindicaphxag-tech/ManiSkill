@@ -1,0 +1,92 @@
+name: Freeze original public zero-probe Panda xArm6 16-state PhysX evidence
+on:
+  push:
+    branches:
+      - research/public-probe-observability-contract-20261009
+    paths:
+      - '.github/workflows/archive-public-zero-probe-original16.yml'
+permissions:
+  contents: write
+jobs:
+  independently-authenticate-and-freeze-original-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SRC_RUN: '37905766946'
+      DEST: research/frozen_policy_transfer/evidence/public_zero_probe_real16_640001_650008
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify frozen prereg and original physical run identity
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/PUBLIC_ZERO_PROBE_CROSS_ROBOT_PREOUTCOME_V1.json)" = "e862a731b02d718c7e405f380b848f9b85ce7af4"
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$SRC_RUN" --jq '.conclusion')" = "success"
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$SRC_RUN" --jq '.head_sha')" = "5ce2500ea9bd10b74612052316d33bf5fe461b2c"
+      - name: Download original actual-physics data and independent source audit
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/original-public-probe
+          gh run download "$SRC_RUN" --repo "$GITHUB_REPOSITORY" --name public-probe-panda-xarm6-complete-original-and-audit --dir /tmp/original-public-probe
+          find /tmp/original-public-probe -type f -print | sort
+      - name: Verify exact five original physical source files and FULL SHA256
+        run: |
+          set -euo pipefail
+          cd /tmp/original-public-probe
+          test "$(find . -type f -name '*.json' | wc -l)" -eq 5
+          echo '1f636af059e19a4f576ab8657d118fbd86dce1b54ae19c3d1d0963c435776099  public-probe-real/public_zero_probe_panda_chunk0_original4.json' > expected.sha256
+          echo 'a3c9d32f3860b3ab32f9425af59807bdccc3558eb266f8b11a2ac09241e5e9d8  public-probe-real/public_zero_probe_panda_chunk1_original4.json' >> expected.sha256
+          echo '3a1ab15baec21582e76a9dc6b82b95ada45f83683a0e81f78ad736ea911ce7ee  public-probe-real/public_zero_probe_xarm6_robotiq_chunk0_original4.json' >> expected.sha256
+          echo '7bd9c55c739005f8c1ff253992cf687fd81770c532ef5bce3b6f70bf3165f4f8  public-probe-real/public_zero_probe_xarm6_robotiq_chunk1_original4.json' >> expected.sha256
+          echo '38c405dd0cc255eea2f7eeb4620babe4ef991486f8a258c2e2e0e9c37394c34d  public_zero_probe_FULL_SOURCE_AUDIT.json' >> expected.sha256
+          sha256sum --check expected.sha256
+      - name: Re-audit all original physical states with current reviewer script
+        run: |
+          set -euo pipefail
+          python -m research.audit_public_zero_probe_cross_robot --source-dir /tmp/original-public-probe/public-probe-real --output /tmp/current_recomputed_public_zero_probe_audit.json
+          python - <<'PY'
+          import json
+          old=json.load(open('/tmp/original-public-probe/public_zero_probe_FULL_SOURCE_AUDIT.json'))
+          now=json.load(open('/tmp/current_recomputed_public_zero_probe_audit.json'))
+          if old!=now:
+              raise SystemExit('Current implementation does not reproduce ORIGINAL physical audit; retain original artifact and BLOCK freeze')
+          assert sum(v['heldout_worlds'] for v in now['categories'].values()) == 16
+          assert sum(v['correct_confident_labels'] for v in now['categories'].values()) == 16
+          assert sum(v['wrong_confident_labels'] for v in now['categories'].values()) == 0
+          print('EXACT_FULL_SOURCE_AUDIT_REPRODUCED',True)
+          PY
+      - name: Commit byte-identical original JSON and independently authenticated digest list
+        run: |
+          set -euo pipefail
+          mkdir -p "$DEST"
+          cp /tmp/original-public-probe/public-probe-real/*.json "$DEST"/
+          cp /tmp/original-public-probe/public_zero_probe_FULL_SOURCE_AUDIT.json "$DEST"/
+          (
+            cd "$DEST"
+            sha256sum public_zero_probe_*.json > SHA256SUMS
+          )
+          cat > "$DEST"/README.md <<'EOF'
+          # ORIGINAL author-operated native Panda/xArm6 public zero-probe evidence
+
+          Frozen genuinely NEW physical reset identities: Panda 640001-640008; xArm6 Robotiq 650001-650008.
+          Each reset has TWO actually stepped unknown ACK branches. First 4 seeds per robot are empirical calibration and last 4 are strictly held-out.
+          This is a ZERO-native-command public after-response experiment, not learned-policy task performance, nonzero active probe deployment or robot safety.
+          Source original successful GitHub Actions run: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37905766946
+          Original before-physical-outcome source HEAD: 5ce2500ea9bd10b74612052316d33bf5fe461b2c
+          Preoutcome protocol blob: e862a731b02d718c7e405f380b848f9b85ce7af4
+          The five JSON files are BYTE-IDENTICAL to the successful original CI archive; check SHA256SUMS before independent interpretation.
+          Unseen 8 physical branches per robot each were conditionally separable under *empirical* calibration envelopes, with 8 correct and 0 incorrect predicted labels per robot.
+          **The empirically fitted gain/noise interval is NOT independently attested as a deterministic response bound; no certified live robot ACK label, collision safety, or third-party replication is claimed.**
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$DEST"
+          git diff --cached --stat
+          git diff --cached --quiet && exit 0
+          git commit -m "evidence: permanently freeze five byte-identical original Panda/xArm6 zero-probe PhysX records"
+          git push origin "HEAD:research/public-probe-observability-contract-20261009"
