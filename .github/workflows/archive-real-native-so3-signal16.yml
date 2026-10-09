@@ -1,0 +1,86 @@
+name: Byte-archive actually measured public SO3 PhysX and independent 16-source diagnostics
+on:
+  push:
+    branches: [evidence/genuine-so3-public-16-pilot-20261009]
+    paths:
+      - research/analyze_actual_so3_native16.py
+      - .github/workflows/archive-real-native-so3-signal16.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  source_only_real_physics_channel_forensic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Source-lock original fully executed policy, physical telemetry and no new action decisions
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/frozen_ppo_so3_signal_pilot_physx.py)" = 41f22c785814a8d016c41a16cc34572ee0ed1457
+          test "$(git hash-object research/SO3_PUBLIC_MOTION_FEASIBILITY_PREOUTCOME_V1.json)" = d63ae9d010bcb6db2b2ae6edc1c849701d0e6fb1
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          python -m py_compile research/run_so3_public_signal_pilot.py research/analyze_actual_so3_native16.py
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 37931907253
+          github-token: ${{ github.token }}
+          pattern: physical-so3-original-*
+          merge-multiple: true
+          path: /tmp/source_physical_so3_unmodified
+      - name: Independently derive real SO3 candidate residual ranks and preserve all 16 source identities
+        run: |
+          set -euo pipefail
+          dst=research/frozen_policy_transfer/evidence/physical_public_so3_original16_2040001_2050008
+          mkdir -p "$dst"
+          python -m research.analyze_actual_so3_native16 \
+            --source-dir /tmp/source_physical_so3_unmodified \
+            --output "$dst/source_only_all16_so3_discriminability.json"
+          python - <<'PY'
+          from pathlib import Path
+          import json,hashlib,shutil
+          src=Path("/tmp/source_physical_so3_unmodified")
+          dst=Path("research/frozen_policy_transfer/evidence/physical_public_so3_original16_2040001_2050008")
+          expected={f"so3_physical_{task}_{kind}.json" for task in ("pull_cube","stack_cube")
+                    for kind in ("original8","audit")}
+          actual={p.name for p in src.glob("so3_physical_*.json")}
+          if actual!=expected:raise RuntimeError("Original actual PhysX sources incomplete")
+          for name in sorted(expected):shutil.copyfile(src/name,dst/name)
+          d=json.loads((dst/"source_only_all16_so3_discriminability.json").read_text())
+          if d["frozen_original_task_reset_states"]!=16 or d["actual_ManiSkill_CPU_PhysX_worlds"]!=160:
+              raise RuntimeError("Incomplete physical prospective 16 original identities")
+          (dst/"README.md").write_text(
+              "# Real end-effector SO3 public-motion feasibility, 16 new frozen PPO tasks\n\n"
+              "Original actual native CPU PhysX original physical run, every task: "
+              "https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37931907253\n\n"
+              "Exactly 8 never-used PullCube plus 8 never-used StackCube task/reset identities, "
+              "ten native physically stepped controller worlds per source (160). Four true physical applied/held ACK patterns per task. "
+              "Actually observed SO3 before/after quaternion pair for each of two publicly probed native controller arms. "
+              "The pilot only logs a NEW public kinematic degree of freedom. Original task policy, XYZ history classifier, "
+              "prior strong 0.60 comparator and all private target getter/neutral native commands are UNCHANGED. "
+              "Original all-16 source-derived SO3 true-target residual ranks and complete actual result rows attached. "
+              "It does NOT train or apply any quaternion-selective authority gate, demonstrate new task recovery, "
+              "certify safe confidence under response model shift, or establish external replication. "
+              "SO3 orientation from the same robot pose device is not a statistically independent sensor. "
+              "All task negatives and any early exits remain; no pilot selection threshold may be claimed validated.\n"
+          )
+          with (dst/"ORIGINAL_SHA256SUMS").open("w") as f:
+              for p in sorted(dst.iterdir()):
+                  if p.is_file() and p.name!="ORIGINAL_SHA256SUMS":
+                      f.write(hashlib.sha256(p.read_bytes()).hexdigest()+"  "+p.name+"\n")
+          print("PERMANENT_ACTUAL_NATIVE_SO3_ORIGINAL_16_ARCHIVED",len(expected))
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$dst"
+          git commit -m "Evidence: actual 160 genuine PhysX worlds with before/after measured SO3 and full source forensic"
+          git push origin HEAD:evidence/genuine-so3-public-16-pilot-20261009
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original_physical_S03_160_native_worlds_and_source_diagnostics
+          path: research/frozen_policy_transfer/evidence/physical_public_so3_original16_2040001_2050008/
+          retention-days: 90
