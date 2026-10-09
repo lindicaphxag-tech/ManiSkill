@@ -1,0 +1,115 @@
+name: Preserve canonical 64-state source-authentic PhysX evidence
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/archive-canonical-post-read-original64.yml]
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: read
+jobs:
+  verify-then-archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require original first all-green 640-physics-world provenance and source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37914020907 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37914020907 --jq .run_attempt)" = "1"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37914020907 --jq .head_sha)" = "0b8e05f1f4787f5b385d666f427bd20d74a2ca78"
+          test "$(git hash-object research/CANONICAL_POST_READ_FRESH64_PREREG_V1.json)" = "17aecaf25337d2482374f08272bb28ee5bdaebcf"
+          test "$(git hash-object research/authority_slack_query_gate.py)" = "0d19399b8a36f2893e17a25a63f15d2fe2cfd70c"
+          test "$(git hash-object research/phase_information_gate.py)" = "bdc0e04cf9a074aba7c24c883a58688214866d35"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11609880126 --jq .digest)" = "sha256:1d38859f686ab0abdf199e655f53083c923820baa81b6aaa7166721728d2b50d"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11609695215 --jq .digest)" = "sha256:5d353176184e5c94acbfdf8c5412b86e8df25379c852ccb7f1dce6d7a1facff0"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11609380562 --jq .digest)" = "sha256:0d8fe2035e2cea338e0da6712cffa9af3a2f102c79688833551b8f015546bde3"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11609300429 --jq .digest)" = "sha256:858abc815a93f52cc48f1461112c1042c73dd67e830ba5d2271bd47975d219e6"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11608981372 --jq .digest)" = "sha256:106f8e5913220ceb47298cd436e43f1243bcef75635ea997b98163aec8f12453"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11608776466 --jq .digest)" = "sha256:5386e625a92ed0bd9a4937d66cdb0c9162d78e2920b87c00ee30ca9c693cf1ac"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11608671617 --jq .digest)" = "sha256:958ea310a744a62896b71677e91132bedbfd15439714c4b780befd27cb1ccd2e"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11608541551 --jq .digest)" = "sha256:15ee4bb084720970c3ba20f4bcd849a4090908a2de09e5e4750f2d4ae80787a6"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11608476651 --jq .digest)" = "sha256:2ea34f9f05e68141acce4bab1ffd4b9811c152a92dcb391741749a7ac70ce5b8"
+      - name: Download byte-original shards and separate source auditor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/canonical_source /tmp/canonical_audit
+          gh run download 37914020907 --repo "$GITHUB_REPOSITORY" --pattern 'original-canonical-*' --dir /tmp/canonical_source
+          gh run download 37914020907 --repo "$GITHUB_REPOSITORY" --name canonical-postread-all64-10arm-original-with-all-failures --dir /tmp/canonical_audit
+          test "$(find /tmp/canonical_source -name 'canonical_post_read_*_original8.json' -type f | wc -l)" -eq 8
+          test "$(find /tmp/canonical_audit -name 'canonical_post_read_fresh64_original_complete.json' -type f | wc -l)" -eq 1
+      - name: Reaudit full original denominator and reject fabricated evidence
+        run: |
+          set -euo pipefail
+          python -m research.audit_canonical_post_read_fresh64 --input-dir /tmp/canonical_source --output /tmp/canonical_recomputed.json
+          python - <<'PY'
+          import json,shutil,tempfile
+          from pathlib import Path
+          from research.audit_canonical_post_read_fresh64 import audit
+          src=Path('/tmp/canonical_source')
+          out=json.loads(Path('/tmp/canonical_recomputed.json').read_text())
+          source=list(Path('/tmp/canonical_audit').rglob('canonical_post_read_fresh64_original_complete.json'))
+          assert len(source)==1 and out==json.loads(source[0].read_text())
+          assert out['states']==64 and out['native_stepped_controller_worlds']==640
+          assert out['primary_stack_same_information_same_action_invariant'] is True
+          p,s=out['by_task']['pull_cube'],out['by_task']['stack_cube']
+          assert (p['phase_success'],p['corrected_fixed_success'],p['phase_reads'],p['corrected_fixed_reads'])==(32,32,24,32)
+          assert (s['phase_success'],s['corrected_fixed_success'],s['legacy_fixed_success'],s['phase_reads'],s['corrected_fixed_reads'])==(24,24,21,32,32)
+          for kind in ('missing_shard','duplicate_seed','flip_success','false_read_ledger','stack_action_mismatch'):
+              with tempfile.TemporaryDirectory() as t:
+                  dst=Path(t)/'raw';shutil.copytree(src,dst)
+                  files=sorted(dst.rglob('canonical_post_read_*_original8.json'))
+                  f=next(q for q in files if 'stack_cube' in q.name) if kind=='stack_action_mismatch' else files[0]
+                  if kind=='missing_shard':f.unlink()
+                  else:
+                      data=json.loads(f.read_text());e=data['episodes'][0]
+                      if kind=='duplicate_seed':e['seed']=data['episodes'][1]['seed']
+                      if kind=='flip_success':e['success_once']['fault_fixed_readback_canonical']=not e['success_once']['fault_fixed_readback_canonical']
+                      if kind=='false_read_ledger':e['privileged_target_readback_decision_count']['fault_fixed_readback_canonical']=2
+                      if kind=='stack_action_mismatch':e['actual_step_action_trace']['fault_fixed_readback_canonical'][0]['dispatched_native_controller_action'][0]+=0.1
+                      f.write_text(json.dumps(data))
+                  try:audit(dst)
+                  except (ValueError,KeyError,TypeError):continue
+                  raise AssertionError('Source forgery unreported: '+kind)
+          print('PASS 640 actual PhysX worlds, original auditor equality and five evidence-tamper mutations')
+          PY
+      - name: Commit stable original source, recomputed auditor and SHA256 files
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/canonical_post_read_original64_970001_980032
+          mkdir -p "$dest"
+          find /tmp/canonical_source -name 'canonical_post_read_*_original8.json' -type f -exec cp {} "$dest/" \;
+          cp /tmp/canonical_recomputed.json "$dest/independent_full_64_audit.json"
+          cp "$(find /tmp/canonical_audit -name 'canonical_post_read_fresh64_original_complete.json' -type f)" "$dest/original_full_64_audit.json"
+          (cd "$dest" && sha256sum -- *.json > SOURCE_SHA256SUMS && sha256sum -c SOURCE_SHA256SUMS)
+          cat > "$dest/README.md" <<'EOF'
+          # Source-authentic 64-reset 640-controller-world canonical post-read audit
+          FIRST actual full original (10/10): https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37914020907
+          Physical source commit: 0b8e05f1f4787f5b385d666f427bd20d74a2ca78; frozen pre-outcome protocol git blob: 17aecaf25337d2482374f08272bb28ee5bdaebcf.
+          Eight untouched source JSONs, two recomputed/original matching audit JSONs, and original-byte SHA256 ledger. All 64 new reset states, 640 independent physically stepped controller worlds, ten control arms, 2 native target holds at steps 2 and 3 (not actual network ACK loss).
+          Phase-aware 56/64 official task successes, 56 decision-time private target reads. Canonically corrected fixed-t4 56/64 successes, 64 reads. PullCube: 32/32 vs 32/32 with 24 vs 32 reads. StackCube: 24/32 vs 24/32 with 32 vs 32 reads. All 32 Stack matched per-step dispatched 7D native actions <=1e-6 tolerance. Legacy stale-branch fixed comparator only 53/64 and cannot support a query-scheduling superiority claim.
+          This establishes no task-success gain over corrected fixed queries; 8 fewer private controller-state reads on THIS cohort, not cross-task/hardware/robot generality or VLA, collision or force safety.
+          The archive workflow checks exact original artifact SHA-256 and rejects 5 synthetically corrupted source sets.
+          Recompute: python -m research.audit_canonical_post_read_fresh64 --input-dir research/frozen_policy_transfer/evidence/canonical_post_read_original64_970001_980032 --output /tmp/canonical64.json
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dest"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'evidence: archive original 640 native PhysX canonical post-read source worlds'
+          for attempt in 1 2 3 4; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then exit 0; fi
+          done
+          exit 1
