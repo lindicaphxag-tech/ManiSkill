@@ -1,0 +1,144 @@
+name: Prospective two-robot ZERO vs NONZERO physically executed common probe
+
+on:
+  push:
+    branches: [research/dualrobot-nonzero-probe-identifiability-20261009]
+    paths:
+      - 'research/COMMON_PROBE_ZERO_NONZERO_CROSS_ROBOT_PREREG_V1.json'
+      - 'research/common_probe_zero_nonzero_cross_robot_physx.py'
+      - 'research/audit_zero_nonzero_probe_two_robots.py'
+      - '.github/workflows/two-robot-zero-nonzero-native-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-preregistered-method-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install native simulator and verify source-frozen original protocol BEFORE outcomes
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/COMMON_PROBE_ZERO_NONZERO_CROSS_ROBOT_PREREG_V1.json)" = c03e7c6d2343ec6fcfe1824d4f4b76f5df00b755
+          test "$(git hash-object research/cross_robot_ack_physics.py)" = 3b2faf44e5f413911eae25ccfd0c51fbbe2d5fe7
+          test "$(git hash-object research/cross_robot_online_proprio_classifier.py)" = b0d7a767b93fb9f7cab2ba70494947ccb4027979
+          python -m py_compile research/common_probe_zero_nonzero_cross_robot_physx.py research/audit_zero_nonzero_probe_two_robots.py
+          python -m pip install -e .
+          python research/common_probe_zero_nonzero_cross_robot_physx.py --robot panda --mode self-test
+
+  original_native_physx_calibration_both_probes:
+    needs: frozen-preregistered-method-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    strategy:
+      fail-fast: false
+      matrix:
+        robot: [panda, xarm6_robotiq]
+    env:
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      ROBOT: ${{ matrix.robot }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install actual ManiSkill PhysX CPU backend
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e .
+      - name: Install real xArm6 robot URDF with actual six-joint arm
+        if: matrix.robot == 'xarm6_robotiq'
+        run: python -m mani_skill.utils.download_asset xarm6 -y
+      - name: Calibrate two public-motion envelopes on earlier executed labels only
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD" python research/common_probe_zero_nonzero_cross_robot_physx.py --robot "$ROBOT" --mode calibrate 2>&1 | tee "original_two_probe_calibration_${ROBOT}.log"
+          test -s "two_probe_prior_calibration_${ROBOT}.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-zero-nonzero-prior-calibration-${{ matrix.robot }}
+          path: |
+            two_probe_prior_calibration_*.json
+            original_two_probe_calibration_*.log
+
+  genuinely_unseen_64_PhysX_truth_probe_worlds:
+    needs: original_native_physx_calibration_both_probes
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    strategy:
+      fail-fast: false
+      matrix:
+        robot: [panda, xarm6_robotiq]
+        chunk: [0, 1]
+    env:
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      ROBOT: ${{ matrix.robot }}
+      CHUNK: ${{ matrix.chunk }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: original-zero-nonzero-prior-calibration-${{ matrix.robot }}
+          path: /tmp/first_prior_calibration
+      - name: Install CPU physics and actual robot model (not a synthetic classifier)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e .
+      - name: Install xArm6 URDF
+        if: matrix.robot == 'xarm6_robotiq'
+        run: python -m mani_skill.utils.download_asset xarm6 -y
+      - name: ACTUALLY step all zero and nonzero physical truth worlds, never retrain
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD" python research/common_probe_zero_nonzero_cross_robot_physx.py             --robot "$ROBOT" --mode test --chunk "$CHUNK"             --calibration-file "/tmp/first_prior_calibration/two_probe_prior_calibration_${ROBOT}.json"             2>&1 | tee "original_two_probe_${ROBOT}_chunk${CHUNK}.log"
+          test -s "native_two_probes_${ROBOT}_chunk${CHUNK}_original16.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-zero-nonzero-physical-${{ matrix.robot }}-${{ matrix.chunk }}
+          path: |
+            native_two_probes_*_original16.json
+            original_two_probe_*.log
+
+  independent_source_audit_all_64_test_worlds:
+    needs: genuinely_unseen_64_PhysX_truth_probe_worlds
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-zero-nonzero-prior-calibration-*
+          path: /tmp/real_original_source
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-zero-nonzero-physical-*
+          path: /tmp/real_original_source
+          merge-multiple: true
+      - name: Full 16 distinct test states, both truth/probe worlds and all physical correction outcomes
+        run: |
+          python -m research.audit_zero_nonzero_probe_two_robots --input-dir /tmp/real_original_source --output /tmp/original_two_probe_full_audit.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: complete-original-zero-vs-nonzero-two-robot-64-real-PhysX-worlds
+          path: |
+            /tmp/real_original_source/*.json
+            /tmp/original_two_probe_full_audit.json
