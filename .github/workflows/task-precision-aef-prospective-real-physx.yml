@@ -1,0 +1,122 @@
+name: Prospective task-precision AEF 64 fresh states 704 true PhysX controllers
+on:
+  push:
+    branches: [research/task-precision-aef-heldout64-20261009]
+    paths:
+      - research/TASK_PRECISION_AEF_NEW64_PREOUTCOME_V1.json
+      - research/frozen_ppo_task_precision_aef_physx_v8.py
+      - research/run_task_precision_aef_new64.py
+      - research/audit_task_precision_aef_new64.py
+      - .github/workflows/task-precision-aef-prospective-real-physx.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  source-and-hypothesis-frozen-before-native-physics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze original action equivalence, new precision hypothesis, source and physical population
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/TASK_PRECISION_AEF_NEW64_PREOUTCOME_V1.json)" = 09fda87998133b8ff60e7bc0d0bd8576398df7a7
+          test "$(git hash-object research/frozen_ppo_aef_hybrid_ood_physx_v7.py)" = 52906222cdacb4893594ac17faac706a2d9f89b9
+          test "$(git hash-object research/frozen_ppo_task_precision_aef_physx_v8.py)" = a4401bb55175f3e059850ba4eb97ba3f436e8353
+          test "$(git hash-object research/run_task_precision_aef_new64.py)" = a6ece0617693f7370d839dfa07eb9a8f34b02eab
+          test "$(git hash-object research/audit_task_precision_aef_new64.py)" = 1cda6857a273a14425ece10c3ffa157b1f88537a
+          python -m py_compile research/frozen_ppo_task_precision_aef_physx_v8.py research/run_task_precision_aef_new64.py research/audit_task_precision_aef_new64.py
+          python - <<'PY'
+          import json
+          from research.run_task_precision_aef_new64 import check_sources,accepted
+          p=check_sources()
+          assert p["n_reset_states"]==64 and p["n_physical_worlds_expected"]==704
+          assert p["new_method"].count("0.0125m")==1
+          for task,start in (("pull_cube",4100101),("stack_cube",4200101)):
+              seeds=[n for k in range(4) for n in accepted(task,k)]
+              assert seeds==list(range(start,start+32))
+              assert len({((n%2),((n//2)%2),((n//4)%2)) for n in seeds})==8
+          print("REGISTERED_NEW_TASK_PRECISION_64_TRUE_PHYSSOURCE_FROZEN")
+          PY
+  eleven-real-native-PhysX-control-trajectories-per-trial:
+    needs: source-and-hypothesis-frozen-before-native-physics
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install genuine CPU ManiSkill native Panda PhysX and frozen third-party PPO
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e . huggingface_hub
+      - name: Preserve source SHA and actual simulator dependencies
+        run: |
+          git rev-parse HEAD > physical_task_precision_source.txt
+          python -m pip freeze --all > physical_task_precision_dependencies.txt
+      - name: Actually step 8 x 11 original frozen native PhysX robot-controller policies with two ACK faults
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_task_precision_aef_new64.py --task "$TASK" --chunk "$CHUNK" \
+            2>&1 | tee genuine_task_precision_physx_stdout.log
+          test -s "task_precision_aef_${TASK}_chunk${CHUNK}_original8.json"
+          test -s "task_precision_aef_${TASK}_chunk${CHUNK}_audit.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-task-precision-physx-${{ matrix.task }}-${{ matrix.chunk }}
+          path: |
+            task_precision_aef_*_original8.json
+            task_precision_aef_*_audit.json
+            genuine_task_precision_physx_stdout.log
+            physical_task_precision_source.txt
+            physical_task_precision_dependencies.txt
+          retention-days: 90
+  independent-complete64-native-physics-audit-and-honest-failure-report:
+    needs: eleven-real-native-PhysX-control-trajectories-per-trial
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install numpy required by frozen original source-only audit
+        run: python -m pip install 'numpy<3'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-task-precision-physx-*
+          merge-multiple: true
+          path: /tmp/authentic_real_task_precision_704
+      - name: Recompute every outcome, native fault truth, public sensor, private read and changed task-precision decision
+        run: |
+          set -euo pipefail
+          python -m research.audit_task_precision_aef_new64 \
+            --source-dir /tmp/authentic_real_task_precision_704 \
+            --output /tmp/INDEPENDENT_ORIGINAL_TASK_PRECISION_AEF_REAL704.json
+          test -s /tmp/INDEPENDENT_ORIGINAL_TASK_PRECISION_AEF_REAL704.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: complete-first-original-704-PhysX-task-precision-and-negative-controls
+          path: |
+            /tmp/authentic_real_task_precision_704/*.json
+            /tmp/INDEPENDENT_ORIGINAL_TASK_PRECISION_AEF_REAL704.json
+          retention-days: 90
