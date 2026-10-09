@@ -1,0 +1,140 @@
+name: Archive original Panda xArm6 online public-proprioception ACK correction 32 native PhysX states
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/archive-cross-robot-online-proprio32-original.yml'
+      - 'research/cross_robot_online_proprio_classifier.py'
+      - 'research/audit_cross_robot_online_ack32.py'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-cross-robot-online-proprio32-original.yml'
+      - 'research/cross_robot_online_proprio_classifier.py'
+      - 'research/audit_cross_robot_online_ack32.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  exact-original-source-readonly-provenance-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify frozen calibration, actual xArm6 and Panda physical origin and all 32 outcomes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/CROSS_ROBOT_ONLINE_PROPRIO_ACK_PREOUTCOME_V1.json)" = "0cb66afc8a9c362ee764a83b7e558069ef6bd09c"
+          test "$(git hash-object research/cross_robot_online_proprio_classifier.py)" = "b0d7a767b93fb9f7cab2ba70494947ccb4027979"
+          test "$(git hash-object research/cross_robot_online_proprio_physx.py)" = "f2dd7349a344f4692baac7afab693143214d335a"
+          test "$(git hash-object research/audit_cross_robot_online_ack32.py)" = "f073f81ef1d8565c70bb3da77d18af227eaecf84"
+          test "$(git hash-object research/cross_robot_ack_physics.py)" = "3b2faf44e5f413911eae25ccfd0c51fbbe2d5fe7"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37905560363 --jq .head_sha)" = "309aa87e533a5f42c27fba17be721a3af965162c"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37905560363 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11603704402 --jq .digest)" = "sha256:92d5a8948709084fb4db4c0d9800f7eaed03e17d6ace1479b51af463f440d375"
+          mkdir -p /tmp/cross-online-original-download /tmp/cross-online-exact
+          gh run download 37905560363 --repo "$GITHUB_REPOSITORY" --name original-full-32-online-proprioception-ack-physical-evidence --dir /tmp/cross-online-original-download
+          for robot in panda xarm6_robotiq; do
+            name="cross_robot_proprio_calibration_$robot.json"
+            test "$(find /tmp/cross-online-original-download -type f -name "$name" | wc -l)" -eq 1
+            cp "$(find /tmp/cross-online-original-download -type f -name "$name")" "/tmp/cross-online-exact/$name"
+            for chunk in 0 1; do
+              name="cross_robot_proprio_$robot"_chunk"$chunk"_original8.json
+              test "$(find /tmp/cross-online-original-download -type f -name "$name" | wc -l)" -eq 1
+              cp "$(find /tmp/cross-online-original-download -type f -name "$name")" "/tmp/cross-online-exact/$name"
+            done
+          done
+          test "$(find /tmp/cross-online-original-download -type f -name 'full_cross_robot_online_ack32_audit.json' | wc -l)" -eq 1
+          cp "$(find /tmp/cross-online-original-download -type f -name 'full_cross_robot_online_ack32_audit.json')" /tmp/cross-online-exact/full_cross_robot_online_ack32_audit.json
+          test "$(find /tmp/cross-online-exact -maxdepth 1 -type f -name '*.json' | wc -l)" -eq 7
+          python -m research.audit_cross_robot_online_ack32 --input-dir /tmp/cross-online-exact --output /tmp/cross-online-recomputed-original.json
+          cmp /tmp/cross-online-recomputed-original.json /tmp/cross-online-exact/full_cross_robot_online_ack32_audit.json
+          python -m unittest discover -s tests -p 'test_cross_robot_online_ack_proprio.py' -v
+
+  trusted-main-permanent-seven-original-json-archive:
+    if: github.event_name != 'pull_request'
+    needs: exact-original-source-readonly-provenance-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reverify exact original producer ZIP and all blinded target-correction physical rows
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/CROSS_ROBOT_ONLINE_PROPRIO_ACK_PREOUTCOME_V1.json)" = "0cb66afc8a9c362ee764a83b7e558069ef6bd09c"
+          test "$(git hash-object research/cross_robot_online_proprio_classifier.py)" = "b0d7a767b93fb9f7cab2ba70494947ccb4027979"
+          test "$(git hash-object research/cross_robot_online_proprio_physx.py)" = "f2dd7349a344f4692baac7afab693143214d335a"
+          test "$(git hash-object research/audit_cross_robot_online_ack32.py)" = "f073f81ef1d8565c70bb3da77d18af227eaecf84"
+          test "$(git hash-object research/cross_robot_ack_physics.py)" = "3b2faf44e5f413911eae25ccfd0c51fbbe2d5fe7"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37905560363 --jq .head_sha)" = "309aa87e533a5f42c27fba17be721a3af965162c"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37905560363 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11603704402 --jq .digest)" = "sha256:92d5a8948709084fb4db4c0d9800f7eaed03e17d6ace1479b51af463f440d375"
+          mkdir -p /tmp/cross-online-original-download /tmp/cross-online-exact
+          gh run download 37905560363 --repo "$GITHUB_REPOSITORY" --name original-full-32-online-proprioception-ack-physical-evidence --dir /tmp/cross-online-original-download
+          for robot in panda xarm6_robotiq; do
+            name="cross_robot_proprio_calibration_$robot.json"
+            test "$(find /tmp/cross-online-original-download -type f -name "$name" | wc -l)" -eq 1
+            cp "$(find /tmp/cross-online-original-download -type f -name "$name")" "/tmp/cross-online-exact/$name"
+            for chunk in 0 1; do
+              name="cross_robot_proprio_$robot"_chunk"$chunk"_original8.json
+              test "$(find /tmp/cross-online-original-download -type f -name "$name" | wc -l)" -eq 1
+              cp "$(find /tmp/cross-online-original-download -type f -name "$name")" "/tmp/cross-online-exact/$name"
+            done
+          done
+          test "$(find /tmp/cross-online-original-download -type f -name 'full_cross_robot_online_ack32_audit.json' | wc -l)" -eq 1
+          cp "$(find /tmp/cross-online-original-download -type f -name 'full_cross_robot_online_ack32_audit.json')" /tmp/cross-online-exact/full_cross_robot_online_ack32_audit.json
+          test "$(find /tmp/cross-online-exact -maxdepth 1 -type f -name '*.json' | wc -l)" -eq 7
+          python -m research.audit_cross_robot_online_ack32 --input-dir /tmp/cross-online-exact --output /tmp/cross-online-recomputed-original.json
+          cmp /tmp/cross-online-recomputed-original.json /tmp/cross-online-exact/full_cross_robot_online_ack32_audit.json
+          python -m unittest discover -s tests -p 'test_cross_robot_online_ack_proprio.py' -v
+      - name: Preserve original seven source JSONs and their actual SHA256SUMS on default branch
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/cross_robot_online_public_proprio_new32_480001_490008
+          mkdir -p "$dest"
+          cp /tmp/cross-online-exact/*.json "$dest/"
+          (cd "$dest" && sha256sum *.json > SHA256SUMS && sha256sum -c SHA256SUMS)
+          cat > "$dest/README.md" <<'EOF'
+          # Genuine native PhysX Panda+xArm6 ONLINE public-proprioception hidden ACK inference
+
+          Owner-executed robot control SEMANTICS and physical target POSITION correction result, NOT independently reproduced, peer-reviewed or robot safety validated.
+          Frozen before-outcome protocol commit 5cce4d517297b91fb5d7d51c60b0a95d81c7b3e1, Git blob 0cb66afc8a9c362ee764a83b7e558069ef6bd09c.
+          First complete successful 8-job original PhysX run 37905560363, exact code HEAD 309aa87e533a5f42c27fba17be721a3af965162c.
+          Original seven-JSON full source aggregate artifact 11603704402, original GitHub ZIP digest sha256:92d5a8948709084fb4db4c0d9800f7eaed03e17d6ace1479b51af463f440d375.
+          The 7 original unmodified JSONs contain 2 complete eight-seed×two-truth calibration sets, 4 full four-seed×two-truth×3 true-physical-controller blind test shards, and 1 independent audited full-32 result. SHA256SUMS pins each copied file.
+
+          Calibration: Panda 420001–420008, xArm6_robotiq 430001–430008 (already exposed earlier), each both applied and held. One robot-specific empirical public achieved XYZ response envelope per robot, margin precommitted 2mm. Not a physical safety bound.
+          BLIND new test: Panda 480001–480008 and actual xArm6_robotiq 490001–490008, each with applied and held true ACK-unknown deliveries. 16 unique robot reset seeds × two truths = 32 original independent controller-truth cases (not 32 independent trained policies).
+          Test each trial in three ACTUAL native PhysX controller worlds; probe t3 via native zero, classify based only on public achieved XYZ end-t3 minus end-t1; correct a desired commanded target POSITION with a physical native 6D action; audit private target only AFTER that correction, never for blind decision.
+          Panda empirical online observer 16/16 physically corrected commanded target positions to <=0.0001m, wrong confident 0/16, refuse 0/16; optimistic 8/16, pessimistic 8/16.
+          xArm6 Robotiq empirical online observer 16/16, wrong 0/16, refuse 0/16; optimistic 8/16, pessimistic 8/16.
+          Total public-only within-robot calibrated one-probe observer 32/32 target-POSITION correction, zero observed wrong confidential ACK labels; fixed guesses each 16/32. NOT PickCube task success, NOT achieved position servo/collision/force/contact safety or full SO(3) commanded target restoration.
+
+          First technical CI 37905151389 failed before real xArm6 trial because missing xArm6 URDF robot asset and interactive prompt. Fixed by existing source-proven xArm6 asset downloader, with no changes to frozen unseen seeds, action script, classifier radius or robot chart. The successful full 37905560363 is the first complete source. Duplicate push/PR test executions do not count as independent lab repetition.
+          Not generalized to different command amplitudes, timings, unknown controller semantics, cross-robot PPO/VLA policy transfer, actual network loss, external robot platforms or independently labelled researchers. Calibration learned truth-labelled earlier physical examples; zero observed error on 32 cases cannot imply population error zero.
+
+          Recalculate all 32 original truth cases from root: python -m research.audit_cross_robot_online_ack32 --input-dir research/frozen_policy_transfer/evidence/cross_robot_online_public_proprio_new32_480001_490008 --output /tmp/independent.json
+          Check source-byte integrity in archive: sha256sum -c SHA256SUMS
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dest"
+          if git diff --cached --quiet; then echo "Source already archived"; exit 0; fi
+          git commit -m 'evidence: permanently preserve original real Panda+xArm6 online blind ACK source JSONs with SHA256'
+          git pull --rebase origin main
+          git push origin HEAD:main
