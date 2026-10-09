@@ -1,0 +1,50 @@
+name: Produce three original-authenticated 256-cell scientific SVG figures
+on:
+  push:
+    branches: [audit/confirmatory256-original-only-fix-20261009]
+    paths:
+      - research/figures/plot_confirmatory_original_256.py
+      - .github/workflows/render-confirmatory-256-original-svg.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish-real-source-editable-vector:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install known lightweight vector renderer
+        run: python -m pip install 'numpy>=1.26,<3' 'matplotlib>=3.8,<4'
+      - name: Plot solely from the SHA-hashed 2304 real PhysX simulator sources
+        run: |
+          set -euo pipefail
+          python -m research.figures.plot_confirmatory_original_256
+          test -s research/figures/generated_confirmatory256/ORIGINAL_SOURCE_FIGURE_HASHES.json
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          files=sorted(Path('research/figures/generated_confirmatory256').glob('*.svg'))
+          if len(files)!=3:raise RuntimeError('Missing original native robot vector figures')
+          for f in files:
+            if not ET.parse(f).getroot().tag.endswith('svg'):
+              raise RuntimeError('Invalid SVG')
+            print('ORIGINAL_PHYSX_EDITABLE_SVG',f.name,f.stat().st_size)
+          PY
+      - name: Commit actual source-only figures and immutable evidence hashes
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/figures/generated_confirmatory256/
+          git commit -m "Original native PhysX confirmatory 256 task/read/ACK-truth vector paper figures"
+          git push origin HEAD:audit/confirmatory256-original-only-fix-20261009
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original_256_real_PhysX_figures_editable_vector
+          path: research/figures/generated_confirmatory256/
+          retention-days: 90
