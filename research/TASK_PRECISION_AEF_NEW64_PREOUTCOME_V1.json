@@ -1,0 +1,72 @@
+{
+  "schema": "PREREG_TASK_PRECISION_COMMON_ACTION_64_PROSPECTIVE_V1",
+  "registered_utc_date": "2026-10-09",
+  "status": "FROZEN_BEFORE_EXECUTING_ANY_NEW_TASK_EPISODE",
+  "source_of_hypothesis": "Original completed AEF 64-task real PhysX run 37938466825: robust 47/64 successes and 25 reads vs original public observer 49/64, 53 reads; task loss concentrated in a subset of slow-PD StackCube and cannot be re-used as an independent test.",
+  "hypothesis": "Native geometry-bounded all-history action need not be task-compatible; more precise tolerance for contact-rich stacking can recover genuine task outcomes without sacrificing all privileged-read economy.",
+  "new_method": "P-AEF, same full finite SE3 history + same public XYZ sensor as original AEF, identical native robotics chart. New published arm uses precommitted stricter native all-history commanded-target bounds for StackCube: max_inf_xyz_target_error=0.0125m, max_SO3_geodesic_target_error=0.025rad. PullCube unchanged 0.05m/0.05rad. If robust common action infeasible, fall back to frozen original public full-history inference if unique; else count one actual native-private controller target read.",
+  "unchanged_controls": [
+    "original_AEF_0.05m_0.05rad",
+    "original_public_history_then_read",
+    "task_aware_robust_or_target_read",
+    "fixed_target_reader",
+    "always_held_zero_read",
+    "oracle_and_other_baselines"
+  ],
+  "frozen_original_physx_runner_blob": "52906222cdacb4893594ac17faac706a2d9f89b9",
+  "frozen_original_base_checkpoint_sha256": {
+    "pull_cube": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+    "stack_cube": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+  },
+  "frozen_prior_empirical_classifier_blob": "064bb46831b61af73ad445bc836326837ec5468f",
+  "new_source_reset_ids": {
+    "pull_cube": {
+      "start": 4100101,
+      "end": 4100132
+    },
+    "stack_cube": {
+      "start": 4200101,
+      "end": 4200132
+    }
+  },
+  "n_reset_states": 64,
+  "n_physical_worlds_expected": 704,
+  "n_original_comparator_worlds_per_reset": 11,
+  "faults": {
+    "times": [
+      2,
+      3
+    ],
+    "truth": "physically dispatched applied native arm action OR zero-hold, balanced AA/AH/HA/HH per task",
+    "no_real_packet_transport_loss": true
+  },
+  "physical_dynamics_modes": {
+    "slow": {
+      "stiffness": 500,
+      "damping": 70
+    },
+    "fast": {
+      "stiffness": 1500,
+      "damping": 130
+    },
+    "assignment": "precommitted deterministic seed //4 parity, fully balanced across four truth groups"
+  },
+  "public_information": "All three public methods receive exactly TWO actual measured achieved XYZ events from a known-delivered neutral arm step4. No hidden target getter except explicitly counted fallback; auditor may use getter only AFTER physical step.",
+  "main_itt_outcomes": [
+    "official_task_success",
+    "wrong_confident_complete_history",
+    "private_target_reads",
+    "public_XYZ_sensor_events",
+    "actual_native_probe_motion",
+    "actual_6D_command_prefix_identity"
+  ],
+  "primary_comparison": "new P-AEF vs old AEF on all 64 exact frozen task/reset identities; 32 per task, 2 PD modes. Report original success discordances, read difference, any new wrong admissions; zero-tuned test data.",
+  "secondary_comparison": "new P-AEF vs original same-XYZ public observer, separately task-aware, fixed authoritative-reader",
+  "cluster_unit": "original 64 unique task/reset seeds, not 704 independent episodes",
+  "success_requirement": "Meaningful net task or read/sensing-cost Pareto advantage over old AEF and strongest same-information original baseline, with no new confidently wrong latent-history authorization; significance/effect bound calculated after outcomes but not overclaimed",
+  "limits": "Task label is a public prior and fixed per-task precision does NOT constitute a learned regret predictor, context-aware safety certificate, independent lab adoption, general VLA performance, or established main-conference novelty. A negative result will be published.",
+  "preexisting_original_development_cohort_not_test": [
+    "1000101-1000132",
+    "1010101-1010132"
+  ]
+}
