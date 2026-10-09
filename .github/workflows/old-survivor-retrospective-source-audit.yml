@@ -1,0 +1,55 @@
+name: Exact 32 old SO3-survivor retrospective source falsifier (NO new PhysX)
+on:
+  push:
+    branches: [research/survivor-conditioned-so3-new32-20261009]
+    paths:
+      - 'research/review_old_survivor32.py'
+      - '.github/workflows/old-survivor-retrospective-source-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-hashed-proof-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Recompute 12/32 historical position survivors and zero original labels, with exact SHA manifests
+        run: |
+          set -euo pipefail
+          python -m py_compile research/review_old_survivor32.py
+          python -m research.review_old_survivor32 --output /tmp/posthoc_source.json
+          python - <<'PY'
+          import json
+          p=json.load(open('/tmp/posthoc_source.json'))
+          assert p['prospective_method_result'] is False
+          assert p['totals']['retrospective_unique_position_indices']==12
+          assert p['totals']['posthoc_true_full_pose_matches']==12
+          assert p['totals']['old_confident']==0
+          assert len(p['source_hashes'])==17
+          print('NO_POSITIVE_PROSPECTIVE_CLAIM_AND_HASHED_POSTHOC_ONLY')
+          PY
+      - name: Tampered physics SHA must fail closed
+        run: |
+          python - <<'PY'
+          import shutil, tempfile, subprocess, sys
+          from pathlib import Path
+          base=Path('research/frozen_policy_transfer/evidence/public_fourhistory_frozen_ppo_original32_780001_790016')
+          with tempfile.TemporaryDirectory() as work:
+              copy=Path(work)/'data'
+              shutil.copytree(base,copy)
+              source=next(copy.glob('*chunk0_original4.json'))
+              source.write_bytes(source.read_bytes()+b' ')
+              p=subprocess.run([sys.executable,'-m','research.review_old_survivor32',
+                 '--source',str(copy),'--output',str(Path(work)/'result.json')],
+                 capture_output=True,text=True)
+              assert p.returncode!=0 and 'Original study bytes changed' in p.stderr
+              print('TAMPERED_REAL_PHYSX_SOURCE_WAS_REJECTED')
+          PY

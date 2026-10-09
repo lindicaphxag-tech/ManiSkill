@@ -1,0 +1,112 @@
+name: "Prospective full-SE3 survivor-by-public-XYZ 32 fresh frozen PPO PhysX"
+on:
+  push:
+    branches: [research/survivor-conditioned-so3-new32-20261009]
+    paths:
+      - 'research/SURVIVOR_CONDITIONED_SO3_NEW32_PRECOMMIT_V1.json'
+      - 'research/frozen_ppo_survivor_full_pose_new32.py'
+      - 'research/run_survivor_fullpose_new32.py'
+      - 'research/audit_survivor_fullpose_new32.py'
+      - '.github/workflows/survivor-fullpose-real-frozenppo-new32.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-preregistration-and-action-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze original before-outcome seed protocol, trained PPO and native chart sources
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/SURVIVOR_CONDITIONED_SO3_NEW32_PRECOMMIT_V1.json)" = a51b01d66e2211058854015a31138f6a838eec71
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = ddfaf4522d49f73ce926e4c6d77c7ca755f8e1b6
+          test "$(git hash-object research/frozen_ppo_survivor_full_pose_new32.py)" = 52addb52d627ea600f847ecffa38c0fad9df97ad
+          test "$(git hash-object research/run_survivor_fullpose_new32.py)" = 4b9dc1d4bbea771d079fbbcf0f824eed13df0a44
+          test "$(git hash-object research/audit_survivor_fullpose_new32.py)" = 7b5621998ca22d961a595e45dcf9894ec44f3e2b
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          test "$(git hash-object research/survivor_full_pose_public_gate.py)" = c19ace7a61ff2ebc20f101151c5e9f01f61c84cd
+          python -m py_compile research/frozen_ppo_survivor_full_pose_new32.py research/run_survivor_fullpose_new32.py research/audit_survivor_fullpose_new32.py
+          python -m unittest discover -s tests -p 'test_survivor_fullpose_public_gate.py' -v
+          python - <<'PY'
+          from research.run_survivor_fullpose_new32 import accepted, check_sources
+          check_sources()
+          assert len({(t,s) for t in ('pull_cube','stack_cube') for c in range(4) for s in accepted(t,c)})==32
+          print('ALL32_REGISTERED_BEFORE_PHYSX_NEW_TASK_SEEDS_PASS',True)
+          PY
+
+  eight-separate-four-seed-genuine-frozen-PPO-physics:
+    needs: independent-preregistration-and-action-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install exact actual official ManiSkill native CPU PhysX dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Record source and Python runtime identity before any actual env.step
+        run: |
+          git rev-parse HEAD > source_commit.txt
+          python -m pip freeze --all > original_physics_dependencies.txt
+      - name: Run each of EIGHT actual independent matched controller worlds at 4 new PPO task resets
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_survivor_fullpose_new32.py --task "$TASK" --chunk "$CHUNK" 2>&1 | tee actual_survivor_fullpose_physx.log
+          test -s "survivor_fullpose_${TASK}_chunk${CHUNK}_original4.json"
+          test -s "survivor_fullpose_${TASK}_chunk${CHUNK}_audit.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-survivor-se3-k4-${{ matrix.task }}-${{ matrix.chunk }}
+          path: |
+            survivor_fullpose_*_original4.json
+            survivor_fullpose_*_audit.json
+            actual_survivor_fullpose_physx.log
+            source_commit.txt
+            original_physics_dependencies.txt
+          retention-days: 90
+
+  independent-all32-256-real-native-controller-audit:
+    needs: eight-separate-four-seed-genuine-frozen-PPO-physics
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: native-survivor-se3-k4-*
+          merge-multiple: true
+          path: /tmp/new32-original-native
+      - name: Recompute paired success, wrong latent authorization, exact private reads and failed fault exposure from ALL originals
+        run: |
+          python -m research.audit_survivor_fullpose_new32 --source-dir /tmp/new32-original-native --output /tmp/full_original_survivor_fullpose_new32_audit.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: complete-survivor-fullpose-original-256-physx-worlds
+          path: |
+            /tmp/new32-original-native/*.json
+            /tmp/full_original_survivor_fullpose_new32_audit.json
+          retention-days: 90

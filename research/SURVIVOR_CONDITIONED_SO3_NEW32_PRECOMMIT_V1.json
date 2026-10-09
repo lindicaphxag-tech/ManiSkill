@@ -1,0 +1,121 @@
+{
+  "schema": "surviving_history_conditioned_full_pose_recovery_new32_v1",
+  "date": "2026-10-09",
+  "registered_before_runner_changed_and_new_seed_outcomes": true,
+  "research_question": "Can public achieved XYZ uniquely eliminate all but ONE possible full-SE3 commanded-target history after two physical unknown-ACK holds, rather than unnecessarily requiring ALL ruled-out histories to have identical SO3 orientation?",
+  "historical_negative": {
+    "original_run": "https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37912591209",
+    "original_source_prospective_protocol": "research/PPO_PUBLIC_FOURHISTORY_NEW32_PREOUTCOME_V1.json",
+    "original_outcome": "Public four-history arm zero accepted labels, 32/32 privileged reads and 24/32 official success; genuine task-labelled comparator also 24/32 success using 26 reads",
+    "retrospective_only_diagnostic": "Original 32 SHA-pinned audit rows contain twelve singleton position-compatible histories with every other candidate > epsilon+0.002m away; 12/12 retrospectively match private audit-only true full pose. Exposed historical cases CANNOT be used as prospectively measured improvements.",
+    "issue": "Old all-hypotheses SO3 equality gate rejected fully excluded incorrect history candidates; for an empirically unique position history, that candidate includes its own full TargetPose orientation. This is conditional inference, not a physical guarantee."
+  },
+  "frozen_prior_scientific_inputs": {
+    "prior_source_base_git_blob": "ddfaf4522d49f73ce926e4c6d77c7ca755f8e1b6",
+    "published_PPO_hf_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+    "pretrained_checkpoint_sha256_pull_cube": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+    "pretrained_checkpoint_sha256_stack_cube": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c",
+    "prior_empirical_public_achieved_motion_eps_m": {
+      "pull_cube": 0.006944262561376447,
+      "stack_cube": 0.00719087965534261
+    },
+    "additional_margin_m": 0.002,
+    "response_segment_gain_range": [
+      0,
+      1
+    ],
+    "calibration_sources": "historical task-specific 140001-140004 and 150001-150004, NO new seed or method refit",
+    "physical_probe": "SAME actual t3 native arm zero hold, two public achieved XYZ samples before and after, NO extra native actuation",
+    "source_chart": "pd_ee_delta_pose",
+    "destination_chart": "pd_ee_target_delta_pose",
+    "faults": {
+      "t2": "physical arm command replaced by ZERO; ACK unknown",
+      "t3": "physical arm command replaced by ZERO; ACK unknown"
+    },
+    "policy_horizon_steps": 50,
+    "controller_bound_position_m": 0.05,
+    "controller_bound_rotation_rad": 0.05
+  },
+  "new_population": {
+    "pull_cube_seeds": [
+      860001,
+      860002,
+      860003,
+      860004,
+      860005,
+      860006,
+      860007,
+      860008,
+      860009,
+      860010,
+      860011,
+      860012,
+      860013,
+      860014,
+      860015,
+      860016
+    ],
+    "stack_cube_seeds": [
+      870001,
+      870002,
+      870003,
+      870004,
+      870005,
+      870006,
+      870007,
+      870008,
+      870009,
+      870010,
+      870011,
+      870012,
+      870013,
+      870014,
+      870015,
+      870016
+    ],
+    "two_tasks_and_32_distinct_reset_ids": true,
+    "full_eight_control_worlds_per_seed": 8,
+    "expected_real_native_PhysX_worlds": 256,
+    "no_seeds_dropped_for_fault_refusal": true
+  },
+  "single_change_from_original_algorithm": [
+    "Compute exactly the original task-specific candidate segment residuals using PUBLIC achieved before/after step t3, NO private target getter.",
+    "Require exactly ONE position-compatible history at epsilon (inclusive, 1e-12 numerical guard), AND every other candidate residual strictly greater than epsilon+0.002m.",
+    "Require every candidate full TargetPose has finite quaternion, valid unit norm within a fixed non-tuned numerical tolerance, known source chart, exactly complete set of possible histories. Surviving candidate's entire prior TargetPose (XYZ AND SO3) is selected. Do NOT test SO3 agreement between DISCARDED candidates.",
+    "Upon uniquely surviving candidate reset controller history with that candidate full TargetPose, zero privileged decision reads; if ambiguous, model invalid, unverified, or unavailable probe evidence, consume one authorized getter read at t4.",
+    "Use private true controller target ONLY in physically AFTER-STEP audit branch to count false confident FULL POSE label; no label-based adaptation or retries."
+  ],
+  "comparators": [
+    "source_no_fault",
+    "fault_oracle_private_target",
+    "fault_optimistic_unverified_ack",
+    "fault_strict_common_exact",
+    "fault_robust_two_history_without_query",
+    "fault_robust_then_single_privileged_query",
+    "fault_always_single_privileged_query",
+    "fault_public_t3_fourhistory_or_t4_query"
+  ],
+  "strong_task_gate": {
+    "PullCube": "genuinely-stepped fault_robust_then_single_privileged_query",
+    "StackCube": "genuinely-stepped fault_always_single_privileged_query"
+  },
+  "primary_gates": {
+    "complete_all32_distinct_reset_states": true,
+    "all_original_eight_native_PPO_arms_stepped": true,
+    "both_unknown_ack_faults_physically_reached_for_new_public_method": 32,
+    "no_confident_false_full_pose_history_identification": true,
+    "success_new_public_not_below_strong_task_gate_on_original_paired_32": true,
+    "total_privileged_reads_new_public_at_most_24": true,
+    "full_source_denominator_and_seedwise_contrast_mandatory": true,
+    "strict_hypothesis_complete_and_known_controller_model": true
+  },
+  "limitations": [
+    "empirical response model from 4 calibration seeds/task is NOT independently physically attested; zero observed wrong labels cannot guarantee real robotics safety",
+    "no new SO3 public orientation sensor; the selected full pose inherits SO3 from a uniquely POSITION-identified target hypothesis",
+    "this is a prospectively NEW test of a retrospectively MOTIVATED method; not blind idea generation",
+    "the original all-candidate SO3 guard was an intentional conservative protocol, not necessarily a software bug; replacement is weaker modelling assumption to be stress-tested",
+    "one Panda controller-family, two frozen externally trained PPOs, no other-body VLA task success or real hardware",
+    "no true dropped network packet or physical collision/force guarantee",
+    "full original paired outcomes can disprove success, no post-outcome method or threshold modification"
+  ]
+}
