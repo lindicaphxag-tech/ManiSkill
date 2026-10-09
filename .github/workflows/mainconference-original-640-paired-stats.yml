@@ -1,0 +1,54 @@
+name: "Original native PhysX 640 main-conference paired statistics and sparse risk bound source audit"
+on:
+  push:
+    branches: [research/mainconference-evidence-statistics-20261009]
+    paths:
+      - 'research/audit_mainconference_paired_physood_stats.py'
+      - '.github/workflows/mainconference-original-640-paired-stats.yml'
+permissions:
+  contents: read
+jobs:
+  frozen-original-source-exact-paired-confidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        py: ['3.11','3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.py }}
+      - name: Require all original 17 native PhysX JSON byte-level SHA256 and exact paired distribution
+        run: |
+          set -euo pipefail
+          cd research/frozen_policy_transfer/evidence/ood_pd_drive_known_ack_anchor_original64_960101_970132
+          sha256sum --check SHA256SUMS
+          cd ../../../..
+          python -m py_compile research/audit_mainconference_paired_physood_stats.py
+          python -m research.audit_mainconference_paired_physood_stats > /tmp/original_mainconference_stats.jsonl
+          python - <<'PY'
+          import json
+          ln=open('/tmp/original_mainconference_stats.jsonl').read().strip()
+          key,raw=ln.split(' ',1)
+          assert key=='SOURCE_PINNED_MAIN_CONF_OOD_REAL_PHYSX_PAIRED_AND_SPARSE_RISK_AUDIT'
+          a=json.loads(raw)
+          z=a['source_based_fixed_population_results']
+          assert z['old']['actual_PhysX_task_successes']==56
+          assert z['anchor']['actual_PhysX_task_successes']==56
+          assert z['actual_task_paired_success']['both']==56
+          assert z['actual_task_paired_success']['neither']==8
+          assert z['old']['unique_full_target_history_authorized']==8
+          assert z['anchor']['unique_full_target_history_authorized']==2
+          assert z['old']['ONE_SIDED_95_CP_upper_wrong_rate_given_authorized']>0.3
+          assert z['anchor']['ONE_SIDED_95_CP_upper_wrong_rate_given_authorized']>0.7
+          assert z['strong_task_selected']['original_actual_PhysX_task_success']==55
+          assert len(a['by_task_gain_and_joint_true_ACK'])==16
+          print('PASS REAL SOURCE-LOCKED 640 PAIRED STATS WITH SPARSE CONFIDENT HISTORY RISK UPPER BOUNDS')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: descriptive-original-640-native-physx-paired-risk-stats-${{ matrix.py }}
+          path: /tmp/original_mainconference_stats.jsonl
+          retention-days: 90
