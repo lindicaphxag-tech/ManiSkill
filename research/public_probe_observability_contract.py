@@ -107,6 +107,53 @@ def _segment_distance(seg_a: Segment, seg_b: Segment) -> float:
                for s, t in candidates)
 
 
+
+def _cross(a: Vec3, b: Vec3) -> Vec3:
+    return (a[1]*b[2]-a[2]*b[1],
+            a[2]*b[0]-a[0]*b[2],
+            a[0]*b[1]-a[1]*b[0])
+
+
+def _segment_separation_lower_bound(seg_a: Segment, seg_b: Segment) -> float:
+    """CERTIFIED lower bound on minimum Euclidean segment separation.
+
+    For ANY unit vector n, the gap between scalar projection intervals of two
+    segments is <= their true Euclidean minimum distance (Cauchy-Schwarz).
+    The maximum of finitely many such gaps stays a VALID lower bound,
+    even for degenerate or near-parallel segments. Unlike a floating-point
+    two-variable closest-points optimizer, it can never over-certify due to
+    omitted or numerically unstable stationary points (up to rounding guard).
+    """
+    a0, a1 = seg_a
+    b0, b1 = seg_b
+    u, v = _sub(a1, a0), _sub(b1, b0)
+    candidate_axes: list[Vec3] = [
+        (1.,0.,0.), (0.,1.,0.), (0.,0.,1.),
+        _cross(u, v)]
+    # Closest endpoint to opposing infinite line provides helpful support
+    # normals for skew/near-parallel cases; NEVER assume a candidate optimal.
+    for endpoint in seg_a:
+        w = _sub(endpoint, b0)
+        vv = _dot(v, v)
+        candidate_axes.append(_sub(w, _mul(v, _dot(w,v)/vv)) if vv else w)
+    for endpoint in seg_b:
+        w = _sub(endpoint, a0)
+        uu = _dot(u, u)
+        candidate_axes.append(_sub(w, _mul(u, _dot(w,u)/uu)) if uu else w)
+    candidate_axes.extend(_sub(x,y) for x in seg_a for y in seg_b)
+    lower = 0.0
+    for n in candidate_axes:
+        length = _norm(n)
+        if length < 1e-14:
+            continue
+        na = [_dot(n,x)/length for x in seg_a]
+        nb = [_dot(n,x)/length for x in seg_b]
+        # A gap in one scalar projection is a safe spatial separation witness.
+        gap = max(0.0, min(na)-max(nb), min(nb)-max(na))
+        lower = max(lower, gap)
+    # Account for floating-point projection / subtraction near the boundary.
+    return max(0.0, lower - 1e-10)
+
 @dataclass(frozen=True)
 class ProbeContract:
     # Every credible controller commanded target, not private target truth.
@@ -222,7 +269,7 @@ def plan_public_probe(p: ProbeContract,
         if not _admissible(p, d):
             continue
         segs = _segments(p, d)
-        worst = min(_segment_distance(segs[i], segs[j])
+        worst = min(_segment_separation_lower_bound(segs[i], segs[j])
                     for i in range(len(segs)) for j in range(i + 1, len(segs)))
         clearance = worst - 2 * (p.public_model_error_l2_m + p.numerical_guard_m)
         feasible.append((clearance, _norm(d), d, segs))
