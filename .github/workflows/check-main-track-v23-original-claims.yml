@@ -27,19 +27,27 @@ jobs:
         with:
           path: evidence256
           ref: research/confirmatory256-original-source-audit-20261009
+      - uses: actions/checkout@v4
+        with:
+          path: factual_collision
+          ref: research/observability-collision-audit-20261009
       - uses: actions/setup-python@v5
         with: {python-version: '3.11'}
       - name: Independently validate all source SHA256, paper values, motor confounds, read budgets and two original success vectors
         run: |
           set -euo pipefail
           python -m py_compile paper/research/frozen_policy_transfer/verify_maintrack_v23_claims.py
+          (cd factual_collision && python -m research.audit_counterfactual_execution_observability --output ../FACTUAL_NATIVE_3_IDENTICAL_PUBLIC_OBSERVATIONS.json)
           python paper/research/frozen_policy_transfer/verify_maintrack_v23_claims.py \
             --matched64 evidence64/research/frozen_policy_transfer/evidence/shared_compiler_twoack_original64_1480001_1490032 \
             --factorial256 evidence256/research/frozen_policy_transfer/evidence/confirmatory_fourtruth_original256_3210001_3220032 \
             --motor256 evidence256/research/frozen_policy_transfer/evidence/confirmatory256_real_motor_probe_cost_original \
+            --collision FACTUAL_NATIVE_3_IDENTICAL_PUBLIC_OBSERVATIONS.json \
             --manuscript paper/research/frozen_policy_transfer/WHEN_DID_MY_COMMAND_EXECUTE_MANUSCRIPT_V2_3.md \
             --out v23_immutable_original_source_recomputed_claims.json
       - uses: actions/upload-artifact@v4
         with:
           name: author-source-recompute-v23-manuscript-576-plus-2304-physx
-          path: v23_immutable_original_source_recomputed_claims.json
+          path: |
+            v23_immutable_original_source_recomputed_claims.json
+            FACTUAL_NATIVE_3_IDENTICAL_PUBLIC_OBSERVATIONS.json
