@@ -1,0 +1,28 @@
+name: "Native ACK response-set identifiability theorem and physically bounded active probe candidate"
+on:
+  push:
+    branches: [research/ack-robust-active-identifiability-20261009]
+    paths:
+      - 'research/robust_native_ack_active_probe.py'
+      - 'research/test_robust_native_ack_active_probe.py'
+      - '.github/workflows/native-ack-robust-probe-identifiability.yml'
+permissions:
+  contents: read
+jobs:
+  test-information-theoretic-no-go-and-conditional-probe-action:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Pure-stdlib full-target-memory response-set geometry and false-confidence unit counterexamples
+        run: |
+          set -euo pipefail
+          python -m py_compile research/robust_native_ack_active_probe.py research/test_robust_native_ack_active_probe.py
+          python -m unittest -v research.test_robust_native_ack_active_probe
