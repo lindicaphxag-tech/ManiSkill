@@ -3,7 +3,7 @@ import math
 import unittest
 
 from research.public_probe_observability_contract import (
-    Gate, Observation, ProbeContract, ProbePlan, _segment_distance,
+    Gate, Observation, ProbeContract, ProbePlan, _segment_distance, _segment_separation_lower_bound,
     plan_public_probe, identify_after_probe,
 )
 
@@ -54,6 +54,28 @@ class GeometryTests(unittest.TestCase):
                 for s in range(41) for t in range(41))
             self.assertGreaterEqual(exact, 0.0)
             self.assertLessEqual(exact, brute + 1e-10)
+
+
+    def test_certified_lower_bound_never_overstates_sampled_distance(self):
+        # If a conservative certificate already exceeds any sampled candidate
+        # minimum, it is not a valid geometric separation lower bound.
+        for k in range(21):
+            a = ((0., 0., 0.), (1., 0.000001*k, 0.))
+            b = ((0.1, 0.0000003*k, 0.00001),
+                 (1.1, 0.0000008*k, 0.00001))
+            certified = _segment_separation_lower_bound(a, b)
+            sampled_upper = min(math.dist(
+                tuple(a[0][j] + s / 20. * (a[1][j]-a[0][j]) for j in range(3)),
+                tuple(b[0][j] + t / 20. * (b[1][j]-b[0][j]) for j in range(3)))
+                for s in range(21) for t in range(21))
+            self.assertLessEqual(certified, sampled_upper + 1e-10)
+
+    def test_zero_gain_stall_impossibility(self):
+        # All histories allow y=x when zero physical progress is possible.
+        p = contract(gain_min=0.0)
+        decision = plan_public_probe(p, [(0., .05, 0.)],
+                                     privileged_query_available=True)
+        self.assertEqual(decision.gate, Gate.QUERY_REQUIRED)
 
 
 class ContractTests(unittest.TestCase):
