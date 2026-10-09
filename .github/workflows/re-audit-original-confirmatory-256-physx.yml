@@ -1,0 +1,113 @@
+name: Correct original 256 cell/64 cluster full audit; never rerun PhysX
+on:
+  push:
+    branches: [audit/confirmatory256-original-only-fix-20261009]
+    paths: [.github/workflows/re-audit-original-confirmatory-256-physx.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  authentic-original-source-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze original physical robot and pretrained response model SHA
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/frozen_ppo_numeric_parity_factorial_physx.py)" = 8022ab3a0d5bc97a982e78fc8ca17931aeae586c
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          test "$(git hash-object research/frozen_ppo_mixed_ack_truth_physx.py)" = 36e672446407435e656cbf8aba6fa2de7c1e9d0e
+          python -m py_compile research/audit_confirmatory_four_truth_new64clusters.py
+          python - <<'PY'
+          from research.run_confirmatory_four_truth_new64clusters import assert_preoutcome
+          assert_preoutcome()
+          print("SOURCE_PINNED_64_CLUSTERS_NO_NEW_PHYSICS")
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 37934425888
+          github-token: ${{ github.token }}
+          pattern: factorial-*
+          merge-multiple: true
+          path: /tmp/original_physx_256
+      - name: Independently audit ALL original 32 shard jobs, 256 task/fault conditions
+        run: |
+          set -euo pipefail
+          python -m research.audit_confirmatory_four_truth_new64clusters \
+            --source-dir /tmp/original_physx_256 \
+            --output /tmp/original256_confirmatory_full_audit.json \
+            2>&1 | tee /tmp/original256_audit_stdout.txt
+          python - <<'PY'
+          import json
+          x=json.load(open('/tmp/original256_confirmatory_full_audit.json'))
+          assert x['registered_source_reset_clusters']==64
+          assert x['registered_task_seed_truth_cells']==256
+          assert x['separate_physx_worlds']==2304
+          assert len(x['complete_32_shard_sha256'])==64
+          assert len(x['per_seed_full_four_truth_numeric_initial_parity'])==64
+          assert sum(x['paired_public_vs_strong'].values())==256
+          print('SOURCE_ONLY_CONFIRMED_256_PHYSX',json.dumps({
+            'outcomes':x['primary_outcomes'],
+            'original_numeric_matching':x['numerically_matched_public_source_observation_per_truth_verified'],
+            'max_policy_obs_gap':x['numeric_max_public_policy_obs_gap'],
+            'max_achieved_pose_gap':x['numeric_max_initial_achieved_ee_pose_gap'],
+            'observed_effect':x['method_success_delta_public_minus_strong_per_cell'],
+            'cluster_exact_swap_exploratory_p':x['seed_cluster_exact_swap_two_sided_sensitivity_p_not_randomized_proof'],
+            'cluster_bootstrap95':x['seed_cluster_bootstrap_95pct_public_minus_strong_success_gap'],
+            'never_rerun_physics':True},sort_keys=True))
+          PY
+      - name: Permanently SHA archive the ORIGINAL physics and independent outcome audit
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import shutil,hashlib,json
+          src=Path('/tmp/original_physx_256')
+          dst=Path('research/frozen_policy_transfer/evidence/confirmatory_original64clusters_256cells_2304worlds')
+          dst.mkdir(parents=True,exist_ok=True)
+          expected={f'factorial_{task}_chunk{k}_truth{t}_{kind}.json'
+                    for task in ('pull_cube','stack_cube') for k in range(4)
+                    for t in range(4) for kind in ('original8','audit')}
+          found={p.name for p in src.glob('factorial_*.json')}
+          if found!=expected:raise ValueError(f'changed original source files, missing {expected-found}, unexpected {found-expected}')
+          for name in sorted(expected):shutil.copyfile(src/name,dst/name)
+          shutil.copyfile('/tmp/original256_confirmatory_full_audit.json',dst/'original_full256_source_audit.json')
+          d=json.loads((dst/'original_full256_source_audit.json').read_text())
+          (dst/'README.md').write_text(
+           '# Authentic original source 64 clusters x 4 ACK execution truths\n\n'
+           'Original physical CI 32 of 32 shards: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37934425888\n\n'
+           'Original FINAL auditor FAILED because it called the OLD 32-cluster audit module, which rejected valid chunk2/chunk3 source files. '
+           'This audit-only reanalysis uses the ALREADY EXISTING correct 64-cluster source auditor, with no physics, PPO, source classifier, fault truth or sample modification.\n\n'
+           '64 independent task/reset source clusters; 256 observed native truth cells; 2304 physically stepped controller worlds; '
+           'all original failures and source identities retained.\n\n'
+           + json.dumps(d['primary_outcomes'],indent=2)
+           +'\n\nNumerical source physical state parity: '
+           + str(d['numerically_matched_public_source_observation_per_truth_verified'])
+           +'\nObserved public/strong success cell gap: '
+           +str(d['method_success_delta_public_minus_strong_per_cell'])
+           +'\nCluster sensitivity p (NOT randomized causal inference): '
+           +str(d['seed_cluster_exact_swap_two_sided_sensitivity_p_not_randomized_proof'])
+           +'\nPrior partial-run CLI errors on these SAME SEEDS remain disclosed. Not a new independent N, not real hardware/packet loss/VLA recovery. '
+           'Numerically matching visible initial state does not certify all hidden simulator state. Author-run, not independent outside replication.\n'
+          )
+          with (dst/'ORIGINAL_SHA256SUMS').open('w') as f:
+              for path in sorted(x for x in dst.iterdir() if x.is_file()):
+                  f.write(hashlib.sha256(path.read_bytes()).hexdigest()+'  '+path.name+'\n')
+          print('ORIGINAL_PHYSICAL_JSON_ARCHIVED',len(expected))
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/frozen_policy_transfer/evidence/confirmatory_original64clusters_256cells_2304worlds
+          git commit -m "Evidence: archive all 2304 source-only audited actual confirmatory PhysX worlds"
+          git push origin HEAD:audit/confirmatory256-original-only-fix-20261009
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: genuine-original-confirmatory-256-physics-audit-raw-evidence
+          path: research/frozen_policy_transfer/evidence/confirmatory_original64clusters_256cells_2304worlds/
+          retention-days: 90
