@@ -66,6 +66,24 @@ def main():
     image_keys=sorted(k for k in example if "image" in k or "camera" in k)
     if not image_keys:
         raise RuntimeError("Real LeRobot dataset observation has no camera tensor")
+    # Explicit smoke-test wiring: dataset names reflect image source; model
+    # names reflect *training* camera positions. Name mapping alone does not
+    # establish exact optical frame/calibration or hardware compatibility.
+    expected=set(k for k,feature in policy.config.input_features.items()
+                 if str(getattr(feature,"type","")).endswith("VISUAL") or
+                 str(getattr(feature,"type","")).endswith("VISUAL: 'VISUAL'>"))
+    camera_mapping={
+        "observation.images.image":"observation.images.camera1",
+        "observation.images.image2":"observation.images.camera2",
+    }
+    if not set(camera_mapping.values()).issubset(set(policy.config.input_features)):
+        raise RuntimeError("Checkpoint does not declare expected camera1/camera2 inputs; refuse inferred wiring")
+    if not set(camera_mapping).issubset(example):
+        raise RuntimeError("Original LIBERO dataset does not include both native camera observations")
+    for source,dest in camera_mapping.items():
+        if dest in example:
+            raise RuntimeError("Source dataset collides with pretrained model camera features")
+        example[dest]=example.pop(source)
     t2=time.monotonic()
     with torch.inference_mode():
         policy.reset()
@@ -86,6 +104,8 @@ def main():
       "policy_state":"eval/no_grad and reset before inference",
       "normalization":"Official make_pre_post_processors; not a bespoke normalizer",
       "original_camera_keys":image_keys,
+      "explicit_camera_name_mapping_for_inference_only":camera_mapping,
+      "source_dataset_optical_frame_calibration_verified":False,
       "actual_preprocessed_observation_keys":sorted(prepared.keys()),
       "postprocessed_action_shape":list(arr.shape),
       "action_count":int(arr.size),
