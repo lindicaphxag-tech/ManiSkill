@@ -41,7 +41,7 @@ def study(directory=ROOT):
             weights=shape["posterior_weights"]
             k=max(range(len(weights)),key=lambda j:weights[j])
             eps=shape["prior_training_epsilon_m"]
-            good=(shape["candidate_residuals_m"][k]<=eps and bool(shape["audit_only_true_candidate_indices"]))
+            good=(shape["candidate_residuals_m"][k]<=eps)
             physical_truth=(k in shape["audit_only_true_candidate_indices"])
             margin=(len(unique["accepted_position_indices"])==1 and
                 all(z>eps+.002 for i,z in enumerate(unique["candidate_residuals_m"])
@@ -54,6 +54,7 @@ def study(directory=ROOT):
             rows.append(dict(task=task,seed=q["seed"],weights=weights,winner=k,max_score=weights[k],
                              eps=eps,eligible_score_residual=good,physical_true_winner=physical_truth,
                              original_set_unique=unique["authorized"],
+                             original_set_winner=unique["selected_candidate_index"],
                              original_set_wrong=unique["wrong_confident"],
                              physical_truth_indices=shape["audit_only_true_candidate_indices"]))
     if len(rows)!=64:raise ValueError("Training denominator not 64")
@@ -62,9 +63,7 @@ def study(directory=ROOT):
         for rule in ("score_only","unique_plus_score"):
             selected=[r for r in rows if r["max_score"]+1e-12>=threshold and
                 r["eligible_score_residual"] and (rule=="score_only" or
-                (r["original_set_unique"] and r["winner"]==
-                 next(iter(r["physical_truth_indices"]),-1) if False else
-                 r["original_set_unique"] and r["winner"]==_original_set_winner(directory,r["task"],r["seed"])))]
+                (r["original_set_unique"] and r["winner"]==r["original_set_winner"]))]
             variants[f"{rule}_{threshold:.2f}"]={
                 "source_training_score_threshold":threshold,
                 "n_confident_histories":len(selected),
@@ -84,13 +83,6 @@ def study(directory=ROOT):
             "original_set_wrong":sum(r["original_set_wrong"] for r in old),
             "threshold_sensitivity":variants,
             "interpretation":"A 0.60 source-trained SCORE-ONLY competitor already predicts 17 authorizations, 0 observed wrong on this training cohort. It must be physically stepped on independent held-out seeds before claiming task success/latency safety; the 0.95 comparator is intentionally conservative and NOT a strong calibrated Bayesian optimum."}
-
-def _original_set_winner(folder,task,seed):
-    chunk=(seed-(1760001 if task=="pull_cube" else 1770001))//8
-    path=folder/f"bayes_same_public_{task}_chunk{chunk}_original8.json"
-    d=json.loads(path.read_text())
-    row=next(q for q in d["episodes"] if q["seed"]==seed)
-    return row[FULL_HISTORY]["selected_candidate_index"]
 
 def main():
     p=argparse.ArgumentParser();p.add_argument("--source-dir",type=Path,default=ROOT)
