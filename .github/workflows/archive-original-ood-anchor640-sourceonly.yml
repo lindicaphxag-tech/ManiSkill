@@ -1,0 +1,103 @@
+name: "Recover first original complete 640 real OOD PhysX sources: independent audit-only dependency correction"
+on:
+  push:
+    branches: [research/dynamics-shift-anchor-ack-new64-20261009]
+    paths:
+      - '.github/workflows/archive-original-ood-anchor640-sourceonly.yml'
+permissions:
+  contents: write
+  actions: read
+jobs:
+  source-only-repair-original-640-genuinely-stepped-controller-population:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PRODUCER_RUN: '37928529745'
+      OUT: research/frozen_policy_transfer/evidence/ood_pd_drive_known_ack_anchor_original64_960101_970132
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Explicitly preserve failed original independent audit and eight successful ORIGINAL physical jobs
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$PRODUCER_RUN" --jq '.conclusion')" = failure
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$PRODUCER_RUN" --jq '.head_sha')" = 0d71403806ff219183469be28a26bdbbc0a464f2
+          test "$(git hash-object research/DYNAMICS_SHIFT_KNOWN_ACK_ANCHOR_NEW64_PREOUTCOME_V1.json)" = 8a869f696721f4d36299e5aae66bcfc486f0fde1
+          test "$(git hash-object research/frozen_ppo_ood_known_anchor_physx_v6.py)" = 01663775035813e4f87f06171ff3cae0eaebc442
+          test "$(git hash-object research/run_dynamics_shift_anchor_new64.py)" = 6ba938db8e557f5494c879de3168138b4eb90ed1
+          test "$(git hash-object research/audit_dynamics_shift_anchor_new64.py)" = 7325097681b0bae8aa9698b5c3ecf8767aea7100
+          gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$PRODUCER_RUN"/artifacts --paginate \
+            --jq '.artifacts[].name' | sort | tee /tmp/original_ood_native_artifacts.txt
+          test "$(grep -c '^real-physx-ood-known-anchor-' /tmp/original_ood_native_artifacts.txt)" -eq 8
+          echo "The original physical run failed ONLY its all64 source-only audit job because numpy was absent. Preserve original failed run as failed."
+      - uses: actions/download-artifact@v4
+        with:
+          repository: ${{ github.repository }}
+          run-id: 37928529745
+          github-token: ${{ github.token }}
+          pattern: real-physx-ood-known-anchor-*
+          merge-multiple: true
+          path: /tmp/original_8_native_ood_shards
+      - name: Install NUMPY for source-only verifier; NEVER rerun physical simulator, PPO or original seed chooser
+        run: |
+          python -m pip install --no-cache-dir 'numpy<3'
+          python -m py_compile research/audit_dynamics_shift_anchor_new64.py
+          test "$(find /tmp/original_8_native_ood_shards -maxdepth 1 -name 'ood_anchor_*_original8.json' | wc -l)" -eq 8
+          test "$(find /tmp/original_8_native_ood_shards -maxdepth 1 -name 'ood_anchor_*_audit.json' | wc -l)" -eq 8
+      - name: Independently source-audit full original real 640 Panda shifted dynamics worlds and all negatives
+        run: |
+          set -euo pipefail
+          python -m research.audit_dynamics_shift_anchor_new64 \
+            --source-dir /tmp/original_8_native_ood_shards \
+            --output /tmp/INDEPENDENT_PANDA_PHYSX_OOD_ANCHOR_REAL640.json
+          python - <<'PY'
+          import json
+          a=json.load(open("/tmp/INDEPENDENT_PANDA_PHYSX_OOD_ANCHOR_REAL640.json"))
+          assert a["source_original_native_physx_worlds"]==640
+          assert a["original_registered_source_reset_states"]==64
+          assert len(a["task_ack_gain_stratified"])==16
+          assert len(a["all_original_source_file_sha256"])==16
+          t=a["total"]
+          assert t["original_source_reset_states"]==64
+          assert t["old"]["public_xyz_observation_samples"]==128
+          assert t["anchor"]["public_xyz_observation_samples"]==256
+          assert t["old"]["task_success"]<=64 and t["anchor"]["task_success"]<=64
+          assert a["four_genuine_applied_held_joint_ACK_combinations"] is True
+          print("SOURCE_REPLAY_PHYSICALLY_UNTOUCHED_640_PANDA_OOD_COHORT_COMPLETE",True)
+          PY
+      - name: Archive exact original physical 16 JSONs plus independent full64 source audit and SHA256
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUT"
+          cp /tmp/original_8_native_ood_shards/ood_anchor_*.json "$OUT"/
+          cp /tmp/INDEPENDENT_PANDA_PHYSX_OOD_ANCHOR_REAL640.json "$OUT"/
+          (cd "$OUT" && sha256sum *.json > SHA256SUMS)
+          cat > "$OUT/README.md" <<'EOF'
+          # First original real PhysX two-drive-domain native command ACK transfer: independent source-only recovery
+
+          First true **8/8 physically executed and source-audited** task-shard run https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37928529745, exact original physical producer head 0d71403806ff219183469be28a26bdbbc0a464f2, pre-outcome experimental protocol Git blob 8a869f696721f4d36299e5aae66bcfc486f0fde1.
+          ORIGINAL combined producer run conclusion was **FAILURE** solely at the separate full64 independent audit stage: its Python environment had no `numpy`. Every actual original CPU PhysX action shard had SUCCESS and produced an original 8-episode JSON and matching audit. The additional workflow independently recomputes the source population using the exact **original 16 physical source and shard-audit JSONs**, with `numpy` added ONLY to the SOURCE-ONLY verifier; ZERO simulator steps or policy reexecutions occurred during recovery. The recovered separate independent audit succeeded, but original failed run must never be called green.
+          
+          Exactly 64 real original reset identities: PullCube 960101–960132 and StackCube 970101–970132; 10 physically stepped Panda controller/PPO comparator worlds each. Original source physically altered and verified ALL SEVEN Panda native joint PD drive stiffness/damping across source and destination arms at reset. The frozen source policy was unchanged. Slow (500/70) and fast (1500/130) physically set/verified source/native drive domains crossed with four real applied/held two-ACK combinations, 4 independent resets per task/gain/ACK cell. At t1 with a real KNOWN-DELIVERED acknowledged original policy action, anchor detector gets ONLY public achieved XYZ before/after and its own acknowledged target from public action history; at t4 real known zero arm action it may authorize a complete native target history conditional on that anchor witness; otherwise a counted authoritative native getter at t5. Same actual t4 actuation cost as the original narrow public observer, but anchor consumes TWO more public XYZ samples at t1. Full original failed task episodes remain archived.
+          
+          **Read the exact per-task/per-gain/per-ACK native control outcomes and real public-response-model miscoverage in INDEPENDENT_PANDA_PHYSX_OOD_ANCHOR_REAL640.json; do not quote improved safety or task success if unsupported.** The independent physical run remains author-operated, not external institutional reproduction. An earlier source-only unit test also exhibits pre-fault valid model anchors followed by *confidently wrong target history* under a subsequent model shift, so an anchor is NEVER an unconditional physical safety guarantee.
+          
+          This is a source-traceable simulated Panda mechanics stress test, NOT an actual real-world robot, network ACK packet-loss bench, controller-independent proof, contact/hardware safety certificate, learned VLA manipulation success or accepted robotics top-tier publication.
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$OUT"
+          git diff --cached --quiet && exit 0
+          git commit -m "evidence: source-only re-audit eight actual original PhysX OOD gains and preserve all 640 policy episodes and negatives"
+          git push origin HEAD:research/dynamics-shift-anchor-ack-new64-20261009
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: independent-source-only-recovery-all-640-original-Panda-physx-worlds
+          path: research/frozen_policy_transfer/evidence/ood_pd_drive_known_ack_anchor_original64_960101_970132/
+          retention-days: 90
