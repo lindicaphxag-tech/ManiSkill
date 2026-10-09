@@ -1,0 +1,80 @@
+name: "External operator review: 80 original native PhysX worlds, one vs two public ACK probes"
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'research/outside_independent_dual_probe_replication.py'
+      - '.github/workflows/outside-dual-probe-replication.yml'
+  workflow_dispatch:
+    inputs:
+      task:
+        required: true
+        description: "Released third-party frozen PPO task"
+        type: choice
+        options: [pull_cube, stack_cube]
+        default: stack_cube
+      first_seed:
+        required: true
+        description: "Declare 8 disjoint original seed identities BEFORE physical rollout (960001..989992)"
+        type: number
+        default: 960001
+permissions:
+  contents: read
+jobs:
+  original-pinned-public-method:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reject altered original physics algorithm and tell reviewer's real Github identity
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/frozen_ppo_sequential_two_public_probes_physx_v5.py)" = cd84a9fe091d19bd198292e4f54ee0f9bfd73858
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = ddfaf4522d49f73ce926e4c6d77c7ca755f8e1b6
+          python -m py_compile research/outside_independent_dual_probe_replication.py
+          echo "OPERATOR_REPOSITORY=$GITHUB_REPOSITORY OPERATOR=$GITHUB_ACTOR"
+          echo "Fork can run independent-seed tasks, but an author-owned fork is NOT external scientific adoption."
+  physically-execute-independent-true-ACK-original80:
+    needs: original-pinned-public-method
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TASK: ${{ inputs.task }}
+      FIRST_SEED: ${{ inputs.first_seed }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install actual ManiSkill CPU native PhysX and unchanged frozen third-party PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Declare actual external repository and runtime before simulation
+        run: |
+          mkdir -p outside_dual_public_new8
+          git rev-parse HEAD > outside_dual_public_new8/actual_checkout_commit.txt
+          printf 'repo=%s actor=%s task=%s first_seed=%s\n' "$GITHUB_REPOSITORY" "$GITHUB_ACTOR" "$TASK" "$FIRST_SEED" > outside_dual_public_new8/original_operator_identity_BEFORE_PHYSICS.txt
+          python -m pip freeze --all > outside_dual_public_new8/native_package_versions.txt
+      - name: Run real 10-controller native PhysX eight fresh tasks, keep all failed sources
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/outside_independent_dual_probe_replication.py --task "$TASK" --first-seed "$FIRST_SEED" --output outside_dual_public_new8 2>&1 | tee outside_dual_public_new8/actual_original_native_physx.log
+      - name: Hash immutable original source and operator record
+        if: always()
+        run: |
+          (cd outside_dual_public_new8 && sha256sum *.json *.txt *.log > SHA256SUMS) || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: outsider-chosen-8-original-physx-ACK-four-truth-ten-controllers
+          path: outside_dual_public_new8/
+          retention-days: 90
