@@ -252,10 +252,28 @@ def trial(policy,seed):
                     gripper=controllers["source_no_fault"].to_action_dict(
                         native[0])["gripper"]
                     intended=rewritten[0].detach().cpu().numpy()
-                    if n in beliefs:
-                        ticket=beliefs[n].prepare(intended)
-                    elif n in observers:
-                        ticket=observers[n].prepare(intended).ticket
+                    try:
+                        if n in beliefs:
+                            ticket=beliefs[n].prepare(intended)
+                        elif n in observers:
+                            ticket=observers[n].prepare(intended).ticket
+                    except ValueError as err:
+                        # A source-pretrained policy can propose an
+                        # unrepresentable SO(3) command BEFORE the registered
+                        # fault. This is a pre-fault failure, NOT an injected
+                        # ACK trial. Preserve the entire seed denominator.
+                        if str(err) not in (
+                            "Unrepresentable target rotation",
+                            "Unrepresentable target translation"):
+                            raise
+                        result["refusals"][n]={
+                            "step":step,
+                            "reason":"NATIVE_HISTORY_PREPARE_UNREPRESENTABLE",
+                            "original_error":str(err),
+                            "preserve_original_source_seed_as_failure":True}
+                        result["failure_causes"][n]="NATIVE_HISTORY_PREPARE_UNREPRESENTABLE"
+                        done[n]=True
+                        continue
                     pre_fault_native_target=(privileged_target(arm)
                         if step in FAULT_STEPS else None)
                     # Audit-only private getter; NEVER a policy/decision input.
@@ -390,7 +408,9 @@ def main():
         "episodes":rows,
         "success_counts":{n:sum(int(r["success_once"][n]) for r in rows)
                           for n in NAMES},
-        "fault_reached_counts":{n:sum(r["faults"].get(n) is not None
+        "fault_reached_counts":{n:sum(len(r["faults"].get(n,[]))==2
+                                    for r in rows) for n in NAMES[1:]},
+        "actual_native_hold_event_counts":{n:sum(len(r["faults"].get(n,[]))
                                     for r in rows) for n in NAMES[1:]},
         "selective_readback_counts":[
             r["privileged_target_readback_decision_count"][
