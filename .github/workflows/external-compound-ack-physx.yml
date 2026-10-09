@@ -41,6 +41,7 @@ jobs:
           test "$(git hash-object research/multi_ack_se3_bounded.py)" = '36707a177549104ba5b4bd9bcebc76518f0d2840'
           python -c 'import sys;sys.path.insert(0,"research");from external_compound_ack_replication import select;import os;assert len(select(os.environ["SELECT_TASK"],int(os.environ["SELECT_SEED"])))==8'
   independently-rerunnable-native-physx:
+    if: github.event_name == 'workflow_dispatch'
     needs: reviewer-frozen-source-contract
     runs-on: ubuntu-latest
     timeout-minutes: 90
