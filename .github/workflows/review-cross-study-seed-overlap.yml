@@ -1,0 +1,52 @@
+name: Cross-study reset-state and ACK-truth overlap integrity — 160 vs 128
+
+on:
+  push:
+    branches: [research/mixed-ack-truth-frozenppo-new64-20261009]
+    paths:
+      - 'research/audit_cross_study_reset_overlap.py'
+      - 'tests/test_cross_study_reset_overlap.py'
+      - '.github/workflows/review-cross-study-seed-overlap.yml'
+  pull_request:
+    paths:
+      - 'research/audit_cross_study_reset_overlap.py'
+      - 'tests/test_cross_study_reset_overlap.py'
+      - '.github/workflows/review-cross-study-seed-overlap.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-freeze-identity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Three-preregistration immutable Git object identities and duplicated reset-state audit
+        run: |
+          python -m py_compile research/audit_cross_study_reset_overlap.py
+          python -m unittest discover -s tests -p test_cross_study_reset_overlap.py -v
+          python -m research.audit_cross_study_reset_overlap --output /tmp/cross_study_reset_overlap.json
+          python - <<'PY'
+          import json
+          r=json.load(open('/tmp/cross_study_reset_overlap.json'))
+          assert r['unique_task_reset_identifiers_across_three_studies']==128
+          assert r['registered_episode_rows_across_three_studies']==160
+          assert r['mixed64_reused_from_previous_survivor32']==32
+          assert r['reused_mixed_conditions_with_same_held_held_fault_truth']==16
+          assert r['reused_reset_ids_with_DIFFERENT_t2_applied_truth']==16
+          assert not r['any_prior_task_success_or_baseline_selection_information_leakage_excluded']
+          print('PASS: overlap requires disclosure; not 160 wholly independent task/reset states')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: immutable-cross-study-reset-overlap-audit-${{ matrix.python }}
+          path: /tmp/cross_study_reset_overlap.json
