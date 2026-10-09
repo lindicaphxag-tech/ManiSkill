@@ -2,12 +2,6 @@ name: Prospective real PhysX cross-embodiment unknown-ACK target history
 on:
   push:
     branches: [research/cross-embodiment-ack-pose-observability-20261009]
-  pull_request:
-    paths:
-      - 'research/CROSS_EMBODIMENT_ACK_PREOUTCOME_V1.json'
-      - 'research/cross_robot_ack_physics.py'
-      - 'research/audit_cross_robot_ack_physx.py'
-      - '.github/workflows/cross-robot-ack-physx.yml'
 
 permissions:
   contents: read
@@ -73,7 +67,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: cross-robot-real-${D}{{ matrix.robot }}-chunk-${D}{{ matrix.chunk }}
+          name: cross-robot-real-${{ matrix.robot }}-chunk-${{ matrix.chunk }}
           path: |
             cross_robot_ack_*.json
             cross_robot_real_physx.log
