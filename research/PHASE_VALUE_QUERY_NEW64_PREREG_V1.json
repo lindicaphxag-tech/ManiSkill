@@ -1,0 +1,60 @@
+{
+  "schema": "phase_value_query_native_physx_outside64_20261009_v1",
+  "freeze_status": "PRECOMMITTED_BEFORE_EVALUATING_ANY NEW 820001/830001 SEEDS",
+  "development_leakage_disclosure": "The inversion of the 0.75 error-ratio test was DISCOVERED from PRIOR 64 inspected 620001-620032/630001-630032 seeds; it is NOT a prospective result there. This next experiment uses disjoint new seeds.",
+  "source_development": {
+    "original_source_run": 37909638381,
+    "original_source_audit": 37910234571,
+    "prior_negative_case": "Pull 620003,620028,620031 have t4 authority ratio below .75 and original reactive/proactive failed while fixed query succeeded; this observation motivated but does not validate the new rule"
+  },
+  "task_policy": {
+    "pull_cube": "At t4 after two unknown ACKs, if the complete setpoint common-action is UNAUTHORIZED or the certified max(position/0.05m, rotation/0.05rad) is below 0.75, query the private target once BEFORE action; otherwise continue with common robust command and allow exactly one later query if a future common action refuses.",
+    "stack_cube": "At t4 after two unknown ACKs, always query the private target exactly once if episode still alive.",
+    "task_ID_usage": "Explicit task-conditioned heuristic (NOT task-blind, NOT learned general value-of-information estimator). The choice is fixed before new trials. Source policy and controller models unchanged."
+  },
+  "frozen_comparators": [
+    "no fault frozen PPO context",
+    "continuously privileged oracle (not zero cost)",
+    "optimistic pretend both ACKs delivered",
+    "strict exact common target or refuse",
+    "bounded no-read",
+    "reactive query only on refusal",
+    "fixed t4 query",
+    "prior naive task-blind authority slack threshold >=0.75",
+    "NEW phase-value task conditioned query"
+  ],
+  "new_original_reset_states": {
+    "pull_cube": {
+      "start": 820001,
+      "end": 820032
+    },
+    "stack_cube": {
+      "start": 830001,
+      "end": 830032
+    },
+    "shards_per_task": 4,
+    "states_per_shard": 8,
+    "complete_distinct_reset_states": 64,
+    "expected_physically_stepped_worlds_if_complete": 576
+  },
+  "native_fault": "Two actual arm-target zero/hold substitutions at t=2,t=3; gripper proceeds; delivered ACK unknown; never claim real transport packets lost",
+  "source_immutability": {
+    "original_runner_blob": "99836af14205fe3e95e52a2e0d68237c7c8a9045",
+    "original_conservative_K_history_blob": "36707a177549104ba5b4bd9bcebc76518f0d2840",
+    "published_PPO_Pull_sha": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+    "published_PPO_Stack_sha": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+  },
+  "analysis_precommitted": [
+    "official task success /32 per task and /64 combined",
+    "private authoritative target readback per decision, including early vs reactive later",
+    "matched-seed paired success flags vs fixed, reactive, naive threshold, and task-only routed baseline",
+    "full original native 9-world outcomes, immutable SHA, conditional real setpoint residual audits and masked commanded actions",
+    "if task-conditioned method is dominated by previous simple task-gated/always fixed, terminate threshold-tuning claims; any further method requires another new seed-disjoint population"
+  ],
+  "boundaries": [
+    "One Panda controller family, two released pretrained PPOs; neither policy retrained",
+    "No actual packet loss, robot collisions/contacts safety guarantee, outside-lab independent method acceptance or journal acceptance",
+    "Rule tuned on previous 64 outcomes, so absolutely no use of them as confirmation",
+    "K-history minmax geometry not new and task-conditioned query-threshold heuristic not independently novel theorem"
+  ]
+}
