@@ -34,11 +34,26 @@ def analyze(p):
         assert abs(total_cost-(2+2*p*(1-p)))<1e-10
     return out
 
+def correlated_noise_stress(p=.1):
+    """Mixture: with rho probability a systematic error flips ALL probes.
+    Independent wrong-probe probability remains p in either component.
+    Repeated measurements cannot resolve the rho=1 failure mode.
+    """
+    if not 0<=p<=.5:raise ValueError('invalid p')
+    independent=3*p*p-2*p**3
+    return {str(rho):{
+        'all_probes_wrong_prob':(1-rho)*independent+rho*p,
+        'mean_probes':(1-rho)*(2+2*p*(1-p))+rho*2}
+        for rho in (0.,.5,1.)}
+
 def main():
     cases={str(p):analyze(p) for p in (0.,.01,.05,.1,.3,.5)}
     assert abs(cases['0.1']['applied']['repeated_probe_wrong_prob']-.028)<1e-10
+    correlated=correlated_noise_stress(.1)
+    assert abs(correlated['0.5']['all_probes_wrong_prob']-.064)<1e-10
+    assert abs(correlated['1.0']['all_probes_wrong_prob']-.1)<1e-10
     return {'status':'IID_BINARY_MODEL_MATHEMATICS_NOT_PHYSX',
-            'cases':cases,
+            'cases':cases, 'correlated_error_stress_at_10pct':correlated,
             'at_10pct_iid_noise':{'one_probe_error':.1,'repeated_probe_error':.028,
                  'relative_error_reduction':.72,'average_probe_cost':2.18,
                  'worst_probe_cost':3},
