@@ -41,7 +41,7 @@ def assert_preoutcome():
         raise ValueError("Wrong preregistration schema")
     if (p["truth_cells"]!=256 or p["planned_actual_PhysX_worlds"]!=2304
         or p["original_reset_clusters"]!=64
-        or len(p["conditions"])!=4):
+        or len(p["truth_patterns"])!=4):
         raise ValueError("Original registered task denominator changed")
     if {task:{"start":v["start"],"end":v["end"]} for task,v in {task:{"start":span[0],"end":span[1]} for task,span in p["new_seeds"].items()}.items()} != {
           "pull_cube":{"start":3210001,"end":3210032},
