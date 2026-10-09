@@ -1,0 +1,65 @@
+{
+  "schema": "typed_native_controller_authority_new16_physx_preoutcome_v1",
+  "registration_date": "2026-10-09",
+  "primary_question": "When all comparator arms use an identical controller-type admission contract BEFORE any unknown-ACK fault, can a quota-limited evidence-triggered target-memory read retain more native task completions than a precommitted periodic read, without unreported fault-exposure drops?",
+  "frozen_originals": {
+    "source_original_strict_nine_arm_runnable_git_blob": "f3290b6a2d93d572c2ac73977044de1763a2ad0b",
+    "external_frozen_PPO_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+    "typed_guard_original_pr": 104,
+    "source_certifier_git_blob": "bb5fd155b7291fb127f94138fca321201c8271c3"
+  },
+  "original_model_checkpoint_sha256": {
+    "pull_cube": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+    "stack_cube": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+  },
+  "task_cohorts": {
+    "pull_cube": [
+      380001,
+      380008
+    ],
+    "stack_cube": [
+      390001,
+      390008
+    ]
+  },
+  "fault_native_target_hold_step": 2,
+  "physical_runtime": "genuine native ManiSkill physx_cpu; two source released frozen PPOs",
+  "controller_target_chart": "root_translation:root_aligned_body_rotation; position native box [-1,1]^3 times XYZ Euler normalized rotation L2 ball",
+  "typed_gate_limit": {
+    "native_roundoff_overreach_limit": 0.000002,
+    "native_rotation_ball_interior": 0.000002,
+    "max_translated_target_setpoint_added_error_m": 0.00001,
+    "max_rotated_target_setpoint_added_error_rad": 0.00001,
+    "position_command_target_error_budget_m": 0.05,
+    "orientation_target_error_budget_rad": 0.05
+  },
+  "nine_native_control_arms": [
+    "source_no_fault",
+    "fault_oracle_private_target",
+    "fault_optimistic_unverified_ack",
+    "fault_strict_common_exact",
+    "fault_robust_two_history_without_query",
+    "fault_robust_then_single_privileged_query",
+    "fault_robust_quota_two_per_eight",
+    "fault_precommitted_seed_schedule_query",
+    "fault_always_single_privileged_query"
+  ],
+  "quota_per_eight_seed_shard": 2,
+  "fixed_nonadaptive_schedule": "read once after t2 if seed%4 == 0; 2 fixed reads per shard",
+  "new_independent_reset_seeds": 16,
+  "primary_fail_closed_endpoint": "Number of trials physically exposed to the intended unknown-ACK target-hold; all 16 must be counted, including any source- or target-action unrepresentability refusal BEFORE step 2. If any relevant arm fails this gate, mark the COMPLETE primary efficacy contrast INVALID, not positive.",
+  "secondary_endpoints": [
+    "Native task completion all nine arms, always 16 original ITT states",
+    "Real private controller memory read calls, per arm and task reset",
+    "Exact actual source-model/checkpoint provenance",
+    "Number of controller command-chart roundoff canonicalizations, TRUE out-of-chart rejections, per-native-stage calculated extra setpoint distortion",
+    "Every certified action corrected by typed gate must still obey full original 0.05m and 0.05rad target envelope AFTER repair",
+    "All missed t2 physical fault injections per arm",
+    "Per-task paired conditional comparisons, no independent-arm pseudoreplication"
+  ],
+  "no_posthoc_changes": "Do not select successes, adjust numeric limits, or remove pre-fault refusals after seeing new simulator output; any discovered bug must have reported original failed workflow history and a separately versioned corrected protocol.",
+  "not_claims": [
+    "Nothing clinical, learned VLA, real network packet loss, collision safety, outside independent lab replication, novel Chebyshev theorem or published task SOTA"
+  ],
+  "frozen_before_data_execution": true
+}

@@ -1,0 +1,94 @@
+name: Trusted permanent archive original NEW16 typed-native PhysX source bytes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/archive-typed-native-new16.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  original-public-real-physx-source-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify ORIGINAL pre-outcome contract, original true CPU PhysX CI head and both immutable ZIP SHA digests
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/TYPED_CONTROLLER_ADMISSION_NEW16_PREOUTCOME_V1.json)" = "9f2ebf875412a0dce5a33c3e4dde6f03a76b734d"
+          test "$(git hash-object research/typed_native_action_authority.py)" = "a0e46bc42fd0d8e33580e79dc94408ff301cae09"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37899357390 --jq .head_sha)" = "ea3991ed0a2787554d89f1c199b53943c18e1630"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37899357390 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11601598892 --jq .digest)" = "sha256:69bedd844f6b5aea2cca203e17ebed6de93f17fb76220cd3f2a715020ad782dd"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11602010259 --jq .digest)" = "sha256:86b42d06d9c8b48e3f20912189d2b9d8556df6d95ddab5ab889225a7f72fed42"
+          mkdir -p /tmp/typed_native_original /tmp/typed_native_zip
+          gh run download 37899357390 --repo "$GITHUB_REPOSITORY" \
+            --pattern "genuine-typed-native-physical-task-*" --dir /tmp/typed_native_zip
+          cp /tmp/typed_native_zip/genuine-typed-native-physical-task-pull_cube/typed_gate_pull_cube_new8_original.json /tmp/typed_native_original/
+          cp /tmp/typed_native_zip/genuine-typed-native-physical-task-stack_cube/typed_gate_stack_cube_new8_original.json /tmp/typed_native_original/
+          test -s /tmp/typed_native_original/typed_gate_pull_cube_new8_original.json
+          test -s /tmp/typed_native_original/typed_gate_stack_cube_new8_original.json
+          python -m research.audit_typed_gate_fresh16 \
+            --input-dir /tmp/typed_native_original --output /tmp/typed_native_original/full_true_physx_audit.json
+          python - <<'PY'
+          import json
+          x=json.load(open("/tmp/typed_native_original/full_true_physx_audit.json"))
+          assert x["original_predeclared_primary_inference_gate_PASSED"]
+          assert len(x["hard_original_full_fault_exposure_failed_conditions"])==0
+          assert x["full_registered_reset_states"]==16
+          y=x["all16_original_native_success_counts"]
+          r=x["all16_actual_controller_target_private_reads"]
+          assert y["fault_robust_quota_two_per_eight"]==14
+          assert y["fault_precommitted_seed_schedule_query"]==14
+          assert y["fault_always_single_privileged_query"]==15
+          assert r["fault_robust_quota_two_per_eight"]==1
+          assert r["fault_precommitted_seed_schedule_query"]==4
+          assert r["fault_always_single_privileged_query"]==16
+          assert x["all16_native_roundoff_canonicalizations"]==75
+          assert not x["all16_unrepresentable_native_refusal_details"]
+          assert x["capped_v_fixed_paired"]=={
+            "both":13,"capped_only":1,"fixed_only":1,"neither":1}
+          print("PASS original 16 frozen-policy PhysX tasks, 2 SHA-verified source ZIP artifacts, 75 typed repairs and ALL injected faults")
+          PY
+
+      - name: Commit ONLY source BYTE-IDENTICAL original PhysX JSON, SHA256SUMS and reviewer metadata
+        if: github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/typed_controller_new16_380001_390008
+          mkdir -p "$dest"
+          cp /tmp/typed_native_original/*.json "$dest/"
+          (cd "$dest" && sha256sum *.json > SHA256SUMS && sha256sum -c SHA256SUMS)
+          python -m research.audit_typed_gate_fresh16 --input-dir "$dest" --output /tmp/typed_native_recheck.json
+          printf '%s\n' \
+            '# Original actual 16 NEW true PhysX task-reset states — typed controller chart' \
+            '' \
+            'Original source REAL nine-arm CPU PhysX original run 37899357390, source HEAD ea3991ed0a2787554d89f1c199b53943c18e1630.' \
+            'Source PullCube ZIP artifact 11601598892 sha256:69bedd844f6b5aea2cca203e17ebed6de93f17fb76220cd3f2a715020ad782dd.' \
+            'Source StackCube ZIP artifact 11602010259 sha256:86b42d06d9c8b48e3f20912189d2b9d8556df6d95ddab5ab889225a7f72fed42.' \
+            'Original pre-outcome protocol Git blob 9f2ebf875412a0dce5a33c3e4dde6f03a76b734d.' \
+            'Full all-16 actual native t2 target-hold fault exposure PASSED. At the original matched source states quota 14/16 with 1 read vs fixed schedule 14/16 with 4 reads, paired wins 1:1, no task success advantage. Mandatory 15/16 with 16 reads.' \
+            'Original source nested 75 typed controller action roundoff repairs are not independent task states; no native typed admission refusals. Original strict-budget cohort StackCube 370029 failure remains NEGATIVE.' \
+            'Source JSON files are copied as BYTE-IDENTICAL original PhysX output; no reconstruction from logs or tool-derived text.' \
+            'Run sha256sum -c SHA256SUMS; python -m research.audit_typed_gate_fresh16 --input-dir . --output /tmp/verified.json.' \
+            'This is author-operated one Panda control family and TWO frozen third-party PPOs, NOT outside researcher PhysX replication, hardware safety or general method superiority.' > "$dest/README.md"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dest"
+          if git diff --cached --quiet;then exit 0;fi
+          git commit -m 'evidence: archive byte-identical prospective typed-controller new16 original PhysX outputs'
+          for i in 1 2 3 4;do
+            git pull --rebase origin main
+            if git push origin HEAD:main;then exit 0;fi
+          done
+          exit 1
