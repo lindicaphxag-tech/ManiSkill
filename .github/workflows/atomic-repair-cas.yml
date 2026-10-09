@@ -1,0 +1,33 @@
+name: Atomic repair handoff true CAS vs proper strong protocol and stale preflight
+on:
+  push:
+    branches: [research/atomic-repair-commit-20261010]
+    paths:
+      - research/atomic_repair_handoff.py
+      - tests/test_atomic_repair_handoff.py
+      - .github/workflows/atomic-repair-cas.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fully-independent-atomic-epoch-bridge-tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ['3.11', '3.13']
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Compile standalone CAS bridge and adversarial tests
+        run: python -m py_compile research/atomic_repair_handoff.py tests/test_atomic_repair_handoff.py
+      - name: Compare 512 actual deterministic interleavings against proper atomic strong baseline
+        run: python -m unittest discover -s tests -p test_atomic_repair_handoff.py -v
+      - name: Retain old epoch-fencing and effect-aware provenance checks
+        run: python -m unittest discover -s tests -p test_epoch_fenced_repair_authority.py -v
+      - name: Include independent certificate optimality checks
+        run: python -m unittest discover -s tests -p test_effect_aware_authority_certificate.py -v
