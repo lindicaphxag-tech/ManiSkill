@@ -1,0 +1,62 @@
+name: "Learned task-conditioned reset-only query policy from original 1152 native PhysX worlds"
+on:
+  push:
+    branches: [research/learned-policy-selector-from-physical-factorial-20261009]
+    paths:
+      - 'research/learn_counterfactual_task_read_policy_from_real_physx.py'
+      - 'tests/test_learned_counterfactual_reset_selector.py'
+      - '.github/workflows/learned-counterfactual-meta-policy-native-original.yml'
+      - '.gitattributes'
+  pull_request:
+    paths:
+      - 'research/learn_counterfactual_task_read_policy_from_real_physx.py'
+      - 'tests/test_learned_counterfactual_reset_selector.py'
+      - '.github/workflows/learned-counterfactual-meta-policy-native-original.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  leakage-free-cluster-learner:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ['3.11','3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Verify same original FIRST physical SHA without simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/frozen_policy_transfer/evidence/numeric_same_reset_2x2_first1152_2110001_2120016/RECHECKED_ORIGINAL1152_PORTABLE_STRICT_JSON.json)" = e91aff77516409863261437a6ffdf475a52686e5
+          python -m py_compile research/learn_counterfactual_task_read_policy_from_real_physx.py
+          python -m unittest discover -s tests -p test_learned_counterfactual_reset_selector.py -v
+      - name: Train ONLY on original 32-seed development and evaluate by leaving out all 4 same-seed truth cells
+        shell: bash
+        run: |
+          python -m research.learn_counterfactual_task_read_policy_from_real_physx --output learned_dev_cluster_crossfit.json
+          python - <<'PY'
+          import json
+          d=json.load(open("learned_dev_cluster_crossfit.json"))
+          s=d["leave_one_cluster_out_development"]
+          assert len(s["heldout_choices"])==32
+          assert s["strong"]["official_success"]==108
+          assert s["always_public"]["official_success"]==116
+          assert sum(s["choice_counts"].values())==32
+          assert d["future_model_training_and_test_not_yet_EXECUTED"]
+          assert d["all_128_original_native_task_cells_kept"]
+          print("LEARNED_POLICY_SOURCE_CROSSVALIDATION_HONEST_DEVELOPMENT_ONLY",json.dumps({
+             "learned":s["chosen"],"strong":s["strong"],"all_public":s["always_public"],
+             "policies_selected":s["choice_counts"]},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-honest-32cluster-learned-reset-policy-development-${{ matrix.os }}-${{ matrix.python }}
+          path: learned_dev_cluster_crossfit.json
