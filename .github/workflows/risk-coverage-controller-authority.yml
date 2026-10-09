@@ -4,12 +4,14 @@ on:
     branches: [research/risk-coverage-controller-authority-20261009]
     paths:
       - 'research/finite_risk_authority.py'
+      - 'research/audit_original640_public_risk_score.py'
       - 'tests/test_finite_risk_authority.py'
       - 'research/AUTHORITY_RISK_COVERAGE_PROSPECTIVE_V1.json'
       - '.github/workflows/risk-coverage-controller-authority.yml'
   pull_request:
     paths:
       - 'research/finite_risk_authority.py'
+      - 'research/audit_original640_public_risk_score.py'
       - 'tests/test_finite_risk_authority.py'
       - 'research/AUTHORITY_RISK_COVERAGE_PROSPECTIVE_V1.json'
       - '.github/workflows/risk-coverage-controller-authority.yml'
@@ -57,3 +59,16 @@ jobs:
         run: |
           python -m py_compile research/finite_risk_authority.py
           python -m unittest discover -s tests -p test_finite_risk_authority.py -v
+      - name: Keep original real-PhysX confident-wrong history, forbid retrospective rebranding as calibration
+        run: |
+          python -m research.audit_original640_public_risk_score --output original640_development_only.json
+          python - <<'PY'
+          import json
+          d=json.load(open('original640_development_only.json'))
+          assert d['original_source_PhysX_worlds']==640
+          assert d['original_public_admissions']==16
+          assert d['original_wrong_full_history_admissions']==1
+          assert d['future_fresh_risk_certificate_not_issued'] is True
+          assert d['risk_threshold_grid_selected_after_old_witness_was_known'] is True
+          assert d['original_wrong_full_pose_witness']['pull_cube:1760020']['actual_original_selected_index']==0
+          PY
