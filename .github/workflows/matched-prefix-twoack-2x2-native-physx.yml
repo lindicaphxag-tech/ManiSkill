@@ -1,0 +1,128 @@
+name: "Prospective identical prefix query-ablation frozen PPO64 / 576 PhysX native worlds"
+on:
+  push:
+    branches: [research/matched-prefix-twoack-new64-20261009]
+    paths:
+      - research/MATCHED_PREFIX_TWOACK_FROZEN_PPO64_PREOUTCOME_V1.json
+      - research/frozen_ppo_matched_prefix_twoack_2x2_physx.py
+      - research/run_matched_prefix_twoack_new64.py
+      - research/audit_matched_prefix_twoack_new64.py
+      - .github/workflows/matched-prefix-twoack-2x2-native-physx.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  freeze-identity-and-audit-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fail before physics if prereg, new 2x2 runner, or independent auditor has drifted
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/MATCHED_PREFIX_TWOACK_FROZEN_PPO64_PREOUTCOME_V1.json)" = c750f8022e1895f5af5d516405b2602474b5ef6d
+          test "$(git hash-object research/frozen_ppo_mixed_ack_truth_physx.py)" = 36e672446407435e656cbf8aba6fa2de7c1e9d0e
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          test "$(git hash-object research/frozen_ppo_matched_prefix_twoack_2x2_physx.py)" = 1ae3be647a55606560ab9d95295e6cb8c6c61310
+          test "$(git hash-object research/run_matched_prefix_twoack_new64.py)" = fd85e4ce3c8ef4fec30d1658ef649b0a09388a8c
+          test "$(git hash-object research/audit_matched_prefix_twoack_new64.py)" = eef7dbdcf859b36e0df037c54b1f2fc14e08fe3b
+          python -m py_compile research/frozen_ppo_matched_prefix_twoack_2x2_physx.py research/run_matched_prefix_twoack_new64.py research/audit_matched_prefix_twoack_new64.py
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+          from research.run_matched_prefix_twoack_new64 import select,assert_preoutcome,truth
+          assert_preoutcome()
+          for task in ('pull_cube','stack_cube'):
+              seeds=[x for c in range(4) for x in select(task,c)]
+              assert len(seeds)==32 and len(set(seeds))==32
+              assert set(seeds).isdisjoint(range(1280001,1290033))
+              assert {truth(x) for x in seeds}=={
+                  ('applied','applied'),('applied','held'),
+                  ('held','applied'),('held','held')}
+              assert all(sum(truth(x)==pair for x in seeds)==8 for pair in {
+                  ('applied','applied'),('applied','held'),
+                  ('held','applied'),('held','held')})
+          src=Path('research/frozen_ppo_matched_prefix_twoack_2x2_physx.py').read_text()
+          tree=ast.parse(src)
+          assert 'step==4' in src and 'step==5' in src
+          assert 'shared_neutral_probe_step4' in src
+          assert 't3_physically_applied' in src
+          assert 'privileged_target_readback_decision_count' in src
+          print('PREOUTCOME_MATCHED_PREFIX_CAUSAL_GATE_GREEN')
+          PY
+  nine-native-worlds-per-episode:
+    needs: freeze-identity-and-audit-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+      PYTHONUNBUFFERED: '1'
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install unchanged frozen PPO runtime and actual ManiSkill CPU PhysX
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Freeze machine-readable execution environment
+        run: |
+          git rev-parse HEAD > ORIGINAL_SOURCE_COMMIT.txt
+          python -m pip freeze --all > ORIGINAL_RUNTIME_PACKAGES.txt
+      - name: Physically execute and independently audit 8 prospective seeds times 9 controller worlds
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_matched_prefix_twoack_new64.py --task "$ABI_TASK" --chunk "$CHUNK" 2>&1 | tee original_physics_stdout.log
+          test -s "pairedprefix_${ABI_TASK}_chunk${CHUNK}_original8.json"
+          test -s "pairedprefix_${ABI_TASK}_chunk${CHUNK}_audit.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-matched-prefix-${{ matrix.task }}-chunk${{ matrix.chunk }}
+          path: |
+            pairedprefix_*_original8.json
+            pairedprefix_*_audit.json
+            original_physics_stdout.log
+            ORIGINAL_SOURCE_COMMIT.txt
+            ORIGINAL_RUNTIME_PACKAGES.txt
+          retention-days: 90
+  independent-original-all-64-audit:
+    needs: nine-native-worlds-per-episode
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-matched-prefix-*
+          merge-multiple: true
+          path: /tmp/original_matched_prefix_2x2
+      - name: Complete source-hash, episode, all-four-truth and all-negative audit
+        run: |
+          set -euo pipefail
+          python -m research.audit_matched_prefix_twoack_new64 --source-dir /tmp/original_matched_prefix_2x2 --output /tmp/full_matched_prefix_original64_audit.json
+          test -s /tmp/full_matched_prefix_original64_audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ORIGINAL_matched_prefix_2x2_64_576_PhysX_all_negative_outcomes
+          path: |
+            /tmp/original_matched_prefix_2x2/*.json
+            /tmp/full_matched_prefix_original64_audit.json
+          retention-days: 90
