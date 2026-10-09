@@ -1,0 +1,104 @@
+name: Permanently recover FIRST original anchored-SE3 128 physical worlds after audit dependency failure
+on:
+  push:
+    branches: [evidence/anchor-first128-first-physics-20261010]
+    paths: ['.github/workflows/permanent-first128-anchor-recovery.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  preserve-and-recompute-first-attempt-no-new-physics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    permissions:
+      contents: write
+      actions: read
+    env:
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Lock the actual FIRST physical run and preserve the audit dependency failure
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo=lindicaphxag-tech/ManiSkill
+          test "$(gh api repos/$repo/actions/runs/37993147659 --jq .head_sha)" = da75e908038f6315785ffd840a0938053d3b8ab8
+          test "$(gh api repos/$repo/actions/runs/37993147659 --jq .run_attempt)" = 1
+          test "$(gh api repos/$repo/actions/runs/37993147659 --jq .conclusion)" = failure
+          for job in 114032240580 114032333340 114032333350 114032333434 114032333462; do
+            test "$(gh api repos/$repo/actions/jobs/$job --jq .conclusion)" = success
+          done
+          test "$(gh api repos/$repo/actions/jobs/114033214275 --jq .conclusion)" = failure
+          test "$(git hash-object research/PHYSX_ANCHOR_REPAIR_FIRST128_PREOUTCOME_V1.json)" = 2e78bf28f746d9ffa95ca7cf7a8b99646614d8cd
+          test "$(git hash-object research/physx_target_anchor_repair_first128.py)" = bac7c1517adbe9fec97a75f6823592e753065a0a
+          echo 'FIRST RUN SOURCE HELD. FOUR PHYSICS SHARDS SUCCESS. AGGREGATE FAILED IMPORT GYMNASIUM.'
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 37993147659
+          github-token: ${{ github.token }}
+          pattern: anchor-first128-*
+          path: /tmp/first128_original
+          merge-multiple: true
+      - name: Install missing dependency and re-audit source without stepping any physics
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(find /tmp/first128_original -name 'anchor_repair_*.json' | wc -l)" -eq 4
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e . huggingface_hub
+          python -m research.physx_target_anchor_repair_first128 --mode audit --folder /tmp/first128_original --output /tmp/FIRST128_SOURCE_RECOMPUTATION.json | tee /tmp/FIRST128_AUDIT.log
+          python - <<'PY'
+          import json
+          j=json.load(open('/tmp/FIRST128_SOURCE_RECOMPUTATION.json'))
+          assert j['original_physx_worlds']==128
+          assert j['independent_seed_clusters']==16
+          assert j['same_repair_prefix_matched_seed_truth_probe_groups']==64
+          assert j['real_task_success_not_established'] is True
+          print('PASS FIRST-RUN ORIGINAL SOURCE: FULL ACTUAL 128 PHYSX WORLDS VERIFIED')
+          PY
+      - name: Preserve original JSON, raw logs, environments, exactly recomputed audit and SHA256
+        shell: bash
+        run: |
+          set -euo pipefail
+          dst=research/frozen_policy_transfer/evidence/anchor_first128_first_physics_20261010
+          mkdir -p "$dst"
+          cp -a /tmp/first128_original/. "$dst/"
+          cp /tmp/FIRST128_SOURCE_RECOMPUTATION.json "$dst/ORIGINAL_FIRST_RUN_POST_DEPENDENCY_SOURCE_AUDIT.json"
+          cp /tmp/FIRST128_AUDIT.log "$dst/FIRST_RUN_REAUDIT_CONSOLE.log"
+          cat > "$dst/README.md" <<'EOF'
+          # First genuinely executed 128 full-SE3 anchored repair PhysX worlds
+          Genuine first-run source: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37993147659
+          Source SHA: da75e908038f6315785ffd840a0938053d3b8ab8, run attempt 1.
+          All four physical execution shards passed. Original aggregate audit failed because the
+          otherwise unused source-only aggregation job lacked the gymnasium import dependency.
+          No physics was rerun to conceal that failure. An independent CI recovery installs the
+          missing dependency and checks the four ORIGINAL run's full raw data and matched prefix.
+          Each of 16 independent robot/reset seeds is repeated in eight correlated
+          ACK truth x probe x repair arm conditions = 128 physically executed worlds.
+          Both repair methods receive the same oracle ACK truth; this tests a fixed t1
+          commanded-target full-SE3 repair semantic, NOT online recognition, policy
+          task success, safe robot certification, external replication or upstream merge.
+          Original source, log and environment files are byte-preserved; original
+          JSONs plus regenerated review are accompanied by exact SHA256 checksums.
+          EOF
+          if ! grep -Fq "$dst/** -text" .gitattributes; then printf '\n%s/** -text\n' "$dst" >> .gitattributes; fi
+          (cd "$dst" && find . -type f ! -name FIRST128_SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > FIRST128_SHA256SUMS)
+          (cd "$dst" && sha256sum -c FIRST128_SHA256SUMS)
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .gitattributes "$dst"
+          if git diff --cached --quiet; then echo 'Source already archived'; exit 0; fi
+          git commit -m 'evidence: permanently preserve FIRST 128 original physically executed target-anchor worlds and failed audit provenance'
+          for attempt in 1 2 3; do
+            git fetch origin "${{ github.ref_name }}"
+            if ! git rebase "origin/${{ github.ref_name }}"; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:"${{ github.ref_name }}"; then exit 0; fi
+          done
+          exit 1
