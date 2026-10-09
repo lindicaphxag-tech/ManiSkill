@@ -7,7 +7,7 @@ from __future__ import annotations
 import argparse, hashlib, json
 from collections import defaultdict
 from pathlib import Path
-from research.run_matched_prefix_pairedprefix_new64 import (
+from research.run_matched_prefix_twoack_new64 import (
     PUBLIC, STRONG, FIXED, HELD, select, validate, assert_preoutcome, truth,
 )
 
