@@ -71,7 +71,7 @@ def read_verified_sources(folder):
                           "strong":q["success_once"][strong],
                           "fixed":q["success_once"][FIXED]}
                     })
-    if len(records)!=128:return ValueError("Original episodes missing")
+    if len(records)!=128:raise ValueError("Original episodes missing")
     summary={}
     for task in TASKS:
         for truth in range(4):
