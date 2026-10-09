@@ -46,7 +46,7 @@ NAMES=(
     "fault_always_single_privileged_query"
 )
 BELIEF_ARMS=NAMES[3:6]
-PROTO="research/COMPOUND_ACK_MULTI_HYPOTHESIS_PRECOMMIT_V1.md"
+PROTO="research/COMPOUND_ACK_MULTI_HYPOTHESIS_PRECOMMIT_V2.md"
 
 
 def copy_target(pose):
