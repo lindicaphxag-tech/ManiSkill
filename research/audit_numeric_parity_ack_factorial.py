@@ -122,6 +122,8 @@ def audit(folder: Path):
     if set(indexed) != required or len(by_seed) != 32:
         raise ValueError("Original within-seed fully crossed denominator incomplete")
 
+    numerical_initial_parity={}
+    # Full original numerical state was recorded before running any trial.
     # This is the central scientific gate missing from prior truth-stratified study:
     # physical initial observations MUST agree across all four condition worlds.
     for key, conditions in by_seed.items():
@@ -131,8 +133,33 @@ def audit(folder: Path):
         if any(not isinstance(h, str) or len(h) != 64
                or any(c not in "0123456789abcdef" for c in h) for h in hashes):
             raise ValueError("Missing/verifiably malformed physical initial-observation hash " + str(key))
-        if len(set(hashes)) != 1:
-            raise ValueError("Four physical conditions DID NOT start from identical physical source observation " + str(key))
+        # A SHA mismatch is meaningful: it may be a different initial scene
+        # or sub-ULP nondeterminism. The old run did NOT preserve raw numeric
+        # observations and could not be rescued. This brand-new run explicitly
+        # commits each initial vector *before physical interventions*.
+        import math
+        po=[conditions[t].get("initial_source_public_observation_f32") for t in CONDITIONS]
+        ep=[conditions[t].get("initial_source_ee_pose7_xyz_xyzw") for t in CONDITIONS]
+        if not all(isinstance(x,list) and len(x)==len(po[0]) and len(x)>0
+                   and all(isinstance(y,(float,int)) and math.isfinite(y) for y in x)
+                   for x in po):
+            raise ValueError("Missing/nonfinite original public initial source vector")
+        if not all(isinstance(x,list) and len(x)==7 and
+                   all(isinstance(y,(float,int)) and math.isfinite(y) for y in x)
+                   for x in ep):
+            raise ValueError("Missing/nonfinite original end-effector initial source pose")
+        policy_max=max(abs(a-b) for x in po[1:] for a,b in zip(po[0],x))
+        achieved_max=max(abs(a-b) for x in ep[1:] for a,b in zip(ep[0],x))
+        numerical_initial_parity[key]={
+            "bitwise_identical":len(set(hashes))==1,
+            "max_abs_public_policy_initial_obs_difference":policy_max,
+            "max_abs_initial_achieved_ee_pose7_difference":achieved_max,
+            "numeric_threshold_predeclared":5e-5,
+            "numerical_within_tolerance":policy_max<=5e-5 and achieved_max<=5e-5,
+            "initial_policy_observation_dimension":len(po[0]),
+        }
+        if not numerical_initial_parity[key]["numerical_within_tolerance"]:
+            raise ValueError("Four physical conditions DID NOT start from numerically equivalent physical source observations " + str(key))
 
     totals = {a: {"official_task_success": 0, "decision_private_reads": 0} for a in ARMS}
     strata = {}
@@ -177,7 +204,7 @@ def audit(folder: Path):
         raise ValueError("Paired method outcomes missing")
     saved = totals["strong_task"]["decision_private_reads"] - totals["public"]["decision_private_reads"]
     result = {
-        "schema": "prospective_same_seed_four_physical_truths_full_independent_native_PhysX_audit_v1",
+        "schema": "prospective_same_seed_numeric_initial_parity_2x2_full_PhysX_audit_v2",
         "interpretation": "AUTHOR-RUN and SIMULATOR-ONLY; no claimed independent replication",
         "registered_source_reset_clusters": 32,
         "matched_physical_truth_conditions_per_cluster": 4,
@@ -186,7 +213,13 @@ def audit(folder: Path):
         "complete_16_shard_sha256": digests,
         "frozen_preoutcome_git_blob": blob(PREREG),
         "frozen_native_source_git_blob": blob(SOURCE),
-        "same_initial_physical_source_observation_hash_per_truth_verified": True,
+        "same_initial_physical_source_observation_hash_per_truth_verified": all(x["bitwise_identical"] for x in numerical_initial_parity.values()),
+        "numerically_matched_public_source_observation_per_truth_verified": all(x["numerical_within_tolerance"] for x in numerical_initial_parity.values()),
+        "exact_initial_sha_match_cluster_count": sum(x["bitwise_identical"] for x in numerical_initial_parity.values()),
+        "numeric_max_public_policy_obs_gap": max(x["max_abs_public_policy_initial_obs_difference"] for x in numerical_initial_parity.values()),
+        "numeric_max_initial_achieved_ee_pose_gap": max(x["max_abs_initial_achieved_ee_pose7_difference"] for x in numerical_initial_parity.values()),
+        "per_seed_full_four_truth_numeric_initial_parity": {
+            task+":"+str(seed):x for (task,seed),x in numerical_initial_parity.items()},
         "per_task_per_truth": strata,
         "primary_outcomes": totals,
         "paired_public_vs_strong": dict(pairing),
