@@ -1,0 +1,30 @@
+name: Original 64-case exact negative dominance certificate (NO physics replay)
+on:
+  push:
+    branches: [evidence/dual065-negative-native64-20261009]
+    paths:
+      - research/source_check_dual065_pareto_negative.py
+      - .github/workflows/source-pareto-dominance-dual065-negative.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-source-effect-with-every-failed-and-censored-trial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Prove precommitted native controller source unchanged
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/DUAL_EVIDENCE_ACK_NEW64_PREOUTCOME_V1.json)" = c2c259ba7bb6beb02bf1ad8e9cdc45eeef5941ef
+          test "$(git hash-object research/frozen_ppo_dual_evidence_model_trust_physx.py)" = b97b6d1ed6a710e026f8412eb6286de53ff9bcb6
+          python -m research.source_check_dual065_pareto_negative | tee original_dual065_negative_pareto.jsonl
+      - uses: actions/upload-artifact@v4
+        with:
+          name: genuine_dual065_negative_original64_source_dominance
+          path: original_dual065_negative_pareto.jsonl
+          retention-days: 90
