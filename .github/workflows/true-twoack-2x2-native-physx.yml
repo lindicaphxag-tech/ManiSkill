@@ -1,0 +1,128 @@
+name: "Prospective frozen PPO two physical unknown ACKs 2x2: 64 resets / 576 real PhysX worlds"
+on:
+  push:
+    branches: [research/true-twoack-2x2-new64-20261009]
+    paths:
+      - research/TWO_UNKNOWN_ACK_TRUE_2X2_PPO64_PREOUTCOME_V1.json
+      - research/frozen_ppo_true_twoack_2x2_physx.py
+      - research/run_true_two_ack_2x2_new64.py
+      - research/audit_true_two_ack_2x2_new64.py
+      - .github/workflows/true-twoack-2x2-native-physx.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  freeze-identity-and-audit-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fail before physics if prereg, new 2x2 runner, or independent auditor has drifted
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/TWO_UNKNOWN_ACK_TRUE_2X2_PPO64_PREOUTCOME_V1.json)" = 21465042519333ae948274a7f5ef02014efc6d19
+          test "$(git hash-object research/frozen_ppo_mixed_ack_truth_physx.py)" = 36e672446407435e656cbf8aba6fa2de7c1e9d0e
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          test "$(git hash-object research/frozen_ppo_true_twoack_2x2_physx.py)" = d9f1c435e6ad58ea4dc03189e51d532ac15ed351
+          test "$(git hash-object research/run_true_two_ack_2x2_new64.py)" = d99b3a884a99bf89b485ab18f25cf10f037e8446
+          test "$(git hash-object research/audit_true_two_ack_2x2_new64.py)" = 32fb45e784fd953e36043c639ba8d4947b4e915f
+          python -m py_compile research/frozen_ppo_true_twoack_2x2_physx.py research/run_true_two_ack_2x2_new64.py research/audit_true_two_ack_2x2_new64.py
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+          from research.run_true_two_ack_2x2_new64 import select,assert_preoutcome,truth
+          assert_preoutcome()
+          for task in ('pull_cube','stack_cube'):
+              seeds=[x for c in range(4) for x in select(task,c)]
+              assert len(seeds)==32 and len(set(seeds))==32
+              assert set(seeds).isdisjoint(range(1180001,1190033))
+              assert {truth(x) for x in seeds}=={
+                  ('applied','applied'),('applied','held'),
+                  ('held','applied'),('held','held')}
+              assert all(sum(truth(x)==pair for x in seeds)==8 for pair in {
+                  ('applied','applied'),('applied','held'),
+                  ('held','applied'),('held','held')})
+          src=Path('research/frozen_ppo_true_twoack_2x2_physx.py').read_text()
+          tree=ast.parse(src)
+          assert 'step==4' in src and 'step==5' in src
+          assert 'shared_neutral_probe_step4' in src
+          assert 't3_physically_applied' in src
+          assert 'privileged_target_readback_decision_count' in src
+          print('PREOUTCOME_REAL_2X2_SOURCE_SEEDS_AND_STATIC_GATES_OK')
+          PY
+  nine-native-worlds-per-episode:
+    needs: freeze-identity-and-audit-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+      PYTHONUNBUFFERED: '1'
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install unchanged frozen PPO runtime and actual ManiSkill CPU PhysX
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Freeze machine-readable execution environment
+        run: |
+          git rev-parse HEAD > ORIGINAL_SOURCE_COMMIT.txt
+          python -m pip freeze --all > ORIGINAL_RUNTIME_PACKAGES.txt
+      - name: Physically execute and independently audit 8 prospective seeds times 9 controller worlds
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_true_two_ack_2x2_new64.py --task "$ABI_TASK" --chunk "$CHUNK" 2>&1 | tee original_physics_stdout.log
+          test -s "twoack_${ABI_TASK}_chunk${CHUNK}_original8.json"
+          test -s "twoack_${ABI_TASK}_chunk${CHUNK}_audit.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-2x2-${{ matrix.task }}-chunk${{ matrix.chunk }}
+          path: |
+            twoack_*_original8.json
+            twoack_*_audit.json
+            original_physics_stdout.log
+            ORIGINAL_SOURCE_COMMIT.txt
+            ORIGINAL_RUNTIME_PACKAGES.txt
+          retention-days: 90
+  independent-original-all-64-audit:
+    needs: nine-native-worlds-per-episode
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-2x2-*
+          merge-multiple: true
+          path: /tmp/original_twoack_2x2
+      - name: Complete source-hash, episode, all-four-truth and all-negative audit
+        run: |
+          set -euo pipefail
+          python -m research.audit_true_two_ack_2x2_new64 --source-dir /tmp/original_twoack_2x2 --output /tmp/full_2x2_original64_independent_audit.json
+          test -s /tmp/full_2x2_original64_independent_audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ORIGINAL_true_2x2_64_576_PhysX_all_negative_outcomes
+          path: |
+            /tmp/original_twoack_2x2/*.json
+            /tmp/full_2x2_original64_independent_audit.json
+          retention-days: 90
