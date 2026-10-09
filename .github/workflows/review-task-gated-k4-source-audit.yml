@@ -1,0 +1,36 @@
+name: Reviewer audit task-gated K4 original source anti-leakage
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'research/audit_task_gated_multi_ack_new64.py'
+      - 'tests/test_task_gated_multi_ack_source_audit.py'
+      - '.github/workflows/review-task-gated-k4-source-audit.yml'
+  pull_request:
+    paths:
+      - 'research/audit_task_gated_multi_ack_new64.py'
+      - 'tests/test_task_gated_multi_ack_source_audit.py'
+      - '.github/workflows/review-task-gated-k4-source-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  zero-dependency-adversarial-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Validate independent output auditor syntax (no simulator)
+        run: |
+          python -m py_compile research/audit_task_gated_multi_ack_new64.py
+          python -m unittest discover -s tests -p test_task_gated_multi_ack_source_audit.py -v
