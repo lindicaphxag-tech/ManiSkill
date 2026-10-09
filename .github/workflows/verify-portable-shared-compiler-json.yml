@@ -1,0 +1,33 @@
+name: Strict JSON compatibility for source-verified original PhysX 64
+on:
+  push:
+    branches: [evidence/shared-compiler-causal-original64-20261009]
+    paths:
+      - research/strict_export_shared_compiler_audit.py
+      - research/frozen_policy_transfer/derived/shared_compiler_causal64_strict_json.json
+      - .github/workflows/verify-portable-shared-compiler-json.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  portable-original-source-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify exact authentic original bytes, 64 episodes, matched compilers, portable strict JSON
+        run: |
+          set -euo pipefail
+          python -m py_compile research/strict_export_shared_compiler_audit.py
+          python -m research.strict_export_shared_compiler_audit
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          source=Path("research/frozen_policy_transfer/derived/shared_compiler_causal64_strict_json.json")
+          data=json.loads(source.read_text(),parse_constant=lambda c: (_ for _ in ()).throw(ValueError("Bad strict JSON constant "+c)))
+          assert data["unique_source_reset_states"]==64
+          print("PORTABLE_STANDARD_JSON_PARSER_PASS",len(data["all_episodes"]))
+          PY
