@@ -16,7 +16,7 @@ Frozen robot policies can be transferred between end-effector interfaces only if
 
 ## 1. Problem: execution truth is neither action syntax nor observable tool pose
 
-The third-party source PPO policy \(\pi\) issues an achieved-relative end-effector action \(a_t\) based on the observation \(o_t\). The destination's native \(pd\\_ee\\_target\\_delta\\_pose\) controller instead maintains a *previous commanded target* \(M_t\). With an uncertain execution indicator \(z_t\), the native target update can be written
+The third-party source PPO policy \(\pi\) issues an achieved-relative end-effector action \(a_t\) based on the observation \(o_t\). The destination's native `pd_ee_target_delta_pose` controller instead maintains a *previous commanded target* \(M_t\). With an uncertain execution indicator \(z_t\), the native target update can be written
 
 \[
 M_{t+1}=
@@ -32,18 +32,18 @@ The question addressed here is deliberately narrower than discovering arbitrary 
 
 ## 2. Method: identify a complete discrete history, not independent pose coordinates
 
-Let \(H_t=\{h_1,\\ldots,h_K\}\) denote the complete set of possible native commanded-target poses computed from documented initial-state evidence and acknowledged/unknown native actions. Each \(h_i\) contains **both** XYZ target position and a quaternion target orientation. No simulator-private actual target getter enters its construction.
+Let \(H_t=\{h_1,\ldots,h_K\}\) denote the complete set of possible native commanded-target poses computed from documented initial-state evidence and acknowledged/unknown native actions. Each \(h_i\) contains **both** XYZ target position and a quaternion target orientation. No simulator-private actual target getter enters its construction.
 
 A known-delivered neutral native target-delta is executed at the second unknown-ACK fault step. Let \(x\) and \(y\) be the public achieved XYZ positions immediately before and after that *actual* physical step. The frozen response model is
 
 \[
-y=x+\\alpha(M_i^{xyz}-x)+e,\\quad
-\\alpha\\in[0,1],\\qquad \\|e\\|_2\\le\\epsilon_{task}.
+y=x+\alpha(M_i^{xyz}-x)+e,\quad
+\alpha\in[0,1],\qquad \|e\|_2\le\epsilon_{task}.
 \]
 
-For each candidate history \(h_i\), compute the minimum Euclidean residual \(r_i\) between observed \(y\) and the complete interval of public positions predicted by \(h_i\). The task-specific empirical model tolerances were frozen from different historical PhysX seeds: \(\\epsilon_{Pull}=0.0069443\,m\) and \(\\epsilon_{Stack}=0.0071909\,m\). No test-set calibration or PPO updates are allowed.
+For each candidate history \(h_i\), compute the minimum Euclidean residual \(r_i\) between observed \(y\) and the complete interval of public positions predicted by \(h_i\). The task-specific empirical model tolerances were frozen from different historical PhysX seeds: \(\epsilon_{Pull}=0.0069443\,m\) and \(\epsilon_{Stack}=0.0071909\,m\). No test-set calibration or PPO updates are allowed.
 
-**Authorize the complete latent history index \(i^*\)** only when exactly one residual \(r_{i^*}\\le\\epsilon_{task}\), and **every** competing history has \(r_j>\\epsilon_{task}+0.002\,m\). The chosen history includes its own full target orientation. It is *not necessary* that all possible histories have identical orientations. This is a straightforward finite set-membership compatibility result, not a novel identifiability theorem: if two candidate public observation sets intersect, no position-only classifier can guarantee differentiation for a shared observation.
+**Authorize the complete latent history index \(i^*\)** only when exactly one residual \(r_{i^*}\le\epsilon_{task}\), and **every** competing history has \(r_j>\epsilon_{task}+0.002\,m\). The chosen history includes its own full target orientation. It is *not necessary* that all possible histories have identical orientations. This is a straightforward finite set-membership compatibility result, not a novel identifiability theorem: if two candidate public observation sets intersect, no position-only classifier can guarantee differentiation for a shared observation.
 
 If no unique history meets the predeclared test, the adapter reads the authoritative native target exactly once at step four and resynchronizes. Every actual native command remains subject to the existing 0.05m positional and 0.05rad orientation **commanded-setpoint** admission contract. An action may pass this contract without assuring trajectory tracking, safe contacts, or task completion.
 
@@ -55,7 +55,7 @@ Two histories with identical XYZ target positions but different target orientati
 
 ## 3. Prospective experiment: 64 frozen PPO reset states, 512 physical controller worlds
 
-The [protocol was fixed before new execution](../PPO_DISCRETE_HYPOTHESIS_NEW64_PREOUTCOME_V2.json) (Git blob \u0060b8c5205ca949720a2d39396c9f8c711e65d7982b\u0060), selecting PullCube reset seeds \u0060840001–840032\u0060 and StackCube \u0060850001–850032\u0060. Both original third-party released PPOs and their SHA-256 hashes were checked before physical rollout. The action interface is the real ManiSkill Panda controller, with source \u0060pd_ee_delta_pose\u0060 converted to destination \u0060pd_ee_target_delta_pose\u0060.
+The [protocol was fixed before new execution](../PPO_DISCRETE_HYPOTHESIS_NEW64_PREOUTCOME_V2.json) (Git blob `b8c5205ca949720a2d39396c9f8c711e65d7982b`), selecting PullCube reset seeds `840001–840032` and StackCube `850001–850032`. Both original third-party released PPOs and their SHA-256 hashes were checked before physical rollout. The action interface is the real ManiSkill Panda controller, with source `pd_ee_delta_pose` converted to destination `pd_ee_target_delta_pose`.
 
 In each of 64 new reset states we stepped **eight separate actual native PhysX controller-policy worlds** with the identical reset seed and relevant native fault pattern: no-fault source context, fully privileged oracle, optimistic unknown-ACK assumption, exact-or-refuse, bounded zero-query, geometry-triggered selective query, fixed step-four authoritative read, and the new public-identify-or-read controller. Actual native target holds occur at steps two and three, with gripper unchanged and missing ACK conveyed to the adapter. The test represents a **physical zero/hold injection**, not genuine network packet loss; 64 separate reset states are not 64 independently learned policies or robot embodiments.
 
@@ -89,7 +89,7 @@ The observer encountered the intended two physical native target holds on **64/6
 
 ### The necessary negative control
 
-Our previous **separately prospectively executed** 32-state task study required the rotation targets of *all competing hypotheses* to agree before permitting a position-only public witness. It produced **zero** confident identification, **24/32** real task successes with **32** privileged reads, compared with **24/32** successes and **26** reads for the strong task-aware comparator. All 32 true double native fault exposures were reached, so this is a genuine negative mechanism result rather than a failed injection campaign ([original 32-state raw evidence](../evidence/public_fourhistory_frozen_ppo_original32_780001_790016/)).
+Our previous **separately prospectively executed** 32-state task study required the rotation targets of *all competing hypotheses* to agree before permitting a position-only public witness. It produced **zero** confident identification, **24/32** real task successes with **32** privileged reads, compared with **24/32** successes and **26** reads for the strong task-aware comparator. All 32 true double native fault exposures were reached, so this is a genuine negative mechanism result rather than a failed injection campaign ([original 32-state raw evidence](evidence/public_fourhistory_frozen_ppo_original32_780001_790016/)).
 
 A **retrospective, outcome-exposed** diagnostic of those old 32 original motion trajectories revealed 12 unique complete-history indexes with no observed false labels, but **no improved controller was actually executed on that old population**. The new 64-state trial was frozen afterward, on different new seeds, before implementing and executing the improved full-hypothesis admission rule. This preserves the distinction between hypothesis development and prospective task validation.
 
@@ -104,10 +104,10 @@ In particular, 25 correct observed history labels are not proof that the probabi
 ## 6. Reproduction, negative evidence and external reviewer challenge
 
 - **Full new64 source-frozen actual physical experiment and 10-job independent audit:** https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37913661619
-- **Original source/data archive (17 original PhysX JSON and SHA256SUMS, when automated archival is complete):** [full new64 original source evidence](../evidence/discrete_hypothesis_ppo_original64_840001_850032/)
-- **Fresh-run original protocol and physical controller source:** [PPO_DISCRETE_HYPOTHESIS_NEW64_PREOUTCOME_V2.json](../PPO_DISCRETE_HYPOTHESIS_NEW64_PREOUTCOME_V2.json), [frozen_ppo_discrete_history_v2_physx.py](../../frozen_ppo_discrete_history_v2_physx.py), [independent source auditor](../../audit_public_discrete_hypothesis_new64.py).
-- **Earlier correctly preserved negative experiment:** [original new32 source](../evidence/public_fourhistory_frozen_ppo_original32_780001_790016/), [registered initial 32-state experiment](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37912591209), [reproducible retrospective pilot (NOT PhysX intervention)](../../audit_development_old32_full_history_index.py).
-- **External researcher-owned fork entry:** [independent eight-reset PhysX workflow](../../../.github/workflows/outside-discrete-history-v2-physx.yml) and [source-locked runner](../../outside_discrete_history_v2_replication.py). This workflow being available is **not** an external laboratory replication.
+- **Original source/data archive (17 original PhysX JSON and SHA256SUMS, when automated archival is complete):** [full new64 original source evidence](evidence/discrete_hypothesis_ppo_original64_840001_850032/)
+- **Fresh-run original protocol and physical controller source:** [PPO_DISCRETE_HYPOTHESIS_NEW64_PREOUTCOME_V2.json](../PPO_DISCRETE_HYPOTHESIS_NEW64_PREOUTCOME_V2.json), [frozen_ppo_discrete_history_v2_physx.py](../frozen_ppo_discrete_history_v2_physx.py), [independent source auditor](../audit_public_discrete_hypothesis_new64.py).
+- **Earlier correctly preserved negative experiment:** [original new32 source](evidence/public_fourhistory_frozen_ppo_original32_780001_790016/), [registered initial 32-state experiment](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37912591209), [reproducible retrospective pilot (NOT PhysX intervention)](../audit_development_old32_full_history_index.py).
+- **External researcher-owned fork entry:** [independent eight-reset PhysX workflow](../../.github/workflows/outside-discrete-history-v2-physx.yml) and [source-locked runner](../outside_discrete_history_v2_replication.py). This workflow being available is **not** an external laboratory replication.
 
 **Current conclusion.** A complete finite controller-execution history can, in this tested fault regime, be conditionally reconstructed from ordinary public tool motion even when the competing histories have different orientations. Selectively replacing a private commanded-target read with this evidence saved actual privileged reads without changing observed frozen PPO task success on an independent, before-outcome 64-state physical simulation cohort. The credible next step is not another prettier self-fork merge, but a matched-information, independently operated fault-domain transfer study.
 
