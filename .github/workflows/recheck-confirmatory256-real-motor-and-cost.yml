@@ -1,0 +1,67 @@
+name: "Confirmatory 2304-PhysX actual six-axis motor confounds and true public probe costs"
+on:
+  push:
+    branches: [research/confirmatory256-original-source-audit-20261009]
+    paths:
+      - research/audit_confirmatory256_real_motor_action_probe_cost.py
+      - .github/workflows/recheck-confirmatory256-real-motor-and-cost.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  all_256_physically_stepped_real_motor_truth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: true}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Independently verify all original physically executed source bytes, action and sensor accounting
+        run: |
+          set -euo pipefail
+          root=research/frozen_policy_transfer/evidence/confirmatory_fourtruth_original256_3210001_3220032
+          (cd "$root" && sha256sum -c SHA256SUMS)
+          python -m py_compile research/audit_confirmatory256_real_motor_action_probe_cost.py
+          dir=research/frozen_policy_transfer/evidence/confirmatory256_native_actual_motor_action_cost_audit
+          mkdir -p "$dir"
+          python -m research.audit_confirmatory256_real_motor_action_probe_cost \
+            --source-dir "$root" \
+            --output "$dir/ACTUAL_ORIGINAL256_PHYSX_NATIVE_T2_T3_PROBE_COST_AUDIT.json"
+          python - <<'PY'
+          import json
+          f='research/frozen_policy_transfer/evidence/confirmatory256_native_actual_motor_action_cost_audit/ACTUAL_ORIGINAL256_PHYSX_NATIVE_T2_T3_PROBE_COST_AUDIT.json'
+          x=json.load(open(f))
+          assert x['original_actual_seed_clusters']==64
+          assert x['actual_source_truth_cells']==256
+          assert len(x['original_per_condition'])==256
+          assert all(0<=v<=d<=256 for k,v in x['native_dispatched_command_identical_counts'].items()
+                     for d in [x['physical_action_parity_eligible_denominators'][k]])
+          assert x['public_extra_achieved_xyz_sample_events']==2*x['real_t4_probe_receipts_by_method']['public']
+          assert x['all_three_main_controllers_identical_physically_stepped_neutral_probe']<=256
+          print('CONFIRMATORY_256_TRUE_PHYSX_COST_ORIGINAL_MOTOR_SOURCE_AUDIT_PASS',json.dumps({
+            'native_action_matched':x['native_dispatched_command_identical_counts'],
+            'eligible':x['physical_action_parity_eligible_denominators'],
+            'probe_receipts':x['real_t4_probe_receipts_by_method'],
+            'achieved_xyz_samples':x['public_extra_achieved_xyz_sample_events']
+          },sort_keys=True))
+          PY
+          cd "$dir"
+          sha256sum ACTUAL_ORIGINAL256_PHYSX_NATIVE_T2_T3_PROBE_COST_AUDIT.json > SHA256SUMS
+          cat > README.md <<'EOF'
+          # Original motor dispatch vs information acquisition in 64-cluster confirmatory real PhysX
+
+          This forensic experiment **does not** rerun robot physics. It first checks the permanent SHA256 digest manifest of the original **256 task cells x 9 physically stepped controller worlds = 2304 PhysX worlds**, with all 32 physical shards from [original run 37934425888](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37934425888). Its original full audit failed ONLY because the top-level workflow called the old 2-chunk instead of new 4-chunk scorer. The independent complete ORIGINAL source re-audit [37936258502](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37936258502) passed after calling the unchanged registered four-chunk scorer and permanently preserved all original bytes.
+
+          This report verifies all actual t2 and t3 six-dimensional arm commands, distinguishing command mismatches from unexposed early refusals, and records exact physically delivered t4 neutral probes and charged public achieved XYZ samples. It tests a distinct scientific assumption: four-truth same-initial-state comparability does not imply **identical actual command prefix between distinct treatment arms**. The confirmatory 221/256 public vs 202/256 task-aware success contrast is an end-to-end treatment result, not a pure information-only causal treatment, unless command prefix matches are verified. The older 64-state same-postquery-compiler matched-physics information treatment isolates the narrower information-only effect.
+
+          No accepted paper, true packet loss, policy success noninferiority, hardware safety, VLA recovery or outside research-group physical reproduction can be inferred from this author-run source-only audit.
+          EOF
+          cd -
+          git add "$dir"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if ! git diff --cached --quiet; then
+            git commit -m "evidence: quantify physically dispatched 6D motor action and public probe budget across all 256 confirmatory cells"
+            git push origin HEAD:research/confirmatory256-original-source-audit-20261009
+          fi
