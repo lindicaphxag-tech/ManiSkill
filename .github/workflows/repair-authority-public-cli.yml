@@ -1,0 +1,42 @@
+name: Standalone JSON repair effect certificate third-party interface
+on:
+  push:
+    branches: [research/repair-effect-observability-certificate-20261010]
+    paths:
+      - research/repair_authority_cli.py
+      - research/fixtures/authority_*.json
+      - tests/test_repair_authority_cli.py
+      - .github/workflows/repair-authority-public-cli.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-public-json-replay:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ['3.11', '3.13']
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Validate source-only no-GPU and no extra Python dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile research/repair_authority_cli.py tests/test_repair_authority_cli.py
+          python -m unittest discover -s tests -p test_repair_authority_cli.py -v
+          python -m research.repair_authority_cli --mode synthesize --contract research/fixtures/authority_cheap_discriminating_probe.json --output /tmp/user_generated_certificate.json
+          python -m research.repair_authority_cli --mode verify --contract research/fixtures/authority_cheap_discriminating_probe.json --certificate /tmp/user_generated_certificate.json
+          python -m research.repair_authority_cli --mode synthesize --contract research/fixtures/authority_aliased_getter.json --output /tmp/aliased_getter_certificate.json
+          python - <<'PY'
+          import json
+          a=json.load(open('/tmp/aliased_getter_certificate.json'))
+          assert a['root']['kind']=='halt'
+          assert a['minimax_cost']==10
+          print('PARTIAL_GETTER_WON_NOT_FAKE_AUTHORITY')
+          PY
