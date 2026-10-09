@@ -213,50 +213,50 @@ def trial(policy,seed):
                         "is_extra_common_physical_action":True,
                         "audit_only_native_target_unchanged":prior is not None,
                         "public_before_after_xyz_used_by_policy":n==PUBLIC_ARM}
-                if n==PUBLIC_ARM and step==4:
-                    ev=result["public_t4_evidence"]
-                    after=np.asarray(arm.ee_pose_at_base.p.detach().cpu(),
-                                     dtype=float).reshape(-1,3)[0]
-                    before=np.asarray(ev["before_xyz"],dtype=float)
-                    ev["after_xyz"]=after.tolist()
-                    result["public_motion_observation_cost_samples"][n]+=1
-                    hyps=tuple(beliefs[n].hypotheses)
-                    eps=EPSILON_BY_TASK[TASK]
-                    ev["physical_candidate_count"]=len(hyps)
-                    ev["prior_training_epsilon_m"]=eps
-                    ev["candidate_residuals_m"]=[
-                        _segment_min_distance(before,after,np.asarray(h.position))[0]
-                        for h in hyps]
-                    ev["accepted_position_indices"]=[
-                        i for i,d in enumerate(ev["candidate_residuals_m"])
-                        if d<=eps+1e-12]
-                    # Position alone cannot eliminate a distinct orientation-only
-                    # latent history when the actuator and task also use orientation.
-                    rots=[Rotation.from_quat(h.quaternion_xyzw) for h in hyps]
-                    ev["max_hypothetical_rotation_spread_rad"]=max(
-                        (rots[i].inv()*rots[j]).magnitude()
-                        for i in range(len(rots)) for j in range(i+1,len(rots))
-                    ) if len(rots)>1 else 0.0
-                    winners=ev["accepted_position_indices"]
-                    ev["authorized"]=bool(len(winners)==1 and
-                        all(d>eps+.002 for i,d in enumerate(ev["candidate_residuals_m"])
-                            if i!=winners[0]))
-                    ev["selected_candidate_index"]=winners[0] if ev["authorized"] else None
-                    ev["failure_reason"]=("unique_complete_history_by_public_position_witness"
-                        if ev["authorized"] else "ambiguous_or_empirical_model_invalid")
-                    # A private target getter is permitted AFTER physical actuation
-                    # FOR AUDIT ONLY. It MUST NOT enter any decision-time branch.
-                    truth=privileged_target(arm)
-                    errors=[audit_pose_error(truth,h) for h in hyps]
-                    ev["after_physics_audit_pose_errors"]=errors
-                    ev["audit_only_true_candidate_indices"]=[
-                        i for i,(pos,rot) in enumerate(errors)
-                        if pos<=1e-4 and rot<=1e-3]
-                    ev["wrong_confident"]=bool(
-                        ev["authorized"] and winners[0] not in
-                        ev["audit_only_true_candidate_indices"])
-                    ev["audit_only_hidden_target_was_NOT_decision_input"]=True
-                    ev["empirical_motion_envelope_NOT_physical_safety_certificate"]=True
+                    if n==PUBLIC_ARM and step==4:
+                        ev=result["public_t4_evidence"]
+                        after=np.asarray(arm.ee_pose_at_base.p.detach().cpu(),
+                                         dtype=float).reshape(-1,3)[0]
+                        before=np.asarray(ev["before_xyz"],dtype=float)
+                        ev["after_xyz"]=after.tolist()
+                        result["public_motion_observation_cost_samples"][n]+=1
+                        hyps=tuple(beliefs[n].hypotheses)
+                        eps=EPSILON_BY_TASK[TASK]
+                        ev["physical_candidate_count"]=len(hyps)
+                        ev["prior_training_epsilon_m"]=eps
+                        ev["candidate_residuals_m"]=[
+                            _segment_min_distance(before,after,np.asarray(h.position))[0]
+                            for h in hyps]
+                        ev["accepted_position_indices"]=[
+                            i for i,d in enumerate(ev["candidate_residuals_m"])
+                            if d<=eps+1e-12]
+                        # Position alone cannot eliminate a distinct orientation-only
+                        # latent history when the actuator and task also use orientation.
+                        rots=[Rotation.from_quat(h.quaternion_xyzw) for h in hyps]
+                        ev["max_hypothetical_rotation_spread_rad"]=max(
+                            (rots[i].inv()*rots[j]).magnitude()
+                            for i in range(len(rots)) for j in range(i+1,len(rots))
+                        ) if len(rots)>1 else 0.0
+                        winners=ev["accepted_position_indices"]
+                        ev["authorized"]=bool(len(winners)==1 and
+                            all(d>eps+.002 for i,d in enumerate(ev["candidate_residuals_m"])
+                                if i!=winners[0]))
+                        ev["selected_candidate_index"]=winners[0] if ev["authorized"] else None
+                        ev["failure_reason"]=("unique_complete_history_by_public_position_witness"
+                            if ev["authorized"] else "ambiguous_or_empirical_model_invalid")
+                        # A private target getter is permitted AFTER physical actuation
+                        # FOR AUDIT ONLY. It MUST NOT enter any decision-time branch.
+                        truth=privileged_target(arm)
+                        errors=[audit_pose_error(truth,h) for h in hyps]
+                        ev["after_physics_audit_pose_errors"]=errors
+                        ev["audit_only_true_candidate_indices"]=[
+                            i for i,(pos,rot) in enumerate(errors)
+                            if pos<=1e-4 and rot<=1e-3]
+                        ev["wrong_confident"]=bool(
+                            ev["authorized"] and winners[0] not in
+                            ev["audit_only_true_candidate_indices"])
+                        ev["audit_only_hidden_target_was_NOT_decision_input"]=True
+                        ev["empirical_motion_envelope_NOT_physical_safety_certificate"]=True
 
                     if info.get("success") is None:
                         raise RuntimeError("Missing official task success on real neutral step")
