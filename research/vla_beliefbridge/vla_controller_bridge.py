@@ -54,6 +54,7 @@ class VisualObservation:
     step: int
     achieved_position_m: tuple[float,float,float]
     achieved_quaternion_xyzw: tuple[float,float,float,float]
+    inference_generation: int|None = None  # Required for live async VLA results.
 
     def verify(self):
         p=np.asarray(self.achieved_position_m,dtype=float)
@@ -104,6 +105,12 @@ class RecedingHorizonVLAGateway:
         self.last_episode=None;self.last_step=-1
         self.observation=None;self.action=None;self.pending=None
         self._live_policy=None
+        self._generation=0
+
+    @property
+    def current_inference_generation(self):
+        """Tag the observation when asynchronous policy inference is REQUESTED."""
+        return self._generation
 
     def bind_live_policy(self,policy):
         """SmolVLA action chunk queue must be invalidatable on each command."""
@@ -120,12 +127,19 @@ class RecedingHorizonVLAGateway:
         self._live_policy.drop_queued_actions()
         if self._live_policy.count_queued_actions()!=0:
             raise ContractViolation("Stale LeRobot predicted action chunk persists after invalidation")
+        # Invalidate future completions started before a controller change.
+        self._generation+=1
 
     def observe(self,obs:VisualObservation,physical_action_chunk:Any,
                 *,model_checkpoint_sha:str,normalizer_sha:str):
         if self.pending is not None:
             raise ContractViolation("Native action pending acknowledgement")
         obs.verify()
+        if self._live_policy is not None and (
+            type(obs.inference_generation) is not int or
+            obs.inference_generation != self._generation
+        ):
+            raise ContractViolation("Stale asynchronous VLA completion from earlier controller belief generation")
         if (model_checkpoint_sha!=self.provenance.checkpoint_sha
                 or normalizer_sha!=self.provenance.normalization_sha):
             raise ContractViolation("Output model/normalization SHA mismatch")
