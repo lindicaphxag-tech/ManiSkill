@@ -103,6 +103,23 @@ class RecedingHorizonVLAGateway:
             raise ContractViolation("Invalid research tolerance budgets")
         self.last_episode=None;self.last_step=-1
         self.observation=None;self.action=None;self.pending=None
+        self._live_policy=None
+
+    def bind_live_policy(self,policy):
+        """SmolVLA action chunk queue must be invalidatable on each command."""
+        if not callable(getattr(policy,"drop_queued_actions",None)):
+            raise ContractViolation("Live VLA policy lacks a certified queue invalidation API")
+        if not callable(getattr(policy,"count_queued_actions",None)):
+            raise ContractViolation("Live VLA policy cannot prove its action queue was cleared")
+        self._live_policy=policy
+        self._flush_policy_queue()
+
+    def _flush_policy_queue(self):
+        if self._live_policy is None:
+            return  # Offline provenance/geometry tests only; no live policy attached.
+        self._live_policy.drop_queued_actions()
+        if self._live_policy.count_queued_actions()!=0:
+            raise ContractViolation("Stale LeRobot predicted action chunk persists after invalidation")
 
     def observe(self,obs:VisualObservation,physical_action_chunk:Any,
                 *,model_checkpoint_sha:str,normalizer_sha:str):
@@ -147,6 +164,7 @@ class RecedingHorizonVLAGateway:
             root_translation_root_left_rotation_verified=True)
         if not certificate.authorized:
             self.action=None
+            self._flush_policy_queue()
             return DispatchDecision(
                 "QUERY_TARGET",None,None,len(self.belief.hypotheses),
                 certificate.worst_position_inf_m,
@@ -157,6 +175,7 @@ class RecedingHorizonVLAGateway:
                 or np.max(np.abs(native[:3]))>1+1e-7
                 or np.linalg.norm(native[3:])>=1):
             raise ContractViolation("Geometric authorizer returned illegal native action")
+        self._flush_policy_queue()
         ticket=self.belief.prepare(native)
         self.pending=ticket
         self.action=None;self.observation=None  # invalidate ALL later chunk actions
@@ -172,6 +191,7 @@ class RecedingHorizonVLAGateway:
             raise ContractViolation("Out-of-order/stale acknowledgement, do not collapse belief")
         self.belief.acknowledge(token,applied=applied)
         self.pending=None;self.observation=None;self.action=None
+        self._flush_policy_queue()
 
     def trusted_controller_resync(self,target,*,evidence:str):
         if self.pending is not None:
@@ -182,6 +202,7 @@ class RecedingHorizonVLAGateway:
         if len(self.belief.hypotheses)!=1:
             raise ContractViolation("Controller-target readback must produce singleton belief")
         self.observation=None;self.action=None
+        self._flush_policy_queue()
 
     def reset_episode(self,target,*,evidence:str):
         if evidence!="authoritative_controller_reset" or not isinstance(target,self.pose_type):
@@ -189,3 +210,4 @@ class RecedingHorizonVLAGateway:
         self.belief.reset(target)
         self.last_episode=None;self.last_step=-1
         self.observation=None;self.action=None;self.pending=None
+        self._flush_policy_queue()
