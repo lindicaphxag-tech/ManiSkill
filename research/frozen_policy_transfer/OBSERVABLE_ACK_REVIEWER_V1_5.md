@@ -70,13 +70,13 @@ Do NOT sum these numbers into trained policies, independent laboratories, or ind
 
 ## 4. Readback linearization: a falsifiable state-consistency mechanism
 
-An authoritative read changes more than the estimated target value. Let (B_t) be the adapter's set of possible commanded-controller targets and let (c_t=g(B_t,o_t)) represent the control-flow decision cached for the current step. An authoritative measurement (M_t^*) must perform a **single logical transaction**
+An authoritative read changes more than the estimated target value. Let `B_t` be the adapter's set of possible commanded-controller targets and let `c_t = g(B_t, o_t)` represent the control-flow decision cached for the current step. An authoritative measurement `M_t^*` must perform a **single logical transaction**:
 
-[
-(B_t,c_t) ;longleftarrow; ({M_t^*},,g({M_t^*},o_t)).
-]
+```text
+(B_t, c_t) <- ({M_t^*}, g({M_t^*}, o_t))
+```
 
-Updating (B_t) while continuing to execute the previously computed (c_t) is a **stale-branch state consistency failure**. This is an implementation-level invariant, not a novel robotics theorem or a claim that a target read is physically safe.
+Updating `B_t` while continuing to execute the previously computed `c_t` is a **stale-branch state consistency failure**. This is an implementation-level invariant, not a novel robotics theorem or a claim that a target read is physically safe.
 
 **Paired physical falsifier.** Two independently stepped controller worlds with the *same initial reset, released unchanged PPO and native controller*, the *same authoritative read at the same time*, and the *same post-read control compiler* should emit identical native action traces when cache invalidation produces the same logical control state. The original 32 StackCube trials verify this narrow invariant to 1e-6 on dispatched native 7D actions and agree on episode success and query count. In the deliberately retained buggy comparator, 3 StackCube successes were missing; that contrast must never be attributed to when the private read occurred.
 
