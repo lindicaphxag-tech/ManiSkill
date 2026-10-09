@@ -4,7 +4,9 @@ on:
     branches: [research/authority-aware-minimax-probe-20261010]
     paths:
       - research/authority_probe_minimax.py
+      - research/adversarial_probe_budget.py
       - tests/test_authority_probe_minimax.py
+      - tests/test_adversarial_probe_budget.py
       - .github/workflows/authority-aware-minimax.yml
   workflow_dispatch:
 permissions:
@@ -24,9 +26,11 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Compile exact planner and independent verifier
-        run: python -m py_compile research/authority_probe_minimax.py tests/test_authority_probe_minimax.py
+        run: python -m py_compile research/authority_probe_minimax.py tests/test_authority_probe_minimax.py research/adversarial_probe_budget.py tests/test_adversarial_probe_budget.py
       - name: Run adversarial certificate checks and 70 exhaustive cross-checks
         run: python -m unittest discover -s tests -p test_authority_probe_minimax.py -v
+      - name: Run error-budgeted active-observation adversarial tests
+        run: python -m unittest discover -s tests -p test_adversarial_probe_budget.py -v
       - name: Output synthetic-only decision certificates for human audit
         shell: bash
         run: |
@@ -41,8 +45,26 @@ jobs:
           assert a['uninformative_actuation']['root']['kind']=='read'
           print('PASS_SYNTHETIC_ONLY_FINITE_MODEL_CERTIFICATES')
           PY
+      - name: Compute K=1 adversarial observation model witness
+        shell: bash
+        run: |
+          python -m research.adversarial_probe_budget > k1_corruption_minimax_model_only.json
+          python - <<'PY'
+          import json
+          x=json.load(open('k1_corruption_minimax_model_only.json'))
+          assert x['status']=='PASS_MODEL_ONLY'
+          assert x['K0_min_cost']==1
+          assert x['K1_three_probes_min_cost']==3
+          assert x['K1_two_probes_force_read_cost']==5
+          assert x['K1_cheap_privileged_read']==2
+          assert x['adversarial_ground_truth_sequences_checked']==8
+          assert x['forged_one_response_certificate']=='REJECTED'
+          print('PASS_BOUNDED_CORRUPTION_FINITE_MODEL_ONLY')
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: proof-carrying-synthetic-models-${{ matrix.os }}-py${{ matrix.python }}
-          path: synthetic_minimax_certificates.json
+          path: |
+            synthetic_minimax_certificates.json
+            k1_corruption_minimax_model_only.json
           if-no-files-found: error
