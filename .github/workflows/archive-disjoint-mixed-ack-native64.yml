@@ -1,0 +1,116 @@
+name: "Archive prospective genuinely disjoint 576 actual PhysX sources and signed evidence"
+on:
+  push:
+    branches: [research/replicate-mixedack-disjoint64-20261009]
+    paths: [.github/workflows/archive-disjoint-mixed-ack-native64.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify-and-freeze-originals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reject altered original run, prerecorded assumptions and ZIP source digests
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37916917436 --jq .head_sha)" = 98b2a4259ece268f5fe4f51a77c0b9063f7de3ad
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37916917436 --jq .conclusion)" = success
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37916917436 --jq .run_attempt)" = 1
+          test "$(git hash-object research/DISJOINT_MIXED_T2_PPO64_PREOUTCOME_V1.json)" = 68443c6a0913f4b6a988e3a0cda74a650c86273f
+          test "$(git hash-object research/frozen_ppo_mixed_ack_truth_physx.py)" = 36e672446407435e656cbf8aba6fa2de7c1e9d0e
+          test "$(git hash-object research/run_disjoint_mixed_ack_new64.py)" = 90ba8538ed4b2e84f084b2eac50f6269e634332c
+          test "$(git hash-object research/audit_disjoint_mixed_ack_new64.py)" = a54373fe053bf5a7de8504531a17734b778639cf
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11611115351 --jq .digest)" = "sha256:d0ec2d0272ac2137a07728ec41fee3b60cfecc215f93fb43388e39eb80e60404"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11611060335 --jq .digest)" = "sha256:6d33110ce6f209c22e25e48dc5d1daadad9a6ea028c0b0fe3f8b5e115f1216f8"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11610975320 --jq .digest)" = "sha256:8c572ab6cc30605d9f619a18a1ad6d13cdb39fb085a810009297ecc4415534a4"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11610855402 --jq .digest)" = "sha256:18a75fe8ac957f7ffa561f879022601a9aa5dbe0446140a81073f447a0415c51"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11610830429 --jq .digest)" = "sha256:1f359b18b7a2bc3ceba4bc9a37b0ea5e9fc5e9c76790bfdf9452097635119061"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11610640801 --jq .digest)" = "sha256:f565600688a24c6f9377eadc52ee9773af352aa66be60749af1fdc9d6cc20e51"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11610440458 --jq .digest)" = "sha256:0f685ae24ba9c7a5ec8f1fdc74b40529cc8fcb30af3d4d6a10ea8f098d0a7d82"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11610315765 --jq .digest)" = "sha256:3f4f9140d442f521a6adb811f3d0df1ea67b8dfedb608cac35e333a290e132e3"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11610130769 --jq .digest)" = "sha256:44c42c95ae82c468961604cd245637efba1d93700018777f2e13571ebf91cfd4"
+      - name: Recover byte-identical eight original real PhysX source/shard audits
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/zip /tmp/flatten /tmp/original_audit
+          gh run download 37916917436 --repo "$GITHUB_REPOSITORY" --pattern "original-disjoint-*" --dir /tmp/zip
+          gh run download 37916917436 --repo "$GITHUB_REPOSITORY" --name disjoint-original64-576-physx-with-all-negative-outcomes --dir /tmp/original_audit
+          find /tmp/zip -name 'disjoint_mixed_*.json' -type f -exec cp {} /tmp/flatten/ \;
+          test "$(find /tmp/flatten -name 'disjoint_mixed_*.json' -type f | wc -l)" -eq 16
+          test -s /tmp/original_audit/disjoint_original_64_independent_audit.json
+      - name: Recompute every source outcome, reject cherry-picked and falsified records
+        run: |
+          set -euo pipefail
+          python -m research.audit_disjoint_mixed_ack_new64 --source-dir /tmp/flatten --output /tmp/recomputed_audit.json
+          python - <<'PY'
+          import json,shutil,tempfile
+          from pathlib import Path
+          from research.audit_disjoint_mixed_ack_new64 import audit
+          original=json.loads(Path("/tmp/original_audit/disjoint_original_64_independent_audit.json").read_text())
+          independently=json.loads(Path("/tmp/recomputed_audit.json").read_text())
+          assert original==independently, "New source independent auditor disagrees with first original successful CI"
+          assert original["distinct_reset_states"]==64 and original["physically_executed_actual_controller_worlds"]==576
+          assert original["t2_applied"]==32 and original["t2_held"]==32 and original["t3_held"]==64
+          for bad in ("missing","duplicate","flip_success","wrong_read","wrong_physical_truth"):
+              with tempfile.TemporaryDirectory() as t:
+                  dst=Path(t)/"raw";shutil.copytree("/tmp/flatten",dst)
+                  f=sorted(dst.glob("*_original8.json"))[0]
+                  if bad=="missing": f.unlink()
+                  else:
+                      d=json.loads(f.read_text());r=d["episodes"][0]
+                      if bad=="duplicate":r["seed"]=d["episodes"][1]["seed"]
+                      elif bad=="flip_success":
+                          n="fault_public_t3_fourhistory_or_t4_query"
+                          r["success_once"][n]=not r["success_once"][n]
+                      elif bad=="wrong_read":r["privileged_target_readback_decision_count"]["fault_always_single_privileged_query"]=2
+                      elif bad=="wrong_physical_truth":r["original_precommitted_physical_t2_execution_truth"]="WRONG"
+                      f.write_text(json.dumps(d))
+                  try:audit(dst)
+                  except (ValueError,KeyError,TypeError):continue
+                  raise AssertionError("CORRUPT EVIDENCE ACCEPTED "+bad)
+          print("PASS: original 64 true physical resets, 576 worlds, 5 failed synthetic forgeries")
+          PY
+      - name: Commit all 16 untouched source JSONs and original/full auditor with SHA256 manifest
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/disjoint_mixed_ack_original64_1180001_1190032
+          mkdir -p "$dest"
+          cp /tmp/flatten/*.json "$dest/"
+          cp /tmp/recomputed_audit.json "$dest/independently_recomputed_full64.json"
+          cp /tmp/original_audit/disjoint_original_64_independent_audit.json "$dest/first_original_full64_audit.json"
+          (cd "$dest" && sha256sum -- *.json > ORIGINAL_SHA256SUMS && sha256sum -c ORIGINAL_SHA256SUMS)
+          cat > "$dest/README.md" <<'EOF'
+          # Prospective genuinely seed-disjoint mixed actual ACK truth frozen PPO replication
+          First all-green 10-job original PhysX source and independent 64 population audit: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37916917436
+          Original physical source Git commit 98b2a4259ece268f5fe4f51a77c0b9063f7de3ad. Pre-outcome registration commit f6b298df1a076021783a75c8248eadd8c0f8ddfc, Git blob 68443c6a0913f4b6a988e3a0cda74a650c86273f.
+          Exactly 64 distinct new reset identities, PullCube 1180001-1180032 and StackCube 1190001-1190032, 9 independently PhysX-stepped native PPO controller worlds per reset, 576 simulator control trajectories.
+          Frozen previous method/source unchanged from original mixed-ACK experiment. True t2 applied vs held is parity-balanced (32/32), t3 always zero/held, both ACK receipts reported unknown. NOT full joint 2x2 applied/held, actual packets, physical hardware, external reproduction or VLA.
+          Genuinely fresh resulting official task successes: new public complete-history identify-or-query 57/64, 33 true private target reads and 31 public complete-history identities with zero observed confident wrong; task-ID selected strong opponent 56/64 and 52 reads; every-task t4 fixed private read 57/64 and 64 reads.
+          Pairwise successes new vs strong opponent: 56 both, 7 neither, 1 new-only, 0 strong-only. This single discordance does not establish task-success superiority. Private-read count reduction 19/52=36.5%, an observed relative information-budget economy on 2 task families, not policy noninferiority or a physical safety certificate.
+          All 16 original source/shard-audit JSONs copied byte-for-byte from first successful source-run artifact ZIPs, plus independently recomputed and original source full64 audit JSONs and checksum ledger. Every failed trial and abstention retained. Five adversarial corruption tests must fail.
+          Independent recomputation without physics: python -m research.audit_disjoint_mixed_ack_new64 --source-dir research/frozen_policy_transfer/evidence/disjoint_mixed_ack_original64_1180001_1190032 --output /tmp/recompute.json
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$dest"
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "evidence: source-frozen 576 new-seed mixed-ACK original native PhysX PPO worlds"
+          for i in 1 2 3 4; do
+            git fetch origin research/replicate-mixedack-disjoint64-20261009
+            if ! git rebase origin/research/replicate-mixedack-disjoint64-20261009; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:research/replicate-mixedack-disjoint64-20261009; then exit 0; fi
+          done
+          exit 1
