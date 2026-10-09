@@ -43,7 +43,7 @@ def full_audit(folder):
                   if arm==A else r["posterior_score_confident"]) for r in rows)
                 score[arm]["wrong_confident"]=sum(int(r["empirical_wrong_confident"]
                   if arm==A else r["posterior_wrong_confident"]) for r in rows)
-                score[arm]["public_achieved_XYZ_sample_events"]=64
+                score[arm]["public_achieved_XYZ_sample_events"]=2*sum(r["valid_original_two_faults_and_matched_prefix"] for r in rows)
         paired={}
         for lhs,rhs,label in ((A,B,"set_vs_same_public_posterior_score"),
                               (A,C,"set_vs_fixed_read")):
@@ -56,14 +56,16 @@ def full_audit(folder):
         for pattern in range(4):
             sub=[r for r in rows if r["true_fault_pattern"]==pattern]
             if len(sub)!=8:raise ValueError("True double applied/held original physical truth missing")
-            bytruth[str(pattern)]={"n":len(sub),"official_successes":{arm:sum(int(r["official_task_success"][arm]) for r in sub)
+            bytruth[str(pattern)]={"n":len(sub),"actually_matched_second_ACK_exposure":sum(r["valid_original_two_faults_and_matched_prefix"] for r in sub),"official_successes":{arm:sum(int(r["official_task_success"][arm]) for r in sub)
                             for arm in (A,B,C)},
                       "private_reads":{arm:sum(r["private_reads"][arm] for r in sub) for arm in (A,B,C)},
                       "public_confident":{A:sum(int(r["empirical_public_confident"]) for r in sub),
                                           B:sum(int(r["posterior_score_confident"]) for r in sub)},
                       "wrong_confident":{A:sum(int(r["empirical_wrong_confident"]) for r in sub),
                                           B:sum(int(r["posterior_wrong_confident"]) for r in sub)}}
-        taskdata[task]={"original_reset_states":32,"native_controller_worlds":320,
+        taskdata[task]={"original_reset_states":32,"native_controller_world_instances":320,
+                        "valid_full_two_ACK_and_matched_t5_prefix":sum(r["valid_original_two_faults_and_matched_prefix"] for r in rows),
+                        "prior_to_t3_censored_original_rows":sum(not r["valid_original_two_faults_and_matched_prefix"] for r in rows),
                         "scores":score,"paired":paired,"actual_t2_t3_truth_strata":bytruth}
         allrows.extend(rows)
     if len(allrows)!=64 or len(set((r["task"],r["seed"]) for r in allrows))!=64:
@@ -75,16 +77,18 @@ def full_audit(folder):
     for arm in (A,B):
         totals[arm].update(public_confident=sum(taskdata[t]["scores"][arm]["public_confident"] for t in taskdata),
                            wrong_confident=sum(taskdata[t]["scores"][arm]["wrong_confident"] for t in taskdata),
-                           achieved_XYZ_sample_events=128)
+                           achieved_XYZ_sample_events=sum(taskdata[t]["scores"][arm]["public_achieved_XYZ_sample_events"] for t in taskdata))
     return {"schema":"dual_evidence_065_after_training_orig64_native_physx_v1",
             "original_preregistration_git_blob":PRE_BLOB,
             "exact_original_frozen_physical_model_blob":SOURCE_BLOB,
             "n_original_task_reset_states":64,"real_native_PhysX_controller_worlds":640,
-            "original_two_physical_ACK_truths_full_2x2":True,
-            "exact_physical_prefix_identical_before_t5_info_decisions":True,
-            "same_two_public_achieved_xyz_samples_for_two_adaptive_methods":True,
+            "original_two_physical_ACK_truths_full_2x2":all(r["valid_original_two_faults_and_matched_prefix"] for r in allrows),
+            "fully_exposed_physically_matched_original_states":sum(r["valid_original_two_faults_and_matched_prefix"] for r in allrows),
+            "CENSORED_original_reset_states_kept_in_intent_to_treat":sum(not r["valid_original_two_faults_and_matched_prefix"] for r in allrows),
+            "exact_physical_prefix_identical_before_t5_info_decisions":all(r["valid_original_two_faults_and_matched_prefix"] for r in allrows),
+            "same_two_public_achieved_xyz_samples_for_two_adaptive_methods":all(r["same_public_samples"] for r in allrows),
             "Bayes_named_score_is_NOT_true_posterior_without_calibration":True,
-            "extra_physical_neutral_probe_steps":64,
+            "extra_physical_neutral_probe_steps_in_valid_matched_source":sum(r["valid_original_two_faults_and_matched_prefix"] for r in allrows),
             "author_run_not_independent_external_reproduction":True,
             "by_task":taskdata,"total":totals,"all_original_rows":allrows}
 
@@ -95,6 +99,6 @@ def main():
     a.output.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
     print("NEW64_SAME_PUBLIC_BAYES_REAL_PHYSX_COMPLETE",json.dumps({
         "n":64,"actual_native_worlds":640,"total":result["total"],
-        "fully_physical_matched_prefix":True},sort_keys=True))
+        "fully_physical_matched_prefix":result["exact_physical_prefix_identical_before_t5_info_decisions"],"censored_original_rows":result["CENSORED_original_reset_states_kept_in_intent_to_treat"]},sort_keys=True))
 
 if __name__=="__main__":main()
