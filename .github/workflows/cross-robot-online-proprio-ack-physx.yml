@@ -1,0 +1,136 @@
+name: Prospective Panda xArm6 online achieved-proprioception ACK identification with physical correction
+on:
+  push:
+    branches: [research/cross-robot-online-ack-proprioception-prospective-20261009]
+  pull_request:
+    paths:
+      - 'research/CROSS_ROBOT_ONLINE_PROPRIO_ACK_PREOUTCOME_V1.json'
+      - 'research/cross_robot_online_proprio_classifier.py'
+      - 'research/cross_robot_online_proprio_physx.py'
+      - 'research/audit_cross_robot_online_ack32.py'
+      - 'tests/test_cross_robot_online_ack_proprio.py'
+      - '.github/workflows/cross-robot-online-proprio-ack-physx.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prereg-before-outcomes-and-adversarial-decisions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require unchanged original cross-robot source and before-outcome protocol
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/CROSS_ROBOT_ONLINE_PROPRIO_ACK_PREOUTCOME_V1.json)" = "0cb66afc8a9c362ee764a83b7e558069ef6bd09c"
+          python -m py_compile research/cross_robot_online_proprio_classifier.py research/cross_robot_online_proprio_physx.py research/audit_cross_robot_online_ack32.py
+          python -m unittest discover -s tests -p 'test_cross_robot_online_ack_proprio.py' -v
+
+  actual-native-physx-calibration:
+    needs: prereg-before-outcomes-and-adversarial-decisions
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    strategy:
+      fail-fast: false
+      matrix:
+        robot: [panda, xarm6_robotiq]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install the actual native CPU ManiSkill simulator
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+      - name: Calibrate labelled two-truth physical signals ONLY on eight earlier seeds
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD" python research/cross_robot_online_proprio_physx.py --robot "${dollar}{{ matrix.robot }}" --mode calibrate 2>&1 | tee original_calibration.log
+          test -s "cross_robot_proprio_calibration_${dollar}{{ matrix.robot }}.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: physical-calibration-${dollar}{{ matrix.robot }}
+          path: |
+            cross_robot_proprio_calibration_*.json
+            original_calibration.log
+          retention-days: 90
+
+  genuinely-unseen-online-physical-ack-tests:
+    needs: actual-native-physx-calibration
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    strategy:
+      fail-fast: false
+      matrix:
+        robot: [panda, xarm6_robotiq]
+        chunk: [0, 1]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: physical-calibration-${dollar}{{ matrix.robot }}
+          path: /tmp/prior-calibration
+      - name: Install native ManiSkill PhysX without retraining any policy
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+      - name: ACTUALLY step blind proprioception, optimistic and pessimistic robot worlds
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD" python research/cross_robot_online_proprio_physx.py \
+            --robot "${dollar}{{ matrix.robot }}" --mode test --chunk "${dollar}{{ matrix.chunk }}" \
+            --calibration-file "/tmp/prior-calibration/cross_robot_proprio_calibration_${dollar}{{ matrix.robot }}.json" \
+            2>&1 | tee original_test.log
+          test -s "cross_robot_proprio_${dollar}{{ matrix.robot }}_chunk${dollar}{{ matrix.chunk }}_original8.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: actual-online-ack-${dollar}{{ matrix.robot }}-${dollar}{{ matrix.chunk }}
+          path: |
+            cross_robot_proprio_*_original8.json
+            original_test.log
+          retention-days: 90
+
+  independent-complete-32-truth-source-audit:
+    needs: genuinely-unseen-online-physical-ack-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: physical-calibration-*
+          path: /tmp/all-original
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: actual-online-ack-*
+          path: /tmp/all-original
+          merge-multiple: true
+      - name: Independently verify both calibration models and every true physical test
+        run: |
+          python -m research.audit_cross_robot_online_ack32 \
+            --input-dir /tmp/all-original --output /tmp/full_cross_robot_online_ack32_audit.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: original-full-32-online-proprioception-ack-physical-evidence
+          path: |
+            /tmp/all-original/*.json
+            /tmp/full_cross_robot_online_ack32_audit.json
+          retention-days: 90
