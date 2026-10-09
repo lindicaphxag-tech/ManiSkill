@@ -1,0 +1,45 @@
+name: Independent original PhysX query-time frontier adversarial audit
+
+on:
+  push:
+    branches: [research/flagship-query-cost-frontier-20261009]
+  pull_request:
+    paths:
+      - 'research/frozen_policy_transfer/review/query_timing_frontier.py'
+      - 'tests/test_query_timing_frontier.py'
+      - '.github/workflows/query-timing-frontier-source-audit.yml'
+      - 'research/frozen_policy_transfer/evidence/query_timing_causal_new32_280001_290016/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  immutable-original-query-timing-stats:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Verify byte-exact eight physics shards and pure Python auditor, including negative counterexample
+        run: |
+          set -euo pipefail
+          python -m py_compile research/frozen_policy_transfer/review/query_timing_frontier.py
+          python -m unittest discover -s tests -p 'test_query_timing_frontier.py' -v
+          python -m research.frozen_policy_transfer.review.query_timing_frontier \
+            --output /tmp/source_original_query_timing_frontier.json
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/source_original_query_timing_frontier.json'))
+          assert d['study_n_original_registered_reset_states']==32
+          assert d['t5_additional_success_seed']==290012
+          assert d['fixed_t5_minus_adaptive_extra_privileged_reads']==25
+          assert len(d['original_source_sha256_manifest'])==9
+          print('EXACT_ARCHIVED_PHYSX_32_STATE_SOURCE_FRONTIER_PASSED')
+          PY
