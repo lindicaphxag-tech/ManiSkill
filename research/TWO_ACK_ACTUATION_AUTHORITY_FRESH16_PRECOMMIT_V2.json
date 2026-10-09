@@ -1,0 +1,112 @@
+{
+  "schema": "two_consecutive_unknown_ack_target_authority_new16_v2",
+  "written_before_new_16_state_episode_outputs": true,
+  "date": "2026-10-09",
+  "science": "Distinguish intentional controller action authorization from actually delivered native command and post-dispatch target state under TWO unknown acknowledgments.",
+  "previous_failed_initial_attempt": {
+    "url": "https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37897829784",
+    "issue": "The previous experiment's audit compared actual native zero-arm-delta fault-delivered setpoints against authorization bounds computed for an intentionally NOT DELIVERED nonzero command; source simulations threw before full episode recording",
+    "same_previous_source_seed_overlaps_other_previously_observed_work": true,
+    "previous_source_seeds_pull": [
+      360001,
+      360002,
+      360003,
+      360004,
+      360005,
+      360006,
+      360007,
+      360008
+    ],
+    "previous_source_seeds_stack": [
+      370001,
+      370002,
+      370003,
+      370004,
+      370005,
+      370006,
+      370007,
+      370008
+    ],
+    "rule": "Do not pool or describe those partial failed executions as positive or independent holdout evidence."
+  },
+  "new_design": {
+    "fresh_task_reset_seeds_pull": [
+      430001,
+      430002,
+      430003,
+      430004,
+      430005,
+      430006,
+      430007,
+      430008
+    ],
+    "fresh_task_reset_seeds_stack": [
+      440001,
+      440002,
+      440003,
+      440004,
+      440005,
+      440006,
+      440007,
+      440008
+    ],
+    "task_families": [
+      "PullCube-v1",
+      "StackCube-v1"
+    ],
+    "original_cohort_n": 16,
+    "original_frozen_policies_sha256": {
+      "pull_cube": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+      "stack_cube": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+    },
+    "released_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+    "observed_physics": "official ManiSkill CPU PhysX, native pd_ee_target_delta_pose arm-controller mode, externally frozen PPO",
+    "physical_faults": [
+      {
+        "step": 2,
+        "native_arm_command": "all_zero_hold",
+        "ACK": "unknown"
+      },
+      {
+        "step": 3,
+        "native_arm_command": "all_zero_hold",
+        "ACK": "unknown"
+      }
+    ],
+    "controller_semantics": "root_translation:root_aligned_body_rotation",
+    "position_setpoint_budget_inf_m": 0.05,
+    "rotation_setpoint_budget_geodesic_rad": 0.05,
+    "limit_reasoning": "Commanded target NOT achieved trajectory/contact forces. Conservative multi-hypothesis SE3 candidate set under known chart. No claim of globally optimal SO(3) minimax.",
+    "horizon": 50,
+    "experimental_arms": [
+      "source_no_fault",
+      "fault_oracle_private_target",
+      "fault_optimistic_unverified_ack",
+      "fault_strict_common_exact",
+      "fault_robust_two_history_without_query",
+      "fault_robust_then_single_privileged_query",
+      "fault_always_single_privileged_query"
+    ],
+    "important_controlled_intervention": "If intentional planned authorized command is physically replaced by native zero arm command at injection steps, authorized planned-command setpoint bound is NOT asserted for that physical step. Instead audit BEFORE and AFTER private target only for physical fault validation: actual target must HOLD to within 0.0001 m/0.0001rad and hidden observer is NOT allowed to use either audit-only state. Post fault normal delivered approved actions must each meet candidate worst-case target bound.",
+    "explicit_audit_only_reads": "Physical fault pre/post target checks are exclusively in auditor path, never passed to policy/belief. Privileged decision-read counts include only real command adaptation queries; oracle has unrestricted target memory and is separately denoted -1.",
+    "source_integrity": "Program, certifier, protocol Git blob frozen in CI prior to full native tests. All 16 originally selected task states, complete denominator even failures.",
+    "gates": {
+      "actual_native_step2_and3_reached_all_scheduled_faulted_arms": 16,
+      "no_physical_hold_truth_mismatch": true,
+      "no_illegal_robust_authorization_on_NON_FAULT_ACTUALLY_DELIVERED_actions": true,
+      "query_reads_accurately_counted": true,
+      "maximum_hypotheses": 16,
+      "report_all_unrepresentable_native_action_failures": true,
+      "no_hidden_true_delivery_labels_used_by_policy": true,
+      "no_post_result_threshold_or_seed_tuning": true
+    }
+  },
+  "limits": [
+    "Author-run, no external independent lab",
+    "Only two frozen external task PPOs on one Panda target-controller chart",
+    "Not actual ROS packet loss, real robot hardware, VLA transfer, collision/force safety",
+    "No generic POMDP or first-ever set membership claim",
+    "This v2 study is motivated by a prior failed PILOT and is NOT blind hypothesis generation",
+    "Do not claim strict no-error certificate if any fault hold audit fails"
+  ]
+}
