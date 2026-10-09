@@ -8,7 +8,7 @@ from pathlib import Path
 PROTO="research/JOINT_PUBLIC_SO3_XYZ_FROZEN_NEW64_PREOUTCOME_V1.json"
 SOURCE="research/frozen_ppo_joint_public_SE3_new64_physx.py"
 PROTO_BLOB="88adbc25f0435f8c452e988891f3745e49afea08"
-SOURCE_BLOB="8969e86867568b2ef7ebcef4883361b0eb1f4033"
+SOURCE_BLOB="bb416b088fb08657806199d9d9e46b68a88aec20"
 TASKS={"pull_cube":("PullCube-v1",3310001,"74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7"),
        "stack_cube":("StackCube-v1",3320001,"e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c")}
 A="fault_public_t3_fourhistory_or_t4_query"
