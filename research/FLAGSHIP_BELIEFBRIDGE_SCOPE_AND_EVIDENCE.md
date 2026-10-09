@@ -5,6 +5,14 @@
 ## One-sentence problem
 A pretrained policy generates achieved-pose-relative Cartesian actions, but a deployment controller integrates actions around a *hidden previous commanded target*. One unobserved/unknown action acknowledgement turns the target memory into a belief over different poses. Blindly interpreting the command as executed is a semantic contract breach.
 
+## CURRENT COMPLETED ORIGINAL MULTI-ACK PHYSX RESULT — 16 new native reset states
+
+[Original source-frozen native v3 run: **all jobs SUCCESS**](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37898781176) · [Complete official every-seed raw results, negative cases and controls](./frozen_policy_transfer/COMPOUND_ACK_16_NATIVE_PHYSX_RESULTS.md) · [Independent-of-simulator source audit with destructive corruption checks: SUCCESS](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37899698047).
+
+On 16 NEW paired PullCube/StackCube states, two consecutive unknown-ACK target holds produced **four actual possible controller-memory targets** in every surviving belief arm. The evidence-triggered bounded-or-one-read controller completed **11/16 tasks with 11 real privileged target reads**. The fixed-t=4 one-read controller completed **13/16 with 16 reads**; conservative no-read completed 2/16. This is a **real negative result for claiming adaptive superiority**: query savings exist but task success is lower. All **384 physically dispatched bounded controller commands** passed the recorded conditional setpoint envelope; 48 deliberately masked command attempts were never counted as physical authorization successes. Results are author-operated ManiSkill/PhysX only, not outside-lab confirmation or robot physical safety.
+
+**Critical claim boundary:** previous v1/v2 runs failed and were preserved; the finished new-seed v3 finally exercised >2 hypotheses and returned mixed task outcomes. Future algorithm tuning must not reuse 400001/410001 as a fresh test cohort.
+
 ## What already ran and what is NEW
 - **Original 1-ACK real native PhysX:** two frozen published ActionShift PPOs, 64 fresh matched task states, adaptive bounded-action/conditional target read: **58/64** task successes using **17** real privileged decision reads. Predeclared periodic fixed-time query: **47/64** success using **16** reads. [Full native evidence and original statistics](./frozen_policy_transfer/CERTIFY_QUERY_PERIODIC_PLACEBO_64_ORIGINAL_RESULTS.md).
 - The 1-ACK result is *not* a matched exact query count (17 vs 16), learned active-sensing superiority, second-controller transfer, hardware safety or independent replication. The very limited two-PPO task family matters.
