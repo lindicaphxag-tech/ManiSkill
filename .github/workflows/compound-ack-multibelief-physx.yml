@@ -1,4 +1,4 @@
-name: Two unknown-ACK multi-belief frozen PPO native PhysX
+name: Two unknown-ACK multi-belief frozen PPO native PhysX v3
 on:
   push:
     branches:
@@ -6,7 +6,7 @@ on:
     paths:
       - 'research/multi_ack_se3_bounded.py'
       - 'research/frozen_ppo_compound_ack_multi_belief.py'
-      - 'research/COMPOUND_ACK_MULTI_HYPOTHESIS_PRECOMMIT_V1.md'
+      - 'research/COMPOUND_ACK_MULTI_HYPOTHESIS_PRECOMMIT_V3.md'
       - 'tests/test_multi_ack_se3_bounded.py'
       - '.github/workflows/compound-ack-multibelief-physx.yml'
   workflow_dispatch:
@@ -60,7 +60,7 @@ jobs:
           git rev-parse HEAD > compound_ack_evidence/current_source_commit.txt
           git hash-object research/multi_ack_se3_bounded.py > compound_ack_evidence/multi_certifier_blob.txt
           git hash-object research/frozen_ppo_compound_ack_multi_belief.py > compound_ack_evidence/compound_runner_blob.txt
-          git hash-object research/COMPOUND_ACK_MULTI_HYPOTHESIS_PRECOMMIT_V1.md > compound_ack_evidence/protocol_blob.txt
+          git hash-object research/COMPOUND_ACK_MULTI_HYPOTHESIS_PRECOMMIT_V3.md > compound_ack_evidence/protocol_blob.txt
           python -m pip freeze --all > compound_ack_evidence/environment.txt
           printf 'task=%s faults=2,3 unknown_ACK=true unchanged_PPO=true original_robot_family=Panda\n' "$ABI_TASK" > compound_ack_evidence/experiment_identity.txt
       - name: Genuine native PhysX task outcomes for eight fresh initial states and seven matched worlds
