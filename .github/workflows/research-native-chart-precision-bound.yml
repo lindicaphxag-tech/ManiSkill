@@ -1,0 +1,39 @@
+name: Typed native SO3 precision-bound counterexample and witness
+
+on:
+  push:
+    branches:
+      - research/typed-native-so3-precision-bound-v1
+      - main
+    paths:
+      - 'research/native_action_precision_contract.py'
+      - 'tests/test_native_action_precision_contract.py'
+      - '.github/workflows/research-native-chart-precision-bound.yml'
+  pull_request:
+    paths:
+      - 'research/native_action_precision_contract.py'
+      - 'tests/test_native_action_precision_contract.py'
+      - '.github/workflows/research-native-chart-precision-bound.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cross-platform-numeric-controller-contract:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ['3.11','3.13']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install only CPU numerical primitives (not simulator)
+        run: python -m pip install numpy scipy
+      - name: Verify false f32-native-rotation-acceptance and exact f64 typed refusal
+        run: python -m unittest discover -s tests -p test_native_action_precision_contract.py -v
