@@ -30,12 +30,12 @@ jobs:
           set -euo pipefail
           python -m py_compile research/repair_authority_cli.py tests/test_repair_authority_cli.py
           python -m unittest discover -s tests -p test_repair_authority_cli.py -v
-          python -m research.repair_authority_cli --mode synthesize --contract research/fixtures/authority_cheap_discriminating_probe.json --output /tmp/user_generated_certificate.json
-          python -m research.repair_authority_cli --mode verify --contract research/fixtures/authority_cheap_discriminating_probe.json --certificate /tmp/user_generated_certificate.json
-          python -m research.repair_authority_cli --mode synthesize --contract research/fixtures/authority_aliased_getter.json --output /tmp/aliased_getter_certificate.json
+          python -m research.repair_authority_cli --mode synthesize --contract research/fixtures/authority_cheap_discriminating_probe.json --output ./user_generated_certificate.json
+          python -m research.repair_authority_cli --mode verify --contract research/fixtures/authority_cheap_discriminating_probe.json --certificate ./user_generated_certificate.json
+          python -m research.repair_authority_cli --mode synthesize --contract research/fixtures/authority_aliased_getter.json --output ./aliased_getter_certificate.json
           python - <<'PY'
           import json
-          a=json.load(open('/tmp/aliased_getter_certificate.json'))
+          a=json.load(open('./aliased_getter_certificate.json'))
           assert a['root']['kind']=='halt'
           assert a['minimax_cost']==10
           print('PARTIAL_GETTER_WON_NOT_FAKE_AUTHORITY')
