@@ -1,0 +1,57 @@
+name: 'Truth-preserving forensic: first 128 native PhysX factorial reset SHA mismatch'
+on:
+  push:
+    branches: [research/paired-four-truth-singleprocess-reset-audit-20261009]
+    paths:
+      - research/audit_first_factorial_initial_state_confounds.py
+      - .github/workflows/forensic-first-factorial-failed-start.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  independently_retrieve_and_audit_first_failed_original_source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require original failed first native PhysX run has never been relabelled successful
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37930607707 --jq .head_sha)" = 06e4ceec3b6f0a5c5b174e272d965d1166c93ed7
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37930607707 --jq .conclusion)" = failure
+          test "$(git hash-object research/audit_first_factorial_initial_state_confounds.py)" = 5ece71ad5711c41ab4705fc5b270e9296b9ec5dd
+          python -m py_compile research/audit_first_factorial_initial_state_confounds.py
+      - name: Retrieve ALL 16 first-run actually stepped four-truth 128 original source cells untouched
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/firstfail_zip /tmp/firstfail_originals
+          gh run download 37930607707 --repo "$GITHUB_REPOSITORY" --pattern 'factorial-*' --dir /tmp/firstfail_zip
+          find /tmp/firstfail_zip -type f -name 'factorial_*.json' -exec cp '{}' /tmp/firstfail_originals/ \;
+          test "$(find /tmp/firstfail_originals -type f -name 'factorial_*.json' | wc -l)" -eq 32
+      - name: Produce fail-close and source-hash-backed 32 cluster invalidity report
+        run: |
+          set -euo pipefail
+          python -m research.audit_first_factorial_initial_state_confounds --original-source-dir /tmp/firstfail_originals --output /tmp/first_run_physics_initial_mismatch.json
+          python - <<'PY'
+          import json
+          x=json.load(open('/tmp/first_run_physics_initial_mismatch.json'))
+          assert x['source_cells']==128 and x['source_reset_clusters']==32
+          assert x['same_seed_initial_hash_INVALID_clusters']>0
+          assert x['first_run_independent_full_factorial_audit_passed'] is False
+          assert len(x['original_source_SHA256_ledger'])==32
+          print('CORRECT: first-run PhysX executed but truly within-seed CAUSAL comparison failed. Original negative retained.')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: immutable-first-native-factorial-128cells-hash-confound-forensic
+          path: /tmp/first_run_physics_initial_mismatch.json
+          retention-days: 90
