@@ -1,0 +1,51 @@
+{
+  "schema": "preoutcome_contact_precision_budget_native_AEF_5cm_vs_1cm_new64_PPO_PhysX_v1",
+  "registered": "2026-10-09",
+  "preoutcome_status": "after FIRST genuine AEF cohort sources are publicly revealed, BEFORE any NEW 1020101/1030101 physical episode is generated",
+  "hypothesis": "A public motion model can often be avoided by using a common bounded next native commanded-target action over all uncertain ACK histories, but a 5cm allowable commanded-target error may be too large for contact-sensitive StackCube. A task-semantic 1cm translational/0.02rad orientation envelope may regain official task success at the cost of native controller target getters.",
+  "calibration": "No reward/test state tuning. The smaller bound is a declared engineering task-precision constraint, NOT a hardware collision/force guarantee. Old original AEF cohort is development; new task reset IDs here are strictly disjoint.",
+  "prospective_bank": {
+    "pull_cube": [
+      1020101,
+      1020132
+    ],
+    "stack_cube": [
+      1030101,
+      1030132
+    ],
+    "new_physics_reset_states": 64,
+    "real_native_ManiSkill_controllers_per_reset": 11,
+    "total_native_PhysX_worlds": 704,
+    "controller_domains": "slow physically read back Panda seven joint stiffness500 damping70 if floor(seed/4) even; fast stiffness1500 damping130 otherwise; all comparison worlds including source frozen PPO use same gain/domain",
+    "real_ACK_truth": "t2 actual APPLIED iff seed even, t3 actual APPLIED iff floor(seed/2) even; four true combinations balanced 8 each/task and crossed with two gain domains 4 each cell",
+    "fixed_True_PPO": "original third-party released PullCube/StackCube CPU model revision 6bdeb28810330ab5425ccd629bb561c58a56ff85, original code target ABI and native SO3 BALL not retrained",
+    "t4": "all 11 still-active controllers physically execute ONE additional KNOWN DELIVERED native zero target arm command, even if old source PPO/gripper produces different policy actuation",
+    "same_achieved_public_XYZ_samples": "Two at t4 for old public, AEF 5cm and AEF tight 1cm; count both"
+  },
+  "methods_and_admission": {
+    "old_public": "original task-specific empirical public response-model epsilon Pull .006944262561376447m; Stack .00719087965534261m, with 0.002m nonwinner margin; if no unique full SE3 index, exactly one authoritative t5 read",
+    "aef_5cm": "same source frozen original AEF: candidate commanded-target robust common action with target position error 0.05m/rotation 0.05rad, else public unique full SE3 index, else one counted target getter (possibly later when action robust ceases)",
+    "aef_task_precision": "at PullCube same bounds 0.05m/0.05rad for exact consistency negative control, while at StackCube 0.01m/0.02rad; all else EXACT same AEF procedure, same public samples, same native action timing, same 4 history belief and trust rules.",
+    "other_8_controllers": "source no fault, continuous-private-target oracle, optimistic ACK, exact-refusal, common robust without query, robust then one read, always t5 read, zero-read always-held falsifier",
+    "strong_task_selected": "separately actually stepped robust then query on Pull, fixed t5 query on Stack (separate REAL source state)",
+    "query_priority": "robust common action > original t4 unique complete history witness > one explicit target read",
+    "no_private_target_or_seed_or_drive_leak": "actual private native getter only used at explicitly counted decision query or AFTER physically stepping for audit; t2/t3 physical truth from seed generator never passed into policy admission logic",
+    "post_t5": "if still uncertain, attempt robust bounded command on each subsequent native step; at first loss of feasibility, one read permitted; no free second authoritative read.",
+    "physical_bound_scope": "common action bound ONLY commanded native target relative to desired source target; not actual collision, force, contact, gripper or task success."
+  },
+  "primary": [
+    "64 actually stepped paired true task successes and privately counted decision reads among old t4 public, AEF 5cm and precision AEF, plus strong task-selected read",
+    "StackCube main subgroup task success gain and added getter cost of 1cm vs 5cm policy across all new 32 physical states",
+    "explicit original task-by-gain-by-ACK truth outcomes and query cost; no cherry-picked model threshold",
+    "robust common action admissions, actual post-physx commanded target error, audit-only wrong confident public-index selection actually USED, original 64 reset source with exact per-shard SHA",
+    "public achieved XYZ sample count and real native additional probe actions as cost; include pre-fault refusals"
+  ],
+  "no_claims": [
+    "No guaranteed Stack task win until original true physical new test passes",
+    "No official ActionShift-style same-budget active probe rival run",
+    "No hardware safety/collision/contact guarantees",
+    "No genuine ROS/TCP ACK packet loss",
+    "No independently adopted algorithm or accepted CoRL/RSS/ICRA paper",
+    "No learned VLA transfer"
+  ]
+}
