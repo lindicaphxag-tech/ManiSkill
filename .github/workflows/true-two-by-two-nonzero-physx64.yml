@@ -1,0 +1,116 @@
+name: Real NONZERO second unknown ACK 2x2 truth: 64 genuine frozen PPO native PhysX
+on:
+  push:
+    branches: [research/two-by-two-real-nonzero-ack-physx-20261009]
+    paths:
+      - research/TWO_BY_TWO_REAL_NONZERO_ACK64_PREREG_V1.json
+      - research/frozen_ppo_true_double_nonzero_ack_physx.py
+      - research/run_true_two_by_two_ack64.py
+      - research/audit_true_two_by_two_ack64.py
+      - .github/workflows/true-two-by-two-nonzero-physx64.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prereg_and_two_true_physical_execution_truths:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze original prereg, native implementation, response tolerances, and genuine unused four-truth seeds
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/TWO_BY_TWO_REAL_NONZERO_ACK64_PREREG_V1.json)" = 9209ecbfb8129e15de9ffc7441e8a196f53acaf4
+          test "$(git hash-object research/frozen_ppo_true_double_nonzero_ack_physx.py)" = 6188853f918bd338b289d771ebdd4d4c037e0a77
+          test "$(git hash-object research/run_true_two_by_two_ack64.py)" = b78d37fa20b25eb1a13e99ad0eb95ebdd9eeb71f
+          test "$(git hash-object research/audit_true_two_by_two_ack64.py)" = 7d90dfac20b70a61ce97eb3cbe923156adbb5ce8
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          python -m py_compile research/frozen_ppo_true_double_nonzero_ack_physx.py research/run_true_two_by_two_ack64.py research/audit_true_two_by_two_ack64.py
+          python - <<'PY'
+          from research.run_true_two_by_two_ack64 import seeds,actual_truth,frozen_sources
+          frozen_sources()
+          for task in ("pull_cube","stack_cube"):
+              ids=[s for ch in range(4) for s in seeds(task,ch)]
+              assert len(ids)==32 and min(ids)>1300000
+              patterns={(actual_truth(s,2),actual_truth(s,3)) for s in ids}
+              assert len(patterns)==4
+              assert all(sum((actual_truth(s,2),actual_truth(s,3))==p for s in ids)==8 for p in patterns)
+          print("PREREG_REAL_2X2_FOUR_OUTCOME_PATTERNS_EACH_TASK_PASS")
+          PY
+  native_physics_nine_controllers_per_true_four_pattern:
+    needs: prereg_and_two_true_physical_execution_truths
+    runs-on: ubuntu-latest
+    timeout-minutes: 105
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+      PYTHONUNBUFFERED: '1'
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install original ManiSkill native CPU PhysX simulator and unchanged released external frozen PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Preserve unretrained PPO original source and exact dependencies BEFORE actual 72-world shard
+        run: |
+          git rev-parse HEAD > original_source_commit.txt
+          python -m pip freeze --all > original_python_packages.txt
+      - name: Physically execute four ACTUAL native execution truths with second command nonzero when applied
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_true_two_by_two_ack64.py --task "$ABI_TASK" --chunk "$CHUNK" 2>&1 | tee original_full_native_physics.log
+          test -s "true_double_${ABI_TASK}_chunk${CHUNK}_original8.json"
+          test -s "true_double_${ABI_TASK}_chunk${CHUNK}_audit.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: true-nonzero-2x2-${{ matrix.task }}-chunk${{ matrix.chunk }}
+          path: |
+            true_double_*_original8.json
+            true_double_*_audit.json
+            true_double_*_original8.json
+            original_full_native_physics.log
+            original_source_commit.txt
+            original_python_packages.txt
+          retention-days: 90
+  full_independent_all_64_real_native_physx_audit:
+    needs: native_physics_nine_controllers_per_true_four_pattern
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: true-nonzero-2x2-*
+          merge-multiple: true
+          path: /tmp/true_2x2_source
+      - name: Independently score every original paired task and physically realized double-ACK truth
+        run: |
+          set -euo pipefail
+          python -m research.audit_true_two_by_two_ack64 --source-dir /tmp/true_2x2_source --output /tmp/true_double_all64_complete.json
+          test -s /tmp/true_double_all64_complete.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: all64-real-2x2-physical-nonzero-source-and-independent-audit
+          path: |
+            /tmp/true_2x2_source/*.json
+            /tmp/true_double_all64_complete.json
+          retention-days: 90
