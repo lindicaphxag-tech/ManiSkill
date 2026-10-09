@@ -1,0 +1,6 @@
+# First original confirmatory 64 matched task reset clusters × four physically stepped true-ACK conditions
+First original actual 32 PhysX shards: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37934425888
+All 32 source physical shards completed, but original final workflow FAILED because it accidentally invoked the OLD 32cluster/128cell numeric auditor rather than the pre-existing full 64cluster/256cell auditor. First failed run is preserved, not called all-green.
+The source-only recovery does NOT rerun or modify PPO, physical controller actions, original seed assignments, original 32 real simulation ZIPs or any outcomes. The existing intended 256-cell auditor independently reruns on untouched original data and enforces physical same-initial-pose numeric parity, four truths per seed and complete 64x4 original denominator.
+This is a 2304 separately stepped ManiSkill native PhysX controller-instance source archive across 64 independent reset clusters (not 2304 independent statistical samples), no real hardware, no physical network drops, no VLA hidden-ACK task recovery or outside investigator proof.
+Independently recompute: python -m research.audit_confirmatory_four_truth_new64clusters --source-dir research/frozen_policy_transfer/evidence/confirmatory_64cluster_256truth_orig_3210001_3220032 --output /tmp/recompute256.json
