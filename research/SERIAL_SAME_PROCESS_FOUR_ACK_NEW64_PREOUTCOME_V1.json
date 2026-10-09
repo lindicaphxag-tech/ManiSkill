@@ -1,0 +1,53 @@
+{
+  "schema": "prospective_serial_single_process_matched_four_true_ack_new16clusters_v1",
+  "registered_date": "2026-10-09",
+  "status": "FROZEN_BEFORE_PHYSICAL_TASK_OUTCOME",
+  "previous_failed_matched_experiment": "https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37930607707",
+  "source_gap": "7/32 previous StackCube same-seed groups had different initial policy observation SHA256 across independently initialized CI processes; not a valid universal matched reset",
+  "pilot_reset_only": "https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37933246506",
+  "purpose": "Prove same-seed physical initialization identity under one process BEFORE interpreting any within-seed four-truth task outcome",
+  "task_seeds": {
+    "pull_cube": {
+      "start": 1970001,
+      "end": 1970008,
+      "task": "PullCube-v1",
+      "checkpoint_sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7"
+    },
+    "stack_cube": {
+      "start": 1980001,
+      "end": 1980008,
+      "task": "StackCube-v1",
+      "checkpoint_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+    }
+  },
+  "physical_conditions": [
+    {
+      "index": 0,
+      "truth": "HH"
+    },
+    {
+      "index": 1,
+      "truth": "AH"
+    },
+    {
+      "index": 2,
+      "truth": "HA"
+    },
+    {
+      "index": 3,
+      "truth": "AA"
+    }
+  ],
+  "original_seed_clusters": 16,
+  "physical_task_seed_truth_cells": 64,
+  "physically_stepped_worlds_if_complete": 576,
+  "physically_stepped_worlds_per_cell": 9,
+  "source_unchanged_git_blob": "14882a4efcd36351f8cb5873e706488788446f32",
+  "frozen_original_classifier_git_blob": "064bb46831b61af73ad445bc836326837ec5468f",
+  "design": "One GitHub Actions job per TASK. In a SINGLE process, sequentially execute all FOUR true applied/held t2/t3 native conditions. For each condition reinitialize task native world and seed global Python/NumPy/PyTorch RNG to fixed 20261009, then reset each real native environment to the exact current seed. Do not modify target memory mechanics, native action semantics, classifier or externally frozen PPO.",
+  "audit_gate": "All 64 original cells, exact 8 seeds per task, four per seed, strict 4/4 initial PPO tensor hashes per seed (recorded before faults), all per-episode task successes including failures, physical ACK truths and actual native 6D dispatch verified. Mismatch=original experiment FAIL, preserve raw and analyze only descriptive, never claim same-reset causal.",
+  "statistical_analysis": "16 seed clusters independent analysis units, four faults within source seed; report clustered descriptive intervals and exact paired discordant cell counts; no statistically proven superiority or non-inferiority claim",
+  "experimental_constraints": "All external source and response model weights frozen; no method training; original comparator shares same known-delivered neutral t4 actuation when reached, public sample cost charged, private controller target reads charged. No xArm/VLA/hardware or upstream acknowledgement inference.",
+  "early_missing_probe": "ITT original all 64 cells retained. Report fault exposure separately, no invented identical public data.",
+  "external_independent_replication": false
+}
