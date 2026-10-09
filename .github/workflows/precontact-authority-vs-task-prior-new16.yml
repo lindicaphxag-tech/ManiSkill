@@ -1,0 +1,104 @@
+name: Prospective public precontact query vs strong task-ID prior actual PhysX new16
+on:
+  push:
+    branches: [research/phase-sensitive-authority-prospective16-20261009]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preoutcome-source-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Refuse original protocol, original geometry or precontact source drift
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/PRECONTACT_AUTHORITY_NEW16_PRECOMMIT_V1.md)" = "299e9d07709b894bd086f3513e004ac09247cede"
+          test "$(git hash-object research/frozen_ppo_precontact_authority_new16.py)" = "6968035439b35f7ec07dbbd31ca96dd434b924dc"
+          test "$(git hash-object research/multi_ack_se3_bounded.py)" = "36707a177549104ba5b4bd9bcebc76518f0d2840"
+          test "$(git hash-object research/two_history_se3_robust.py)" = "bb5fd155b7291fb127f94138fca321201c8271c3"
+          python -m py_compile research/frozen_ppo_precontact_authority_new16.py research/audit_precontact_authority_new16.py
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('research/PRECONTACT_AUTHORITY_NEW16_PRECOMMIT_V1.md').read_text()
+          assert '470001–470008' in p and '480001–480008' in p
+          assert '0.10 metres' in p
+          assert 'Task-ID prior' in p
+          print('PRECOMMITTED_OBJECT_DISTANCE_AND_TASK_ID_PRIOR_CONFIRMED')
+          PY
+  nine-true-official-native-physx-worlds:
+    needs: preoutcome-source-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install full real CPU PhysX and unchanged released PPO runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e . huggingface_hub
+      - name: Execute all eight registered new resets × nine actually stepped robot-controller worlds
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/frozen_ppo_precontact_authority_new16.py \
+            2>&1 | tee "native_precontact_${ABI_TASK}.log"
+          test -s "precontact_new16_${ABI_TASK}_original8.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-precontact-fullphysx-${{ matrix.task }}
+          path: |
+            precontact_new16_*.json
+            native_precontact_*.log
+          retention-days: 90
+  complete-nine-arm-source-audit:
+    needs: nine-true-official-native-physx-worlds
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-precontact-fullphysx-*
+          path: /tmp/new16-original
+          merge-multiple: true
+      - name: Independently count all task success, controller target reads, actual fault exposures and public contact observations
+        run: |
+          set -euo pipefail
+          python -m research.audit_precontact_authority_new16 \
+            --input-dir /tmp/new16-original \
+            --output /tmp/new16_full_original_audit.json
+          python - <<'PY'
+          import json
+          x=json.load(open('/tmp/new16_full_original_audit.json'))
+          assert x['preregistered_original_states']==16
+          assert x['retained_registered_episodes']==16
+          assert len(x['paired_outcomes'])==16
+          print('ORIGINAL_PROSPECTIVE_RESULTS_WITH_NO_SEED_DROPPING',
+                'operational_fault_gate',x['operational_fault_reached_all'],
+                'all_arm_fault_gate',x['all_seven_plus_two_comparator_faults_reached'],
+                'success',x['total_success'],
+                'private_reads',x['total_decision_target_reads'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-new16-precontact-nonselected-source-audit
+          path: /tmp/new16_full_original_audit.json
