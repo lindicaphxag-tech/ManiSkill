@@ -24,7 +24,7 @@ jobs:
           test "$(git hash-object research/SHARED_COMPILER_TWOACK_FROZEN_PPO64_PREOUTCOME_V1.json)" = b57973e28897c40125069fb0205e83b1c46d1885
           test "$(git hash-object research/frozen_ppo_mixed_ack_truth_physx.py)" = 36e672446407435e656cbf8aba6fa2de7c1e9d0e
           test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
-          test "$(git hash-object research/frozen_ppo_shared_compiler_twoack_2x2_physx.py)" = 3d87232eb08352d2807e75e57ad9e8083989a957
+          test "$(git hash-object research/frozen_ppo_shared_compiler_twoack_2x2_physx.py)" = 89248363b5bc52c0568495f3f78efc58d9a1ac67
           test "$(git hash-object research/run_shared_compiler_twoack_new64.py)" = 7b1cf4a39bda292bb52980f450928942503571da
           test "$(git hash-object research/audit_shared_compiler_twoack_new64.py)" = d8a4492b2b77b0cee76edd0e4675d3d8975b9f96
           python -m py_compile research/frozen_ppo_shared_compiler_twoack_2x2_physx.py research/run_shared_compiler_twoack_new64.py research/audit_shared_compiler_twoack_new64.py
@@ -49,6 +49,16 @@ jobs:
           assert 'shared_neutral_probe_step4' in src
           assert 't3_physically_applied' in src
           assert 'privileged_target_readback_decision_count' in src
+          # The first native attempt exposed an actual t5 caching-order bug.
+          # Fail before any expensive PhysX if fixed-reader cardinality is
+          # determined before its authoritative resync.
+          key='if n=="fault_always_single_privileged_query" and step==5:'
+          start=src.index(key)
+          fixed_resync=src.index('beliefs[n].require_external_resync(actual)',start)
+          cardinality=src.index('maybe_two=(name_belief and len(beliefs[n].hypotheses)>1)',start)
+          multi_branch=src.index('if maybe_two:',start)
+          assert start < fixed_resync < cardinality < multi_branch
+          assert 'POSTQUERY_SHARED_COMPILER_STATE_MACHINE_DRIFT' in src
           print('PREOUTCOME_SHARED_COMPILER_CAUSAL_GATE_GREEN')
           PY
   nine-native-worlds-per-episode:
@@ -123,7 +133,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ORIGINAL_main_replayed_shared_compiler_2x2_64_576_PhysX_all_negative_outcomes
+          name: ORIGINAL_shared_compiler_2x2_64_576_PhysX_all_negative_outcomes
           path: |
             /tmp/original_shared_compiler_2x2/*.json
             /tmp/full_shared_compiler_original64_audit.json
