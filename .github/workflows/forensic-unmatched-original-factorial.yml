@@ -1,0 +1,83 @@
+name: Preserve genuine 1152 PhysX factorial failed pairing and independently audit all 32 seed hashes
+on:
+  push:
+    branches: [audit/forensic-factorial-reset-identity-20261009]
+    paths:
+      - research/forensic_original_same_seed_factorial.py
+      - .github/workflows/forensic-unmatched-original-factorial.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+jobs:
+  all_original_128_cell_source_audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Pin original task/physics/registered source and not modify original simulation
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/PAIRED_COUNTERFACTUAL_2X2_PPO128_PREOUTCOME_V1.json)" = 56dcb937a8a92b5cab3ee5977ce97c6bacfc10ab
+          test "$(git hash-object research/frozen_ppo_same_reset_factorial_physx.py)" = 14882a4efcd36351f8cb5873e706488788446f32
+          test "$(git hash-object research/run_same_reset_ack_factorial.py)" = 1e506bc8474369172fab9a9935f7587b1ab08c44
+          test "$(git hash-object research/audit_same_reset_ack_factorial.py)" = f741efcb7e08673b18ddb7c8215f6ea2381cfcea
+          python -m py_compile research/forensic_original_same_seed_factorial.py
+      - name: Download sixteen ORIGINAL genuine physical source shard artifacts without rerun
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 37930607707
+          github-token: ${{ github.token }}
+          pattern: factorial-*
+          merge-multiple: true
+          path: /tmp/genuine_physx_failed_factorial_originals
+      - name: Recompute all 128 results and exact 32-group initial-state validity
+        run: |
+          set -euo pipefail
+          mkdir -p research/frozen_policy_transfer/evidence/original_1152_factorial_failed_identity_audit
+          python -m research.forensic_original_same_seed_factorial \
+            --source-dir /tmp/genuine_physx_failed_factorial_originals \
+            --output research/frozen_policy_transfer/evidence/original_1152_factorial_failed_identity_audit/complete_forensic_all128.json
+      - name: Save untouched original 32 JSON shards and disclose original FAILED validity check
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import shutil,hashlib
+          src=Path("/tmp/genuine_physx_failed_factorial_originals")
+          dst=Path("research/frozen_policy_transfer/evidence/original_1152_factorial_failed_identity_audit")
+          expected={f"factorial_{t}_chunk{c}_truth{i}_{kind}.json"
+                    for t in ("pull_cube","stack_cube") for c in (0,1) for i in range(4)
+                    for kind in ("original8","audit")}
+          if {p.name for p in src.glob("factorial_*.json")}!=expected:raise ValueError("Original 16 shard/16 auditors incomplete")
+          for name in sorted(expected):shutil.copyfile(src/name,dst/name)
+          (dst/"README.md").write_text(
+              "# Authentic 1152 PhysX worlds, failed strict within-reset physical state identity\n\n"
+              "Original 16 physically stepped native source shards (32 reset identities crossed with four actual ACK truths), unchanged frozen PPOs: "
+              "https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37930607707\n\n"
+              "ORIGINAL FINAL STRICT SAME-SEED AUDIT FAILED because source initial-observation SHA-256 "
+              "is not identical for all four truth conditions on at least one same nominal seed. "
+              "Never relabel this 128-cell source as verified matched counterfactuals or use a relaxed tolerance "
+              "without a source-level diagnostic and new independent physical state-controlled experiment. "
+              "The independent forensic report gives all 32 four-truth original hash groups and retains all true task outcomes. "
+              "The original failed Actions run is deliberately preserved; this separate recovery is an audit-only negative-data archive, "
+              "not a repaired paired causal PhysX study, not a rerun, and not independent third-party reproduction.\n"
+          )
+          with (dst/"ORIGINAL_SHA256SUMS").open("w") as file:
+              for p in sorted(dst.iterdir()):
+                  if p.is_file() and p.name!="ORIGINAL_SHA256SUMS":
+                      file.write(hashlib.sha256(p.read_bytes()).hexdigest()+"  "+p.name+"\n")
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/frozen_policy_transfer/evidence/original_1152_factorial_failed_identity_audit/
+          git commit -m "Evidence: preserve 1152 native PhysX original worlds and disclose invalid within-reset matching"
+          git push origin HEAD:audit/forensic-factorial-reset-identity-20261009
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: genuine_failed_same_seed_factorial_1152_phyxs_original_forensics
+          path: research/frozen_policy_transfer/evidence/original_1152_factorial_failed_identity_audit/
+          retention-days: 90
