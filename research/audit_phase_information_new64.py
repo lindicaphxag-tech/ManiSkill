@@ -14,7 +14,7 @@ from research.run_phase_information_new64 import (
     PROACTIVE_RUNNER_BLOB,PROTOCOL,group,summarize
 )
 
-ORIGINAL_RUN=37911185135
+ORIGINAL_RUN=37911547899
 PROTOCOL_BLOB="60854049211c9d0aeee8be5e0f70bd3de14b0f09"
 
 def sha(data):
@@ -61,6 +61,14 @@ def get_one(folder,task,chunk):
                 "decision_reads","after_actual_dispatch_checks",
                 "deliberately_masked_commands_excluded","per_seed_full_real_native_outcomes"):
         require(report.get(key)==calc[key],"Original simulator source/summary mismatch in "+key)
+    if task=="stack_cube":
+        # Negative control: the preregistered phase arm ALWAYS requests the
+        # same real target read at step 4 as the physically separate fixed
+        # comparator. Both run complete independent real controller worlds.
+        for trial in calc["per_seed_full_real_native_outcomes"]:
+            require(trial["phase_success"]==trial["fixed_success"] and
+                    trial["phase_read_count"]==trial["fixed_read_count"],
+                    "Stack fixed-phase equivalent query violated matched physics")
     require(report.get("true_original_physx_sha256")==sha(raw)
             and report.get("preoutcome_protocol")==PROTOCOL,
             "Original simulator bytes or registered frozen study do not match")
