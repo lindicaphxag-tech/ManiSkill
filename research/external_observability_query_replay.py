@@ -26,6 +26,21 @@ EXPECTED_SOURCE_BLOB="e0070e5978354917b2a68d5a6230931b5b00cd25"
 EXPECTED_CLASSIFIER_BLOB="064bb46831b61af73ad445bc836326837ec5468f"
 
 
+def git_blob_sha1(content: bytes)->str:
+    """Compute Git's exact blob object ID, not just a raw-file SHA1."""
+    data=b"blob "+str(len(content)).encode("ascii")+b"\\x00"+content
+    return hashlib.sha1(data).hexdigest()
+
+
+def verify_original_source_blobs():
+    require(SOURCE.is_file() and CLASSIFIER.is_file(),
+            "Run from an intact ManiSkill checkout")
+    require(git_blob_sha1(SOURCE.read_bytes())==EXPECTED_SOURCE_BLOB,
+            "Original frozen controller experiment method has changed bytes")
+    require(git_blob_sha1(CLASSIFIER.read_bytes())==EXPECTED_CLASSIFIER_BLOB,
+            "Frozen historical response-envelope model has changed bytes")
+
+
 def require(ok,msg):
     if not ok:raise ValueError(msg)
 
@@ -136,7 +151,7 @@ def validate_original(source,task,fault,seeds):
 
 def run(task,fault,first_seed,count,output):
     seeds=validate_inputs(task,fault,first_seed,count)
-    require(SOURCE.is_file() and CLASSIFIER.is_file(),"Run from public ManiSkill repo root")
+    verify_original_source_blobs()
     os.environ.update(ABI_TASK=task,ABI_FAULT=fault,ABI_START="0")
     sys.path.insert(0,str(Path.cwd()))
     sys.path.insert(0,str(Path.cwd()/"research"))
