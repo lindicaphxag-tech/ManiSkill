@@ -1,0 +1,141 @@
+name: Prospective 10-arm canonical target-read semantics controlled PhysX
+
+on:
+  push:
+    branches: [research/canonical-post-read-abi-new64-20261009]
+  pull_request:
+    paths:
+      - 'research/CANONICAL_POST_READ_FRESH64_PREREG_V1.json'
+      - 'research/frozen_ppo_post_read_canonical_new64.py'
+      - 'research/audit_canonical_post_read_fresh64.py'
+      - '.github/workflows/canonical-post-read-fresh64.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-protocol-and-fixed-source-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require exact protocol PRE-implementation commit and immutable original runner
+        run: |
+          test "$(git hash-object research/CANONICAL_POST_READ_FRESH64_PREREG_V1.json)" = "17aecaf25337d2482374f08272bb28ee5bdaebcf"
+          test "$(git hash-object research/frozen_sources/frozen_ppo_compound_ack_multi_belief_v3.py)" = "99836af14205fe3e95e52a2e0d68237c7c8a9045"
+          python - <<'PY'
+          import json
+          p=json.load(open('research/CANONICAL_POST_READ_FRESH64_PREREG_V1.json'))
+          assert p['source']['original_phase_v1_blob']=='7de4ef9be172c2e4e63bd043318f53e9e2ede688'
+          assert p['new_seeds']['pull_cube']==[970001,970032]
+          assert p['new_seeds']['stack_cube']==[980001,980032]
+          assert len(p['arms'])==10
+          assert p['source']['two_fault_worlds_step_zero_indexed']==[2,3]
+          PY
+          python -m py_compile research/frozen_ppo_post_read_canonical_new64.py research/audit_canonical_post_read_fresh64.py
+      - name: Independently test counterexample boolean state bug in static comparator code
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text=Path('research/frozen_ppo_post_read_canonical_new64.py').read_text()
+          assert 'if n=="fault_fixed_readback_canonical":' in text
+          assert 'maybe_two=False' in text
+          assert 'if n in ("fault_always_single_privileged_query","fault_fixed_readback_canonical")' in text
+          assert 'stack_post_readback_canonical_invariant' in text
+          print('PASS: original legacy vs corrected cache-invalidating Arm is explicit and independently replayable')
+          PY
+
+  original-ten-real-native-controller-worlds:
+    needs: frozen-protocol-and-fixed-source-preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        shard: [0,1,2,3]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      ABI_SHARD: ${{ matrix.shard }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install genuine native ManiSkill PhysX and the released frozen-actor runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Eight NEW same-state-seeded genuine native-policy 10-arm experiments
+        run: |
+          set -o pipefail
+          export PYTHONPATH="$PWD:$PWD/research"
+          export ABI_TASK
+          export ABI_SHARD
+          python - <<'PY' 2>&1 | tee "canonical_${ABI_TASK}_chunk${ABI_SHARD}.log"
+          import importlib
+          import os
+          name=os.environ['ABI_TASK']
+          shard=int(os.environ['ABI_SHARD'])
+          m=importlib.import_module('research.frozen_ppo_post_read_canonical_new64')
+          base_seed=970001 if name=='pull_cube' else 980001
+          seeds=tuple(range(base_seed+8*shard,base_seed+8*shard+8))
+          m.SEEDS=seeds
+          m.COHORT[name]=(m.TASK_NAME,seeds)
+          m.main()
+          original=f'canonical_post_read_{name}_original8.json'
+          import pathlib
+          pathlib.Path(original).rename(f'canonical_post_read_{name}_chunk{shard}_original8.json')
+          PY
+          test -s "canonical_post_read_${ABI_TASK}_chunk${ABI_SHARD}_original8.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-canonical-${{ matrix.task }}-shard${{ matrix.shard }}
+          path: |
+            canonical_post_read_*.json
+            canonical_*.log
+
+  independent-all-64-real-controller-action-invariant-audit:
+    needs: original-ten-real-native-controller-worlds
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-canonical-*
+          path: /tmp/original
+          merge-multiple: true
+      - name: Audit exact original 64-denominator and report confounded prior arm
+        run: |
+          python -m research.audit_canonical_post_read_fresh64 --input-dir /tmp/original --output canonical_post_read_fresh64_original_complete.json
+          python - <<'PY'
+          import json
+          q=json.load(open('canonical_post_read_fresh64_original_complete.json'))
+          assert q['states']==64
+          assert q['native_stepped_controller_worlds']==640
+          assert set(q['by_task'])=={'pull_cube','stack_cube'}
+          assert q['primary_stack_same_information_same_action_invariant'] is True, 'MECHANISTIC INVARIANT FAIL: information-equivalent actions diverged'
+          print('CANONICAL readback is actually equivalent on same StackCube policy and t4 read, no invented performance margin',json.dumps({
+            'success':q['overall_success_by_arm'],
+            'reads':q['actual_decision_privileged_reads_by_arm'],
+            'by_task':q['by_task'],'paired':q['paired']},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: canonical-postread-all64-10arm-original-with-all-failures
+          path: |
+            canonical_post_read_fresh64_original_complete.json
+            /tmp/original/*.json
