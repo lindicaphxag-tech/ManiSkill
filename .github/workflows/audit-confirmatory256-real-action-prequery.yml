@@ -1,0 +1,81 @@
+name: "Original 2304 PhysX: physically dispatched action-mismatch and charged-probe forensic audit"
+on:
+  push:
+    branches: [research/confirmatory256-original-source-audit-20261009]
+    paths: [.github/workflows/audit-confirmatory256-real-action-prequery.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  raw256-real-native-source-forensics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/confirmatory256-original-source-audit-20261009
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Fail-closed original full-256 and 64-cluster physical source
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/CONFIRMATORY_FOUR_TRUTH_NEW64CLUSTERS_PREOUTCOME_V1.json)" = ac563f4d2594c4d791b257c19e0a940393261fe8
+          test "$(git hash-object research/frozen_ppo_numeric_parity_factorial_physx.py)" = 8022ab3a0d5bc97a982e78fc8ca17931aeae586c
+          test "$(git hash-object research/run_confirmatory_four_truth_new64clusters.py)" = 2a9fcf978a84d22b1125930c26041c36f58ef418
+          test "$(git hash-object research/audit_confirmatory_four_truth_new64clusters.py)" = 861100f728a4e0f7a8ac1f8ad027dc299c09de95
+          test "$(git hash-object research/audit_confirmatory256_real_motor_action_probe_cost.py)" = e0f702a6a56c44d1dd2891a710882aa5649f7cf0
+          source_dir=research/frozen_policy_transfer/evidence/confirmatory_fourtruth_original256_3210001_3220032
+          (cd "$source_dir" && sha256sum -c SHA256SUMS)
+          python -m py_compile research/audit_confirmatory_four_truth_new64clusters.py research/audit_confirmatory256_real_motor_action_probe_cost.py
+      - name: Distinguish actual physical motor commands from nominal executed ACK truths in ALL 256 source cells
+        run: |
+          set -euo pipefail
+          source_dir=research/frozen_policy_transfer/evidence/confirmatory_fourtruth_original256_3210001_3220032
+          target=research/frozen_policy_transfer/evidence/confirmatory256_real_motor_probe_cost_original
+          mkdir -p "$target"
+          python -m research.audit_confirmatory256_real_motor_action_probe_cost \
+            --source-dir "$source_dir" \
+            --output "$target/REAL256_ACTUAL_NATIVE_T2_T3_MOTOR_AND_PUBLIC_PROBE_AUDIT.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('research/frozen_policy_transfer/evidence/confirmatory256_real_motor_probe_cost_original/REAL256_ACTUAL_NATIVE_T2_T3_MOTOR_AND_PUBLIC_PROBE_AUDIT.json')
+          d=json.loads(p.read_bytes())
+          assert d['actual_source_truth_cells']==256
+          assert d['original_actual_seed_clusters']==64
+          assert d['numerical_initial_source_observations_matched_under_precommitted_tolerance'] is True
+          assert len(d['original_per_condition'])==256
+          assert d['real_t4_probe_receipts_by_method']['public']<=256
+          assert d['public_extra_achieved_xyz_sample_events']==2*d['real_t4_probe_receipts_by_method']['public']
+          assert d['all_three_main_controllers_identical_physically_stepped_neutral_probe']<=256
+          for k,n in d['native_dispatched_command_identical_counts'].items():
+            assert 0<=n<=d['physical_action_parity_eligible_denominators'][k]<=256
+          print('AUDIT_256_ACTUAL_NATIVE_ACTION_PARITY_AND_PAID_OBSERVATIONS', json.dumps({
+            'identical_actual_motor':d['native_dispatched_command_identical_counts'],
+            'eligible_action_events':d['physical_action_parity_eligible_denominators'],
+            'physically_reached_fault_t3':d['physically_exposed_second_fault_event_by_method'],
+            'physically_received_probe_t4':d['real_t4_probe_receipts_by_method'],
+            'extra_public_xyz_samples':d['public_extra_achieved_xyz_sample_events'],
+            'all_three_actually_probed':d['all_three_main_controllers_identical_physically_stepped_neutral_probe'],
+          },sort_keys=True))
+          PY
+          cd "$target"
+          sha256sum REAL256_ACTUAL_NATIVE_T2_T3_MOTOR_AND_PUBLIC_PROBE_AUDIT.json > SHA256SUMS
+          cat > README.md <<'EOF'
+          # Genuine ORIGINAL 256-cell PhysX audit: native executed motor confound and probe cost
+
+          Source: the exact 32 original physical shard files, independent original full256 source audit and 64 matched initial reset clusters in [full 2304-PhysX evidence](../confirmatory_fourtruth_original256_3210001_3220032). All original bytes first passed SHA256 verification. No new task physics execution, no new sample selection or model training.
+
+          This auditor recomputes exactly what six native arm axes were PHYSICALLY DISPATCHED at t2 and t3, whether each comparator actually reached those events, t4 ACTUAL neutral-probe receipts and charged additional public achieved-position samples. Missing t3/t4 due to genuine early refusal is 'not exposed', never misrepresented as the same physical action nor deleted from the 256 task-success denominator. Pairwise t3 native-action agreement is conditional on BOTH relevant arms having physically reached t3.
+
+          **Important causal scope:** the larger end-to-end public-versus-task-aware success gap CANNOT be called a query-only causal effect if physical motor actions already differed before the private-read decision. The separate previously published 64-task same-prequery-motor and shared postquery-compiler evidence is the narrow information-only comparator. This remains an author-owned exact-source-only re-audit, not outside laboratory replication or a hardware/VLA safety result.
+          EOF
+          cd -
+          git add "$target"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if ! git diff --cached --quiet; then
+            git commit -m "evidence: archive original 2304-PhysX physical motor/action confound and public observation costs"
+            git push origin HEAD:research/confirmatory256-original-source-audit-20261009
+          fi
