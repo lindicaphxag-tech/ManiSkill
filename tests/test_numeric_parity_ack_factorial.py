@@ -16,10 +16,10 @@ from research.audit_numeric_parity_ack_factorial import (
 def test_preregistration_is_fixed_full_factorial():
     assert_preoutcome()
     p = json.loads(Path(PREREG).read_text())
-    assert p["n_independent_source_reset_identifiers"] == 32
-    assert p["n_task_seed_truth_cells"] == 128
-    assert p["n_separate_physx_worlds"] == 1152
-    assert p["physical_arms_per_cell"] == 9
+    assert p["source_seed_clusters"] == 32
+    assert p["seed_truth_cells"] == 128
+    assert p["physical_native_worlds"] == 1152
+    assert p["arms_per_cell"] == 9
     assert [truth(t) for t in range(4)] == [
         ("held", "held"), ("applied", "held"),
         ("held", "applied"), ("applied", "applied")
