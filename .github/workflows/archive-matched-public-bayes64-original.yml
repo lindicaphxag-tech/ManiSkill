@@ -1,0 +1,98 @@
+name: Permanently archive first original 640 native matched-public PhysX source, including wrong confident history
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-matched-public-bayes64-original.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  original-source-preflight-and-permanent-archive:
+    if: github.repository == 'lindicaphxag-tech/ManiSkill'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require genuine first original complete physical run, not a replay
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          repo=lindicaphxag-tech/ManiSkill
+          test "$(gh api repos/$repo/actions/runs/37924192162 --jq .head_sha)" = d378e51006fc44626ab5a651ca1ad2dad5a312e0
+          test "$(gh api repos/$repo/actions/runs/37924192162 --jq .conclusion)" = success
+          test "$(gh api repos/$repo/actions/runs/37924192162 --jq .run_attempt)" = 1
+          mkdir -p /tmp/bayes_original640
+          gh run download 37924192162 --repo "$repo" --pattern 'original-same-public-Bayes-new64-*' --dir /tmp/bayes_original640
+          test "$(find /tmp/bayes_original640 -name 'bayes_same_public_*_original8.json' -type f | wc -l)" -eq 8
+          test "$(find /tmp/bayes_original640 -name 'bayes_same_public_*_audit.json' -type f | wc -l)" -eq 8
+          test "$(find /tmp/bayes_original640 -name 'SOURCE_SHA256SUMS' -type f | wc -l)" -eq 8
+          test "$(find /tmp/bayes_original640 -name 'REAL_NATIVE_PHYXS_FULL_LOG.txt' -type f | wc -l)" -eq 8
+      - name: Independently reverify original first-run SHA, physical prefixes and seed 1760020 error
+        run: |
+          set -euo pipefail
+          find /tmp/bayes_original640 -name SOURCE_SHA256SUMS -type f -print0 |
+            while IFS= read -r -d '' manifest; do
+              (cd "$(dirname "$manifest")" && sha256sum -c SOURCE_SHA256SUMS)
+            done
+          python -m research.review_matched_public_bayes64_original \
+            --source-dir /tmp/bayes_original640 --output /tmp/REVIEWED_ORIGINAL640.json
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/REVIEWED_ORIGINAL640.json'))
+          assert d['original_reset_states']==64
+          assert d['paired_task_success_A_vs_C']['both_success']==52
+          assert d['paired_task_success_A_vs_C']['both_failure']==12
+          assert d['wrong_confident_source_episode'][0]['seed']==1760020
+          assert len(d['source_original_json_sha256'])==8
+          assert d['original_native_physx_controller_worlds']==640
+          print('PASS: full original PhysX source tamper audit + retained WRONG latent target history')
+          PY
+      - name: Commit complete original source + runtime environment (no force push)
+        run: |
+          set -euo pipefail
+          dst=research/frozen_policy_transfer/evidence/matched_public_bayes_original640_1760001_1770032
+          mkdir -p "$dst"
+          cp -a /tmp/bayes_original640/. "$dst/"
+          cp /tmp/REVIEWED_ORIGINAL640.json "$dst/REVIEWED_ORIGINAL640.json"
+          cat > "$dst/README.md" <<'EOF'
+          # First 64 preregistered actual native PhysX resets with three physically matched t5 decisions
+          Original FIRST physical eight-shard run: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37924192162
+          Physical source commit d378e51006fc44626ab5a651ca1ad2dad5a312e0, run attempt 1.
+          ORIGINAL task reset IDs: PullCube 1760001..1760032; StackCube 1770001..1770032.
+          Original 640 controller worlds, 8 source JSON, 8 source audits, 8 source logs, 8 environment manifests, per-shard SHA256 and original exact offline-review aggregate.
+          Complete-history unique-or-read: 52/64 tasks, 48 private controller target reads, 16 confident public histories and one confirmed WRONG latent full target history (PullCube seed 1760020, selected index 0 vs actual index 3).
+          Same-public residual-score heuristic 0.95: 52/64 tasks, 63 private target reads, one public authorization, zero observed confident wrong; this is NOT calibrated true Bayesian posterior, NOT ActionShift DualABI.
+          Mandatory target memory getter: 52/64 tasks, 64 private reads. All treatments had identical task success/failure flags in these original 64 states, NOT a noninferiority certificate.
+          Complete public XYZ observation cost is 128 events for each public method, not zero-price. Physical neutral probe common but consumes time.
+          Original first-run files never edited, cherry-picked or regenerated. The reviewer audit repeats all source SHA256 and hidden-state label checks, but is NOT external research-lab reproduction. No actual lost TCP packets, hardware safety or independent adoption claimed.
+          Original research synthesis: research/frozen_policy_transfer/WHEN_PUBLIC_MOTION_MISIDENTIFIES_CONTROLLER_MEMORY_ORIGINAL64.md
+          EOF
+          (cd "$dst" && find . -type f ! -name 'FULL_SOURCE_SHA256SUMS' -print0 | sort -z | xargs -0 sha256sum > FULL_SOURCE_SHA256SUMS)
+          (cd "$dst" && sha256sum -c FULL_SOURCE_SHA256SUMS)
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dst"
+          if git diff --cached --quiet; then echo 'Already archived';exit 0; fi
+          git commit -m 'evidence: permanently preserve all 640 original matched-public PhysX worlds with confident-wrong history'
+          for attempt in 1 2 3 4; do
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              echo 'Concurrent main update conflicts: no force push, preserve source'
+              exit 1
+            fi
+            if git push origin HEAD:main; then echo 'Permanent first-original evidence committed';exit 0;fi
+          done
+          exit 1
