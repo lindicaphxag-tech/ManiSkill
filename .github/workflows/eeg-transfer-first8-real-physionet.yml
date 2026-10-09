@@ -1,0 +1,98 @@
+name: Source-locked genuine EEGBCI 8-subject transfer shrinkage + strong CSP baseline
+on:
+  push:
+    branches: [validation/eeg-transfer-first8-real-physionet-20261010]
+    paths: ['.github/workflows/eeg-transfer-first8-real-physionet.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prior-to-outcome-adversarial-blindness-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: lindicaphxag-tech/moabb
+          ref: ed49090662f6400ab53c7cc66a895480d39db98f
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Prove original source and preregistration frozen before any EEG downloads
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = ed49090662f6400ab53c7cc66a895480d39db98f
+          test "$(git hash-object research/EEGBCI_FIRST8_PREOUTCOME_20261010.json)" = f612cb97f8a6de1b4691f94e4794e4d682df1c6e
+          test "$(git hash-object research/transfer_consistency_shrinkage.py)" = 2627d317887bfe613ac8cac57133bd22937909ad
+          test "$(git hash-object research/test_transfer_consistency_shrinkage.py)" = e04aaddb82e13202631f2edc47a91ec1136bbca0
+          test "$(git hash-object research/run_eegbci_first8_physionet.py)" = 7b56972f54b2ee4301ba115b301f78ae25344dc0
+          python -m py_compile research/transfer_consistency_shrinkage.py research/test_transfer_consistency_shrinkage.py research/run_eegbci_first8_physionet.py
+      - name: Install locked low-compute numerical packages
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy==2.2.6 scipy==1.15.3 scikit-learn==1.6.1 mne==1.9.0
+      - name: Reject target label leakage, duplicated subject trials, all accidental template wins
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s research -p 'test_transfer_consistency_shrinkage.py' -v
+          python -m research.run_eegbci_first8_physionet --mode preflight
+
+  actual_physionet_edf_eight_new_outer_subjects:
+    needs: prior-to-outcome-adversarial-blindness-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 105
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      MNE_DONTWRITE_HOME: 'true'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: lindicaphxag-tech/moabb
+          ref: ed49090662f6400ab53c7cc66a895480d39db98f
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install original public EEG CPU dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy==2.2.6 scipy==1.15.3 scikit-learn==1.6.1 mne==1.9.0
+      - name: Run all 8 truly downloaded PhysioNet source subjects and complete subject-blocked benchmarks
+        shell: bash
+        run: |
+          set -o pipefail
+          git rev-parse HEAD > original_eeg_source_sha.txt
+          python -m pip freeze --all > original_eeg_python_environment.txt
+          python -m research.run_eegbci_first8_physionet --mode preflight
+          python -m research.run_eegbci_first8_physionet --mode run --data "$RUNNER_TEMP/public_eegbci" --output original_first8_subjectwise_results.json 2>&1 | tee original_real_eegbcimi_console.log
+          test -f original_first8_subjectwise_results.json
+          python - <<'PY'
+          import json
+          p=json.load(open('original_first8_subjectwise_results.json'))
+          assert p['genuine_public_physionet_EEG_data_not_synthetic'] is True
+          assert p['results_include_all_eight_heldout_subjects'] is True
+          assert p['summary']['n_independent_outer_subjects']==8
+          assert len(p['source_epoch_groups'])==8
+          assert len(p['per_independent_heldout_subject'])==8
+          assert all('test_auc_CSP_LDA' in r for r in p['per_independent_heldout_subject'])
+          print('PASS_REAL_EEGBCI_FIRST8_NO_CHERRY_PICK_ALL_HOLDOUTS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: first-real-eight-subject-eeg-source-and-results
+          path: |
+            original_first8_subjectwise_results.json
+            original_real_eegbcimi_console.log
+            original_eeg_source_sha.txt
+            original_eeg_python_environment.txt
+          retention-days: 90
