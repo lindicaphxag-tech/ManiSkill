@@ -1,0 +1,116 @@
+name: "AEF action-equivalence first vs public native target evidence: 64 new real Panda PhysX shifted PPO tasks"
+on:
+  push:
+    branches: [research/action-equivalence-first-ack-20261009]
+    paths:
+      - 'research/ACTION_EQUIVALENCE_FIRST_OOD_NEW64_PREOUTCOME_V1.json'
+      - 'research/frozen_ppo_aef_hybrid_ood_physx_v7.py'
+      - 'research/run_aef_hybrid_ood_new64.py'
+      - 'research/audit_aef_hybrid_ood_new64.py'
+      - '.github/workflows/aef-hybrid-sourcefrozen-ood-physx.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-source-frozen-AEF-evidence-authority-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pin new AEF real PhysX methods and verify 4 ACK × 2 drive × 2 tasks fully balanced before physical experiment
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/ACTION_EQUIVALENCE_FIRST_OOD_NEW64_PREOUTCOME_V1.json)" = 6e7db0a6af7dd4e6f33f7119ca0ae30f6fcbfd3b
+          test "$(git hash-object research/frozen_ppo_aef_hybrid_ood_physx_v7.py)" = 52906222cdacb4893594ac17faac706a2d9f89b9
+          test "$(git hash-object research/run_aef_hybrid_ood_new64.py)" = 9488bab66398fbceb3e71d0c902600b870010eb2
+          test "$(git hash-object research/audit_aef_hybrid_ood_new64.py)" = 45adac7998a7bfde51aa4856d3834250a8d26ffa
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = ddfaf4522d49f73ce926e4c6d77c7ca755f8e1b6
+          python -m py_compile research/frozen_ppo_aef_hybrid_ood_physx_v7.py research/run_aef_hybrid_ood_new64.py research/audit_aef_hybrid_ood_new64.py
+          python - <<'PY'
+          from research.run_aef_hybrid_ood_new64 import accepted,check_sources
+          check_sources()
+          for task,start in (("pull_cube",1000101),("stack_cube",1010101)):
+              ids=[v for chunk in range(4) for v in accepted(task,chunk)]
+              assert ids==list(range(start,start+32))
+              truth=lambda s:("A" if s%2==0 else "H")+("A" if (s//2)%2==0 else "H")
+              domain=lambda s:"slow" if (s//4)%2==0 else "fast"
+              assert all(sum(truth(i)==t and domain(i)==d for i in ids)==4
+                  for t in ("AA","AH","HA","HH") for d in ("slow","fast"))
+          print("PRECOMMITTED_OOD_AEF_ROBUST_PUBLIC_READ_BACK_64_TRUE_SOURCE_STATES",True)
+          PY
+
+  genuine-PhysX-Panda-64-seed-10-arm-shards:
+    needs: original-source-frozen-AEF-evidence-authority-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install ManiSkill original CPU SAPIEN PhysX real native Panda simulator and actual old frozen PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Record exact actual source and all native packages BEFORE physical action
+        run: |
+          git rev-parse HEAD > original_AEF_execution_git_commit.txt
+          python -m pip freeze --all > original_AEF_PhysX_environment.txt
+      - name: ACTUALLY step 10 source/strong/public/AEF real PhysX worlds for each of eight original changed-drive PPO states
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_aef_hybrid_ood_new64.py --task "$TASK" --chunk "$CHUNK" 2>&1 | tee genuine_physx_AEF_source_stdout.log
+          test -s "aef_hybrid_${TASK}_chunk${CHUNK}_original8.json"
+          test -s "aef_hybrid_${TASK}_chunk${CHUNK}_audit.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-true-aef-physx-${{ matrix.task }}-${{ matrix.chunk }}
+          path: |
+            aef_hybrid_*_original8.json
+            aef_hybrid_*_audit.json
+            genuine_physx_AEF_source_stdout.log
+            original_AEF_execution_git_commit.txt
+            original_AEF_PhysX_environment.txt
+          retention-days: 90
+  separately-source-audit-all-original-640-true-AEF-physics-controller-worlds:
+    needs: genuine-PhysX-Panda-64-seed-10-arm-shards
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install NUMPY only for source-only independent original AEF data audit, never rerun physics
+        run: python -m pip install 'numpy<3'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-true-aef-physx-*
+          path: /tmp/actual_original_AEF_640_PhysX
+          merge-multiple: true
+      - name: Recompute EVERY original paired real task/target memory/robust native certificate/privileged read, no counterfactual splicing
+        run: |
+          python -m research.audit_aef_hybrid_ood_new64 --source-dir /tmp/actual_original_AEF_640_PhysX --output /tmp/INDEPENDENT_AEF_REAL_640_PHYSX_ALL64.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: complete-original-640-real-PhysX-AEF-and-strong-matched-controls
+          path: |
+            /tmp/actual_original_AEF_640_PhysX/*.json
+            /tmp/INDEPENDENT_AEF_REAL_640_PHYSX_ALL64.json
+          retention-days: 90
