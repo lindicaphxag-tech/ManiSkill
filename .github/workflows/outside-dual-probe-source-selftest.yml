@@ -1,0 +1,32 @@
+name: "External reviewer fork entry contract: frozen source, new seed selection, no claim of outside execution"
+on:
+  push:
+    branches: [research/sequential-two-probe-full-joint-20261009]
+    paths:
+      - 'research/outside_independent_dual_probe_replication.py'
+      - '.github/workflows/outside-dual-probe-source-selftest.yml'
+permissions:
+  contents: read
+jobs:
+  pure-stdlib-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate exact published sources and external selectable holdout without executing or inventing physical episodes
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/frozen_ppo_sequential_two_public_probes_physx_v5.py)" = cd84a9fe091d19bd198292e4f54ee0f9bfd73858
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = ddfaf4522d49f73ce926e4c6d77c7ca755f8e1b6
+          python -m py_compile research/outside_independent_dual_probe_replication.py
+          python research/outside_independent_dual_probe_replication.py --help
+          python - <<'PY'
+          from research.outside_independent_dual_probe_replication import self_selected
+          ss=self_selected('stack_cube',960001)
+          assert len(ss)==8 and ss==list(range(960001,960009))
+          assert {('A' if s%2==0 else 'H')+('A' if (s//2)%2==0 else 'H') for s in ss}=={'AA','AH','HA','HH'}
+          print('EXTERNAL_REVIEWER_NEW_SEED_ENTRY_SOURCE_ONLY_VALID; NO PHYSX OR THIRD_PARTY RUN CLAIM',True)
+          PY
