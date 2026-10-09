@@ -1,0 +1,111 @@
+name: 'Real frozen PPO NEW64: joint public XYZ+SO3 full controller history vs XYZ-only native PhysX'
+on:
+  push:
+    branches: [research/joint-public-se3-execution-new64-20261009]
+    paths:
+      - research/JOINT_PUBLIC_SO3_XYZ_FROZEN_NEW64_PREOUTCOME_V1.json
+      - research/frozen_ppo_joint_public_SE3_new64_physx.py
+      - research/run_joint_public_SE3_new64.py
+      - research/audit_joint_public_SE3_new64.py
+      - .github/workflows/joint-public-se3-frozen-ppo-native64.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  freeze_posthoc_development_S03_rule_before_NEW_outcome:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pin immutable prospective NEW task seeds, frozen PPO and actual quaternion source
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/JOINT_PUBLIC_SO3_XYZ_FROZEN_NEW64_PREOUTCOME_V1.json)" = 88adbc25f0435f8c452e988891f3745e49afea08
+          test "$(git hash-object research/frozen_ppo_joint_public_SE3_new64_physx.py)" = bb416b088fb08657806199d9d9e46b68a88aec20
+          test "$(git hash-object research/run_joint_public_SE3_new64.py)" = 68c9b6b725a6fa08b9dab7c3e90b634670cb51a3
+          test "$(git hash-object research/audit_joint_public_SE3_new64.py)" = 39edc1fca1f3af97380b486510be4464817a7249
+          python -m py_compile research/frozen_ppo_joint_public_SE3_new64_physx.py research/run_joint_public_SE3_new64.py research/audit_joint_public_SE3_new64.py
+          python - <<'PY'
+          from research.run_joint_public_SE3_new64 import freeze,seeds
+          freeze()
+          assert [s for ch in range(4) for s in seeds('pull_cube',ch)]==list(range(3310001,3310033))
+          assert [s for ch in range(4) for s in seeds('stack_cube',ch)]==list(range(3320001,3320033))
+          print('PASS: new64 original seeds frozen before actual native PPO, old development SO3 radius=.020 rad; no calibrated safety claims')
+          PY
+  original_eight_physically_stepped_frozen_policy_worlds:
+    needs: freeze_posthoc_development_S03_rule_before_NEW_outcome
+    runs-on: ubuntu-latest
+    timeout-minutes: 105
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+      PYTHONUNBUFFERED: '1'
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install same real CPU PhysX ManiSkill and hash-frozen third-party PPO checkpoints
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Store actual native controller and Python package evidence
+        run: |
+          git rev-parse HEAD > ORIGINAL_NATIVE_SOURCE_COMMIT.txt
+          python -m pip freeze --all > ORIGINAL_NATIVE_PYTHON_PACKAGES.txt
+      - name: Run EACH actual native PPO target controller and source-audit all eight task resets, no false confident omission
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_joint_public_SE3_new64.py --task "$ABI_TASK" --chunk "$CHUNK" 2>&1 | tee original_joint_public_real_physx.log
+          test -s "jointse3_${ABI_TASK}_chunk${CHUNK}_original8.json"
+          test -s "jointse3_${ABI_TASK}_chunk${CHUNK}_audit.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: real-XYZ-SO3-native-PPO-${{ matrix.task }}-chunk${{ matrix.chunk }}
+          path: |
+            jointse3_*_original8.json
+            jointse3_*_audit.json
+            original_joint_public_real_physx.log
+            ORIGINAL_NATIVE_SOURCE_COMMIT.txt
+            ORIGINAL_NATIVE_PYTHON_PACKAGES.txt
+          retention-days: 90
+  complete_original_NEW64_all_failure_paired_source_audit:
+    needs: original_eight_physically_stepped_frozen_policy_worlds
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: real-XYZ-SO3-native-PPO-*
+          merge-multiple: true
+          path: /tmp/new64_real_pose_source
+      - name: Independently recompute exactly original task successes, both public pose channels and full hidden SE3 authority truth
+        run: |
+          set -euo pipefail
+          python -m research.audit_joint_public_SE3_new64 --source-dir /tmp/new64_real_pose_source --output /tmp/first_actual_new64_SE3_audit.json
+          test -s /tmp/first_actual_new64_SE3_audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: complete-64-real-PhysX-joint-public-SE3-and-Xyz-all-original-audit
+          path: |
+            /tmp/new64_real_pose_source/jointse3_*_original8.json
+            /tmp/new64_real_pose_source/jointse3_*_audit.json
+            /tmp/first_actual_new64_SE3_audit.json
+          retention-days: 90
