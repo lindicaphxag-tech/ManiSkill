@@ -1,0 +1,164 @@
+name: Exploratory real SmolVLA LIBERO denoising1 vs previous denoising10 (NO faults)
+on:
+  push:
+    branches:
+      - research/smolvla-calibrated-denoising-exploratory-20261009
+    paths:
+      - '.github/workflows/real-vla-libero-calibrated-pilot.yml'
+      - 'research/vla_beliefbridge/audit_official_libero_eval.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: vla-libero-denoise-exploration
+  cancel-in-progress: true
+jobs:
+  authentic-libero-episode:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        task_id: [0, 1]
+    timeout-minutes: 100
+    env:
+      PYTHONUNBUFFERED: '1'
+      TASK_ID: ${{ matrix.task_id }}
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      HF_HUB_DOWNLOAD_TIMEOUT: '120'
+      MUJOCO_GL: osmesa
+      PYOPENGL_PLATFORM: osmesa
+      LIBERO_CONFIG_PATH: /tmp/real_vla_libero_configuration
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      TOKENIZERS_PARALLELISM: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate evidence auditor without robotics dependencies
+        run: |
+          set -euo pipefail
+          python -m research.vla_beliefbridge.audit_official_libero_eval --self-test
+      - name: Install CPU headless MuJoCo and pin exact original LeRobot source
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y libosmesa6 libgl1 libegl1 libglfw3 libglew2.2
+          mkdir -p real_vla_libero_evidence
+          git clone --filter=blob:none https://github.com/huggingface/lerobot.git /tmp/official-lerobot
+          git -C /tmp/official-lerobot checkout b9cb121cb7d4e3e26ec5c906d08dda68d151ba52
+          python -m pip install --upgrade pip
+          python -m pip install -e '/tmp/official-lerobot[smolvla,libero,evaluation]'
+          # Upstream LIBERO requests stdin on its FIRST import if ~/.libero/config.yaml
+          # is absent. Reproduce its exact default configuration noninteractively.
+          # This is initialization only; do not modify the simulator or policy.
+          python - <<'PY'
+          import importlib.util
+          from pathlib import Path
+          import os
+          import yaml
+
+          spec = importlib.util.find_spec("libero.libero")
+          if spec is None or spec.origin is None:
+              raise RuntimeError("Genuine installed LIBERO package not found")
+          root = Path(spec.origin).resolve().parent
+          paths = {
+              "benchmark_root": root,
+              "bddl_files": root / "bddl_files",
+              "init_states": root / "init_files",
+              "datasets": root.parent / "datasets",
+              "assets": root / "assets",
+          }
+          for name in ("bddl_files", "init_states"):
+              if not paths[name].is_dir():
+                  raise RuntimeError(f"Original LIBERO required directory missing: {name}={paths[name]}")
+          config_dir = Path(os.environ["LIBERO_CONFIG_PATH"])
+          config_dir.mkdir(parents=True, exist_ok=True)
+          configuration = {k: str(v) for k,v in paths.items()}
+          config_file = config_dir / "config.yaml"
+          config_file.write_text(yaml.safe_dump(configuration, sort_keys=True))
+          # hf-libero intentionally omits heavy assets from its PyPI wheel.
+          # Use its OWN upstream asset resolver; never fabricate empty assets.
+          if not paths["assets"].is_dir():
+              from libero.libero import get_assets_path
+              original_assets = Path(get_assets_path()).resolve()
+              if not original_assets.is_dir():
+                  raise RuntimeError(f"Official hf-libero asset download unavailable: {original_assets}")
+              configuration["assets"] = str(original_assets)
+              config_file.write_text(yaml.safe_dump(configuration, sort_keys=True))
+          print("HEADLESS_ORIGINAL_LIBERO_PATHS", configuration)
+          PY
+          mkdir -p real_vla_libero_evidence
+          cp "$LIBERO_CONFIG_PATH/config.yaml" real_vla_libero_evidence/libero_config.yaml
+          git rev-parse HEAD > real_vla_libero_evidence/maniskill_source_commit.txt
+          git -C /tmp/official-lerobot rev-parse HEAD > real_vla_libero_evidence/official_lerobot_source_commit.txt
+          git hash-object research/vla_beliefbridge/audit_official_libero_eval.py > real_vla_libero_evidence/auditor_source_blob.txt
+          python -m pip freeze --all > real_vla_libero_evidence/python_environment.txt
+      - name: Resolve genuine task-tuned SmolVLA immutable Hub commit and download snapshot
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from huggingface_hub import HfApi, snapshot_download
+          model_id = "HuggingFaceVLA/smolvla_libero"
+          rev = HfApi().model_info(model_id).sha
+          if not isinstance(rev,str) or len(rev)!=40 or any(c not in "0123456789abcdef" for c in rev):
+              raise RuntimeError("Could not resolve immutable released model revision")
+          path = snapshot_download(repo_id=model_id,revision=rev,local_dir="/tmp/locked_vla_checkpoint")
+          if not (Path(path)/"config.json").is_file():
+              raise RuntimeError("Model snapshot missing original config.json")
+          Path("real_vla_libero_evidence/checkpoint_identity.json").write_text(
+              json.dumps({"model_id":model_id,"immutable_model_sha":rev,
+                          "checkpoint_path":"/tmp/locked_vla_checkpoint",
+                          "checkpoint_source":"official Hugging Face Hub"},
+                         indent=2,sort_keys=True)+"\n")
+          print("RELEASED_CHECKPOINT_LOCKED",model_id,rev)
+          PY
+      - name: ONE real native MuJoCo LIBERO full task rollout with task-tuned VLA
+        run: |
+          set -euo pipefail
+          mkdir -p real_vla_libero_evidence/task$TASK_ID
+          lerobot-eval \
+            --policy.path=/tmp/locked_vla_checkpoint \
+            --policy.device=cpu \
+            --policy.use_amp=false \
+            --policy.n_action_steps=1 \
+            --policy.num_steps=1 \
+            --env.type=libero \
+            --env.task=libero_spatial \
+            --env.task_ids="[$TASK_ID]" \
+            --env.control_mode=relative \
+            --env.init_states=true \
+            --env.hard_reset=true \
+            --env.max_parallel_tasks=1 \
+            --eval.batch_size=1 \
+            --eval.n_episodes=1 \
+            --seed=1180001 \
+            --output_dir=real_vla_libero_evidence/task$TASK_ID \
+            2>&1 | tee real_vla_libero_evidence/official_full_rollout.log
+          test -s real_vla_libero_evidence/task$TASK_ID/eval_info.json
+      - name: Audit original environment success even when it is FALSE
+        run: |
+          set -euo pipefail
+          python -m research.vla_beliefbridge.audit_official_libero_eval \
+            --input real_vla_libero_evidence/task$TASK_ID/eval_info.json \
+            --task-id "$TASK_ID" \
+            --output real_vla_libero_evidence/official_libero_closedloop_audit_task$TASK_ID.json
+      - name: Preserve full original outcome, failure logs and SHA256 ledger
+        if: always()
+        run: |
+          set +e
+          mkdir -p real_vla_libero_evidence
+          find real_vla_libero_evidence -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 -r sha256sum > real_vla_libero_evidence/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-locked-real-vla-denoise1-task-${{ matrix.task_id }}
+          path: real_vla_libero_evidence/
+          if-no-files-found: warn
+          retention-days: 60
+
+# SCIENTIFIC LIMIT: green CI means task rollout/audit completed, NOT successful manipulation.
+# No unknown ACK, no private target-memory readbacks, no BeliefBridge recovery.
