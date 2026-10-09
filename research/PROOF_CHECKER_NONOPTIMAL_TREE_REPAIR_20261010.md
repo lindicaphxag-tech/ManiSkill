@@ -1,0 +1,17 @@
+# Independent optimality audit for finite latent controller-memory probe plans
+2026-10-10; model-only, NOT task-level PhysX or real robot safety evidence.
+
+## Previously missed counterexample
+The older `certify(model,certificate)` recursively checked that a submitted probe/read/authorize tree had complete modeled observation branches, correct posterior histories, correct modeled repair labels and a **self-consistent total worst-case cost**. It did not verify that this reported cost was the *least possible* among all admissible strategies.
+
+For a 2-hidden-state model where H1 requires repair A and H2 repair B, a cost-1 probe perfectly separates the supports, and an authoritative read costs 5, the cheapest strategy has worst-case abstract cost **1**. The previous verifier nevertheless approved the following internally honest but **NON-OPTIMAL** tree: `{"kind":"read","belief":["H1","H2"],"worst_remaining_cost":5}` when the certificate's declared root cost was 5. Thus it checked a feasible-cost proof object, NOT global minimax optimality.
+
+## Code change and executable challenge
+Latest public research branch `research/authority-aware-minimax-probe-20261010` source `research/authority_probe_minimax.py` now includes a *separate* cached global-optimum recursion over **ALL admissible probe/read actions** starting from the full static hidden-history set; it recomputes the minimum worst-case model cost without reading the submitted plan's decision choices. `certify` rejects whenever the feasible submitted tree's cost differs from that independent optimum. Two adversarial mutated trees are explicitly refused in `tests/test_authority_probe_minimax.py`. Existing 70 small randomized synthetic models compare the planner against its independent exhaustive brute-force oracle.
+
+**Confirmed public GitHub Actions PASS (actual new source and new tests):** https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37993010345, commit `2c59d1d0bfefb6da8725a5a71136879e49590a41`.
+
+## Assumptions and scientific significance
+The verifier is now an exact combinatorial optimality check *conditional on the explicitly provided complete finite response supports*, static candidate histories, known non-disruptive probes and abstract additive probe/read costs. This is NOT a novel general POMDP optimality theorem. It does NOT establish that a given real robot response model is correct, probes preserve physical repair opportunity, or that abstract cost equals latency/contact/energy, and cannot certify safety or future PhysX task success. Unmodeled observations fail to a privileged read and invalidate the original cost optimality certificate for that trace. Source-identical replay alone is NOT independent author/lab validation.
+
+The relevant comparison is accepted RSS 2025 *Map Space Belief Prediction for Manipulation-Enhanced Mapping* (https://www.roboticsproceedings.org/rss21/p039.html), which connects belief estimates, real active manipulations and actual physical deployment. An RSS-quality flagship must now connect this proof to truly executed active probe policies and independent observation-support calibration under dynamics mismatch; the proof checker bug fix alone is a correctness improvement, not main-track evidence.
