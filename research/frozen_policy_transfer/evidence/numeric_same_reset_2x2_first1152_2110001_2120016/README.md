@@ -1,0 +1,8 @@
+# First original full same-reset crossed ACK PhysX result
+Source run 37932361044, code head 18f4961dd85c3795de3d7452d9f0fb4f5393066f, first attempt 1, all 16 real shard jobs and independent source audit GREEN.
+Total 32 genuinely different task/reset ID clusters; each runs all FOUR native physically applied/held ACK truths with NINE separately stepped frozen PPO controllers; 128 task×truth original cells, 1152 original simulator worlds. Do NOT claim N=128 independent reset states.
+The full numerical public observation / initial achieved ee pose parity at reset was checked for 4 truths per seed to 5e-5 fixed BEFORE outcome. Bitwise SHA equality is reported separately; numeric parity is not exact equality.
+Public history-or-query: 116/128 task successes, 91 true target reads. Strong task-only prior: 108/128, 109 reads. Fixed query: 109/128 with 128 reads. Always assumed held: 71/128 with 0 reads.
+Paired cells: both success 105, neither 9, public-only 11, task-only-only 3. Dynamic-programming 32-reset-cluster exact sign-swap sensitivity p=0.0556640625 TWO-sided. NOT conventionally significant at .05; not a randomized trial or new safety theorem.
+Every source JSON, source audit, failure/refusal, actual job terminal log, original installation package roster, git commit identity and full separate recomputation are preserved here. All originals are authored and run on one group's public GitHub CI; this is NOT external independent replication.
+A separate preregistered 64-cluster test is a separate study; NEVER pool its results with this DEVELOPMENT cohort for the primary new test p-value.
