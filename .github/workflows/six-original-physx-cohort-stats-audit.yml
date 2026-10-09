@@ -1,0 +1,47 @@
+name: "Six original real Panda PhysX cohorts and true 352-world nonzero ACK intervention source audit"
+on:
+  push:
+    branches: [research/ack-robust-active-identifiability-20261009]
+    paths:
+      - 'research/reviewer_original_six_cohort_including_causal_probe.py'
+      - '.github/workflows/six-original-physx-cohort-stats-audit.yml'
+permissions:
+  contents: read
+jobs:
+  all-source-six-independent-native-physics-populations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    strategy:
+      matrix:
+        python: ['3.11','3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Validate exact source-original SHA of five prior 64 cohorts plus one distinct 32 active physical pilot
+        run: |
+          set -euo pipefail
+          for dir in \
+            research/frozen_policy_transfer/evidence/mixed_ack_truth_frozen_ppo_original64_860001_870032 \
+            research/frozen_policy_transfer/evidence/four_joint_truths_first_physx64_880001_890032 \
+            research/frozen_policy_transfer/evidence/dual_probe_vs_single_physx_original64_900001_910032 \
+            research/frozen_policy_transfer/evidence/validity_first_prior32_new64_physx_original_940001_950032 \
+            research/frozen_policy_transfer/evidence/ood_pd_drive_known_ack_anchor_original64_960101_970132 \
+            research/frozen_policy_transfer/evidence/causal_nonzero_active_vs_passive_original32_1200101_1210116
+          do
+            (cd "$dir" && sha256sum --check SHA256SUMS)
+          done
+          python -m py_compile research/reviewer_original_six_cohort_including_causal_probe.py
+          python -m research.reviewer_original_six_cohort_including_causal_probe
+          python - <<'PY'
+          from research.reviewer_original_six_cohort_including_causal_probe import six_cohort_review
+          a=six_cohort_review()
+          p=a['sixth_pilot']
+          assert a['total_origins_across_distinct_episodes']==352
+          assert p['overall']['primary']['one_sided_95pc_binomial_upper_wrong_per_ACCEPTED_IF_iid']>.5
+          assert p['overall']['secondary']['one_sided_95pc_binomial_upper_wrong_per_ACCEPTED_IF_iid']>.35
+          assert p['mean_real_native_target_perturbation_inf_m']>1e-5
+          assert p['overall']['paired_task_outcomes']['both_real_task_success']==28
+          print('SIX_DISTINCT_PHYSX_COHORTS_SOURCE_BYTE_HASHED_AND_NEW_32_ACTUAL_NATIVE_PROBE_CAUSAL_NEGATIVE_VERIFIED',True)
+          PY
