@@ -1,0 +1,59 @@
+name: Research integrity — original PhysX ACK 32 reset overlaps invalidate old V1 risk calibration
+
+on:
+  push:
+    branches: [research/authority-risk-calibration-cohort-veto-v2-20261009]
+    paths:
+      - 'research/AUTHORITY_RISK_COVERAGE_PROSPECTIVE_V2_DISJOINT_COHORTS.json'
+      - 'research/audit_future_authority_risk_cohort_leakage.py'
+      - 'tests/test_future_authority_risk_cohort_leakage.py'
+      - '.github/workflows/check-authority-risk-calibration-cohorts.yml'
+  pull_request:
+    paths:
+      - 'research/AUTHORITY_RISK_COVERAGE_PROSPECTIVE_V2_DISJOINT_COHORTS.json'
+      - 'research/audit_future_authority_risk_cohort_leakage.py'
+      - 'tests/test_future_authority_risk_cohort_leakage.py'
+      - '.github/workflows/check-authority-risk-calibration-cohorts.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verified_immutable_cohort_integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Load ACTUAL old physical source preregistration from exact FIRST 1152 PhysX CI sha
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin 18f4961dd85c3795de3d7452d9f0fb4f5393066f
+          git show 18f4961dd85c3795de3d7452d9f0fb4f5393066f:research/NUMERIC_PARITY_ACK_FACTORIAL_NEW128_PREOUTCOME_V2.json > /tmp/factorial_original_preregistered.json
+          test "$(git hash-object /tmp/factorial_original_preregistered.json)" = 9626db5b93bd6216c94d349fb00d9ea0f9b035e1
+          test "$(git hash-object research/AUTHORITY_RISK_COVERAGE_PROSPECTIVE_V1.json)" = f79df84a1841e7ddab1331ffa7fad39e72787946
+          test "$(git hash-object research/AUTHORITY_RISK_COVERAGE_PROSPECTIVE_V2_DISJOINT_COHORTS.json)" = 8cf25e0e1ba2b402de78619166b002f69f0945d5
+      - name: Source-locked V1 contamination and fully disjoint prospective V2 audit
+        run: |
+          python -m py_compile research/audit_future_authority_risk_cohort_leakage.py
+          python -m unittest discover -s tests -p test_future_authority_risk_cohort_leakage.py -v
+          python -m research.audit_future_authority_risk_cohort_leakage --factorial-json /tmp/factorial_original_preregistered.json --output REAL_V1_CALIBRATION_CONTAMINATION_V2_DISJOINT_FUTURE.json
+          python - <<'PY'
+          import json
+          d=json.load(open('REAL_V1_CALIBRATION_CONTAMINATION_V2_DISJOINT_FUTURE.json'))
+          assert d['v1_number_preexposed']==32
+          assert d['v2_calibration_ids']==512
+          assert d['v2_test_ids']==256
+          assert d['v2_disjoint_from_source_factorial_and_each_other'] is True
+          assert d['actual_v2_physx_data_executed'] is False
+          print('PASS published original physics confounds 32 old V1 task reset IDs; V2 only preregistered, NOT original PhysX performed')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-signed-v1-calibration-contamination-and-frozen-unrun-v2
+          path: REAL_V1_CALIBRATION_CONTAMINATION_V2_DISJOINT_FUTURE.json
