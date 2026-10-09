@@ -1,0 +1,68 @@
+{
+  "schema": "canonical_post_readback_target_memory_new64_v1",
+  "frozen_date": "2026-10-09",
+  "status": "FROZEN BEFORE CONSTRUCTING NEW EXPERIMENTAL RUNNER AND BEFORE PHYSX OUTCOMES",
+  "design": "Re-run 64 completely unseen original two-fault 10-arm ManiSkill PhysX episodes to isolate an experiment-comparator implementation confound: old fixed t4 query updates controller memory belief but fails to clear current-step cached maybe_two, whereas task-phase query clears it. Add corrected fixed query treatment while retaining old buggy comparator unchanged.",
+  "new_seeds": {
+    "pull_cube": [
+      970001,
+      970032
+    ],
+    "stack_cube": [
+      980001,
+      980032
+    ],
+    "ordered_eight_seed_chunks_per_task": 4
+  },
+  "source": {
+    "original_phase_v1_ref": "research/phase-value-query-fresh64-20261009",
+    "original_phase_v1_blob": "7de4ef9be172c2e4e63bd043318f53e9e2ede688",
+    "two_fault_worlds_step_zero_indexed": [
+      2,
+      3
+    ],
+    "target_controller": "pd_ee_target_delta_pose",
+    "source_controller": "pd_ee_delta_pose",
+    "horizon": 50,
+    "authority_budget_position_inf_m": 0.05,
+    "authority_budget_orientation_geodesic_rad": 0.05
+  },
+  "frozen_external_PPO_sha256": {
+    "pull_cube": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7",
+    "stack_cube": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+  },
+  "study_methods": {
+    "original_nine": "Keep all nine original physically stepped treatment definitions (including stale cached maybe_two in old fixed arm) for transparent adverse comparison.",
+    "added_tenth": "fixed_early_readback_canonical: identical old fixed read at t=4 with same true privileged target read, but update current-step cached maybe_two=False after source belief require_external_resync. No other policy/action change.",
+    "paired_stack_equivalence": "StackCube phase_value_query uses task ID to read at step 4. Its physical control action and next memory update MUST exactly match corrected fixed arm on each same reset; report differing native actions and outcomes as INVARIANT_FAILURE, not new scientific effect. Replay actual independent controller worlds. Compare source PPO observations, source native policy action, emitted native controller 7D actions, and actual official task success for every step until termination. Numerical tolerance max_abs <= 1e-6, length/done match, identical query count/step.",
+    "pull_intervention": "PullCube phase-value policy may read conditionally based only on frozen 0.75 precommitted slack gate whereas corrected fixed always reads t4; report paired task success and read count. No threshold tuning allowed."
+  },
+  "arms": [
+    "source_no_fault",
+    "fault_oracle_private_target",
+    "fault_optimistic_unverified_ack",
+    "fault_strict_common_exact",
+    "fault_robust_two_history_without_query",
+    "fault_robust_then_single_privileged_query",
+    "fault_always_single_privileged_query",
+    "fault_authority_slack_proactive_query",
+    "fault_phase_value_query",
+    "fault_fixed_readback_canonical"
+  ],
+  "predeclared_primary": [
+    "For StackCube full original n=32: after same early read and same action compiler, identical per-step control action, per-seed task success, readback time. If not equal, study gate fails.",
+    "For PullCube n=32: task phase method relative to corrected fixed baseline at same reset seeds, exact paired discordance, total authority reads. Two-policy and whole 64 cohort separately, no post-hoc trimming.",
+    "All 64 original seeds and all 10 independently physically stepped controller treatment worlds must be preserved including pre-fault refusals, failed interventions and two masked source arm commands.",
+    "Public paper must withdraw/qualify all prior differences confounded by stale maybe_two local flag; original previous outcomes remain permanently archived."
+  ],
+  "intent_to_test_coverage": true,
+  "validity_limits": [
+    "Not physical network packets",
+    "No real robot contact safety",
+    "Two PPO/task families on one Panda controller",
+    "Fixed bug learned from earlier 64 source outcomes is an exploratory hypothesis requiring this new precommitted cohort",
+    "No claims of superiority to published ActionShift DualABI, probe or learned adaptation",
+    "No independent external science lab reproduction or accepted ICRA/RSS/CoRL paper"
+  ],
+  "no_posthoc_tuning": true
+}
