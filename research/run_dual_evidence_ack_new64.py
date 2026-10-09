@@ -11,7 +11,7 @@ from pathlib import Path
 PRE="research/DUAL_EVIDENCE_ACK_NEW64_PREOUTCOME_V1.json"
 PRE_BLOB="c2c259ba7bb6beb02bf1ad8e9cdc45eeef5941ef"
 SOURCE="research/frozen_ppo_dual_evidence_model_trust_physx.py"
-SOURCE_BLOB="a6a0937b73c8bd1c2ab2c002b93c5a84a1858901"
+SOURCE_BLOB="b97b6d1ed6a710e026f8412eb6286de53ff9bcb6"
 MOTION_BLOB="064bb46831b61af73ad445bc836326837ec5468f"
 SEED_FIRST={"pull_cube":1820001,"stack_cube":1830001}
 TASKS={"pull_cube":"PullCube-v1","stack_cube":"StackCube-v1"}
@@ -59,6 +59,8 @@ def independent_eight(record,task,chunk):
                "public_xyz_events":0,"confident":0,"wrong_confident":0}
             for n in (A,B,C)}
     witnesses=[]
+    exposed=0
+    censored_count=0
     for row in original:
         seed=row["seed"]
         intended=(seed-1)%4
@@ -67,6 +69,18 @@ def independent_eight(record,task,chunk):
             row["original_precommitted_physical_t3_execution_truth"]!=
             ("applied" if intended in (2,3) else "held")):
             raise ValueError("Physically executed ACK truth violates preoutcome balance")
+        censor=row.get("pre_t3_reference_censored",{})
+        no_full_exposure=bool(censor)
+        if no_full_exposure:
+            if set(censor)!={B,C} or len(row.get("faults",{}).get(A,[]))>=2:
+                raise ValueError("Failed t3 pre-reference must explicitly censor BOTH matching arms")
+            if not all(v.get("reason")=="PUBLIC_ARM_NEVER_DISPATCHED_T3" and
+                       v.get("true_double_ACK_physics_not_exposed") is True
+                       for v in censor.values()):
+                raise ValueError("Fake censored comparison, missing physical source evidence")
+            censored_count+=1
+        else:
+            exposed+=1
         succ=row.get("success_once",{})
         reads=row.get("privileged_target_readback_decision_count",{})
         samples=row.get("public_motion_observation_cost_samples",{})
@@ -78,11 +92,22 @@ def independent_eight(record,task,chunk):
             cost=samples.get(name)
             if cost not in (0,2):raise ValueError("Public samples unaccounted")
             # Physical probe t4 is equalized; decision-visible cost only A/B.
-            if name in (A,B) and cost!=2:
+            if name in (A,B) and cost!=(0 if no_full_exposure else 2):
                 raise ValueError("A/B use unequal or missing public XYZ samples")
             if name==C and cost!=0:
                 raise ValueError("Private-only C was given extra decision public data")
             totals[name]["public_xyz_events"]+=cost
+        if no_full_exposure:
+            witnesses.append({"task":task,"seed":seed,"true_fault_pattern":intended,
+                "valid_original_two_faults_and_matched_prefix":False,
+                "pre_t3_reference_censored":True,
+                "unexposed_retained_as_original_not_deleted":True,
+                "official_task_success":{n:succ[n] for n in (A,B,C)},
+                "private_reads":{n:reads[n] for n in (A,B,C)},
+                "same_public_samples":False,
+                "empirical_public_confident":False,"posterior_score_confident":False,
+                "empirical_wrong_confident":False,"posterior_wrong_confident":False})
+            continue
         for key in ("matched_prefix_physical_audit","matched_dual_prefix_audit"):
             compare=row.get(key,{})
             if compare.get("valid_exact_prefix") is not True or compare.get("audit_only_hidden_target_not_a_method_input") is not True:
@@ -129,12 +154,15 @@ def independent_eight(record,task,chunk):
                           "official_task_success":{n:succ[n] for n in (A,B,C)},
                           "private_reads":{n:reads[n] for n in (A,B,C)},
                           "same_public_samples":samples[A]==samples[B]==2,
+                          "valid_original_two_faults_and_matched_prefix":True,
                           "empirical_public_confident":row["public_t3_evidence"]["authorized"],
                           "posterior_score_confident":row["dual_evidence_model_trust"]["authorized"],
                           "empirical_wrong_confident":row["public_t3_evidence"]["wrong_confident"],
                           "posterior_wrong_confident":row["dual_evidence_model_trust"]["wrong_confident"]})
     return {"schema":"matched_public_two_methods_and_one_fixed_new64_eight_original_audit_v1",
-            "task":task,"chunk":chunk,"seeds":ids,"truly_physically_stepped_control_worlds":80,
+            "task":task,"chunk":chunk,"seeds":ids,"native_controller_world_instances":80,
+            "true_double_ACK_full_exposure_matched_states":exposed,
+            "original_intent_to_treat_censored_states":censored_count,
             "private_model_getter_for_public_A_B_is_audit_only":True,
             "exact_prechoice_physical_command_AND_SE3_prefix_match":True,
             "uncalibrated_residual_pseudo_posterior_not_true_probabilities":True,
