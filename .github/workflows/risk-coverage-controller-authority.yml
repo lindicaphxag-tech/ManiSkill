@@ -1,0 +1,59 @@
+name: "Risk/coverage authority: exact selective error bound + nontrivial acceptance"
+on:
+  push:
+    branches: [research/risk-coverage-controller-authority-20261009]
+    paths:
+      - 'research/finite_risk_authority.py'
+      - 'tests/test_finite_risk_authority.py'
+      - 'research/AUTHORITY_RISK_COVERAGE_PROSPECTIVE_V1.json'
+      - '.github/workflows/risk-coverage-controller-authority.yml'
+  pull_request:
+    paths:
+      - 'research/finite_risk_authority.py'
+      - 'tests/test_finite_risk_authority.py'
+      - 'research/AUTHORITY_RISK_COVERAGE_PROSPECTIVE_V1.json'
+      - '.github/workflows/risk-coverage-controller-authority.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-frozen-statistical-authority:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Validate exact result contract on precommitted new populations and risk budget
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from research.finite_risk_authority import required_zero_error_authorizations
+          p=json.load(open('research/AUTHORITY_RISK_COVERAGE_PROSPECTIVE_V1.json'))
+          assert p['frozen_before_any_prospective_outcome'] is True
+          assert p['tasks']==['pull_cube','stack_cube']
+          assert p['frozen_threshold_grid']==[0.,.25,.5,1.]
+          assert p['error_risk_cap_conditional_on_acceptance']==.10
+          assert p['min_authorization_coverage_lower_confidence_bound_per_task']==.10
+          assert p['familywise_failure_probability']==.05
+          intervals=[p['task_calibration'][k] for k in p['tasks']]+[p['prospective_task_test'][k] for k in p['tasks']]
+          all_ids=[set(range(a,b+1)) for a,b in intervals]
+          assert [len(s) for s in all_ids]==[256,256,128,128]
+          assert all(not a.intersection(b) for i,a in enumerate(all_ids) for b in all_ids[i+1:])
+          zero_errors_needed=required_zero_error_authorizations(risk_cap=.10,delta=.05,threshold_count=4,task_count=2)
+          print('Minimum accepted, with ZERO mistakes, PER TASK:',zero_errors_needed)
+          print('If calibration cannot meet BOTH risk and coverage, FAIL scientific promotion and READ state')
+          PY
+      - name: Run all adversarial selected-risk coverage, all-abstain, false-history and data-leak tests
+        run: |
+          python -m py_compile research/finite_risk_authority.py
+          python -m unittest discover -s tests -p test_finite_risk_authority.py -v
