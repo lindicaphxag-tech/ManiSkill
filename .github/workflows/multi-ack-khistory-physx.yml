@@ -1,0 +1,119 @@
+name: Genuine native PhysX multi-unknown-ACK K-history authority 16 NEW states
+
+on:
+  pull_request:
+    paths:
+      - "research/multi_history_authority.py"
+      - "research/frozen_ppo_multi_ack_khistory.py"
+      - "research/MULTI_ACK_K_HISTORY_PREOUTCOME_V1.json"
+      - "research/audit_multi_ack_khistory.py"
+      - "tests/test_multi_history_authority.py"
+      - ".github/workflows/multi-ack-khistory-physx.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-contract-before-physics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Enforce pre-outcome protocol and external source identity
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/MULTI_ACK_K_HISTORY_PREOUTCOME_V1.json)" = "4107c00a5359da78542bbaafa922e2f4196f11fd"
+          test "$(git hash-object research/frozen_ppo_ack_bounded_query.py)" = "1dc653cdc44e422c8340475ad00f828b3a41eb4f"
+          test "$(git hash-object research/two_history_se3_robust.py)" = "bb5fd155b7291fb127f94138fca321201c8271c3"
+          python -m py_compile research/multi_history_authority.py research/frozen_ppo_multi_ack_khistory.py research/audit_multi_ack_khistory.py
+          python - <<'PY'
+          import json
+          x=json.load(open("research/MULTI_ACK_K_HISTORY_PREOUTCOME_V1.json"))
+          assert x["two_fault_steps_zero_indexed"]==[2,4]
+          assert x["cohort_independent_seed_states"]==16
+          assert x["hypotheses_budget"]==16
+          assert x["selective_max_privileged_reads"]==2
+          assert x["certified_command_only_position_inf_m"]==.05
+          assert x["certified_command_only_rotation_geodesic_rad"]==.05
+          print("PASS: public protocol and original external source frozen BEFORE execution")
+          PY
+
+  two-original-frozen-model-worlds:
+    needs: frozen-contract-before-physics
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install original real PhysX CPU and publicly released pretrained PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Execute all eight real episodes times seven native controlled worlds, never filter failures
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/frozen_ppo_multi_ack_khistory.py 2>&1 | tee "two_ack_khistory_${ABI_TASK}.log"
+          test -s "two_ack_khistory_${ABI_TASK}_original8.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: genuine-two-unknown-ACK-${{ matrix.task }}
+          path: |
+            two_ack_khistory_*.json
+            two_ack_khistory_*.log
+          retention-days: 60
+
+  independent-all-16-condition-audit:
+    needs: two-original-frozen-model-worlds
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: genuine-two-unknown-ACK-*
+          path: /tmp/two_ack_source
+          merge-multiple: true
+      - name: Account original complete external-policy simulator denominators and explicit fault exposures
+        run: |
+          python -m research.audit_multi_ack_khistory \
+            --input-dir /tmp/two_ack_source --output two_ack_original_all16.json
+          python - <<'PY'
+          import json
+          p=json.load(open("two_ack_original_all16.json"))
+          assert p["original_unique_reset_states"]==16
+          assert not p["third_party_external_reproduction"]
+          assert len(p["by_task"])==2
+          for x in p["by_task"].values():
+              assert x["eight_original_states"]==8
+              assert len(x["native_task_success"])==7
+              assert x["selective_privileged_decision_reads"]<=16
+          print("PASS: ALL 16 actual new state seeds and fault/ACK exposure ledgers, including negative trials")
+          PY
+          cat two_ack_original_all16.json >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: original-16-K-history-real-physx-full-evidence
+          path: |
+            /tmp/two_ack_source/*.json
+            /tmp/two_ack_source/*.log
+            two_ack_original_all16.json
+          retention-days: 60

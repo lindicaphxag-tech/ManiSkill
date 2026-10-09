@@ -1,0 +1,32 @@
+name: Multi-history physically replayed action authority contract
+
+on:
+  pull_request:
+    paths:
+      - "research/multi_history_authority.py"
+      - "tests/test_multi_history_authority.py"
+      - ".github/workflows/multi-history-authority.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  multi-state-setpoint-mathematical-witness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install original contract numerical dependencies only
+        run: |
+          python -m pip install "numpy>=1.26,<3" "scipy>=1.13,<2"
+      - name: Assert exact multi-history physical chart and all adversarial refusals
+        run: |
+          python -m unittest discover -s tests -p test_multi_history_authority.py -v
+          python -m py_compile research/multi_history_authority.py

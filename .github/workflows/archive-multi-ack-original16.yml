@@ -1,0 +1,171 @@
+name: Preserve original 16 double unknown ACK real PhysX rows and fault accounting
+
+on:
+  pull_request:
+    paths:
+      - 'research/MULTI_ACK_K_HISTORY_PREOUTCOME_V1.json'
+      - 'research/audit_multi_ack_khistory.py'
+      - '.github/workflows/archive-multi-ack-original16.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'research/MULTI_ACK_K_HISTORY_PREOUTCOME_V1.json'
+      - 'research/audit_multi_ack_khistory.py'
+      - '.github/workflows/archive-multi-ack-original16.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  original-physx-source-and-five-evidence-tamper-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate original complete 16 physical simulations from original runner SHA and ZIP digest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/MULTI_ACK_K_HISTORY_PREOUTCOME_V1.json)" = "4107c00a5359da78542bbaafa922e2f4196f11fd"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37835511954 --jq .head_sha)" = "cea3076b99740cc825c77c9c37a7a62d02dd7043"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37835511954 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11575791928 --jq .digest)" = "sha256:7162936fae9bc7dcecd95515f3fdde6cf9ff9b9e9bac5d0fb9c9d6d7251f0e86"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11576165507 --jq .digest)" = "sha256:0b11facfd5620f773df47bcfe870fba236d4f041d254fafccd207732a14f009e"
+          mkdir -p /tmp/original_two_ack_archive /tmp/original_two_ack_source
+          gh run download 37835511954 --repo "$GITHUB_REPOSITORY" --pattern "genuine-two-unknown-ACK-*" --dir /tmp/original_two_ack_source
+          test -s "/tmp/original_two_ack_source/genuine-two-unknown-ACK-pull_cube/two_ack_khistory_pull_cube_original8.json" && cp "/tmp/original_two_ack_source/genuine-two-unknown-ACK-pull_cube/two_ack_khistory_pull_cube_original8.json" /tmp/original_two_ack_archive/
+          test -s "/tmp/original_two_ack_source/genuine-two-unknown-ACK-stack_cube/two_ack_khistory_stack_cube_original8.json" && cp "/tmp/original_two_ack_source/genuine-two-unknown-ACK-stack_cube/two_ack_khistory_stack_cube_original8.json" /tmp/original_two_ack_archive/
+          python -m research.audit_multi_ack_khistory --input-dir /tmp/original_two_ack_archive --output /tmp/original_two_ack_audit.json
+          python - <<'PY'
+          import json,shutil,tempfile
+          from pathlib import Path
+          from research.audit_multi_ack_khistory import audit
+          src=Path('/tmp/original_two_ack_archive')
+          paths=sorted(src.glob('*.json'))
+          assert len(paths)==2
+          r=audit(src)
+          s=r['all16_task_success']
+          assert r['original_unique_reset_states']==16
+          assert s['fault_robust_then_single_privileged_query']==15
+          assert s['fault_always_single_privileged_query']==15
+          assert s['fault_robust_two_history_without_query']==7
+          assert r['readbacks_selective_total']==9
+          assert r['readbacks_mandatory_total']==32
+          assert r['all16_max_observed_K']==4
+          assert r['both_faults_all_selective_cases']==16
+          assert r['by_task']['pull_cube']['both_faults_reached']['fault_robust_two_history_without_query']==7
+          for mutation in ('remove','seed','success','privilege','fabricate_fault'):
+            with tempfile.TemporaryDirectory() as d:
+              folder=Path(d)
+              for file in paths:shutil.copyfile(file,folder/file.name)
+              target=folder/paths[0].name
+              if mutation=='remove':target.unlink()
+              else:
+                d=json.loads(target.read_text())
+                trial=d['episodes'][0]
+                if mutation=='seed':trial['seed']=trial['seed']+10
+                if mutation=='success':trial['success_once']['fault_robust_then_single_privileged_query']=not trial['success_once']['fault_robust_then_single_privileged_query']
+                if mutation=='privilege':trial['privileged_target_readback_decision_count']['fault_robust_then_single_privileged_query']=100
+                if mutation=='fabricate_fault':trial['faults']['fault_robust_then_single_privileged_query'][0]['step']=99
+                target.write_text(json.dumps(d))
+              try:audit(folder);raise AssertionError('Auditor did not reject '+mutation)
+              except (ValueError,FileNotFoundError):pass
+          print('PASS all 16 preregistered native PhysX cases, 2 original source ZIP SHA256 digests, and 5 destructive data attacks')
+          PY
+  trusted-default-branch-byte-identical-permanent-archive:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: original-physx-source-and-five-evidence-tamper-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Recheck true pre-outcome contract, complete original PhysX cases, and source ZIP SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/MULTI_ACK_K_HISTORY_PREOUTCOME_V1.json)" = "4107c00a5359da78542bbaafa922e2f4196f11fd"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37835511954 --jq .head_sha)" = "cea3076b99740cc825c77c9c37a7a62d02dd7043"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37835511954 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11575791928 --jq .digest)" = "sha256:7162936fae9bc7dcecd95515f3fdde6cf9ff9b9e9bac5d0fb9c9d6d7251f0e86"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11576165507 --jq .digest)" = "sha256:0b11facfd5620f773df47bcfe870fba236d4f041d254fafccd207732a14f009e"
+          mkdir -p /tmp/original_two_ack_archive /tmp/original_two_ack_source
+          gh run download 37835511954 --repo "$GITHUB_REPOSITORY" --pattern "genuine-two-unknown-ACK-*" --dir /tmp/original_two_ack_source
+          test -s "/tmp/original_two_ack_source/genuine-two-unknown-ACK-pull_cube/two_ack_khistory_pull_cube_original8.json" && cp "/tmp/original_two_ack_source/genuine-two-unknown-ACK-pull_cube/two_ack_khistory_pull_cube_original8.json" /tmp/original_two_ack_archive/
+          test -s "/tmp/original_two_ack_source/genuine-two-unknown-ACK-stack_cube/two_ack_khistory_stack_cube_original8.json" && cp "/tmp/original_two_ack_source/genuine-two-unknown-ACK-stack_cube/two_ack_khistory_stack_cube_original8.json" /tmp/original_two_ack_archive/
+          python -m research.audit_multi_ack_khistory --input-dir /tmp/original_two_ack_archive --output /tmp/original_two_ack_audit.json
+          python - <<'PY'
+          import json,shutil,tempfile
+          from pathlib import Path
+          from research.audit_multi_ack_khistory import audit
+          src=Path('/tmp/original_two_ack_archive')
+          paths=sorted(src.glob('*.json'))
+          assert len(paths)==2
+          r=audit(src)
+          s=r['all16_task_success']
+          assert r['original_unique_reset_states']==16
+          assert s['fault_robust_then_single_privileged_query']==15
+          assert s['fault_always_single_privileged_query']==15
+          assert s['fault_robust_two_history_without_query']==7
+          assert r['readbacks_selective_total']==9
+          assert r['readbacks_mandatory_total']==32
+          assert r['all16_max_observed_K']==4
+          assert r['both_faults_all_selective_cases']==16
+          assert r['by_task']['pull_cube']['both_faults_reached']['fault_robust_two_history_without_query']==7
+          for mutation in ('remove','seed','success','privilege','fabricate_fault'):
+            with tempfile.TemporaryDirectory() as d:
+              folder=Path(d)
+              for file in paths:shutil.copyfile(file,folder/file.name)
+              target=folder/paths[0].name
+              if mutation=='remove':target.unlink()
+              else:
+                d=json.loads(target.read_text())
+                trial=d['episodes'][0]
+                if mutation=='seed':trial['seed']=trial['seed']+10
+                if mutation=='success':trial['success_once']['fault_robust_then_single_privileged_query']=not trial['success_once']['fault_robust_then_single_privileged_query']
+                if mutation=='privilege':trial['privileged_target_readback_decision_count']['fault_robust_then_single_privileged_query']=100
+                if mutation=='fabricate_fault':trial['faults']['fault_robust_then_single_privileged_query'][0]['step']=99
+                target.write_text(json.dumps(d))
+              try:audit(folder);raise AssertionError('Auditor did not reject '+mutation)
+              except (ValueError,FileNotFoundError):pass
+          print('PASS all 16 preregistered native PhysX cases, 2 original source ZIP SHA256 digests, and 5 destructive data attacks')
+          PY
+      - name: Commit ONLY byte-identical audited original PhysX JSON and SHA256SUMS
+        run: |
+          set -euo pipefail
+          dest=research/frozen_policy_transfer/evidence/two_ack_khistory_original16_230001_240008
+          mkdir -p "$dest"
+          cp /tmp/original_two_ack_archive/*.json "$dest/"
+          (cd "$dest" && sha256sum *.json > SHA256SUMS && sha256sum -c SHA256SUMS)
+          python -m research.audit_multi_ack_khistory --input-dir "$dest" --output /tmp/two_ack_post_archive.json
+          printf '%s\n' \
+          '# All original 16 new two-unknown-ACK native PhysX episodes' \
+          '' \
+          'Original successful genuine CPU PhysX+full source auditor: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37835511954 (running source head cea3076b99740cc825c77c9c37a7a62d02dd7043).' \
+          'Immutable BEFORE OUTCOME protocol Git blob 4107c00a5359da78542bbaafa922e2f4196f11fd, seeds PullCube 230001-230008 StackCube 240001-240008, fault physical native target hold at steps 2 and 4.' \
+          'Original 16 native tasks, seven arms: selective two-history/K-history bounded-or-up-to-two-reads 15/16 with 9 total reads, mandatory one read after each fault 15/16 with 32 total reads, no-read bounded 7/16, optimistic 9/16, exact-only refusal 0/16.' \
+          'ALL 16 adaptive cases reached BOTH actual interventions. One zero-read no-query bounded comparator refused early (Pull seed 230007) and did NOT reach second fault; exact-only comparator refused before second fault in all 16; all still counted.' \
+          'Real original JSON bytes preserved, not source reconstruction. Full original ZIP SHA provenance and five destructive verifier tests are locked in .github/workflows/archive-multi-ack-original16.yml.' \
+          'Author-operated ONE Panda controller and two frozen external pretrained PPOs; NOT network packet loss, hardware safety, peer review or external upstream acceptance.' \
+          'Verify: sha256sum -c SHA256SUMS && python -m research.audit_multi_ack_khistory --input-dir . --output /tmp/audit.json' > "$dest/README.md"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dest"
+          if git diff --cached --quiet;then exit 0;fi
+          git commit -m 'evidence: archive byte-identical original double-ACK PhysX 16 trial cases'
+          for i in 1 2 3 4;do
+            git pull --rebase origin main
+            if git push origin HEAD:main;then exit 0;fi
+          done
+          exit 1
