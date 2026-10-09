@@ -1,0 +1,53 @@
+name: Archived PhysX witness binding for dynamic controller repair shield
+on:
+  push:
+    branches: [research/dynamic-ack-transition-shield-20261010]
+    paths:
+      - research/audit_dynamic_probe_archive_link.py
+      - .github/workflows/verify-physical-transition-gate.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-real-evidence-does-NOT-imply-safety:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: lindicaphxag-tech/ManiSkill
+          ref: evidence/low-signal-first192-permanent-20261010
+          path: original-evidence
+          sparse-checkout: |
+            research/frozen_policy_transfer/evidence/low_signal_first192_20261010
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Verify 24 SHA256 original source files and all 96 real heldout PhysX worlds
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m research.audit_dynamic_probe_archive_link --source original-evidence/research/frozen_policy_transfer/evidence/low_signal_first192_20261010 --output first192_physical_contract_gate.json
+          python - <<'PY'
+          import json
+          r=json.load(open('first192_physical_contract_gate.json'))
+          assert r['sha256_verified_original_files']==24
+          assert r['heldout_robot_reset_ack_truth_groups']==32
+          assert r['physically_executed_probe_outcomes']==96
+          assert r['nonzero_probe_achieved_shift_gt_0_5mm']==64
+          assert r['groups_with_same_commanded_native_repair_vector_across_zero_xy']==32
+          assert r['real_transition_support_complete'] is False
+          assert r['observed_repair_changing_probe_in_this_archive'] is False
+          print('PASS REAL SOURCE BOUNDARY: ACTIVE MOVES PHYSICS BUT NO REPAIR CHANGE OBSERVED')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: real-physx-contract-gate-${{ matrix.os }}-${{ matrix.python }}
+          path: first192_physical_contract_gate.json
+          if-no-files-found: error
