@@ -1,0 +1,31 @@
+name: Epoch-fenced repair-authority stale ACK and read response regression
+on:
+  push:
+    branches: [research/epoch-fenced-repair-authority-20261010]
+    paths:
+      - research/epoch_fenced_repair_authority.py
+      - tests/test_epoch_fenced_repair_authority.py
+      - .github/workflows/epoch-fenced-repair-authority.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  adversarial-model-only:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Compile new source and tests without additional packages
+        run: python -m py_compile research/epoch_fenced_repair_authority.py tests/test_epoch_fenced_repair_authority.py
+      - name: Exercise stale replay/mismatched epoch and lost ACK attacks
+        run: python -m unittest discover -s tests -p test_epoch_fenced_repair_authority.py -v
+      - name: Retain existing original finite certificate regression suite
+        run: python -m unittest discover -s tests -p test_effect_aware_authority_certificate.py -v
