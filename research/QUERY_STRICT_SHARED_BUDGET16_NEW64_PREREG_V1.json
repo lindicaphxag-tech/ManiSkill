@@ -1,0 +1,92 @@
+{
+  "schema": "strict_shared_query_budget_cap16_new64_v1",
+  "date": "2026-10-09",
+  "preoutcome_status": "COMMITTED BEFORE ANY NEW ROLL-OUT IMPLEMENTATION OR RESULTS",
+  "research_question": "On 64 fresh original PhysX task states, do certification-triggered but budget-capped privileged target reads outperform a fixed, state-independent equal quota of 16 reads across exactly the same task checkpoints, fault truths and 8-seed ordered batches?",
+  "original_runner_reference": {
+    "source": "research/frozen_ppo_certify_query_periodic_placebo.py",
+    "source_git_blob_sha1": "e578d9fa03f9174f14c9533a15cd84f6d1c361fc",
+    "do_not_modify_policy_or_controller_semantics": true
+  },
+  "task_models": {
+    "pull_cube": {
+      "env": "PullCube-v1",
+      "seeds": [
+        360001,
+        360032
+      ],
+      "hf_sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7"
+    },
+    "stack_cube": {
+      "env": "StackCube-v1",
+      "seeds": [
+        370001,
+        370032
+      ],
+      "hf_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+    }
+  },
+  "policy_release_revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+  "simulator": "genuine official ManiSkill native PhysX CPU; no hardware and no real network ACK loss",
+  "experiment_structure": {
+    "shards": 8,
+    "per_shard_original_distinct_seeds": 8,
+    "fixed_order": "ascending numeric seed, no reshuffle after outcomes",
+    "all_original_total": 64,
+    "tasks": 2
+  },
+  "controller": {
+    "robot": "Panda",
+    "source": "pd_ee_delta_pose",
+    "target": "pd_ee_target_delta_pose",
+    "fault_step_zero_indexed": 2,
+    "actual_fault": "zero arm target delta issued while gripper is unchanged and actual simulation advances; execution acknowledgement not revealed to adapter",
+    "horizon": 50,
+    "position_linf_budget_m": 0.05,
+    "orientation_geodesic_budget_rad": 0.05
+  },
+  "shared_privileged_read_budget": {
+    "per_8_episode_shard": 2,
+    "total_across_8_shards": 16,
+    "one_or_zero_reads_per_original_episode": true,
+    "independent_per_shard_quota_disclosed": true,
+    "strict_cap_not_guaranteed_exact_expenditure": true
+  },
+  "locked_adaptive_policy": {
+    "name": "fault_robust_quota_two_per_eight",
+    "strategy": "Each 8-seed shard starts with 2 target readback tokens; at first true common bounded-action certificate refusal, issue exactly 1 privileged target read if 1 token remains; decrement token immediately. Otherwise refuse before dispatch; never take an extra read; no outcome-based budget refresh or moving tokens between shards.",
+    "residual_policy": "same frozen original robust two-history target pose command and same refusal logic when no query token",
+    "allowed_reads": "max one per trial, max 2/8 shard; guaranteed <=16/64 global"
+  },
+  "locked_placebo_policy": {
+    "name": "fault_precommitted_seed_schedule_query",
+    "strategy": "Exactly one read at first post-fault decision if seed % 4 == 0, no read otherwise; precomputed exactly 2/8 per shard and exactly 16/64 overall, does not depend on task difficulty or observed success",
+    "quota": "exactly 2 per 8-seed shard provided the fault step is reached"
+  },
+  "arms": [
+    "source_no_fault",
+    "fault_oracle_private_target",
+    "fault_optimistic_unverified_ack",
+    "fault_strict_common_exact",
+    "fault_robust_two_history_without_query",
+    "fault_robust_then_single_privileged_query",
+    "fault_robust_quota_two_per_eight",
+    "fault_precommitted_seed_schedule_query",
+    "fault_always_single_privileged_query"
+  ],
+  "primary_endpoints": [
+    "Full original 64 paired task successes across nine real simulator arms, zero excluded faults",
+    "Actual privileged decision readbacks per seed and remaining budget per shard; never assume capped arm spent exactly 16",
+    "Paired adaptive-quota versus seed-timing baseline discordance + exact two-sided test, no unadjusted multi-study novelty inflation",
+    "Comparison to uncapped selective reads and compulsory query, explicitly differentiating information budgets",
+    "Per-shard refusal after exhausted budget and bounded pose certificate history"
+  ],
+  "source_integrity": "All raw per-seed JSON files, 8 original shard stdout logs, model hashes, source commit and complete digest manifest; never fold another execution of same seeds into independent samples",
+  "falsification": [
+    "If any 8-seed quota-capped arm issues >2 private decision reads, reject study",
+    "If any source seed or fault arm missing or qpos action paths silently differ, reject study",
+    "If capped arm has <16 reads, report it as AT-MOST-16, not EXACT-16-spent",
+    "If new policy failure, preserve it and do not tune state or timeout",
+    "No safety, contact forces, external maintainer adoption, second robot learned PPO task transfer or novel general minimax theorem"
+  ]
+}
