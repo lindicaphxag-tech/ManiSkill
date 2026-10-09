@@ -39,6 +39,7 @@ jobs:
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y libosmesa6 libgl1 libegl1 libglfw3 libglew2.2
+          mkdir -p real_vla_libero_evidence
           git clone --filter=blob:none https://github.com/huggingface/lerobot.git /tmp/official-lerobot
           git -C /tmp/official-lerobot checkout b9cb121cb7d4e3e26ec5c906d08dda68d151ba52
           python -m pip install --upgrade pip
@@ -63,13 +64,23 @@ jobs:
               "datasets": root.parent / "datasets",
               "assets": root / "assets",
           }
-          for name in ("bddl_files", "init_states", "assets"):
+          for name in ("bddl_files", "init_states"):
               if not paths[name].is_dir():
                   raise RuntimeError(f"Original LIBERO required directory missing: {name}={paths[name]}")
           config_dir = Path(os.environ["LIBERO_CONFIG_PATH"])
           config_dir.mkdir(parents=True, exist_ok=True)
           configuration = {k: str(v) for k,v in paths.items()}
-          (config_dir / "config.yaml").write_text(yaml.safe_dump(configuration, sort_keys=True))
+          config_file = config_dir / "config.yaml"
+          config_file.write_text(yaml.safe_dump(configuration, sort_keys=True))
+          # hf-libero intentionally omits heavy assets from its PyPI wheel.
+          # Use its OWN upstream asset resolver; never fabricate empty assets.
+          if not paths["assets"].is_dir():
+              from libero.libero import get_assets_path
+              original_assets = Path(get_assets_path()).resolve()
+              if not original_assets.is_dir():
+                  raise RuntimeError(f"Official hf-libero asset download unavailable: {original_assets}")
+              configuration["assets"] = str(original_assets)
+              config_file.write_text(yaml.safe_dump(configuration, sort_keys=True))
           print("HEADLESS_ORIGINAL_LIBERO_PATHS", configuration)
           PY
           mkdir -p real_vla_libero_evidence
@@ -131,6 +142,7 @@ jobs:
         if: always()
         run: |
           set +e
+          mkdir -p real_vla_libero_evidence
           find real_vla_libero_evidence -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 -r sha256sum > real_vla_libero_evidence/SHA256SUMS
       - uses: actions/upload-artifact@v4
         if: always()
