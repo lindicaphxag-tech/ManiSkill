@@ -28,7 +28,7 @@ EXPECTED_CLASSIFIER_BLOB="064bb46831b61af73ad445bc836326837ec5468f"
 
 def git_blob_sha1(content: bytes)->str:
     """Compute Git's exact blob object ID, not just a raw-file SHA1."""
-    data=b"blob "+str(len(content)).encode("ascii")+b"\\x00"+content
+    data=b"blob "+str(len(content)).encode("ascii")+b"\x00"+content
     return hashlib.sha1(data).hexdigest()
 
 
