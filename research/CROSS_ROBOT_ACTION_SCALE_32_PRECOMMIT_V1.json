@@ -1,0 +1,89 @@
+{
+  "schema": "cross_robot_unknown_ack_action_scale_stress_new32_preoutcome_v1",
+  "date": "2026-10-09",
+  "hypothesis": "The retrospective one-paired-seed ACK classifier uses a fixed-action-response prototype and may fail when the actual known native control amplitude changes. A predeclared action-conditioned affine response prototype may improve controlled public-proprioception inference without target-state reads.",
+  "protocol_committed_before_runner_implementation": true,
+  "evidence_stage": "NEW prospectively fixed PhysX test with original raw complete denominators; source hypotheses informed by earlier same-command analyses. Not an entirely unmotivated blind discovery.",
+  "previous_source_data_original_run": "https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37905560363",
+  "previous_source_archive": "research/frozen_policy_transfer/evidence/cross_robot_online_public_proprio_new32_480001_490008",
+  "previous_source_manifest_git_blob": "bf731f19efb35228b8702f1a3f7b5251d7825afa",
+  "calibration": {
+    "panda_previous_paired_seed": 420001,
+    "xarm6_robotiq_previous_paired_seed": 430001,
+    "paired_truth_labels": [
+      "applied",
+      "held"
+    ],
+    "two_labelled_calibration_episodes_per_target_robot": true,
+    "source_robot_response_envelope_floor": true,
+    "original_additive_margin_m": 0.002,
+    "no_heldout_label_tuning": true
+  },
+  "true_physx_evaluation": {
+    "robots": [
+      "panda",
+      "xarm6_robotiq"
+    ],
+    "task": "PickCube-v1",
+    "controller_mode": "pd_ee_target_delta_pose",
+    "source_controller_chart": "PDEEPoseController frame root_translation:root_aligned_body_rotation",
+    "reset_seed_panda": [
+      610001,
+      610002,
+      610003,
+      610004
+    ],
+    "reset_seed_xarm6_robotiq": [
+      620001,
+      620002,
+      620003,
+      620004
+    ],
+    "source_previous_command_steps": [
+      0,
+      1
+    ],
+    "fault_step": 2,
+    "common_public_probe_step": 3,
+    "corrective_step": 4,
+    "physical_execution_truths": [
+      "applied",
+      "held"
+    ],
+    "native_fault_amplitude_scales": [
+      0.6,
+      1.35
+    ],
+    "fault": "unknown acknowledgment at t2; actual dispatched t2 is scaled native arm command when applied and native zero when held; BOTH visibly commanded t3 native zero",
+    "scope": "2 robots x 4 distinct new reset seeds each x 2 scales x 2 physical delivery truths = 32 task-free actual source conditions; each condition simulated for six independent comparator controllers",
+    "source_release_models_used": false,
+    "task_success_claim": false,
+    "full_so3_correction_claim": false,
+    "no_private_controller_target_read_for_public_decision": true,
+    "post_correction_private_getter_is_audit_only": true
+  },
+  "methods_fixed_before_testing": {
+    "zero_shot_foreign_model": "Other robot's full eight-paired-seed original response model without target-robot calibration, no action scaling",
+    "one_paired_seed_fixed_model": "Recenter each class prototype on first target-robot labelled prior seed, retain source radius floor and 2mm original historical margin",
+    "one_paired_seed_action_conditioned": "Same one-paired-seed local centers, but scale APPLIED class center mu_held+s*(mu_applied-mu_held); held class mean unchanged. No fitted new parameters. No privileged state read in decision.",
+    "blind_optimistic": "Assume applied regardless of public motion",
+    "blind_pessimistic": "Assume held regardless of public motion",
+    "one_privileged_target_read": "Exactly one authoritative controller target read at t3 boundary, then calculate physically legal native correction; not equal-information and is an oracle upper reference"
+  },
+  "outcome_metrics": [
+    "wrong confident ACK history labels for every public classifier",
+    "confident label coverage vs abstentions",
+    "actual post-physx controller commanded target XYZ restored within 1e-4m",
+    "one_privileged_target_read counts during decision vs zero of other five arms",
+    "every actual seed/truth/scale and physical probe dispatch/fault exposure; no exclusions",
+    "model residual/out-of-envelope cases and native unrepresentable actions"
+  ],
+  "mandatory_reporting": [
+    "Do not claim novel across-robot learned PPO transfer; these are scripted native PickCube controller signals",
+    "One paired seed means 2 labelled calibration episodes with known applied vs held truth, not zero-shot",
+    "Under distribution shift the action-conditioned linear response model is only empirical and may fail",
+    "Any missed fault or corrective command refusal is counted with original seed, never excluded",
+    "Data must be source-audited independent of owner PhysX runner before a positive claim",
+    "No real robot, actual network packet-loss, dynamics attestation, trajectory/collision force safety or third-party scientific endorsement"
+  ]
+}
