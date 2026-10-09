@@ -1,0 +1,81 @@
+name: "First original physical joint-ACK source-only audit: preserve refused controls"
+on:
+  push:
+    branches: [research/all-four-ack-truths-active-probe-20261009]
+    paths:
+      - 'research/audit_original_four_joint_physx_source_only.py'
+      - '.github/workflows/audit-first-original-four-joint-ack-artifacts.yml'
+permissions:
+  contents: write
+  actions: read
+jobs:
+  replay-first-original-unmodified-physical-output:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    env:
+      GH_TOKEN: ${{ github.token }}
+      FIRST_ORIGINAL_RUN: '37917629944'
+      OUT: research/frozen_policy_transfer/evidence/four_joint_truths_first_physx64_880001_890032
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Attribute FIRST original physical run FAILURE correctly, retain failed jobs and new researcher source identity
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$FIRST_ORIGINAL_RUN" --jq '.conclusion')" = failure
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$FIRST_ORIGINAL_RUN" --jq '.head_sha')" = 96e3dfc30bd48b4a288cc07a6952a75f387c5e27
+          test "$(git hash-object research/ALL_FOUR_ACK_JOINT_TRUTH_PPO_NEW64_PREOUTCOME_V1.json)" = d848b24945b15470e843bb71998a893fbb6fe4ce
+          test "$(git hash-object research/frozen_ppo_full_joint_ack_physx_v4.py)" = 918aa573eee3313886d5609f671c3ee599561e52
+          python -m py_compile research/audit_original_four_joint_physx_source_only.py
+          gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$FIRST_ORIGINAL_RUN"/artifacts --paginate --jq '.artifacts[].name' | sort | tee /tmp/original-artifact-names.txt
+          test "$(grep -c '^genuine-four-joint-truth-' /tmp/original-artifact-names.txt)" -eq 8
+      - uses: actions/download-artifact@v4
+        with:
+          repository: ${{ github.repository }}
+          run-id: 37917629944
+          github-token: ${{ github.token }}
+          pattern: genuine-four-joint-truth-*
+          merge-multiple: true
+          path: /tmp/genuine-first-original-four-truth
+      - name: Independently verify exactly eight raw source physical shards WITHOUT fabricating failed original shard audits
+        run: |
+          set -euo pipefail
+          test "$(find /tmp/genuine-first-original-four-truth -maxdepth 1 -type f -name 'full_joint_ack_*_original8.json' | wc -l)" -eq 8
+          python -m research.audit_original_four_joint_physx_source_only \
+            --input /tmp/genuine-first-original-four-truth \
+            --output /tmp/ORIGINAL_FOUR_JOINT_TRUE_PHYSX_SOURCE_ONLY_AUDIT.json
+      - name: Copy byte-identical original eight true PhysX JSONs, complete independent audit, checksums and negative record
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUT"
+          cp /tmp/genuine-first-original-four-truth/full_joint_ack_*_original8.json "$OUT"/
+          cp /tmp/ORIGINAL_FOUR_JOINT_TRUE_PHYSX_SOURCE_ONLY_AUDIT.json "$OUT"/
+          (cd "$OUT" && sha256sum *.json > SHA256SUMS)
+          cat > "$OUT/README.md" <<'EOF'
+          # FIRST original four-joint ACK outcomes, with a technical audit failure publicly retained
+          
+          Original pre-registered eight-shard **real CPU ManiSkill PhysX** run https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37917629944 had all eight physical jobs finish their 8-seed/9-controller real simulator source JSON. The job RESULT was FAILURE: its original in-job *audit* incorrectly required an already-refused strict controller to execute a later known probe. This archive preserves the FAILED job outcome and never calls the first run green.
+          
+          The different, follow-on **source-only audit** verifies original eight physically executed and source-recorded JSONs without rerunning or changing ANY frozen PPO action algorithm, train state, original seed, true applied/held t2/t3 fault, or physical rollout. It counts each primary comparator's real t4 neutral step and honestly preserves all early-refusing controls with NO fabricated continuation. Every original source has a SHA256SUMS entry. These data are a fixed-population technical source-audit recovery of the FIRST original physical run, NOT a fresh independent confirmation.
+          
+          Physical truth patterns: AA, AH, HA, HH each eight per task (PullCube and StackCube). Source-controlled model, exactly same ManiSkill Panda robot family, 2 released frozen PPO task policies, real step 4 known neutral after BOTH unknown ACK truths, new branch physical actions and source task outcomes. The original sample's extra physical neutral steps invalidate a casual apples-to-apples comparison with the earlier no-extra-probe 58/64 results; compare within this newly stepped nine-arm cohort.
+          
+          Empirical public-motion tolerance is NOT an attested physics/dynamics guarantee; no robot collision/force safety, actual dropped packets, externally operated fork, real hardware or official upstream acceptance is claimed. Read ORIGINAL_FOUR_JOINT_TRUE_PHYSX_SOURCE_ONLY_AUDIT.json for numbers, wrong confident latent labels, per-joint-truth strata, paired task results and query cost; do not cherry-pick.
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$OUT"
+          git diff --cached --quiet && exit 0
+          git commit -m "evidence: transparently archive first physically executed four-joint-ACK trials and corrected independent source audit"
+          git push origin HEAD:research/all-four-ack-truths-active-probe-20261009
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: first-original-four-joint-all64-physical-source-and-audit
+          path: |
+            research/frozen_policy_transfer/evidence/four_joint_truths_first_physx64_880001_890032/
+          retention-days: 90
