@@ -26,9 +26,18 @@ from research.two_history_se3_robust import Reason
 from research.empirical_probe_response_classifier import EPSILON_BY_TASK,_segment_min_distance
 
 TASK=os.environ.get("ABI_TASK")
+# The experiment source/thresholds remain identical to the pilot. Only the
+# pre-outcome chosen reset shard is changed for this entirely unseen cohort.
+SHARD_FIRST=int(os.environ.get("ABI_FIRST_SEED","0"))
+POSSIBLE={
+    "pull_cube":(1720001,1720009,1720017,1720025),
+    "stack_cube":(1730001,1730009,1730017,1730025),
+}
+if TASK not in POSSIBLE or SHARD_FIRST not in POSSIBLE[TASK]:
+    raise RuntimeError("Refuse any seed chunk not prospectively registered")
 COHORT={
-    "pull_cube":("PullCube-v1",range(1700001,1700009)),
-    "stack_cube":("StackCube-v1",range(1710001,1710009))
+    TASK:("PullCube-v1" if TASK=="pull_cube" else "StackCube-v1",
+          range(SHARD_FIRST,SHARD_FIRST+8))
 }
 if TASK not in COHORT:
     raise ValueError("ABI_TASK must name one of two frozen task/checkpoint cohorts")
@@ -53,7 +62,7 @@ NAMES=(
 PUBLIC_ARM="fault_public_t3_fourhistory_or_t4_query"
 POST_ARM="fault_same_public_posterior_or_query"
 BELIEF_ARMS=NAMES[3:6]+(PUBLIC_ARM,POST_ARM)
-PROTO="research/MATCHED_PUBLIC_BAYES_NATIVE16_PREOUTCOME_V1.json"
+PROTO="research/MATCHED_PUBLIC_BAYES_NEW64_PREOUTCOME_V1.json"
 
 
 def copy_target(pose):
