@@ -1,0 +1,47 @@
+name: Source-hashed 64 true PhysX failure witnesses vs earlier trusted query
+on:
+  push:
+    branches: [research/mechanistic-64-failure-witnesses-20261009]
+    paths:
+      - 'research/frozen_policy_transfer/review/compound_ack_failure_witness_64.py'
+      - 'tests/test_original64_ack_failure_witness.py'
+      - '.github/workflows/source-hashed-compound64-failure-mechanism.yml'
+  pull_request:
+    paths:
+      - 'research/frozen_policy_transfer/review/compound_ack_failure_witness_64.py'
+      - 'tests/test_original64_ack_failure_witness.py'
+      - '.github/workflows/source-hashed-compound64-failure-mechanism.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  physical-source-recheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11','3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Verify ALL 64 original source PhysX states and 8 historical manifests
+        run: |
+          set -euo pipefail
+          python -m py_compile research/frozen_policy_transfer/review/compound_ack_failure_witness_64.py
+          python -m unittest discover -s tests -p 'test_original64_ack_failure_witness.py' -v
+          python -m research.frozen_policy_transfer.review.compound_ack_failure_witness_64 \
+            --output /tmp/source64_failure_mechanism_recomputed.json
+          python - <<'PY'
+          import json
+          x=json.load(open('/tmp/source64_failure_mechanism_recomputed.json'))
+          assert x['full_denominator']==64
+          y=x['task_groups']['stack_cube']['fixed_only_breakdown']
+          assert len(y['no_private_target_read'])==8
+          assert len(y['one_private_target_read_but_failed'])==5
+          assert y['all_failed_selective_horizon_50']
+          assert abs(x['all_states']['unadjusted_exploratory_two_sided_p']-0.021270751953125)<1e-12
+          print('SOURCE_IMMUTABLE_64_NEGATIVE_WITNESSES_VERIFIED')
+          PY
