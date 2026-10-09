@@ -1,0 +1,113 @@
+name: "Prospective 64 truly disjoint mixed-ACK frozen PPO 576 native PhysX worlds"
+on:
+  push:
+    branches: [research/replicate-mixedack-disjoint64-20261009]
+    paths:
+      - research/DISJOINT_MIXED_T2_PPO64_PREOUTCOME_V1.json
+      - research/run_disjoint_mixed_ack_new64.py
+      - research/audit_disjoint_mixed_ack_new64.py
+      - .github/workflows/disjoint-mixed-ack-ppo64-native-physx.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frozen-before-outcome-source-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Prove pre-outcome source and genuinely new reset seeds
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/DISJOINT_MIXED_T2_PPO64_PREOUTCOME_V1.json)" = 68443c6a0913f4b6a988e3a0cda74a650c86273f
+          test "$(git hash-object research/frozen_ppo_mixed_ack_truth_physx.py)" = 36e672446407435e656cbf8aba6fa2de7c1e9d0e
+          test "$(git hash-object research/run_mixed_ack_truth_new64.py)" = 7c4bd55623b0420f921c6549cd7014155e7b119d
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          test "$(git hash-object research/run_disjoint_mixed_ack_new64.py)" = 90ba8538ed4b2e84f084b2eac50f6269e634332c
+          test "$(git hash-object research/audit_disjoint_mixed_ack_new64.py)" = a54373fe053bf5a7de8504531a17734b778639cf
+          python -m py_compile research/run_disjoint_mixed_ack_new64.py research/audit_disjoint_mixed_ack_new64.py
+          python - <<'PY'
+          from research.run_disjoint_mixed_ack_new64 import select,assert_sources
+          assert_sources()
+          for task,old in (("pull_cube",860001),("stack_cube",870001)):
+              seeds=[s for c in range(4) for s in select(task,c)]
+              assert len(seeds)==32 and set(seeds).isdisjoint(range(old,old+32))
+              assert min(seeds)>1000000 and sum(s%2==0 for s in seeds)==16
+          print("FULL_GENUINELY_NEW_PRECOMMITTED_SEEDS_SOURCE_FROZEN")
+          PY
+  native-nine-worlds-per-seed:
+    needs: frozen-before-outcome-source-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+      PYTHONUNBUFFERED: '1'
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install unchanged frozen PPO and actual native ManiSkill PhysX
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Preserve exact source and dependencies before native rollout
+        run: |
+          git rev-parse HEAD > ORIGINAL_SOURCE_COMMIT.txt
+          python -m pip freeze --all > ORIGINAL_RUNTIME_PACKAGES.txt
+      - name: Execute all 72 physical control worlds in this shard
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_disjoint_mixed_ack_new64.py --task "$ABI_TASK" --chunk "$CHUNK" 2>&1 | tee original_physics_stdout.log
+          test -s "disjoint_mixed_${ABI_TASK}_chunk${CHUNK}_original8.json"
+          test -s "disjoint_mixed_${ABI_TASK}_chunk${CHUNK}_audit.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-disjoint-${{ matrix.task }}-chunk${{ matrix.chunk }}
+          path: |
+            disjoint_mixed_*_original8.json
+            disjoint_mixed_*_audit.json
+            original_physics_stdout.log
+            ORIGINAL_SOURCE_COMMIT.txt
+            ORIGINAL_RUNTIME_PACKAGES.txt
+          retention-days: 90
+  independent-all-64-native-sources:
+    needs: native-nine-worlds-per-seed
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-disjoint-*
+          merge-multiple: true
+          path: /tmp/disjoint_new64
+      - name: Rerun separate source auditor on all success and failure outcomes
+        run: |
+          set -euo pipefail
+          python -m research.audit_disjoint_mixed_ack_new64 --source-dir /tmp/disjoint_new64 --output /tmp/disjoint_original_64_independent_audit.json
+          test -s /tmp/disjoint_original_64_independent_audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: disjoint-original64-576-physx-with-all-negative-outcomes
+          path: |
+            /tmp/disjoint_new64/*.json
+            /tmp/disjoint_original_64_independent_audit.json
+          retention-days: 90
