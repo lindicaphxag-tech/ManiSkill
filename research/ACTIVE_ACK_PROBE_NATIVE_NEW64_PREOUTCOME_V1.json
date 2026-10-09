@@ -1,0 +1,68 @@
+{
+  "schema": "preoutcome_new64_true_PhysX_one_step_active_vs_fixed_vs_passive_ACK_probe_v1",
+  "registered": "2026-10-09 before outcomes",
+  "state": "frozen before new physical execution",
+  "taskSeeds": {
+    "pull_cube": [
+      980201,
+      980232
+    ],
+    "stack_cube": [
+      990201,
+      990232
+    ]
+  },
+  "physicalACK": {
+    "t2": "applied iff seed even",
+    "t3": "applied iff floor(seed/2) even",
+    "eachJointTruthPerTask": 8
+  },
+  "physics": {
+    "controller": "ManiSkill Panda pd_ee_target_delta_pose",
+    "frozenPolicy": "released unchanged third-party PullCube/StackCube PPO",
+    "nMethods": 11,
+    "totalGenuineControllerWorlds": 704
+  },
+  "baseline8": [
+    "source",
+    "oracle",
+    "optimist",
+    "strict",
+    "robust_noquery",
+    "robust_then_read",
+    "fixed_read",
+    "always_held"
+  ],
+  "t4Probe": {
+    "passive": "native 6d [0,0,0,0,0,0]",
+    "fixed": "native 6d [+0.12,0,0,0,0,0]",
+    "active": "one of six +/-0.12 x/y/z native translation commands; select with deterministic max-min public expected response separability computed from complete target histories, no native target getter or true fault receipt",
+    "magnitude": "0.12 native normalized translation for fixed and active; passive magnitude 0; physically displacements NOT identical and must be published",
+    "scorer": "given candidate h target AFTER known t4 probe, x=current achieved XYZ, expected response midpoint y_i=x+0.5*(M_i-x); find residual of y_i to each other candidate segment x..M_j, maximize min directed residual then sum, fixed enumeration order ties",
+    "physics": "all eleven actual arms physically execute ONE known-delivered t4 step if still running; fixed/active known t4 action changes real native target and must transform EVERY hypothesis via belief.prepare and belief.acknowledge(True) BEFORE public t4 identification",
+    "observations": "achieved XYZ before/after t4 for each of three public methods, two public samples per method",
+    "decision": "full-history uniquely fitting residual<=frozen eps while competitors exceed eps+0.002; otherwise counted native target read at t5",
+    "eps": {
+      "pull_cube": 0.006944262561376447,
+      "stack_cube": 0.00719087965534261
+    },
+    "modelGain": "alpha in [0,1], original source model unmodified"
+  },
+  "primary": [
+    "same-reset task successes for passive/fixed/active",
+    "actual native commanded-target wrong confident history assignment",
+    "privileged target reads",
+    "native probe action and true achieved public XYZ displacement",
+    "all four real ACK truth strata",
+    "source original failed and early refusal controllers retained"
+  ],
+  "warnings": [
+    "Active max-min is a heuristic, not an optimal information-gain proof",
+    "fixed and adaptive have same native command magnitude but different directions and physical displacement; passive costs less physical motion",
+    "candidate target updates must be independently source audited",
+    "no actual network packet loss",
+    "not faithful implementation of ActionShift DualABI",
+    "no hardware safety",
+    "no top conference acceptance without results"
+  ]
+}
