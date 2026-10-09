@@ -1,0 +1,105 @@
+name: "Archive original 640 PhysX controller worlds: negative sequential public probe study"
+on:
+  push:
+    branches: [research/sequential-two-probe-full-joint-20261009]
+    paths:
+      - '.github/workflows/archive-original-physx-dual-v-single64.yml'
+permissions:
+  contents: write
+  actions: read
+jobs:
+  source-authenticated-permanent-real-PPO-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ORIGINAL_RUN: '37921282989'
+      ORIGINAL_ARTIFACT: '11612188433'
+      ORIGINAL_ZIP_SHA256: 'a73a7dd2b913b7a93ec16f991aafcc6b674fb6c208a4e24fa67397d3801c9cbc'
+      OUT: research/frozen_policy_transfer/evidence/dual_probe_vs_single_physx_original64_900001_910032
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require actual completed 640-world source and frozen before-outcome identity
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$ORIGINAL_RUN" --jq '.conclusion')" = success
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/runs/"$ORIGINAL_RUN" --jq '.head_sha')" = 4c4f190ba88c9b07b5c5de4cc9c0c367c183447c
+          test "$(gh api repos/"$GITHUB_REPOSITORY"/actions/artifacts/"$ORIGINAL_ARTIFACT" --jq '.digest')" = "sha256:$ORIGINAL_ZIP_SHA256"
+          test "$(git hash-object research/SEQUENTIAL_TWO_PUBLIC_PROBES_NEW64_PREOUTCOME_V1.json)" = 2998c9312210a2c7b20d3d257153c9c08783032f
+          test "$(git hash-object research/frozen_ppo_sequential_two_public_probes_physx_v5.py)" = cd84a9fe091d19bd198292e4f54ee0f9bfd73858
+          test "$(git hash-object research/run_sequential_two_probe_new64.py)" = 95aa666395634a602eda187a719f387646b8fc9f
+          test "$(git hash-object research/audit_sequential_two_probe_new64.py)" = 2c7b0b16dde4d1ff994891eebfd2fb3b8cc07dff
+      - name: Download original 17-file physical archive EXACT unchanged GitHub artifact
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$ORIGINAL_ARTIFACT/zip" \
+            -o /tmp/real_native_dual_original64.zip
+          echo "$ORIGINAL_ZIP_SHA256  /tmp/real_native_dual_original64.zip" | sha256sum -c -
+          mkdir -p /tmp/original_physics_dual
+          unzip -q /tmp/real_native_dual_original64.zip -d /tmp/original_physics_dual
+          test "$(find /tmp/original_physics_dual -type f -name '*.json' | wc -l)" -eq 17
+      - name: Independently source-recalculate all original paired successes, wrong target histories and probe/query costs
+        run: |
+          set -euo pipefail
+          SOURCE_DIR="$(dirname "$(find /tmp/original_physics_dual -name 'sequential_two_probes_pull_cube_chunk0_original8.json' -print -quit)")"
+          ORIGINAL_AUDIT="$(find /tmp/original_physics_dual -name 'INDEPENDENT_DUAL_V_SINGLE_ORIGINAL64.json' -print -quit)"
+          test -s "$ORIGINAL_AUDIT"
+          python -m research.audit_sequential_two_probe_new64 --source-dir "$SOURCE_DIR" --output /tmp/independently_recomputed_dual64.json
+          ORIGINAL_AUDIT="$ORIGINAL_AUDIT" python - <<'PY'
+          import os,json
+          orig=json.load(open(os.environ["ORIGINAL_AUDIT"]))
+          redo=json.load(open("/tmp/independently_recomputed_dual64.json"))
+          if orig!=redo:
+              raise SystemExit("Original physical source and independent second-run audit DISAGREE")
+          assert redo["genuine_original_reset_states"]==64
+          assert redo["actual_independently_physically_stepped_policy_controller_worlds"]==640
+          assert redo["total"]["one_success"]==48==redo["total"]["two_success"]
+          assert redo["total"]["one_reads"]==41
+          assert redo["total"]["two_reads"]==43
+          assert redo["total"]["one_confident"]==23
+          assert redo["total"]["two_confident"]==21
+          assert redo["total"]["one_wrong"]==0==redo["total"]["two_wrong"]
+          assert redo["total"]["one_public_samples"]==128
+          assert redo["total"]["two_public_samples"]==256
+          assert redo["paired_dual_vs_single_task"]=={"both":48,"dual_only":0,"neither":16,"single_only":0}
+          print("NEGATIVE_SCIENTIFIC_RESULT_FIRST_PROSPECTIVE_SOURCE_PHYSX_AUTHENTICATED",True)
+          PY
+      - name: Archive all original bytes, SHA256SUMS and negative research limitations to versioned branch
+        run: |
+          set -euo pipefail
+          SOURCE_DIR="$(dirname "$(find /tmp/original_physics_dual -name 'sequential_two_probes_pull_cube_chunk0_original8.json' -print -quit)")"
+          ORIGINAL_AUDIT="$(find /tmp/original_physics_dual -name 'INDEPENDENT_DUAL_V_SINGLE_ORIGINAL64.json' -print -quit)"
+          mkdir -p "$OUT"
+          cp "$SOURCE_DIR"/*.json "$OUT"/
+          cp "$ORIGINAL_AUDIT" "$OUT"/
+          (cd "$OUT" && sha256sum *.json > SHA256SUMS)
+          cat > "$OUT/README.md" <<'EOF'
+          # Honest NEGATIVE dual-vs-single public-ACK frozen PPO result: full authentic source archive
+
+          Original 10-job native ManiSkill/SAPIEN CPU PhysX source and independent all64 verifier: https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37921282989 — SUCCESS. Actual physical execution commit 4c4f190ba88c9b07b5c5de4cc9c0c367c183447c; registered BEFORE outcome protocol Git blob 2998c9312210a2c7b20d3d257153c9c08783032f.
+          This directory preserves every one of the **17 exact original physics/audit JSON source files** from original GitHub artifact ID 11612188433 (ZIP sha256 a73a7dd2b913b7a93ec16f991aafcc6b674fb6c208a4e24fa67397d3801c9cbc) plus SHA256SUMS. Original files include failures and early-stopped controllers, not only successful episodes.
+          Real source-frozen PPOs on 64 new distinct PullCube / StackCube reset states, seed ranges 900001–900032 and 910001–910032; 8 physically executed nine+one=TEN distinct native controller methods per original reset = 640 genuine simulation controller worlds, not 640 trained policies or independent robot arms. Two uncertain native actual-ACK steps t2/t3, all four realized truth combinations balanced, and TWO true known-delivered native ZERO actions at t4 and t5 for all continuing methods.
+          Primary direct on-seed paired physical comparison, BOTH with the same two additional native zero steps and the same original pretrained PPO: **single public movement model** 48/64 real manipulation task successes, 41 privileged target reads, 23 uniquely authorized histories, 0/23 observed wrong confident labels, 128 publicly sampled achieved XYZ positions. **Two consecutive public motion models jointly** 48/64 successes, **43** privileged reads (TWO MORE), 21 authorized histories (TWO FEWER), 0/21 observed wrong confident labels, **256** publicly sampled XYZ positions (128 extra). Success vector identical on all 64. The method did NOT improve either real task success or private-state read savings on these new seeds, and neither was observed to be wrong this time, so the double-sample design did NOT demonstrate improved safety or corrected OOD response modeling.
+          Frozen task-ID gate on this separate new population 45/64 official successes with 59 reads; fixed t6 state query 46/64 with 64 reads; always-guess-both-HELD policy 29/64 with 0 reads. Do not compare success to earlier studies without the extra two zero steps; task distributions also differ.
+          Historic prior real four-ACK-joint-truth study [source-only audited after an original shard audit bug] observed two WRONG confident labels from 18 public authorizations on StackCube HA, showing empirical response-set unreliability. Previous outcomes were exposed DEVELOPMENT and cannot serve as a fresh safety improvement test. Consecutive physical movement observations are correlated; repeated empirical agreement is not an independently attested physical dynamics guarantee.
+          NO actual TCP/ROS packet loss, real robot force/obstacle safety guarantee, learned VLA, independent outside-lab reproduction, official upstream merge or peer-reviewed accepted publication. Claims require more meaningful OOD model validity and genuinely independent domain transfer.
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$OUT"
+          git diff --cached --quiet && exit 0
+          git commit -m "evidence: preserve complete real 640 PhysX worlds and negative paired double-probe OOD finding"
+          git push origin HEAD:research/sequential-two-probe-full-joint-20261009
+      - uses: actions/upload-artifact@v4
+        with:
+          name: original64-double-public-probe-negative-paper-evidence
+          path: |
+            research/frozen_policy_transfer/evidence/dual_probe_vs_single_physx_original64_900001_910032/
+          retention-days: 90
