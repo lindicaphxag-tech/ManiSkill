@@ -19,7 +19,7 @@ def test_preregistration_is_fixed_full_factorial():
     assert p["original_reset_clusters"] == 64
     assert p["truth_cells"] == 256
     assert p["planned_actual_PhysX_worlds"] == 2304
-    assert p["arms_per_cell"] == 9
+    assert p["actual_native_controllers_per_cell"] == 9
     assert [truth(t) for t in range(4)] == [
         ("held", "held"), ("applied", "held"),
         ("held", "applied"), ("applied", "applied")
