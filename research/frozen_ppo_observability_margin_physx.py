@@ -26,8 +26,9 @@ from research.two_history_se3_robust import Reason
 from research.empirical_probe_response_classifier import EPSILON_BY_TASK,_segment_min_distance
 
 TASK=os.environ.get("ABI_TASK")
-# The experiment source/thresholds remain identical to the pilot. Only the
-# pre-outcome chosen reset shard is changed for this entirely unseen cohort.
+# The two frozen PPOs, native action chart and previously calibrated epsilon remain
+# unchanged; the NEW 4.5-mm exploratory gate uses separate development cohorts.
+# This prospective reset cohort is disjoint from all development sources.
 SHARD_FIRST=int(os.environ.get("ABI_FIRST_SEED","0"))
 POSSIBLE={
     "pull_cube":(2020001,2020009,2020017,2020025),
@@ -55,13 +56,13 @@ NAMES=(
     "fault_robust_two_history_without_query",
     "fault_robust_then_single_privileged_query",
     "fault_public_t3_fourhistory_or_t4_query",
-    "fault_same_public_posterior_or_query",
+    "fault_same_public_extra_margin_or_query",
     "fault_always_single_privileged_query",
     "fault_assume_held_without_query"
 )
 PUBLIC_ARM="fault_public_t3_fourhistory_or_t4_query"
-POST_ARM="fault_same_public_posterior_or_query"
-BELIEF_ARMS=NAMES[3:6]+(PUBLIC_ARM,POST_ARM)
+MARGIN_ARM="fault_same_public_extra_margin_or_query"
+BELIEF_ARMS=NAMES[3:6]+(PUBLIC_ARM,MARGIN_ARM)
 PROTO="research/OBSERVABILITY_MARGIN_GATE_NEW64_PREOUTCOME_V1.json"
 
 
@@ -161,7 +162,7 @@ def trial(policy,seed):
         "failure_causes":{},
         "success_step":{n:None for n in NAMES},
         "public_t3_evidence":{},
-        "same_sensor_posterior_evidence":{},
+        "same_sensor_margin_evidence":{},
         "shared_neutral_probe_step4":{},
         "matched_prefix_physical_audit":{},
         "public_motion_observation_cost_samples":{n:0 for n in NAMES}
@@ -205,7 +206,7 @@ def trial(policy,seed):
                 # in its paired independently simulated world. Copy its 6 axes
                 # *exactly* to the fixed-read comparator. No target getter or
                 # invalid observer enters the decision. Audit equality at t4.
-                if n in ("fault_always_single_privileged_query",POST_ARM) and step==3:
+                if n in ("fault_always_single_privileged_query",MARGIN_ARM) and step==3:
                     witness=result["faults"].get(PUBLIC_ARM,[])
                     if len(witness)!=2 or witness[-1]["step"]!=3:
                         raise RuntimeError("Missing precommitted public t3 dispatched command")
@@ -253,16 +254,16 @@ def trial(policy,seed):
                         result["success_step"][n]=step+1
                     result["steps"][n]=step+1
                     done[n]=base._bool_value(terminated) or base._bool_value(truncated)
-                    if n==POST_ARM:
-                        # Copy only source-intended belief, no audit-only controller truth.
+                    if n==MARGIN_ARM:
+                        # Copy only the source-intended belief; not audit-only controller truth.
                         beliefs[n]=copy.deepcopy(beliefs[PUBLIC_ARM])
                         result["max_belief_width"][n]=len(beliefs[n].hypotheses)
                     continue
                 if n!="source_no_fault" and step==4:
                     before_target=privileged_target(arm)  # AUDIT ONLY
-                    if n in (PUBLIC_ARM,POST_ARM):
+                    if n in (PUBLIC_ARM,MARGIN_ARM):
                         ev=(result["public_t3_evidence"] if n==PUBLIC_ARM else
-                            result["same_sensor_posterior_evidence"])
+                            result["same_sensor_margin_evidence"])
                         ev["before_xyz"]=(
                             np.asarray(arm.ee_pose_at_base.p.detach().cpu(),dtype=float)
                             .reshape(-1,3)[0].tolist())
@@ -283,9 +284,9 @@ def trial(policy,seed):
                         "known_delivered_no_new_unknown_ack":True,
                         "audit_only_target_position_delta_m":pos,
                         "audit_only_target_orientation_delta_rad":rot}
-                    if n in (PUBLIC_ARM,POST_ARM) and step==4:
+                    if n in (PUBLIC_ARM,MARGIN_ARM) and step==4:
                         ev=(result["public_t3_evidence"] if n==PUBLIC_ARM else
-                            result["same_sensor_posterior_evidence"])
+                            result["same_sensor_margin_evidence"])
                         after=np.asarray(arm.ee_pose_at_base.p.detach().cpu(),
                                          dtype=float).reshape(-1,3)[0]
                         before=np.asarray(ev["before_xyz"],dtype=float)
@@ -309,7 +310,7 @@ def trial(policy,seed):
                             for i in range(len(rots)) for j in range(i+1,len(rots))
                         ) if len(rots)>1 else 0.0
                         winners=ev["accepted_position_indices"]
-                        if n==POST_ARM:
+                        if n==MARGIN_ARM:
                             # Exploratory 4.5-mm public-history separation gate.
                             # The 4.5-mm threshold was CHOSEN after seeing
                             # two earlier disjoint original 64-state cohorts,
@@ -352,7 +353,7 @@ def trial(policy,seed):
                             ev["audit_only_true_candidate_indices"])
                         ev["audit_only_hidden_target_was_NOT_decision_input"]=True
                         ev["empirical_motion_envelope_NOT_physical_safety_certificate"]=True
-                    if n in ("fault_always_single_privileged_query",POST_ARM):
+                    if n in ("fault_always_single_privileged_query",MARGIN_ARM):
                         # AUDIT ONLY. This is never a method input. The
                         # intervention cannot be interpreted as query-only if
                         # any command or physical target/achieved pose diverges.
@@ -371,7 +372,7 @@ def trial(policy,seed):
                         tpos,trot=audit_pose_error(
                             privileged_target(arms[PUBLIC_ARM]), # AUDIT ONLY
                             privileged_target(arm))              # AUDIT ONLY
-                        result["matched_prefix_physical_audit" if n!=POST_ARM else "matched_posterior_prefix_audit"]={
+                        result["matched_prefix_physical_audit" if n!=MARGIN_ARM else "matched_margin_prefix_audit"]={
                             "native_fault_dispatch_linf_each":diffs,
                             "pre_t5_achieved_position_max_abs_m":pos,
                             "pre_t5_achieved_orientation_geodesic_rad":rot,
@@ -397,9 +398,9 @@ def trial(policy,seed):
                     action=native
                 else:
                     name_belief=n in beliefs
-                    if n in (PUBLIC_ARM,POST_ARM) and step==5:
+                    if n in (PUBLIC_ARM,MARGIN_ARM) and step==5:
                         ev=result.get("public_t3_evidence" if n==PUBLIC_ARM else
-                            "same_sensor_posterior_evidence",{})
+                            "same_sensor_margin_evidence",{})
                         if ev.get("authorized") is True:
                             idx=ev["selected_candidate_index"]
                             if idx<0 or idx>=len(beliefs[n].hypotheses):
