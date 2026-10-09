@@ -1,0 +1,14 @@
+# Explicit implementation amendment after the first failed physical run — preserve all intent-to-test resets
+Date: 2026-10-09. This amendment is AFTER a first partial run, so the subsequent rerun is **not** an untouched first attempt. Original failed source: [GitHub Actions run 37927906251](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37927906251), job 113811291405 (StackCube 1830025–1830032). Seven shards succeeded; this one aborted at `Missing precommitted public t3 dispatched command`.
+
+## Root cause and correction
+The protocol required the fixed reader and model-gated reader to copy the physical second-ACK command from the original public-history method. On an original reset where the public method had already refused/terminated BEFORE the second fault, **there is no original native step-three command to copy**. Raising was scientifically correct to refuse an invented equal-prefix statement, but left the complete population unaudited.
+
+The corrected *bookkeeping only* path:
+1. When the public branch never physically reaches second ACK, set `unmatched_early_refusal=true` for that reset. Fixed and guarded controls physically execute their own source-approved native command; DO NOT say the original public arm executed a missing command.
+2. Do not copy a non-existent public belief into the guarded control. Continue real worlds without privileged truth inputs.
+3. Mark the physical prefix `valid_exact_prefix=false` for this reset. Never count it in a claim about causal query differences or two-fault exposure. Retain it in the **registered 64 intent-to-test denominator** for official method-task success, query cost and failures.
+4. Report separate complete-ITT and matched-prefix / full-fault-exposure denominators. If the ITT result conflicts with a clean conditional subset, show both.
+5. Preserve the first failed run, every seed, original frozen policy, `tau=0.65`, task epsilon, margin, observation costs and no tuning. Do NOT assert that this procedural amendment was before first outcomes.
+
+This is a recorded implementation/scope correction, not evidence that our risk-gated method works or a physical safety guarantee.
