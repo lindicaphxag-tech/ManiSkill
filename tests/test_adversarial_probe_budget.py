@@ -12,6 +12,43 @@ class BudgetedProbeTest(unittest.TestCase):
         self.assertEqual(result['forged_one_response_certificate'],'REJECTED')
         self.assertEqual(result['adversarial_ground_truth_sequences_checked'],8)
 
+    def test_model_contract_is_not_disabled_by_optimized_python(self):
+        # This test is ALSO executed under python -O in the public matrix.
+        m=Model({'a':'A','b':'B'},{'a':'x','b':'y'},('x','y'),1,5,3,1)
+        bad=[
+            Model(m.repairs,m.probe_truth,m.alphabet,True,5,3,1),
+            Model(m.repairs,m.probe_truth,m.alphabet,1,5,-1,1),
+            Model(m.repairs,m.probe_truth,m.alphabet,1,5,3,1,False),
+            Model(m.repairs,{'a':'x'},m.alphabet,1,5,3,1),
+        ]
+        for model in bad:
+            with self.subTest(model=model),self.assertRaises(ValueError):
+                synthesize(model)
+        plan=synthesize(m)
+        swapped=copy.deepcopy(plan)
+        # 'True' == 1 in Python, but is NOT an integer-model proof field.
+        # Find an actual one-unit probe subtree to corrupt.
+        def forge_bool(node):
+            if node['worst_cost']==1:
+                node['worst_cost']=True
+                return True
+            for v in node.get('branches',{}).values():
+                if forge_bool(v):return True
+            return False
+        # Cost=3 may not expose a one-cost subtree; ALWAYS test with read=1
+        # impossible because probe cost <= read cost. Use explicit terminal 0
+        # and forge False, which compares ==0 but must still be rejected.
+        def forge_zero(node):
+            if node['worst_cost']==0:
+                node['worst_cost']=False
+                return True
+            for v in node.get('branches',{}).values():
+                if forge_zero(v):return True
+            return False
+        self.assertTrue(forge_zero(swapped['root']))
+        with self.assertRaisesRegex(ValueError,'integer type'):
+            verify(m,swapped)
+
     def test_external_unmodelled_and_repair_mismatch(self):
         m=Model({'a':'A','h':'H'},{'a':'x','h':'y'},('x','y'),1,5,3,1)
         plan=synthesize(m)
