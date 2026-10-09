@@ -1,0 +1,26 @@
+name: Finite common-action authority model and separate exhaustive verification
+on:
+  push:
+    branches:
+      - research/action-set-authority-minimax-20261010
+    paths:
+      - 'research/action_set_authority_minimax.py'
+      - 'tests/test_action_set_authority_minimax.py'
+      - '.github/workflows/action-set-authority-minimax.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  brute-force-action-set-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Real source compile, independent finite verifier and 100 exhaustive oracle cross-checks
+        run: |
+          python -m py_compile research/action_set_authority_minimax.py tests/test_action_set_authority_minimax.py
+          python -m unittest discover -s tests -p test_action_set_authority_minimax.py -v
+# Strictly symbolic command and observation domains, NO robot hardware or VLA task.
