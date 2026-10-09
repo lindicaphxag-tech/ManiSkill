@@ -1,0 +1,107 @@
+name: Permanently archive original prospective 64-state double-ACK native PhysX evidence
+
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/archive-original-compound-ack64.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  unchanged-primary-source-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Pin unmodified frozen PPO source-run commit, original all-eight ZIP digests and pre-outcome protocol
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37900209486 --jq .head_sha)" = "3da2e5759622f76e2929b6d9612321392632e467"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37900209486 --jq .conclusion)" = "success"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37900694213 --jq .conclusion)" = "success"
+          test "$(git hash-object research/COMPOUND_ACK_NEW64_PROSPECTIVE_V1.md)" = "3115c8d41db4f5bc687f5660c51c6b0f28572ba3"
+          test "$(git hash-object research/frozen_policy_transfer/review/audit_compound_ack_new64.py)" = "2339396309e742ceedce6a9e7ac3a94e5cd0c894"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11602760051 --jq .digest)" = "sha256:21188d0a9b4b1f4b7d5d838c4c4804820616c43f2999bc0a447bd8ff4acecc14"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11602565974 --jq .digest)" = "sha256:5e495f698c595e5140153b16aa384270d24c68eee026abb4d8988f73dd46c46a"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11602326646 --jq .digest)" = "sha256:ad563a2a84acc1af8c1bb255d1d3dbd1eef8ce854572685b672be6c39bbc601a"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11602291527 --jq .digest)" = "sha256:2849c838d110a57ab3f47b112df415e2c0af6f6226fc6982f3506d72a8412a41"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11601912834 --jq .digest)" = "sha256:8a26775631166148d1bae6e3097fb080e4dee599144b6f181be73969e880c23a"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11601901816 --jq .digest)" = "sha256:85d9f1f205179de23b7520cb7906e699b6f0d78c689023c9b40baf9b7aa4bc61"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11601832305 --jq .digest)" = "sha256:d3c6fda3b02df240e538a52d95dab9ca645fbc38962a59b0b8d4d87552b01f35"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/artifacts/11601669952 --jq .digest)" = "sha256:59e0206cf73874189fbd279abdd616a2e672effb9b0ba1442d3b8ab63e18a203"
+          echo 'PASS original source commit, full 8 ZIP SHA256 identities and precommitted study.'
+
+      - name: Download actual original genuine PhysX eight complete native 8-state artifact archives
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/native64-original
+          gh run download 37900209486 --repo "$GITHUB_REPOSITORY" \
+            --pattern "multiack-prospective-*-37900209486" \
+            --dir /tmp/native64-original
+          test "$(find /tmp/native64-original -mindepth 1 -maxdepth 1 -type d | wc -l)" -eq 8
+          find /tmp/native64-original -mindepth 2 -name SHA256SUMS | sort
+
+      - name: Independently reconstruct all 64 original native task states and 1530 real afterdispatch checks
+        run: |
+          set -euo pipefail
+          python -m research.frozen_policy_transfer.review.audit_compound_ack_new64 \
+            --artifacts /tmp/native64-original --out /tmp/native64_source_audit.json
+          python - <<'PY'
+          import json
+          p=json.load(open("/tmp/native64_source_audit.json"))
+          assert p["original_run_id"]==37900209486
+          assert p["n_source_states"]==64
+          assert p["n_genuine_matched_worlds"]==448
+          assert p["original_physical_afterdispatch_checks"]==1530
+          assert p["original_fault_masked_attempts_excluded"]==192
+          assert p["four_distinct_target_memory_states_exercised"]
+          assert p["overall"]["official_successes"]["fault_robust_then_single_privileged_query"]==45
+          assert p["overall"]["official_successes"]["fault_always_single_privileged_query"]==55
+          assert p["overall"]["decision_privileged_queries"]["fault_robust_then_single_privileged_query"]==44
+          assert p["overall"]["decision_privileged_queries"]["fault_always_single_privileged_query"]==64
+          assert p["overall"]["paired_adaptive_vs_fixed"]=={
+              "both_success":42,"selective_only":3,"fixed_only":13,"both_fail":6}
+          print("PASS all source states, original checkpoints, disjoint new seeds, every negative original controller and true physical vs suppressed command")
+          PY
+
+      - name: Publish full original byte-identical JSON / SHA256SUMS / summaries and independent aggregate to main
+        if: github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          dir=research/frozen_policy_transfer/evidence/compound_ack_64_original_native_physx_420001_430032
+          mkdir -p "$dir"
+          cp -a /tmp/native64-original/. "$dir/"
+          cp /tmp/native64_source_audit.json "$dir/ORIGINAL_ALL64_INDEPENDENT_SOURCE_AUDIT.json"
+          (cd "$dir" && find . -type f -name SHA256SUMS -exec sh -c 'cd "$(dirname "$1")" && sha256sum -c SHA256SUMS' _ {} \;)
+          python -m research.frozen_policy_transfer.review.audit_compound_ack_new64 \
+            --artifacts "$dir" --out /tmp/final_original64.json
+          printf '%s\n' \
+            '# Permanent ORIGINAL eight-shard prospective double-ACK true ManiSkill PhysX 64 states' \
+            '' \
+            'Primary successful original 9-job native PhysX run 37900209486, run HEAD 3da2e5759622f76e2929b6d9612321392632e467.' \
+            'Separate originally completed complete original-source audit 37900694213; original source 8 ZIP digests pinned in archive-original-compound-ack64.yml.' \
+            'Every eight-seed shard below contains BYTE-IDENTICAL unmodified original PhysX JSON and its original SHA256SUMS. No data reconstructed from printed job logs.' \
+            '64 distinct native reset-state worlds, 448 actually executed paired seven-arm native PhysX worlds, TWO public pretrained PPOs, ONE Panda controller family.' \
+            'Selective geometry-triggered query: 45/64 task successes, 44 decision-private reads. Fixed early t4 read: 55/64 successes, 64 reads. Paired reactive-only:3; fixed-only:13. This is NEGATIVE evidence against general selective task-success superiority.' \
+            '1530 genuinely DISPATCHED conditional commanded-target residual checks, 192 deliberately fault-masked commands NOT counted as physical setpoint checks.' \
+            'No external-lab replication, real robotic hardware collision or force certification, actual network packet loss or paper acceptance.' \
+            'All 64 original-episode records with per-original-state successes, queries and fault truth are in ORIGINAL_ALL64_INDEPENDENT_SOURCE_AUDIT.json; no dropped failures.' > "$dir/README.md"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dir"
+          if git diff --cached --quiet; then echo 'Already identical archived source';exit 0;fi
+          git commit -m 'evidence: archive unmodified full 64-state double-ACK native PhysX source plus primary SHA manifests and failures'
+          for n in 1 2 3 4; do
+            git pull --rebase origin main
+            if git push origin HEAD:main;then exit 0;fi
+          done
+          echo 'Trusted archive refused after conflict; no false archive claim'
+          exit 1
