@@ -1,0 +1,378 @@
+{
+  "all_faulted_arms_probed": 0,
+  "new_runner_git_blob": "89248363b5bc52c0568495f3f78efc58d9a1ac67",
+  "outcomes": {
+    "fault_always_single_privileged_query": {
+      "reads": 8,
+      "success": 4
+    },
+    "fault_assume_held_without_query": {
+      "reads": 0,
+      "success": 1
+    },
+    "fault_optimistic_unverified_ack": {
+      "reads": 0,
+      "success": 2
+    },
+    "fault_public_t3_fourhistory_or_t4_query": {
+      "reads": 6,
+      "success": 4
+    },
+    "fault_robust_then_single_privileged_query": {
+      "reads": 7,
+      "success": 5
+    },
+    "fault_robust_two_history_without_query": {
+      "reads": 0,
+      "success": 1
+    },
+    "fault_strict_common_exact": {
+      "reads": 0,
+      "success": 0
+    },
+    "source_no_fault": {
+      "reads": 0,
+      "success": 7
+    }
+  },
+  "physical_original_sha256": "51230c2d1c89ab66ddddfea266f59b43071a2d3fb77e7892e6ca8bd9d0b15aba",
+  "prereg_git_blob": "b57973e28897c40125069fb0205e83b1c46d1885",
+  "public_both_faults_exposed": 8,
+  "public_confident": 2,
+  "public_wrong_confident": 0,
+  "rows": [
+    {
+      "all_faulted_arms_both_exposed": false,
+      "all_faulted_arms_received_neutral_probe": false,
+      "applied_nonzero_native_dispatch_events_all_faulted_arms": 0,
+      "failure_causes": {},
+      "fixed_reads": 1,
+      "fixed_success": true,
+      "held_success": true,
+      "new_reads": 1,
+      "new_success": true,
+      "postquery_shared_compiler_events": {
+        "fault_always_single_privileged_query": 10,
+        "fault_public_t3_fourhistory_or_t4_query": 10
+      },
+      "postquery_shared_compiler_gate": true,
+      "pre_t5_matched": true,
+      "public_authorized": false,
+      "public_both_faults_exposed": true,
+      "public_sample_events": 2,
+      "refusals": {
+        "fault_robust_two_history_without_query": {
+          "certificate": "REFUSE_ROTATION_BUDGET",
+          "possible_targets": 4,
+          "reason": "ROBUST_BOUND_OR_REPRESENTABILITY_REJECTED",
+          "step": 12,
+          "worst_position_m": 0.04097611904144288,
+          "worst_rotation_rad": 0.0845031010296877
+        },
+        "fault_strict_common_exact": {
+          "hypotheses": 2,
+          "reason": "AMBIGUOUS_PREVIOUS_TARGET",
+          "step": 3
+        }
+      },
+      "seed": 1490025,
+      "strong_reads": 1,
+      "strong_success": true,
+      "task": "stack_cube",
+      "truth": "held/held",
+      "wrong_confident": false
+    },
+    {
+      "all_faulted_arms_both_exposed": false,
+      "all_faulted_arms_received_neutral_probe": false,
+      "applied_nonzero_native_dispatch_events_all_faulted_arms": 8,
+      "failure_causes": {},
+      "fixed_reads": 1,
+      "fixed_success": true,
+      "held_success": false,
+      "new_reads": 0,
+      "new_success": true,
+      "postquery_shared_compiler_events": {
+        "fault_always_single_privileged_query": 11,
+        "fault_public_t3_fourhistory_or_t4_query": 11
+      },
+      "postquery_shared_compiler_gate": true,
+      "pre_t5_matched": true,
+      "public_authorized": true,
+      "public_both_faults_exposed": true,
+      "public_sample_events": 2,
+      "refusals": {
+        "fault_robust_two_history_without_query": {
+          "certificate": "REFUSE_ROTATION_BUDGET",
+          "possible_targets": 4,
+          "reason": "ROBUST_BOUND_OR_REPRESENTABILITY_REJECTED",
+          "step": 5,
+          "worst_position_m": 0.022766110301017772,
+          "worst_rotation_rad": 0.06367341304927075
+        },
+        "fault_strict_common_exact": {
+          "hypotheses": 2,
+          "reason": "AMBIGUOUS_PREVIOUS_TARGET",
+          "step": 3
+        }
+      },
+      "seed": 1490026,
+      "strong_reads": 1,
+      "strong_success": true,
+      "task": "stack_cube",
+      "truth": "applied/held",
+      "wrong_confident": false
+    },
+    {
+      "all_faulted_arms_both_exposed": false,
+      "all_faulted_arms_received_neutral_probe": false,
+      "applied_nonzero_native_dispatch_events_all_faulted_arms": 7,
+      "failure_causes": {},
+      "fixed_reads": 1,
+      "fixed_success": false,
+      "held_success": false,
+      "new_reads": 1,
+      "new_success": false,
+      "postquery_shared_compiler_events": {
+        "fault_always_single_privileged_query": 45,
+        "fault_public_t3_fourhistory_or_t4_query": 45
+      },
+      "postquery_shared_compiler_gate": true,
+      "pre_t5_matched": true,
+      "public_authorized": false,
+      "public_both_faults_exposed": true,
+      "public_sample_events": 2,
+      "refusals": {
+        "fault_robust_two_history_without_query": {
+          "certificate": "REFUSE_UNREPRESENTABLE_ROTATION",
+          "possible_targets": 4,
+          "reason": "ROBUST_BOUND_OR_REPRESENTABILITY_REJECTED",
+          "step": 9,
+          "worst_position_m": 0.04348960220813752,
+          "worst_rotation_rad": Infinity
+        },
+        "fault_strict_common_exact": {
+          "hypotheses": 2,
+          "reason": "AMBIGUOUS_PREVIOUS_TARGET",
+          "step": 3
+        }
+      },
+      "seed": 1490027,
+      "strong_reads": 1,
+      "strong_success": false,
+      "task": "stack_cube",
+      "truth": "held/applied",
+      "wrong_confident": false
+    },
+    {
+      "all_faulted_arms_both_exposed": false,
+      "all_faulted_arms_received_neutral_probe": false,
+      "applied_nonzero_native_dispatch_events_all_faulted_arms": 15,
+      "failure_causes": {},
+      "fixed_reads": 1,
+      "fixed_success": true,
+      "held_success": false,
+      "new_reads": 1,
+      "new_success": true,
+      "postquery_shared_compiler_events": {
+        "fault_always_single_privileged_query": 12,
+        "fault_public_t3_fourhistory_or_t4_query": 12
+      },
+      "postquery_shared_compiler_gate": true,
+      "pre_t5_matched": true,
+      "public_authorized": false,
+      "public_both_faults_exposed": true,
+      "public_sample_events": 2,
+      "refusals": {
+        "fault_robust_two_history_without_query": {
+          "certificate": "REFUSE_POSITION_BUDGET",
+          "possible_targets": 4,
+          "reason": "ROBUST_BOUND_OR_REPRESENTABILITY_REJECTED",
+          "step": 5,
+          "worst_position_m": 0.05073697175830602,
+          "worst_rotation_rad": 0.05882897240252378
+        },
+        "fault_strict_common_exact": {
+          "hypotheses": 2,
+          "reason": "AMBIGUOUS_PREVIOUS_TARGET",
+          "step": 3
+        }
+      },
+      "seed": 1490028,
+      "strong_reads": 1,
+      "strong_success": true,
+      "task": "stack_cube",
+      "truth": "applied/applied",
+      "wrong_confident": false
+    },
+    {
+      "all_faulted_arms_both_exposed": false,
+      "all_faulted_arms_received_neutral_probe": false,
+      "applied_nonzero_native_dispatch_events_all_faulted_arms": 0,
+      "failure_causes": {},
+      "fixed_reads": 1,
+      "fixed_success": false,
+      "held_success": false,
+      "new_reads": 1,
+      "new_success": false,
+      "postquery_shared_compiler_events": {
+        "fault_always_single_privileged_query": 45,
+        "fault_public_t3_fourhistory_or_t4_query": 45
+      },
+      "postquery_shared_compiler_gate": true,
+      "pre_t5_matched": true,
+      "public_authorized": false,
+      "public_both_faults_exposed": true,
+      "public_sample_events": 2,
+      "refusals": {
+        "fault_robust_two_history_without_query": {
+          "certificate": "REFUSE_ROTATION_BUDGET",
+          "possible_targets": 4,
+          "reason": "ROBUST_BOUND_OR_REPRESENTABILITY_REJECTED",
+          "step": 5,
+          "worst_position_m": 0.040939708054065715,
+          "worst_rotation_rad": 0.0554708211066101
+        },
+        "fault_strict_common_exact": {
+          "hypotheses": 2,
+          "reason": "AMBIGUOUS_PREVIOUS_TARGET",
+          "step": 3
+        }
+      },
+      "seed": 1490029,
+      "strong_reads": 1,
+      "strong_success": false,
+      "task": "stack_cube",
+      "truth": "held/held",
+      "wrong_confident": false
+    },
+    {
+      "all_faulted_arms_both_exposed": false,
+      "all_faulted_arms_received_neutral_probe": false,
+      "applied_nonzero_native_dispatch_events_all_faulted_arms": 8,
+      "failure_causes": {},
+      "fixed_reads": 1,
+      "fixed_success": false,
+      "held_success": false,
+      "new_reads": 0,
+      "new_success": false,
+      "postquery_shared_compiler_events": {
+        "fault_always_single_privileged_query": 45,
+        "fault_public_t3_fourhistory_or_t4_query": 45
+      },
+      "postquery_shared_compiler_gate": true,
+      "pre_t5_matched": true,
+      "public_authorized": true,
+      "public_both_faults_exposed": true,
+      "public_sample_events": 2,
+      "refusals": {
+        "fault_robust_two_history_without_query": {
+          "certificate": "REFUSE_ROTATION_BUDGET",
+          "possible_targets": 4,
+          "reason": "ROBUST_BOUND_OR_REPRESENTABILITY_REJECTED",
+          "step": 5,
+          "worst_position_m": 0.0458923488855362,
+          "worst_rotation_rad": 0.06085843580729784
+        },
+        "fault_strict_common_exact": {
+          "hypotheses": 2,
+          "reason": "AMBIGUOUS_PREVIOUS_TARGET",
+          "step": 3
+        }
+      },
+      "seed": 1490030,
+      "strong_reads": 1,
+      "strong_success": false,
+      "task": "stack_cube",
+      "truth": "applied/held",
+      "wrong_confident": false
+    },
+    {
+      "all_faulted_arms_both_exposed": false,
+      "all_faulted_arms_received_neutral_probe": false,
+      "applied_nonzero_native_dispatch_events_all_faulted_arms": 7,
+      "failure_causes": {},
+      "fixed_reads": 1,
+      "fixed_success": true,
+      "held_success": false,
+      "new_reads": 1,
+      "new_success": true,
+      "postquery_shared_compiler_events": {
+        "fault_always_single_privileged_query": 17,
+        "fault_public_t3_fourhistory_or_t4_query": 17
+      },
+      "postquery_shared_compiler_gate": true,
+      "pre_t5_matched": true,
+      "public_authorized": false,
+      "public_both_faults_exposed": true,
+      "public_sample_events": 2,
+      "refusals": {
+        "fault_strict_common_exact": {
+          "hypotheses": 2,
+          "reason": "AMBIGUOUS_PREVIOUS_TARGET",
+          "step": 3
+        }
+      },
+      "seed": 1490031,
+      "strong_reads": 1,
+      "strong_success": true,
+      "task": "stack_cube",
+      "truth": "held/applied",
+      "wrong_confident": false
+    },
+    {
+      "all_faulted_arms_both_exposed": false,
+      "all_faulted_arms_received_neutral_probe": false,
+      "applied_nonzero_native_dispatch_events_all_faulted_arms": 15,
+      "failure_causes": {},
+      "fixed_reads": 1,
+      "fixed_success": false,
+      "held_success": false,
+      "new_reads": 1,
+      "new_success": false,
+      "postquery_shared_compiler_events": {
+        "fault_always_single_privileged_query": 45,
+        "fault_public_t3_fourhistory_or_t4_query": 45
+      },
+      "postquery_shared_compiler_gate": true,
+      "pre_t5_matched": true,
+      "public_authorized": false,
+      "public_both_faults_exposed": true,
+      "public_sample_events": 2,
+      "refusals": {
+        "fault_robust_two_history_without_query": {
+          "certificate": "REFUSE_ROTATION_BUDGET",
+          "possible_targets": 4,
+          "reason": "ROBUST_BOUND_OR_REPRESENTABILITY_REJECTED",
+          "step": 5,
+          "worst_position_m": 0.04230710566043855,
+          "worst_rotation_rad": 0.05014034305002349
+        },
+        "fault_strict_common_exact": {
+          "hypotheses": 2,
+          "reason": "AMBIGUOUS_PREVIOUS_TARGET",
+          "step": 3
+        }
+      },
+      "seed": 1490032,
+      "strong_reads": 1,
+      "strong_success": false,
+      "task": "stack_cube",
+      "truth": "applied/applied",
+      "wrong_confident": false
+    }
+  ],
+  "schema": "shared_compiler_true_2x2_shard_source_audit_v1",
+  "seeds": [
+    1490025,
+    1490026,
+    1490027,
+    1490028,
+    1490029,
+    1490030,
+    1490031,
+    1490032
+  ],
+  "task": "stack_cube",
+  "unchanged_response_model_git_blob": "064bb46831b61af73ad445bc836326837ec5468f"
+}
