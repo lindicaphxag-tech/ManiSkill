@@ -109,6 +109,27 @@ def replay(source_dir: Path):
             "by_task_authorizations": dict(accepted_by_task),
             "by_task_wrong_authorizations": dict(wrong_by_task),
         }
+    paired = {
+        "both_A_and_posthoc_060_authorize": 0,
+        "A_only_authorizes": 0,
+        "posthoc_060_only_authorizes": 0,
+        "neither_authorizes": 0,
+    }
+    by_task_pairing = defaultdict(lambda: {k: 0 for k in paired})
+    for task, truth, row in rows:
+        a = bool(row["public_t3_evidence"]["authorized"])
+        b60, _, _, _ = decide_score(row, 0.60)
+        key = ("both_A_and_posthoc_060_authorize" if a and b60
+               else "A_only_authorizes" if a
+               else "posthoc_060_only_authorizes" if b60
+               else "neither_authorizes")
+        paired[key] += 1
+        by_task_pairing[task][key] += 1
+    if sum(paired.values()) != 128 or (
+        paired["both_A_and_posthoc_060_authorize"] + paired["A_only_authorizes"] !=
+        original["all_cells"][A]["total_authorizations"]
+    ):
+        raise ValueError("Paired authorized-state counts disagree with original source")
     b = original["all_cells"][B]
     if (results["0.95"]["hypothetical_authorizations"] != b["total_authorizations"]
         or results["0.95"]["hypothetical_incorrect_authorizations"] != b["wrong_confident_authorizations"]
@@ -127,6 +148,8 @@ def replay(source_dir: Path):
             "wrong": original["all_cells"][A]["wrong_confident_authorizations"]
         },
         "replayed_strong_and_original_scorer": results,
+        "paired_A_vs_posthoc_060_decision_table": paired,
+        "paired_A_vs_posthoc_060_by_task": dict(by_task_pairing),
         "not_evaluated": [
             "0.60 downstream task success",
             "0.60 physically executed native commands",
