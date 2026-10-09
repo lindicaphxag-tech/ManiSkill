@@ -1,0 +1,81 @@
+name: "Outside investigator: real eight-controller 4-history frozen PPO replication"
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'research/outside_public_fourhistory_replication.py'
+      - '.github/workflows/outside-public-fourhistory-frozenppo-physx.yml'
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Published third-party PPO and actual manipulation task"
+        required: true
+        type: choice
+        options: [pull_cube, stack_cube]
+        default: pull_cube
+      first_seed:
+        description: "Declare four entirely unused new PhysX resets BEFORE seeing outcomes (900001..999996)"
+        required: true
+        type: number
+        default: 900001
+permissions:
+  contents: read
+jobs:
+  frozen-original-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require original untouched method and third-party operator honesty
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/frozen_ppo_public_fourhistory_task_level_physx.py)" = df37a5ea9a7d4264097b04b7bbb2c481b9d3c166
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = ddfaf4522d49f73ce926e4c6d77c7ca755f8e1b6
+          python -m py_compile research/outside_public_fourhistory_replication.py
+          echo "Operator repository: $GITHUB_REPOSITORY; actor: $GITHUB_ACTOR"
+          echo "An author-owned fork run is NOT independent scientific reproduction."
+
+  independent-seed-actual-physx:
+    if: github.event_name == 'workflow_dispatch'
+    needs: frozen-original-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 95
+    env:
+      TASK: ${{ inputs.task }}
+      FIRST_SEED: ${{ inputs.first_seed }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install actual ManiSkill/PhysX and original frozen released checkpoints
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Store ORIGINAL operator and environment identity BEFORE running physical scenes
+        run: |
+          mkdir -p outside_public_fourhistory
+          git rev-parse HEAD > outside_public_fourhistory/operator_checked_out_commit.txt
+          printf 'GITHUB_REPOSITORY=%s GITHUB_ACTOR=%s TASK=%s FIRST_SEED=%s\n' "$GITHUB_REPOSITORY" "$GITHUB_ACTOR" "$TASK" "$FIRST_SEED" > outside_public_fourhistory/prerun_operator_identity.txt
+          python -m pip freeze --all > outside_public_fourhistory/frozen_environment.txt
+      - name: Physically execute eight matched native controller worlds for four original new reset states
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/outside_public_fourhistory_replication.py --task "$TASK" --first-seed "$FIRST_SEED" --out outside_public_fourhistory 2>&1 | tee outside_public_fourhistory/actual_physx_operator_log.txt
+      - name: Cryptographically bind COMPLETE original evidence including failures
+        if: always()
+        run: |
+          (cd outside_public_fourhistory && sha256sum *.json *.txt > ORIGINAL_SHA256SUMS) || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-independent-operator-new4-eight-world-physx
+          path: outside_public_fourhistory/
+          retention-days: 90
