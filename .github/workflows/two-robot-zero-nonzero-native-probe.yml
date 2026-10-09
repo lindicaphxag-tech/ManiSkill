@@ -30,7 +30,7 @@ jobs:
           test "$(git hash-object research/cross_robot_online_proprio_classifier.py)" = b0d7a767b93fb9f7cab2ba70494947ccb4027979
           python -m py_compile research/common_probe_zero_nonzero_cross_robot_physx.py research/audit_zero_nonzero_probe_two_robots.py
           python -m pip install -e .
-          python research/common_probe_zero_nonzero_cross_robot_physx.py --robot panda --mode self-test
+          PYTHONPATH="$PWD" python research/common_probe_zero_nonzero_cross_robot_physx.py --robot panda --mode self-test
 
   original_native_physx_calibration_both_probes:
     needs: frozen-preregistered-method-contract
