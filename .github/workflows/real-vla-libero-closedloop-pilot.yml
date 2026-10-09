@@ -21,6 +21,7 @@ jobs:
       HF_HUB_DOWNLOAD_TIMEOUT: '120'
       MUJOCO_GL: osmesa
       PYOPENGL_PLATFORM: osmesa
+      LIBERO_CONFIG_PATH: /tmp/real_vla_libero_configuration
       OMP_NUM_THREADS: '2'
       OPENBLAS_NUM_THREADS: '2'
       TOKENIZERS_PARALLELISM: 'false'
@@ -42,7 +43,37 @@ jobs:
           git -C /tmp/official-lerobot checkout b9cb121cb7d4e3e26ec5c906d08dda68d151ba52
           python -m pip install --upgrade pip
           python -m pip install -e '/tmp/official-lerobot[smolvla,libero,evaluation]'
+          # Upstream LIBERO requests stdin on its FIRST import if ~/.libero/config.yaml
+          # is absent. Reproduce its exact default configuration noninteractively.
+          # This is initialization only; do not modify the simulator or policy.
+          python - <<'PY'
+          import importlib.util
+          from pathlib import Path
+          import os
+          import yaml
+
+          spec = importlib.util.find_spec("libero.libero")
+          if spec is None or spec.origin is None:
+              raise RuntimeError("Genuine installed LIBERO package not found")
+          root = Path(spec.origin).resolve().parent
+          paths = {
+              "benchmark_root": root,
+              "bddl_files": root / "bddl_files",
+              "init_states": root / "init_files",
+              "datasets": root.parent / "datasets",
+              "assets": root / "assets",
+          }
+          for name in ("bddl_files", "init_states", "assets"):
+              if not paths[name].is_dir():
+                  raise RuntimeError(f"Original LIBERO required directory missing: {name}={paths[name]}")
+          config_dir = Path(os.environ["LIBERO_CONFIG_PATH"])
+          config_dir.mkdir(parents=True, exist_ok=True)
+          configuration = {k: str(v) for k,v in paths.items()}
+          (config_dir / "config.yaml").write_text(yaml.safe_dump(configuration, sort_keys=True))
+          print("HEADLESS_ORIGINAL_LIBERO_PATHS", configuration)
+          PY
           mkdir -p real_vla_libero_evidence
+          cp "$LIBERO_CONFIG_PATH/config.yaml" real_vla_libero_evidence/libero_config.yaml
           git rev-parse HEAD > real_vla_libero_evidence/maniskill_source_commit.txt
           git -C /tmp/official-lerobot rev-parse HEAD > real_vla_libero_evidence/official_lerobot_source_commit.txt
           git hash-object research/vla_beliefbridge/audit_official_libero_eval.py > real_vla_libero_evidence/auditor_source_blob.txt
