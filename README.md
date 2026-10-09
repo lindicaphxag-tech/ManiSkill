@@ -1,5 +1,26 @@
 > **Independent contributor's RESEARCH FORK, not the official ManiSkill 3 project.** All controller-repair experiments here are contributor-operated; no ManiSkill maintainer adoption, external lab replication, real hardware or certified collision safety is implied.
 
+## New research flagship · Discrete execution history from public robot motion (October 2026)
+
+A *frozen third-party* manipulation PPO issues actions for an achieved-pose-relative controller, but the destination remembers a previous **commanded target**. With two ambiguous execution acknowledgements, the native controller has four possible hidden target histories. **One complete history** may be identifiable from public achieved motion, without reading the controller's private target-state memory. The evidence-gated adaptation queries exactly once only when public evidence cannot identify the correct history under a fixed empirical response model.
+
+**Original preregistered new 64-state, actual native ManiSkill/PhysX frozen-PPO result** (PullCube/StackCube, 8 independently stepped controller worlds per seed = 512 actual virtual-controller worlds):
+
+| True paired physical frozen PPO controllers | Official task completion | Counted private target-state reads |
+|---|---:|---:|
+| **Discrete-history public evidence + query on ambiguity** | **58/64** | **39** |
+| **Task-aware query policy frozen BEFORE reset** | **58/64** | **57** |
+| Fixed t4 readback | 58/64 | 64 |
+| Previous geometry-triggered reactive read | 46/64 | 42 |
+
+**Matched trial outcomes identical:** 58 successes and six failures under both top rows. The method selected 25/64 complete position+orientation histories using public XYZ alone, **0 observed wrong confident labels**; the other 39 used one explicit private read. All 64 new-method episodes physically reached both fault injections. **31.6% fewer private reads relative to the strong task-aware comparator, but no superior task success, no formal noninferiority proof and no certified dynamics bound.** The new arm takes two extra *PUBLIC* achieved-XYZ samples and does not insert an extra actuated probe step.
+
+**Open exact evidence:** [reviewer-first manuscript v1.4](https://github.com/lindicaphxag-tech/ManiSkill/blob/research/ppo-hypothesis-identifiability-new64-20261009/research/frozen_policy_transfer/DISCRETE_HISTORY_PUBLIC_PPO_MANUSCRIPT_V1_4.md) · [genuine original full 10-job PhysX + independent audit](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/37913661619) · [permanently source-pinned 17 original JSONs and SHA256SUMS](https://github.com/lindicaphxag-tech/ManiSkill/tree/research/ppo-hypothesis-identifiability-new64-20261009/research/frozen_policy_transfer/evidence/discrete_hypothesis_ppo_original64_840001_850032) · [actual prior 32-state NEGATIVE falsifier](https://github.com/lindicaphxag-tech/ManiSkill/pull/125) · [research PR #127](https://github.com/lindicaphxag-tech/ManiSkill/pull/127) · [one-click outside-fork fresh-seed PhysX reproduction workflow](https://github.com/lindicaphxag-tech/ManiSkill/blob/research/ppo-hypothesis-identifiability-new64-20261009/.github/workflows/outside-discrete-history-v2-physx.yml).
+
+**Credit and scope.** Policy checkpoints belong to the ActionShift authors; prior ActionShift/ActionABI active probing and belief inference are related work, not claimed invented here. All new controller science is author-run, same ManiSkill PhysX engine, Panda task-control embodiment, synthetic arm-command target holds rather than actual packet transport errors. No outside researcher has independently reproduced this new method, official upstream accepted it, or certified robot force/collision/hardware safety.
+
+---
+
 ## Representative research · When to read a hidden robot controller target?
 
 **Question.** A frozen manipulation policy controls a stateful action interface, but an arm command may be executed without a trustworthy acknowledgement. The prior commanded target becomes uncertain. Should the adapter keep issuing conservative actions, stop, or pay for one authoritative target-state read? Can it select the *time* of that read based on explicit commanded-target error evidence?
