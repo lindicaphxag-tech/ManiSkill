@@ -36,6 +36,38 @@ At **StackCube seed 370029**, step zero (BEFORE frozen fault injection step two)
 
 Therefore the original strict scientific gate requiring **all 64 source states to encounter the intended fault** FAILED for seven original comparisons: only 63/64 relevant faults were physically injected. The full 64 intention-to-test reset-state denominator remains intact. Counting 63 actually fault-exposed conditions as 64, dropping seed 370029, or silently projecting a rotational action after seeing the failure would misrepresent what was tested. The auditor exposes `pre_fault_controller_refusal_witnesses`, `fault_exposure_counts` and `predeclared_primary_efficacy_inference_gate_PASSED=false`.
 
+### Precision-level root cause (later diagnostic, NOT a post-hoc change to source episodes)
+
+The illegal rotation was extremely close to, rather than far outside,
+the unit ball. All seven original failure records independently print
+`proposed_native_rotation_l2 = 1.0000009536743164` computed in
+`float32`. The source converter's `normalized_target_delta`
+has `TOL=1e-5` and allows marginal `amp<=1+TOL` without
+executing its actual radial projection branch, whereas
+`ActionHistoryObserver.prepare` converts the same transported action
+to **float64** and refuses if the rotational Euclidean norm exceeds
+`1+1e-6`. This is a *contract/tolerance/precision mismatch*, not
+evidence the source converter entirely lacks rotation-ball clipping.
+
+A fully deterministic minimal **mechanism reproducer** is the float32
+rotation vector `[0.5773508548736572]*3`. NumPy's float32 norm is
+`1.0000009536743164`, indistinguishable in the logged norm from the
+real failure; casting its components to float64 before evaluating
+the norm gives `1.0000010144344997`, which crosses the observer's
+`1.000001` threshold. The original source JSON did **not** log the
+three exact component values, so this reproduces the *failure
+mechanism and printed float32 norm*, not an assertion of identical
+unobserved original components.
+
+The correct mitigation is not to raise both tolerances or relabel
+the historical action as valid. Instead, test the actual float32
+transmitted SO(3) radial domain before dispatch, explicitly project
+INWARD if permitted, mark the command `NON_EXACT`, and **recompute
+the true commanded target error across the full trusted history set**;
+otherwise refuse. [Corrective typed-native prototype and six-OS/Python
+CI](https://github.com/lindicaphxag-tech/ManiSkill/pull/103) is a
+separate future method and has not repaired the original failed
+frozen 64-state confirmation gate.
 A deeper mechanism is visible here: the native normalized translational action may be constrained by a per-coordinate box, whereas the rotation-control chart/observer can impose a Euclidean **unit ball** on the three Euler-control coordinates. Componentwise clipping or separately testing `|a_i|<=1` **does not imply** `||a_rotation||_2<=1`, and applying a later native saturation without recomputing the controller-target error invalidates an exact target-memory promise. The failure does not prove a new optimization theorem, but motivates a **controller-typed representability-and-setpoint-error contract**. Any proposed repair or projector needs a newly preregistered cohort and a real matched simulator test, not tuning the current cohort.
 
 ## Research interpretation and external-review conclusion
