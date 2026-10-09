@@ -16,7 +16,7 @@ FILE=Path("research/frozen_policy_transfer/evidence/ood_pd_drive_known_ack_ancho
 PIN="2fbbd40b7a91a347fd7afa004a8b1c1c4042b749"
 
 def git_blob(raw):
-    return hashlib.sha1(b"blob "+str(len(raw)).encode()+b"\\x00"+raw).hexdigest()
+    return hashlib.sha1(b"blob "+str(len(raw)).encode()+bytes([0])+raw).hexdigest()
 
 def exact_binomial_two_sided_discordance(x_only,y_only):
     n=x_only+y_only
