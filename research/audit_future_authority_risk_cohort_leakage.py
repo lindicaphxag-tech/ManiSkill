@@ -76,7 +76,7 @@ def verify(frozen_physics:dict,root:Path=ROOT):
         or new["task_wise_coverage_lower_floor"]!=old["min_authorization_coverage_lower_confidence_bound_per_task"]
         or new["familywise_alpha"]!=old["familywise_failure_probability"]):
         raise ValueError("Posthoc changed confidence thresholds or scoring goals")
-    if new["old_protocol_v1_scientific_status"].find("CONTAMINATED")<0:
+    if new["old_v1_scientific_status"].find("CONTAMINATED")<0:
         raise ValueError("V1 contamination must remain visible")
     return {
         "status":"V1_PREEXPOSED_32_CALIBRATION_IDS__V2_PREREGISTERED_ONLY",
