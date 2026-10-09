@@ -1,0 +1,92 @@
+{
+  "schema": "OOD_ACK_PUBLIC_MOTION_PROSPECTIVE_V1",
+  "frozen_before_new_physics_and_implementation": true,
+  "date": "2026-10-09",
+  "objective": "Try to falsify earlier 32/32 online public-proprioception controller target POSITION correction under native fault-command amplitude shift. Do not retrain or calibrate using new cohort.",
+  "robots": {
+    "panda": {
+      "scale_055": [
+        680001,
+        680008
+      ],
+      "scale_145": [
+        681001,
+        681008
+      ]
+    },
+    "xarm6_robotiq": {
+      "scale_055": [
+        690001,
+        690008
+      ],
+      "scale_145": [
+        691001,
+        691008
+      ]
+    }
+  },
+  "fixed_frozen_prior_training": {
+    "old_public_proprio_classifier": "research/cross_robot_online_proprio_classifier.py",
+    "old_calibration": "research/frozen_policy_transfer/evidence/cross_robot_online_public_proprio_new32_480001_490008/cross_robot_proprio_calibration_{robot}.json",
+    "source_shared_original_script": "research/cross_robot_ack_physics.py",
+    "prior_probe_model": "research/frozen_policy_transfer/evidence/public_zero_probe_real16_640001_650008/public_zero_probe_FULL_SOURCE_AUDIT.json",
+    "prior_physical_calibration_per_robot": "previously recorded old seeds 640001..640004 Panda and 650001..650004 xArm6, never new outcomes"
+  },
+  "manipulation": {
+    "task": "PickCube-v1",
+    "sim_backend": "physx_cpu",
+    "control": "pd_ee_target_delta_pose",
+    "fault_step": 2,
+    "native_sequence": "unchanged baseline pre-actions t=0,1, then scale the original native 6-vector requested_native(2) by exactly 0.55 or 1.45; at t3 one known-delivered neutral 6D probe and at t4 candidate correction",
+    "gripper": "unchanged zero",
+    "truths": [
+      "applied",
+      "held"
+    ],
+    "comparison": [
+      "frozen_old_absolute_public_motion_classifier",
+      "calibration_separate_gain_interval_and_set_membership",
+      "optimistic_fixed_applied",
+      "pessimistic_fixed_held"
+    ],
+    "fixed_position_target": "commanded target POSITION at the end of step 1, not policy goal; orientation is not restored",
+    "frozen_controller_bound": "native normalized 6d rotation must satisfy root-left SO3 unit BALL, coordinate native values all in [-1,1]"
+  },
+  "sample_sizes": {
+    "robots": 2,
+    "amplitude_scales": 2,
+    "reset_seeds_per_cell": 8,
+    "true_physical_ack_branches_per_seed": 2,
+    "conditions": 64,
+    "physical_controllers_per_condition": 4,
+    "total_native_physical_worlds": 256
+  },
+  "calibration_rules": {
+    "old_classifier": "load original previous truth-labeled original files, verify original model hash and train() equality; no retraining",
+    "gain_model": "fixed per-robot gain_min/gain_max/epsilon from original public_zero_probe_FULL_SOURCE_AUDIT.json, prior training states only",
+    "classification": "one compatible publicly predicted tube, else abstain; empirical not certified; never use runtime attested=True without external source",
+    "novelty": "this is a stress falsifier not claims of a new learnable universal observer"
+  },
+  "go_no_go": {
+    "primary": "all 64 cases reported as paired source truth conditions with 4 physically run controls, include refusals and failures; no selection by successful fault",
+    "scores": [
+      "wrong confident ACK labels",
+      "correct confident ACK labels",
+      "abstention rate",
+      "physically corrected target xyz <= 1e-4 m",
+      "faults actually reached",
+      "model residual/false confidence",
+      "extra physical probe cost",
+      "zero decision private reads"
+    ],
+    "interpretation": "32/32 old result on fixed command amplitude does not imply scale transfer. New strong method would require prospective task-level benefit vs fixed/task-ID baselines"
+  },
+  "warnings": [
+    "no frozen PPO manipulation task here",
+    "no actual packet transport/network loss",
+    "no hardware collision/contact/force safety",
+    "not external lab replication",
+    "finite calibration model not a certified deterministic physical guarantee",
+    "never promote old 32/32 and new OOD states as independent trained policies"
+  ]
+}
