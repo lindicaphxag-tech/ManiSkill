@@ -1,7 +1,7 @@
 """Prospective PhysX TWO UNKNOWN ACKs: conservative multi-hypothesis bounded-or-query.
 
-Seven paired genuinely stepped target-control arms per original source seed.
-Protocol fixed before this source in UNKNOWN_ACK_BOUNDED_QUERY_FROZEN_V1.json.
+Nine separately physically stepped comparator controllers per original source reset seed.
+Full two-ACK joint truth protocol registered before this implementation.
 Physical injection is a native *arm target hold*, NOT network packet loss.
 All geometry gates concern commanded targets, NOT hardware safety.
 """
@@ -46,7 +46,7 @@ NAMES=(
     "fault_robust_then_single_privileged_query",
     "fault_always_single_privileged_query",
     "fault_assume_held_without_query",
-    "fault_public_t3_fourhistory_or_t4_query"
+    "fault_public_t4_fourhistory_or_t5_query"
 )
 PUBLIC_ARM=NAMES[-1]
 BELIEF_ARMS=NAMES[3:6]+(PUBLIC_ARM,)
