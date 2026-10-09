@@ -52,6 +52,8 @@ def audit(directory:Path)->dict:
     global ROWS
     ROWS=[]
     groups=[]
+    unexposed_faults=[]
+    fault_exposure_counts={a:0 for a in ARMS[1:]}
     for task,first in BASES.items():
         for chunk in range(4):
             seeds=list(range(first+8*chunk,first+8*chunk+8))
@@ -93,8 +95,10 @@ def audit(directory:Path)->dict:
                 reads=row.get("privileged_target_readback_decision_count",{})
                 if set(reads)!=set(ARMS) or any(type(x) is not int for x in reads.values()):
                     raise ValueError("Missing honest privileged decision readback ledger")
-                if reads["fault_oracle_private_target"]!=-1 or reads[ALWAYS]!=1:
-                    raise ValueError("Oracle/mandatory readback misrepresented")
+                if reads["fault_oracle_private_target"]!=-1:
+                    raise ValueError("Continuous oracle private target getter falsely counted")
+                if reads[ALWAYS] not in (0,1):
+                    raise ValueError("Invalid mandatory private target read count")
                 for name in ("source_no_fault","fault_optimistic_unverified_ack",
                              "fault_strict_common_exact",NOQUERY):
                     if reads[name]!=0:
@@ -114,11 +118,28 @@ def audit(directory:Path)->dict:
                 query_cap+=reads[CAPPED]
                 query_adaptive+=reads[ADAPTIVE]
                 query_placebo+=reads[PLACEBO]
-                if not all(isinstance(row.get("faults",{}).get(n),dict)
-                    and row["faults"][n].get("step")==2
-                    and row["faults"][n].get("actual_native_arm_command")=="all_zero_hold"
-                    for n in ARMS[1:]):
-                    raise ValueError("Real native target-hold fault missing in one arm")
+                for name in ARMS[1:]:
+                    inj=row.get("faults",{}).get(name)
+                    if isinstance(inj,dict) and inj.get("step")==2 and inj.get("actual_native_arm_command")=="all_zero_hold":
+                        fault_exposure_counts[name]+=1
+                        if name==ALWAYS and reads[name]!=1:
+                            raise ValueError("Fault was injected but mandatory target read is missing")
+                        continue
+                    # The predeclared full-fault-exposure scientific gate
+                    # really FAILED for a first-rollout StackCube case.
+                    # Keep its original failed control row and mark the
+                    # primary study INVALID for all-64-fault inference.
+                    refused=row.get("refusals",{}).get(name)
+                    if not (inj is None and isinstance(refused,dict)
+                            and refused.get("reason")=="HISTORY_OBSERVER_REJECTS_UNREPRESENTABLE_NATIVE_ACTION"
+                            and type(refused.get("step")) is int and 0<=refused["step"]<2
+                            and refused.get("original_task_outcome_counted_as_failure") is True
+                            and flags[name] is False and reads[name]==0):
+                        raise ValueError("Missing planned physical fault without a fully accounted pre-fault fail-closed refusal")
+                    unexposed_faults.append({"task":task,"seed":seeds[i],
+                        "arm":name,"pre_fault_step":refused["step"],
+                        "physical_fault_injected":False,"official_task_success":False,
+                        "failed_preauthorized_native_action":refused["actual_exception"]})
                 for name,recs in row.get("robust_native_target_bound_checks",{}).items():
                     if name not in (NOQUERY,ADAPTIVE,CAPPED,PLACEBO):
                         raise ValueError("Audit allowed unrelated controller")
@@ -166,6 +187,11 @@ def audit(directory:Path)->dict:
         raise ValueError("STRICT per-shard capped 16 reads violated")
     if pq!=16:
         raise ValueError("Broken EXACT fixed 16-of-64 original placebo budget")
+    if sum(len([x for x in unexposed_faults if x["arm"]==a]) for a in ARMS[1:])!=len(unexposed_faults):
+        raise ValueError("Unaccounted injection failure")
+    fault_gate_passed=all(fault_exposure_counts[a]==64 for a in ARMS[1:])
+    if not fault_gate_passed and not unexposed_faults:
+        raise ValueError("Failed fault-exposure gate without preserved witnesses")
     return {
         "schema":"strict_16_read_cap_nine_arm_placebo64_source_integrity_v1",
         "original_source_task_states":64,
@@ -174,6 +200,11 @@ def audit(directory:Path)->dict:
         "source_repository_ownership":"same contributor not independent third-party execution",
         "frozen_seven_arm_method_git_blob":"1dc653cdc44e422c8340475ad00f828b3a41eb4f",
         "native_task_success":count,
+        "physical_fault_exposure_by_arm":fault_exposure_counts,
+        "pre_fault_controller_refusal_witnesses":unexposed_faults,
+        "all_64_predeclared_fault_exposures_satisfied":fault_gate_passed,
+        "predeclared_primary_efficacy_inference_gate_PASSED":fault_gate_passed,
+        "descriptive_comparisons_only_if_gate_failed":not fault_gate_passed,
         "adaptive_target_decision_reads":aq,
         "capped_adaptive_target_decision_reads":cq,
         "capped_adaptive_uses_exactly_16":cq==16,
@@ -203,6 +234,8 @@ def main():
         "query_periodic":z["periodic_nonadaptive_target_decision_reads"],
         "query_capped":z["capped_adaptive_target_decision_reads"],
         "paired_capped":z["capped_adaptive_vs_periodic"],
+        "hard_fault_exposure_gate_passed":z["all_64_predeclared_fault_exposures_satisfied"],
+        "unexposed_faults":z["pre_fault_controller_refusal_witnesses"],
         "paired":z["adaptive_vs_periodic"]
     },sort_keys=True))
 
