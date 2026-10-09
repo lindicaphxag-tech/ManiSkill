@@ -1,0 +1,49 @@
+name: Strong task-conditioned query baseline from original 64 genuine PhysX jobs
+
+on:
+  pull_request:
+    paths:
+      - "research/frozen_policy_transfer/review/strong_task_stratified_query_baseline64.py"
+      - "research/frozen_policy_transfer/review/original_64_compound_ack_task_shard_logged_summaries.json"
+      - "tests/test_strong_task_stratified_query_baseline64.py"
+      - ".github/workflows/strong-simple-task-baseline64.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reviewer-no-claim-inflation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      matrix:
+        python-version: ["3.11","3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Verify ALL eight actual original-job summaries, failure counts, source task strata and retrospective nature
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p test_strong_task_stratified_query_baseline64.py -v
+          python -m research.frozen_policy_transfer.review.strong_task_stratified_query_baseline64 \
+            --input research/frozen_policy_transfer/review/original_64_compound_ack_task_shard_logged_summaries.json \
+            --output "strong_review_python_${{ matrix.python-version }}.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path("strong_review_python_${{ matrix.python-version }}.json").read_text())
+          assert x["registered_original_64_physx_data_run_id"]==37900209486
+          assert x["original_source_independent_audit_run_id"]==37900694213
+          assert x["posthoc_task_conditioned_not_executed"]["native_task_successes_composed_from_original_results"]==55
+          assert x["posthoc_task_conditioned_not_executed"]["privileged_reads_composed_from_original_results"]==55
+          assert x["posthoc_task_conditioned_not_executed"]["NOT_prospectively_tested_as_single_controller"]
+          print("PASS 8/8 original PhysX job links, 64/64 source states, 55-success 55-query trivial retrospective baseline; NOT new simulator runs.")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: original-64-genuine-physx-retrospective-strong-baseline-python-${{ matrix.python-version }}
+          path: strong_review_python_${{ matrix.python-version }}.json
+          if-no-files-found: error
