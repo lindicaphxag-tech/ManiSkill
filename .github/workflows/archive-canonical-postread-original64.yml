@@ -1,0 +1,193 @@
+name: Archive all original canonical readback 640-world PhysX sources
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-canonical-postread-original64.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  original-source-immutable-sha-and-read-equivalence-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require exact completed original source and frozen-before-results protocol
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37914020907 --jq .head_sha)" = "0b8e05f1f4787f5b385d666f427bd20d74a2ca78"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37914020907 --jq .conclusion)" = success
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37914020907 --jq .run_attempt)" = 1
+          test "$(git hash-object research/CANONICAL_POST_READ_FRESH64_PREREG_V1.json)" = "17aecaf25337d2482374f08272bb28ee5bdaebcf"
+      - name: Recover each native 10-arm original source and all eight stdout logs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/canonical_raw /tmp/canonical_aggregate /tmp/canonical_flat
+          gh run download 37914020907 --repo "$GITHUB_REPOSITORY" --pattern 'original-canonical-*' --dir /tmp/canonical_raw
+          find /tmp/canonical_raw -type f -name '*.json' -exec cp {} /tmp/canonical_flat/ \;
+          find /tmp/canonical_raw -type f -name '*.log' -exec cp {} /tmp/canonical_flat/ \;
+          gh run download 37914020907 --repo "$GITHUB_REPOSITORY" --name canonical-postread-all64-10arm-original-with-all-failures --dir /tmp/canonical_aggregate
+          agg=$(find /tmp/canonical_aggregate -type f -name canonical_post_read_fresh64_original_complete.json)
+          test "$(printf '%s\n' "$agg" | wc -l)" -eq 1
+          cp "$agg" /tmp/canonical_flat/
+          test "$(find /tmp/canonical_flat -maxdepth 1 -type f | wc -l)" -eq 17
+          cat > /tmp/canonical_flat/SOURCE_SHA256SUMS <<'SHA_LOCK'
+          57fc17b8c7fb90985f3ff8bc76a09938d43460ed3ef5238801cbe20a5eae2816  canonical_post_read_fresh64_original_complete.json
+          2614b4632a3d28088c904393ed4f34dac2d3e48fb40e266742600a8efc3af259  canonical_post_read_pull_cube_chunk0_original8.json
+          64410d68690608a593628310b450db5f2491c1edf5168f46f79f0d07c3c9a4e7  canonical_post_read_pull_cube_chunk1_original8.json
+          e63750224be62fc29a0cca4b172f2f901cb6dc9e0426d5af39e989a15c83712d  canonical_post_read_pull_cube_chunk2_original8.json
+          ffb04367f4bf5c08186dd8c5240b54643cb98a4bf827ecb06aaef901500d6de2  canonical_post_read_pull_cube_chunk3_original8.json
+          3d62e87edf2d6d3f278d9319cf7379fd5c79350311d15e75f44d1091220410a0  canonical_post_read_stack_cube_chunk0_original8.json
+          a7894debcd3d46a969b86a1602e7b27300f9282f6f45d4faad7849c97981a9c7  canonical_post_read_stack_cube_chunk1_original8.json
+          69ad3064395daa7d21155ab90469ab1c94b6bc2d4c81d6b60305f7eebb4d003a  canonical_post_read_stack_cube_chunk2_original8.json
+          5268561f4fce9062ed59cb42598b702e1d4c4e695543b29cfa03f5a2d2d697ae  canonical_post_read_stack_cube_chunk3_original8.json
+          d2e2a6902bb8ad2d4eb5dc7b8c278481c2e7536e9447bf2f6b0d37a4eccd1665  canonical_pull_cube_chunk0.log
+          26f08fd22536635bd7f4162e465fe783b55205f7007832dbf76bd639891c1ef1  canonical_pull_cube_chunk1.log
+          a5d87a84dc899e51bee1405861663c45b1d615c8851545fce7ec9d145b33d576  canonical_pull_cube_chunk2.log
+          a47b769369e7ea38d3c362140233def2198b3efa7f3d6a719d2c528ceb6bc286  canonical_pull_cube_chunk3.log
+          aa0b2840294ac1cb5aed5d00c70d8cf729a120210bf22dd1b7c8697c2716b5e2  canonical_stack_cube_chunk0.log
+          1a768776101ba74006fe639af7c902e11c9799bf51924c98d4a9a8d157025ad1  canonical_stack_cube_chunk1.log
+          9f38d1e2fd05ee4f73fb869db0442bf5b5db9d5b483aa7054d113e90b4d880ca  canonical_stack_cube_chunk2.log
+          5229fd39bd061c7df35afa61d5faad9c2603c2320e784af17d8787aeddff4618  canonical_stack_cube_chunk3.log
+          SHA_LOCK
+          (cd /tmp/canonical_flat && sha256sum -c SOURCE_SHA256SUMS)
+      - name: Audit actual complete 64 reset seeds and 640 real controller worlds
+        run: |
+          python -m research.audit_canonical_post_read_fresh64 --input-dir /tmp/canonical_flat --output /tmp/canonical_recomputed_original.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('/tmp/canonical_flat/canonical_post_read_fresh64_original_complete.json').read_text())
+          y=json.loads(Path('/tmp/canonical_recomputed_original.json').read_text())
+          assert x==y
+          assert y['states']==64 and y['native_stepped_controller_worlds']==640
+          assert y['primary_stack_same_information_same_action_invariant'] is True
+          assert y['by_task']['pull_cube']['phase_success']==32
+          assert y['by_task']['stack_cube']['phase_success']==24
+          assert y['by_task']['stack_cube']['corrected_fixed_success']==24
+          assert y['by_task']['stack_cube']['legacy_fixed_success']==21
+          assert y['actual_decision_privileged_reads_by_arm']['fault_phase_value_query']==56
+          assert y['actual_decision_privileged_reads_by_arm']['fault_fixed_readback_canonical']==64
+          assert y['paired']['corrected_fixed']['phase_only']==0
+          assert y['paired']['corrected_fixed']['other_only']==0
+          assert y['paired']['legacy_fixed']['phase_only']==3
+          print('PASS: exact original 17 SHA-locked source files; corrected post-read comparator eliminates false phase-query success gain; 32 Stack native 7D per-step actions match')
+          PY
+  trusted-main-archive:
+    needs: original-source-immutable-sha-and-read-equivalence-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require exact completed original source and frozen-before-results protocol
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37914020907 --jq .head_sha)" = "0b8e05f1f4787f5b385d666f427bd20d74a2ca78"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37914020907 --jq .conclusion)" = success
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37914020907 --jq .run_attempt)" = 1
+          test "$(git hash-object research/CANONICAL_POST_READ_FRESH64_PREREG_V1.json)" = "17aecaf25337d2482374f08272bb28ee5bdaebcf"
+      - name: Recover each native 10-arm original source and all eight stdout logs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/canonical_raw /tmp/canonical_aggregate /tmp/canonical_flat
+          gh run download 37914020907 --repo "$GITHUB_REPOSITORY" --pattern 'original-canonical-*' --dir /tmp/canonical_raw
+          find /tmp/canonical_raw -type f -name '*.json' -exec cp {} /tmp/canonical_flat/ \;
+          find /tmp/canonical_raw -type f -name '*.log' -exec cp {} /tmp/canonical_flat/ \;
+          gh run download 37914020907 --repo "$GITHUB_REPOSITORY" --name canonical-postread-all64-10arm-original-with-all-failures --dir /tmp/canonical_aggregate
+          agg=$(find /tmp/canonical_aggregate -type f -name canonical_post_read_fresh64_original_complete.json)
+          test "$(printf '%s\n' "$agg" | wc -l)" -eq 1
+          cp "$agg" /tmp/canonical_flat/
+          test "$(find /tmp/canonical_flat -maxdepth 1 -type f | wc -l)" -eq 17
+          cat > /tmp/canonical_flat/SOURCE_SHA256SUMS <<'SHA_LOCK'
+          57fc17b8c7fb90985f3ff8bc76a09938d43460ed3ef5238801cbe20a5eae2816  canonical_post_read_fresh64_original_complete.json
+          2614b4632a3d28088c904393ed4f34dac2d3e48fb40e266742600a8efc3af259  canonical_post_read_pull_cube_chunk0_original8.json
+          64410d68690608a593628310b450db5f2491c1edf5168f46f79f0d07c3c9a4e7  canonical_post_read_pull_cube_chunk1_original8.json
+          e63750224be62fc29a0cca4b172f2f901cb6dc9e0426d5af39e989a15c83712d  canonical_post_read_pull_cube_chunk2_original8.json
+          ffb04367f4bf5c08186dd8c5240b54643cb98a4bf827ecb06aaef901500d6de2  canonical_post_read_pull_cube_chunk3_original8.json
+          3d62e87edf2d6d3f278d9319cf7379fd5c79350311d15e75f44d1091220410a0  canonical_post_read_stack_cube_chunk0_original8.json
+          a7894debcd3d46a969b86a1602e7b27300f9282f6f45d4faad7849c97981a9c7  canonical_post_read_stack_cube_chunk1_original8.json
+          69ad3064395daa7d21155ab90469ab1c94b6bc2d4c81d6b60305f7eebb4d003a  canonical_post_read_stack_cube_chunk2_original8.json
+          5268561f4fce9062ed59cb42598b702e1d4c4e695543b29cfa03f5a2d2d697ae  canonical_post_read_stack_cube_chunk3_original8.json
+          d2e2a6902bb8ad2d4eb5dc7b8c278481c2e7536e9447bf2f6b0d37a4eccd1665  canonical_pull_cube_chunk0.log
+          26f08fd22536635bd7f4162e465fe783b55205f7007832dbf76bd639891c1ef1  canonical_pull_cube_chunk1.log
+          a5d87a84dc899e51bee1405861663c45b1d615c8851545fce7ec9d145b33d576  canonical_pull_cube_chunk2.log
+          a47b769369e7ea38d3c362140233def2198b3efa7f3d6a719d2c528ceb6bc286  canonical_pull_cube_chunk3.log
+          aa0b2840294ac1cb5aed5d00c70d8cf729a120210bf22dd1b7c8697c2716b5e2  canonical_stack_cube_chunk0.log
+          1a768776101ba74006fe639af7c902e11c9799bf51924c98d4a9a8d157025ad1  canonical_stack_cube_chunk1.log
+          9f38d1e2fd05ee4f73fb869db0442bf5b5db9d5b483aa7054d113e90b4d880ca  canonical_stack_cube_chunk2.log
+          5229fd39bd061c7df35afa61d5faad9c2603c2320e784af17d8787aeddff4618  canonical_stack_cube_chunk3.log
+          SHA_LOCK
+          (cd /tmp/canonical_flat && sha256sum -c SOURCE_SHA256SUMS)
+      - name: Audit actual complete 64 reset seeds and 640 real controller worlds
+        run: |
+          python -m research.audit_canonical_post_read_fresh64 --input-dir /tmp/canonical_flat --output /tmp/canonical_recomputed_original.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('/tmp/canonical_flat/canonical_post_read_fresh64_original_complete.json').read_text())
+          y=json.loads(Path('/tmp/canonical_recomputed_original.json').read_text())
+          assert x==y
+          assert y['states']==64 and y['native_stepped_controller_worlds']==640
+          assert y['primary_stack_same_information_same_action_invariant'] is True
+          assert y['by_task']['pull_cube']['phase_success']==32
+          assert y['by_task']['stack_cube']['phase_success']==24
+          assert y['by_task']['stack_cube']['corrected_fixed_success']==24
+          assert y['by_task']['stack_cube']['legacy_fixed_success']==21
+          assert y['actual_decision_privileged_reads_by_arm']['fault_phase_value_query']==56
+          assert y['actual_decision_privileged_reads_by_arm']['fault_fixed_readback_canonical']==64
+          assert y['paired']['corrected_fixed']['phase_only']==0
+          assert y['paired']['corrected_fixed']['other_only']==0
+          assert y['paired']['legacy_fixed']['phase_only']==3
+          print('PASS: exact original 17 SHA-locked source files; corrected post-read comparator eliminates false phase-query success gain; 32 Stack native 7D per-step actions match')
+          PY
+      - name: Preserve untouched source JSONs and full original log on main without overwriting
+        run: |
+          set -euo pipefail
+          dst=research/frozen_policy_transfer/evidence/canonical_post_read_64_970001_980032
+          mkdir -p "$dst"
+          cp /tmp/canonical_flat/*.json /tmp/canonical_flat/*.log /tmp/canonical_flat/SOURCE_SHA256SUMS "$dst/"
+          cat > "$dst/README.md" <<'EOF'
+          # Corrected post-read canonical controller, negative novelty result
+          Original full genuine author-operated ten-controller-arm PhysX execution: run 37914020907, head 0b8e05f1f4787f5b385d666f427bd20d74a2ca78, attempt 1.
+          Original entirely new PullCube 970001–970032 and StackCube 980001–980032 states. Method/fault/threshold protocol frozen BEFORE new source code at commit d664ec2fe4bb3a5d86ff4de3b1e7797c199f3037, immutable Git blob 17aecaf25337d2482374f08272bb28ee5bdaebcf.
+          Two actual PhysX native arm target-hold faults at t=2,3, no true network ACK packets.
+          Ten independently physically stepped controller worlds per source seed, 640 actual original worlds, two separate third-party frozen PPO task checkpoints. All 64 source seed populations and original failure episodes preserved.
+          ORIGINAL RESULTS: phase-conditioned target read 56/64 successes, 56 true decision target readbacks. Corrected fixed readback comparator 56/64 successes, 64 reads. Stale cached-post-read fixed treatment 53/64, 64 reads. The 3-success old advantage is an IMPLEMENTATION CONFOUND, not a task-level algorithm effect.
+          StackCube all 32 source states: phase and corrected fixed obtain the same true target state at the same step four and dispatch the same actual 7D controller action at EVERY physical step within 1e-6; their actual official binary task outcomes match for all 64 source states (zero paired discordance). On PullCube both complete 32/32; phase reads 24 and corrected fixed reads 32.
+          The earliest CI attempts failed due to missing frozen helper imports. The original seeds/method bounds were NOT retrospectively retuned; the first fully completed 8-shard positive test is 37914020907. It is NOT an independent outside-researcher run.
+          The exact 17 raw original JSON/log files are byte-hashed by the pinned SOURCE_SHA256SUMS. The independent auditor fully recomputes every result. The named local mechanism is versioned controller memory/action-branch correctness, not a new formal control theorem or hardware safety guarantee.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dst"
+          if git diff --cached --quiet; then echo 'Source evidence already permanently saved'; exit 0; fi
+          git commit -m 'evidence: archive 64 10-arm canonical post-read negative original PhysX episodes with source SHA'
+          for attempt in 1 2 3 4; do
+            git fetch origin main
+            if ! git rebase origin/main; then git rebase --abort || true; exit 1; fi
+            if git push origin HEAD:main; then echo 'Successfully preserved original evidence on new main'; exit 0; fi
+          done
+          echo 'Safe non-force push could not complete after four attempts'
+          exit 1
