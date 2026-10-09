@@ -1,0 +1,110 @@
+name: "Prospective frozen PPO four-history public-motion versus task-aware private query PhysX"
+on:
+  push:
+    branches: [research/ppo-public-fourhistory-heldout32-20261009]
+    paths:
+      - 'research/PPO_PUBLIC_FOURHISTORY_NEW32_PREOUTCOME_V1.json'
+      - 'research/frozen_ppo_public_fourhistory_task_level_physx.py'
+      - 'research/run_public_fourhistory_new32.py'
+      - 'research/audit_public_fourhistory_new32.py'
+      - '.github/workflows/public-fourhistory-frozen-ppo-task-physx.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-preregistration-and-action-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze original before-outcome seed protocol, trained PPO and native chart sources
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/PPO_PUBLIC_FOURHISTORY_NEW32_PREOUTCOME_V1.json)" = 53e48a6dc10299490241f4a70aea18e155fcdc5c
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = ddfaf4522d49f73ce926e4c6d77c7ca755f8e1b6
+          test "$(git hash-object research/frozen_ppo_public_fourhistory_task_level_physx.py)" = 00945e31902f33feac21edb88f135cbdff8426ae
+          test "$(git hash-object research/run_public_fourhistory_new32.py)" = 28404ff76a8a977a42d28b72060df3e03d46acf8
+          test "$(git hash-object research/audit_public_fourhistory_new32.py)" = 924f51d380e7ce6660be7a8bc6ee06205047a16e
+          test "$(git hash-object research/empirical_probe_response_classifier.py)" = 064bb46831b61af73ad445bc836326837ec5468f
+          python -m py_compile research/frozen_ppo_public_fourhistory_task_level_physx.py research/run_public_fourhistory_new32.py research/audit_public_fourhistory_new32.py
+          python - <<'PY'
+          from research.run_public_fourhistory_new32 import accepted, check_sources
+          check_sources()
+          assert len({(t,s) for t in ('pull_cube','stack_cube') for c in range(4) for s in accepted(t,c)})==32
+          print('ALL32_REGISTERED_BEFORE_PHYSX_NEW_TASK_SEEDS_PASS',True)
+          PY
+
+  eight-separate-four-seed-genuine-frozen-PPO-physics:
+    needs: independent-preregistration-and-action-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install exact actual official ManiSkill native CPU PhysX dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Record source and Python runtime identity before any actual env.step
+        run: |
+          git rev-parse HEAD > source_commit.txt
+          python -m pip freeze --all > original_physics_dependencies.txt
+      - name: Run each of EIGHT actual independent matched controller worlds at 4 new PPO task resets
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_public_fourhistory_new32.py --task "$TASK" --chunk "$CHUNK" 2>&1 | tee actual_public_fourhistory_ppo_physx.log
+          test -s "public_fourhistory_${TASK}_chunk${CHUNK}_original4.json"
+          test -s "public_fourhistory_${TASK}_chunk${CHUNK}_audit.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-public-k4-${{ matrix.task }}-${{ matrix.chunk }}
+          path: |
+            public_fourhistory_*_original4.json
+            public_fourhistory_*_audit.json
+            actual_public_fourhistory_ppo_physx.log
+            source_commit.txt
+            original_physics_dependencies.txt
+          retention-days: 90
+
+  independent-all32-256-real-native-controller-audit:
+    needs: eight-separate-four-seed-genuine-frozen-PPO-physics
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: native-public-k4-*
+          merge-multiple: true
+          path: /tmp/new32-original-native
+      - name: Recompute paired success, wrong latent authorization, exact private reads and failed fault exposure from ALL originals
+        run: |
+          python -m research.audit_public_fourhistory_new32 --source-dir /tmp/new32-original-native --output /tmp/full_original_new32_task_ack_public_audit.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: complete-public-fourhistory-actual-256-native-physx-worlds
+          path: |
+            /tmp/new32-original-native/*.json
+            /tmp/full_original_new32_task_ack_public_audit.json
+          retention-days: 90
