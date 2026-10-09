@@ -1,0 +1,147 @@
+name: Prospective unseen-reset truly matched A vs B060 vs C 128-cell native PhysX
+
+on:
+  push:
+    branches: [research/prospective-strong060-128-20261010]
+    paths:
+      - 'research/STRONG060_PROSPECTIVE128_PREOUTCOME_V1.json'
+      - 'research/frozen_ppo_matched_public_strong060_physx.py'
+      - 'research/frozen_sources/matched_public_bayes_640_original_exact.py'
+      - 'research/run_strong060_prospective128.py'
+      - 'research/audit_strong060_prospective128.py'
+      - '.github/workflows/prospective-strong060-128.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  first-source-freeze-and-same-method-provenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Lock prereg BEFORE first actual native PhysX outcome and detect any method patch other than forced physical truth
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/STRONG060_PROSPECTIVE128_PREOUTCOME_V1.json)" = 6a3e6465376bc911479ab1ca323f44cc93eb0d94
+          test "$(git hash-object research/frozen_sources/matched_public_bayes_640_original_exact.py)" = 6e039af56006827fc2fe063b541cfa3dcd1ddc89
+          test "$(git hash-object research/frozen_ppo_matched_public_strong060_physx.py)" = 693f2fb981b61aadbd69bf124333a37b991674e3
+          test "$(git hash-object research/run_strong060_prospective128.py)" = 82ca65d132270dca24c0fa30346d31deb5cdf755
+          python -m py_compile research/run_strong060_prospective128.py research/audit_strong060_prospective128.py research/frozen_ppo_matched_public_strong060_physx.py
+          python - <<'PY'
+          from research.run_query_isolated_factorial128 import frozen_preflight,selected
+          p=frozen_preflight()
+          assert selected('pull_cube',0)==list(range(3110001,3110009))
+          assert selected('pull_cube',1)==list(range(3110009,3110017))
+          assert selected('stack_cube',0)==list(range(3120001,3120009))
+          assert selected('stack_cube',1)==list(range(3120009,3120017))
+          assert p['expected_actual_native_controller_worlds']==1280
+          print('PRE_REGISTERED TRUE SAME RESET x FOUR REAL ACK TRUTHS x TEN NATIVE WORLDS; unchanged original policy code')
+          PY
+
+      - name: Confirm the only policy scoring difference is precommitted 0.60 instead of 0.95
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from research.run_strong060_prospective128 import frozen_preflight
+          p=frozen_preflight()
+          assert p['strong_score_B_threshold']==0.60
+          assert p['previously_exposed_301_302_cohort_excluded'] is True
+          assert p['task_reset_register']=={'pull_cube':[3110001,3110016],'stack_cube':[3120001,3120016]}
+          text=Path('research/frozen_ppo_matched_public_strong060_physx.py').read_text()
+          assert text.count('ev["posterior_threshold_predeclared"]=0.60')==1
+          assert text.count('ev["authorized"]=bool(weights[idx]>=0.60 and rs[idx]<=eps)')==1
+          print('PREOUTCOME_SOURCE_IMMUTABLE_060_GATE_SUCCESS')
+          PY
+
+  real-native-physx-four-true-ack-cells-per-seed:
+    needs: first-source-freeze-and-same-method-provenance
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {task: pull_cube, chunk: 0}
+          - {task: pull_cube, chunk: 1}
+          - {task: stack_cube, chunk: 0}
+          - {task: stack_cube, chunk: 1}
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install unchanged frozen third-party PPO + genuine CPU PhysX
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Record physical experiment identity BEFORE acting
+        run: |
+          mkdir -p new_strong060_source
+          git rev-parse HEAD > new_strong060_source/ACTUAL_SOURCE_COMMIT.txt
+          printf 'actor=%s repo=%s task=%s chunk=%s physical_worlds=320\n' "$GITHUB_ACTOR" "$GITHUB_REPOSITORY" "${{ matrix.task }}" "${{ matrix.chunk }}" > new_strong060_source/ORIGINAL_OPERATOR_AND_COHORT.txt
+          python -m pip freeze --all > new_strong060_source/FULL_ORIGINAL_PHYSX_PYTHON_ENV.txt
+      - name: Physically execute 8 new initial states x four same-process truth conditions x ten actual frozen PPO controller worlds
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python -m research.run_strong060_prospective128             --task "${{ matrix.task }}" --chunk "${{ matrix.chunk }}"             2>&1 | tee new_strong060_source/ORIGINAL_ALL_PHYSX_320_WORLD_TERMINAL.log
+          mv strong060_${{ matrix.task }}_chunk${{ matrix.chunk }}_truth*_original8.json new_strong060_source/
+          mv strong060_${{ matrix.task }}_chunk${{ matrix.chunk }}_truth*_audit.json new_strong060_source/
+          mv strong060_${{ matrix.task }}_chunk${{ matrix.chunk }}_full_truth_prefix_provenance.json new_strong060_source/
+          test "$(find new_strong060_source -name '*_original8.json' | wc -l)" = 4
+          test "$(find new_strong060_source -name '*_audit.json' | wc -l)" = 4
+          (cd new_strong060_source && find . -type f ! -name ORIGINAL_SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > ORIGINAL_SHA256SUMS)
+          (cd new_strong060_source && sha256sum -c ORIGINAL_SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: FIRST_unseen_strong060_real_physics_${{ matrix.task }}_chunk${{ matrix.chunk }}
+          path: new_strong060_source/
+          retention-days: 90
+
+  independent-full128-32-cluster-original-audit:
+    needs: real-native-physx-four-true-ack-cells-per-seed
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: FIRST_unseen_strong060_real_physics_*
+          path: /tmp/unseen_strong060_matched128
+      - name: Rehash all untouched source physical worlds, 32 clusters x 4 actual truth conditions and same predecision full SE3
+        run: |
+          set -euo pipefail
+          python -m research.audit_strong060_prospective128             --source-dir /tmp/unseen_strong060_matched128             --output /tmp/UNSEEN_STRONG060_ACTUAL128_COMPLETE.json
+          python - <<'PY'
+          import json
+          d=json.load(open("/tmp/UNSEEN_STRONG060_ACTUAL128_COMPLETE.json"))
+          assert d["new_unique_task_reset_clusters"]==32
+          assert d["n_original_full_truth_cells"]==128
+          assert d["actual_genuine_native_controller_worlds"]==1280
+          assert d["fully_matched_initial_observation_4x_each_cluster"] is True
+          assert d["physically_stepped_native_t2_t3_t4_matched_A_B_C_each_cell"] is True
+          assert len(d["original_actual_source_shard_sha256"])==16
+          assert len(d["by_task_and_four_ACTUAL_physical_ACK_truths"])==8
+          print("PASS FIRST FULL 128 actual original PhysX matched-prefix task/truth cells",d["all_cells"])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: FULL unseen strong060 32-reset 128-truth 1280-world actual PhysX reviewer audit
+          path: /tmp/UNSEEN_STRONG060_ACTUAL128_COMPLETE.json
