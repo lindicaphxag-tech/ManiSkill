@@ -1,0 +1,54 @@
+name: Backup identical registered stack chunk-2 PhysX after one runner install stall
+on:
+  push:
+    branches: [research/survivor-conditioned-so3-new32-20261009]
+    paths: ['.github/workflows/survivor-registered-stack2-infra-retry.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  same-preregistered-stack-four-state-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    env:
+      PYTHONUNBUFFERED: '1'
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Assert IDENTICAL registered 32-source cohort and original physical runner bytes
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/SURVIVOR_CONDITIONED_SO3_NEW32_PRECOMMIT_V1.json)" = a51b01d66e2211058854015a31138f6a838eec71
+          test "$(git hash-object research/frozen_ppo_survivor_full_pose_new32.py)" = 52addb52d627ea600f847ecffa38c0fad9df97ad
+          test "$(git hash-object research/run_survivor_fullpose_new32.py)" = 4b9dc1d4bbea771d079fbbcf0f824eed13df0a44
+          python - <<'PY'
+          from research.run_survivor_fullpose_new32 import accepted,check_sources
+          check_sources()
+          assert accepted('stack_cube',2)==[870009,870010,870011,870012]
+          print('EXACT_SAME_FOUR_ORIGINAL_PREREGISTERED_STATES')
+          PY
+      - name: Install true original official PhysX dependencies on fresh runner
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e . huggingface_hub
+      - name: Re-run exact stalled registered StackCube chunk 2 without changes
+        run: |
+          set -o pipefail
+          git rev-parse HEAD > backup_source_commit.txt
+          PYTHONPATH="$PWD:$PWD/research" python research/run_survivor_fullpose_new32.py --task stack_cube --chunk 2 \
+            2>&1 | tee original_registered_stack_chunk2.log
+          test -s survivor_fullpose_stack_cube_chunk2_original4.json
+          test -s survivor_fullpose_stack_cube_chunk2_audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backup-original-same-registered-stackcube-chunk2
+          path: |
+            survivor_fullpose_stack_cube_chunk2_original4.json
+            survivor_fullpose_stack_cube_chunk2_audit.json
+            original_registered_stack_chunk2.log
+            backup_source_commit.txt
