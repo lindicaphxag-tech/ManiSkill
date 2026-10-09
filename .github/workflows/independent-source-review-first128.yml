@@ -1,0 +1,49 @@
+name: Six-platform original first128 target-anchor physical source audit without physics rerun
+on:
+  push:
+    branches: [evidence/anchor-first128-first-physics-20261010]
+    paths:
+      - research/review_original_anchor128_source.py
+      - tests/test_review_original_anchor128_source.py
+      - .github/workflows/independent-source-review-first128.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  byte-locked-recompute-physical-source:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Test exact original 19-blob archive and tamper rejection
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile research/review_original_anchor128_source.py tests/test_review_original_anchor128_source.py
+          python -m unittest discover -s tests -p test_review_original_anchor128_source.py -v
+          python -m research.review_original_anchor128_source --output independent_original128_source_counts.json
+          python - <<'PY'
+          import json
+          d=json.load(open('independent_original128_source_counts.json'))
+          assert d['checked_files']==19
+          assert d['original_physical_worlds']==128
+          assert d['independent_robot_reset_seeds']==16
+          assert d['matched_pair_prefixes']==64
+          assert d['rotation_probe_changed_recorded_target_so3_gt_0_001rad']==32
+          assert d['source_only_original_recorded_metrics_not_raw_quaternion_remeasurement'] is True
+          print('PASS ONLY ORIGINAL SOURCE VERIFICATION, NO NEW PHYSICS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: archived-original128-source-${{ matrix.os }}-py${{ matrix.python }}
+          path: independent_original128_source_counts.json
+          if-no-files-found: warn
