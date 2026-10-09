@@ -1,0 +1,98 @@
+{
+  "schema": "LOW_SIGNAL_PANDA_XARM6_PROBE_SELECTION_PHYSX_V1",
+  "created_before_any_new_physics": true,
+  "source_branch": "research/low-signal-probe-selection-20261010",
+  "scientific_question": "Can a probe chosen using independent prior PhysX response calibration improve selective ACK-history identification when the previously easy high-SNR fault is attenuated? Does added actuation justify any saved privileged reads?",
+  "frozen_sources": {
+    "research/common_probe_zero_nonzero_cross_robot_physx.py": "ba4a28b0bb61db8814935a18e43f7153de582070",
+    "research/cross_robot_ack_physics.py": "3b2faf44e5f413911eae25ccfd0c51fbbe2d5fe7",
+    "research/cross_robot_online_proprio_classifier.py": "b0d7a767b93fb9f7cab2ba70494947ccb4027979"
+  },
+  "robots": [
+    "panda",
+    "xarm6_robotiq"
+  ],
+  "task": "PickCube-v1",
+  "fault_native_6d_scale": 0.08,
+  "fault_step": 2,
+  "real_fault_truths": [
+    "applied",
+    "held"
+  ],
+  "probe_step": 3,
+  "known_delivered_probes": {
+    "zero": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "x": [
+      0.15,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "y": [
+      0,
+      0.15,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "calibration_seed_ranges": {
+    "panda": [
+      680001,
+      680008
+    ],
+    "xarm6_robotiq": [
+      690001,
+      690008
+    ]
+  },
+  "heldout_seed_ranges": {
+    "panda": [
+      700001,
+      700008
+    ],
+    "xarm6_robotiq": [
+      710001,
+      710008
+    ]
+  },
+  "calibration_scope": "8 genuine physical resets per robot; two genuine ACK truth conditions and each of three genuine probes per reset. Frozen old classifier fit separately per robot and probe (no hidden truth during heldout decisions).",
+  "selection_rule": "For each robot, fit calibration response means/radii independently for x and y. Choose the nonzero probe maximizing mean(applied)-mean(held) L2 gap minus sum of both empirical envelopes, lexicographic tie-break. Freeze selection before any heldout PHY outcomes. Compare chosen probe against fixed x, fixed y, and zero. This is calibration-selected per robot, NOT online per-state optimization.",
+  "claim_limit": "Nonzero probes x and y equal native6 L2 norm, but zero has less actuation. Every candidate uses the same four native PhysX steps. No measured work, force, collision, contact, pretrained PPO, or robust sensor-noise guarantee.",
+  "expected_world_counts": {
+    "calibration": 96,
+    "holdout": 96,
+    "total": 192,
+    "independent_calibration_reset_seeds": 16,
+    "independent_heldout_reset_seeds": 16
+  },
+  "heldout_metrics": [
+    "selected versus zero/fixed X/fixed Y: unique admitted labels, false confident labels, abstentions, actual t4 setpoint correction errors",
+    "heldout public applied/held response separation by robot/probe",
+    "calibration-only separation score, actual native6 probe magnitude, full denominator incl refusals",
+    "any differences in t1 achieved XYZ across paired physical truth/probe worlds"
+  ],
+  "hard_veto": [
+    "never use heldout labels in selection or fitting",
+    "do not treat 96 new worlds as 96 independent reset seeds",
+    "do not interpret classification of t2 ACK as full manipulation task success",
+    "do not call empirical radii physical safety certificates",
+    "do not claim calibrated nonzero beats zero if all outcomes tie or wrong labels appear",
+    "no official external upsteam merge or third-party experiment",
+    "if physical source validation fails preserve all failure logs; no posthoc remapping seeds/probes"
+  ],
+  "cross_platform_source": [
+    "Python 3.11 GitHub Ubuntu native ManiSkill PhysX CPU",
+    "original 0.08 fault scaling ONLY, original t0/t1 actions and native controller charts pinned by SHA"
+  ]
+}
