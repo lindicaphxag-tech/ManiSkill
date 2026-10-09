@@ -1,0 +1,46 @@
+name: Reconcile all 64 true double-ACK PhysX outcomes from original SHA-protected source
+on:
+  push:
+    branches:
+      - research/compound-ack-belief-bridge-20261009
+    paths:
+      - 'research/frozen_policy_transfer/review/audit_compound_ack_new64.py'
+      - '.github/workflows/compound-ack-new64-source-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  original-64-source-only-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fetch ALL eight original 2026-10-09 PhysX shard artifacts
+        run: |
+          gh run download 37900209486 --repo "$GITHUB_REPOSITORY" \
+            --pattern 'multiack-prospective-*' --dir original_64_physical_shards
+          test "$(find original_64_physical_shards -mindepth 1 -maxdepth 1 -type d | wc -l)" -eq 8
+      - name: Verify every actual PhysX native episode, SHA256, frozen PPO, certificate, hidden-state beliefs and queries
+        run: |
+          set -o pipefail
+          python -m research.frozen_policy_transfer.review.audit_compound_ack_new64 \
+            --artifacts original_64_physical_shards \
+            --out compound_ack_new64_full_original_audit.json 2>&1 | tee compound_ack_new64_audit.log
+      - name: Preserve original full-denominator numeric audit and errors
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-locked-compound-new64-audit-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 90
+          path: |
+            compound_ack_new64_full_original_audit.json
+            compound_ack_new64_audit.log
+
+# This only checks original author-operated PhysX; not outside-lab confirmation.
