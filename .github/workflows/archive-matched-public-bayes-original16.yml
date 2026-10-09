@@ -32,14 +32,23 @@ jobs:
           test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37923604209 --jq .head_sha)" = "3bfc400c09d15ac6b5f87438890315393e3ec811"
           test "$(git hash-object research/frozen_ppo_matched_public_bayes_physx.py)" = 6e039af56006827fc2fe063b541cfa3dcd1ddc89
           test "$(git hash-object research/MATCHED_PUBLIC_BAYES_NATIVE16_PREOUTCOME_V1.json)" = d229db10a75effafda1be269f556c0bf9ca104bb
-      - name: Retrieve BOTH physical source shards, full terminal logs, frozen methods and output
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Download untouched original run artifacts by exact first-run ID
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 37923604209
+          github-token: ${{ github.token }}
+          pattern: original-matched-public-posterior-physx-*
+          path: /tmp/bayes-original16
+      - name: Download original complete 16-state source summary
+        uses: actions/download-artifact@v4
+        with:
+          run-id: 37923604209
+          github-token: ${{ github.token }}
+          name: all16-independently-reaggregated-original-physx
+          path: /tmp/bayes-original16/complete
+      - name: Fail if either original native PhysX shard/log/audit is absent
         run: |
           set -euo pipefail
-          mkdir -p /tmp/bayes-original16
-          gh run download 37923604209 --repo "$GITHUB_REPOSITORY" --pattern 'original-matched-public-posterior-physx-*' --dir /tmp/bayes-original16
-          gh run download 37923604209 --repo "$GITHUB_REPOSITORY" --name all16-independently-reaggregated-original-physx --dir /tmp/bayes-original16/complete
           test "$(find /tmp/bayes-original16 -name 'mixed_ack_*_original8.json' | wc -l)" -eq 2
           test "$(find /tmp/bayes-original16 -name '*_source_audit.json' | wc -l)" -eq 2
           test "$(find /tmp/bayes-original16 -name '*real_physx_complete.log' | wc -l)" -eq 2
