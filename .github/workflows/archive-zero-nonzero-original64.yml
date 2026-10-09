@@ -1,0 +1,202 @@
+name: Permanently archive original zero-vs-nonzero 64 cross-robot native PhysX witnesses
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-zero-nonzero-original64.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  full-original-source-integrity-no-write:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Original immutable eight-job PhysX source and preoutcome protocol
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37910081496 --jq .head_sha)" = "82599f25b0ee34f9a1ca787916b5a58486da8ce9"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37910081496 --jq .conclusion)" = success
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37910081496 --jq .run_attempt)" = 1
+          test "$(git hash-object research/COMMON_PROBE_ZERO_NONZERO_CROSS_ROBOT_PREREG_V1.json)" = c03e7c6d2343ec6fcfe1824d4f4b76f5df00b755
+          test "$(git hash-object research/common_probe_zero_nonzero_cross_robot_physx.py)" = ba4a28b0bb61db8814935a18e43f7153de582070
+      - name: Fetch exactly six original source JSONs, seven original records and all 6 logs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/original_zero_nonzero_sources /tmp/original_zero_nonzero_aggregate /tmp/original_zero_nonzero
+          gh run download 37910081496 --repo "$GITHUB_REPOSITORY" --pattern 'original-zero-nonzero-*' --dir /tmp/original_zero_nonzero_sources
+          gh run download 37910081496 --repo "$GITHUB_REPOSITORY" --name 'complete-original-zero-vs-nonzero-two-robot-64-real-PhysX-worlds' --dir /tmp/original_zero_nonzero_aggregate
+          find /tmp/original_zero_nonzero_sources -type f -name '*.json' -exec cp {} /tmp/original_zero_nonzero/ \;
+          find /tmp/original_zero_nonzero_sources -type f -name '*.log' -exec cp {} /tmp/original_zero_nonzero/ \;
+          audit=$(find /tmp/original_zero_nonzero_aggregate -type f -name original_two_probe_full_audit.json)
+          test -n "$audit"
+          cp "$audit" /tmp/original_zero_nonzero/
+          test "$(find /tmp/original_zero_nonzero -maxdepth 1 -type f -name '*.json' | wc -l)" -eq 7
+          test "$(find /tmp/original_zero_nonzero -maxdepth 1 -type f -name '*.log' | wc -l)" -eq 6
+          cat > /tmp/original_zero_nonzero/ORIGINAL_SHA256SUMS <<'SHA_END'
+          1510495271396b1513bbec9be3569401214bf00855d146c64f4138388a214990  native_two_probes_panda_chunk0_original16.json
+          eab044fd847007db22691c83946fcd3d24c2a46278fe9185acc11d219da01b45  native_two_probes_panda_chunk1_original16.json
+          62017d5e23b766ca6d98ff1309494d502723e75b159dea041cc52f26f8ddfd1f  native_two_probes_xarm6_robotiq_chunk0_original16.json
+          10553427f4c3251eceb4027b008b86ad000d4165b90b3c1f416f20bfebb55dae  native_two_probes_xarm6_robotiq_chunk1_original16.json
+          4840a83d9d32776ff4eeb8a402268f314787172f229758f2489068a8cc59e571  two_probe_prior_calibration_panda.json
+          3d9fb238f96570137c194d74064915d145570536db93c77ec3a64f51812bb0f5  two_probe_prior_calibration_xarm6_robotiq.json
+          bb2b7b6ebe4b9a812a34a87547370cac0b548d262aad3d704d3b257bc9bd65e3  original_two_probe_full_audit.json
+          SHA_END
+          cd /tmp/original_zero_nonzero
+          sha256sum -c ORIGINAL_SHA256SUMS
+      - name: Recompute complete 64-world original label/correction and public response-gap ledger
+        run: |
+          python -m research.audit_zero_nonzero_probe_two_robots --input-dir /tmp/original_zero_nonzero --output /tmp/recomputed_zero_nonzero_full.json
+          python research/frozen_policy_transfer/review/physical_probe_informativeness.py --input-dir /tmp/original_zero_nonzero --output /tmp/recomputed_probe_gap.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path('/tmp/original_zero_nonzero/original_two_probe_full_audit.json').read_text())
+          b=json.loads(Path('/tmp/recomputed_zero_nonzero_full.json').read_text())
+          c=json.loads(Path('/tmp/recomputed_probe_gap.json').read_text())
+          assert a==b
+          assert a['original_calibration_physx_worlds']==64
+          assert a['unseen_true_delivery_probe_real_physx_worlds']==64
+          assert a['unseen_distinct_physical_seed_states']==16
+          assert a['per_probe']['zero']['confident_public_labels']==32
+          assert a['per_probe']['nonzero_x']['confident_public_labels']==32
+          assert a['per_probe']['zero']['wrong_confident_labels']==0
+          assert a['per_probe']['nonzero_x']['wrong_confident_labels']==0
+          assert a['per_probe']['zero']['actual_commanded_target_XYZ_restored']==32
+          assert a['per_probe']['nonzero_x']['actual_commanded_target_XYZ_restored']==32
+          assert a['per_probe']['zero']['private_predecision_readbacks']==0
+          assert a['per_probe']['nonzero_x']['private_predecision_readbacks']==0
+          assert c['physical_worlds']==64
+          assert c['paired_nonzero_gap_increase_count']==16
+          assert c['paired_nonzero_gap_decrease_count']==0
+          print('PASS: unchanged source 7 JSON + six logs, 128 original native calibration/test PhysX worlds; no added confidence on nonzero probe')
+          PY
+  trusted-main-permanent-source-archive:
+    needs: full-original-source-integrity-no-write
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Original immutable eight-job PhysX source and preoutcome protocol
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37910081496 --jq .head_sha)" = "82599f25b0ee34f9a1ca787916b5a58486da8ce9"
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37910081496 --jq .conclusion)" = success
+          test "$(gh api repos/$GITHUB_REPOSITORY/actions/runs/37910081496 --jq .run_attempt)" = 1
+          test "$(git hash-object research/COMMON_PROBE_ZERO_NONZERO_CROSS_ROBOT_PREREG_V1.json)" = c03e7c6d2343ec6fcfe1824d4f4b76f5df00b755
+          test "$(git hash-object research/common_probe_zero_nonzero_cross_robot_physx.py)" = ba4a28b0bb61db8814935a18e43f7153de582070
+      - name: Fetch exactly six original source JSONs, seven original records and all 6 logs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/original_zero_nonzero_sources /tmp/original_zero_nonzero_aggregate /tmp/original_zero_nonzero
+          gh run download 37910081496 --repo "$GITHUB_REPOSITORY" --pattern 'original-zero-nonzero-*' --dir /tmp/original_zero_nonzero_sources
+          gh run download 37910081496 --repo "$GITHUB_REPOSITORY" --name 'complete-original-zero-vs-nonzero-two-robot-64-real-PhysX-worlds' --dir /tmp/original_zero_nonzero_aggregate
+          find /tmp/original_zero_nonzero_sources -type f -name '*.json' -exec cp {} /tmp/original_zero_nonzero/ \;
+          find /tmp/original_zero_nonzero_sources -type f -name '*.log' -exec cp {} /tmp/original_zero_nonzero/ \;
+          audit=$(find /tmp/original_zero_nonzero_aggregate -type f -name original_two_probe_full_audit.json)
+          test -n "$audit"
+          cp "$audit" /tmp/original_zero_nonzero/
+          test "$(find /tmp/original_zero_nonzero -maxdepth 1 -type f -name '*.json' | wc -l)" -eq 7
+          test "$(find /tmp/original_zero_nonzero -maxdepth 1 -type f -name '*.log' | wc -l)" -eq 6
+          cat > /tmp/original_zero_nonzero/ORIGINAL_SHA256SUMS <<'SHA_END'
+          1510495271396b1513bbec9be3569401214bf00855d146c64f4138388a214990  native_two_probes_panda_chunk0_original16.json
+          eab044fd847007db22691c83946fcd3d24c2a46278fe9185acc11d219da01b45  native_two_probes_panda_chunk1_original16.json
+          62017d5e23b766ca6d98ff1309494d502723e75b159dea041cc52f26f8ddfd1f  native_two_probes_xarm6_robotiq_chunk0_original16.json
+          10553427f4c3251eceb4027b008b86ad000d4165b90b3c1f416f20bfebb55dae  native_two_probes_xarm6_robotiq_chunk1_original16.json
+          4840a83d9d32776ff4eeb8a402268f314787172f229758f2489068a8cc59e571  two_probe_prior_calibration_panda.json
+          3d9fb238f96570137c194d74064915d145570536db93c77ec3a64f51812bb0f5  two_probe_prior_calibration_xarm6_robotiq.json
+          bb2b7b6ebe4b9a812a34a87547370cac0b548d262aad3d704d3b257bc9bd65e3  original_two_probe_full_audit.json
+          SHA_END
+          cd /tmp/original_zero_nonzero
+          sha256sum -c ORIGINAL_SHA256SUMS
+      - name: Recompute complete 64-world original label/correction and public response-gap ledger
+        run: |
+          python -m research.audit_zero_nonzero_probe_two_robots --input-dir /tmp/original_zero_nonzero --output /tmp/recomputed_zero_nonzero_full.json
+          python research/frozen_policy_transfer/review/physical_probe_informativeness.py --input-dir /tmp/original_zero_nonzero --output /tmp/recomputed_probe_gap.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path('/tmp/original_zero_nonzero/original_two_probe_full_audit.json').read_text())
+          b=json.loads(Path('/tmp/recomputed_zero_nonzero_full.json').read_text())
+          c=json.loads(Path('/tmp/recomputed_probe_gap.json').read_text())
+          assert a==b
+          assert a['original_calibration_physx_worlds']==64
+          assert a['unseen_true_delivery_probe_real_physx_worlds']==64
+          assert a['unseen_distinct_physical_seed_states']==16
+          assert a['per_probe']['zero']['confident_public_labels']==32
+          assert a['per_probe']['nonzero_x']['confident_public_labels']==32
+          assert a['per_probe']['zero']['wrong_confident_labels']==0
+          assert a['per_probe']['nonzero_x']['wrong_confident_labels']==0
+          assert a['per_probe']['zero']['actual_commanded_target_XYZ_restored']==32
+          assert a['per_probe']['nonzero_x']['actual_commanded_target_XYZ_restored']==32
+          assert a['per_probe']['zero']['private_predecision_readbacks']==0
+          assert a['per_probe']['nonzero_x']['private_predecision_readbacks']==0
+          assert c['physical_worlds']==64
+          assert c['paired_nonzero_gap_increase_count']==16
+          assert c['paired_nonzero_gap_decrease_count']==0
+          print('PASS: unchanged source 7 JSON + six logs, 128 original native calibration/test PhysX worlds; no added confidence on nonzero probe')
+          PY
+      - name: Archive only the FIRST successful fully source-pinned original evidence and logs
+        run: |
+          set -euo pipefail
+          dst=research/frozen_policy_transfer/evidence/zero_vs_nonzero_public_probe_panda_xarm6_new64
+          mkdir -p "$dst"
+          cp /tmp/original_zero_nonzero/*.json /tmp/original_zero_nonzero/*.log /tmp/original_zero_nonzero/ORIGINAL_SHA256SUMS "$dst/"
+          cp /tmp/recomputed_probe_gap.json "$dst/observed_public_motion_identifiability_gap.json"
+          (cd "$dst" && find . -maxdepth 1 -type f ! -name 'FULL_ARCHIVE_SHA256SUMS' -print0 | sort -z | xargs -0 sha256sum > FULL_ARCHIVE_SHA256SUMS)
+          cat > "$dst/README.md" <<'EOF'
+          # Original first-pass ZERO versus NONZERO physically executed probe on Panda/xArm6
+          Frozen design commit 84c0968d26d939c6b758e3cc769613afc9d3e92f; original protocol blob c03e7c6d2343ec6fcfe1824d4f4b76f5df00b755.
+          First completely successful native PhysX run 37910081496, original source commit 82599f25b0ee34f9a1ca787916b5a58486da8ce9; 8/8 CI jobs succeeded.
+          Six original unchanged source JSONs + one original first-run aggregate JSON all match EXACT before-archival SHA256SUMS. Six first-run native stdout logs are retained. FULL_ARCHIVE_SHA256SUMS covers all preserved files and posthoc gap analysis.
+          Native physical calibration: two robot morphologies x 8 historical reset states x two actual ACK truths x two probes = 64 controller worlds.
+          NEW blind native original: two real robot morphologies x 8 heldout seeds x two physical truths x two probes = 64 different PhysX controller worlds, 16 distinct reset states.
+          ZERO: 32/32 correct confidently labelled actual ACK and commanded target XYZ restored after native correction, 0 wrong, 0 abstain, 0 private target reads BEFORE decision.
+          FIXED NONZERO +0.15 normalized native X: identical 32/32, 0 wrong, 0 abstain, 0 private predecision read. There is NO demonstrated task-level improvement from the extra probe command.
+          Genuine physical achieved-XYZ two-truth separation: Panda zero 37.842488mm, nonzero 38.257733mm; xArm6 zero 41.623059mm, nonzero 42.067339mm. Although all 16 paired state gaps increased slightly (~0.4mm), this did not improve already perfect identification in THIS finite high-SNR test.
+          This is a negative marginal probing-value experiment, NOT a pretrained PPO transfer experiment, optimized probing, certified dynamics, equal-energy comparison, real ROS ACK loss, safe grasp/collision/force control, or independent third-party reproduction.
+          Final full original-source audit:
+          python -m research.audit_zero_nonzero_probe_two_robots --input-dir research/frozen_policy_transfer/evidence/zero_vs_nonzero_public_probe_panda_xarm6_new64 --output /tmp/verified.json
+          For original SHA-256: (cd research/frozen_policy_transfer/evidence/zero_vs_nonzero_public_probe_panda_xarm6_new64 && sha256sum -c ORIGINAL_SHA256SUMS)
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$dst"
+          if git diff --cached --quiet; then echo 'First source already preserved'; exit 0; fi
+          git commit -m 'evidence: forever retain actual two-robot zero/nonzero ACK 64-PhysX-world ORIGINAL negative results'
+          for attempt in 1 2 3 4; do
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              echo 'Concurrent main tree conflict: refuse force push'
+              exit 1
+            fi
+            if git push origin HEAD:main; then
+              echo 'Original physical evidence permanently preserved with SHA'
+              exit 0
+            fi
+          done
+          echo 'Safe main update failed after four fast-forward attempts'
+          exit 1
