@@ -405,6 +405,7 @@ def trial(policy,seed):
                         (rots[i].inv()*rots[j]).magnitude()
                         for i in range(len(rots)) for j in range(i+1,len(rots))
                     ) if len(rots)>1 else 0.0
+                    winners=ev["accepted_position_indices"]
                     selection=choose_full_pose_history_from_public_xyz(
                         ev["candidate_residuals_m"],
                         [h.quaternion_xyzw for h in hyps],eps,
