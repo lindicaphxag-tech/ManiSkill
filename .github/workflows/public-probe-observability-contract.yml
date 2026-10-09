@@ -1,0 +1,30 @@
+name: Public probe ACK conditional identifiability contract
+on:
+  push:
+    paths:
+      - 'research/public_probe_observability_contract.py'
+      - 'research/PUBLIC_PROBE_IDENTIFIABILITY_PREOUTCOME_V0_1.md'
+      - 'tests/test_public_probe_observability_contract.py'
+      - '.github/workflows/public-probe-observability-contract.yml'
+  pull_request:
+    paths:
+      - 'research/public_probe_observability_contract.py'
+      - 'research/PUBLIC_PROBE_IDENTIFIABILITY_PREOUTCOME_V0_1.md'
+      - 'tests/test_public_probe_observability_contract.py'
+      - '.github/workflows/public-probe-observability-contract.yml'
+permissions:
+  contents: read
+jobs:
+  independent-model-falsification:
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.13']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Execute conditional geometry and refusal contract tests
+        run: python -m unittest discover -s tests -p test_public_probe_observability_contract.py -v
