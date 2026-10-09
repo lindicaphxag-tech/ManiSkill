@@ -389,6 +389,8 @@ def trial(policy,seed):
                     hyps=tuple(beliefs[n].hypotheses)
                     eps=EPSILON_BY_TASK[TASK]
                     ev["physical_candidate_count"]=len(hyps)
+                    ev["candidate_full_pose_quaternion_xyzw_from_ACTION_HISTORY"]=[
+                        list(h.quaternion_xyzw) for h in hyps]
                     ev["prior_training_epsilon_m"]=eps
                     ev["candidate_residuals_m"]=[
                         _segment_min_distance(before,after,np.asarray(h.position))[0]
