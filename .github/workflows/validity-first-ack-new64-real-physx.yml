@@ -1,0 +1,113 @@
+name: "Validity-first target-history authority: 64 fresh frozen PPO tasks, real 640 native PhysX worlds"
+on:
+  push:
+    branches: [research/validity-first-conformal-ack-new64-20261009]
+    paths:
+      - 'research/VALIDITY_FIRST_PUBLIC_ACK_NEW64_PREOUTCOME_V1.json'
+      - 'research/frozen_ppo_validity_first_motion_physx_v5.py'
+      - 'research/run_validity_first_new64.py'
+      - 'research/audit_validity_first_new64.py'
+      - 'research/source_audit_prior_true_residual_calibration.py'
+      - '.github/workflows/validity-first-ack-new64-real-physx.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  immutable-prior-physics-calibration-and-registered-source-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Independently recompute genuine OLD training physical truth residuals and freeze NEW heldout source
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/VALIDITY_FIRST_PUBLIC_ACK_NEW64_PREOUTCOME_V1.json)" = b9cc9f50b5c80ae7807062ec8790a23ab9b29ba5
+          test "$(git hash-object research/frozen_ppo_validity_first_motion_physx_v5.py)" = f3c2d346f224dc41039a5548ca9692bfc445a173
+          test "$(git hash-object research/run_validity_first_new64.py)" = 178470323dc699156e4bd079ebb7a83a54f865fe
+          test "$(git hash-object research/audit_validity_first_new64.py)" = 1d33729fe7b66de25ae7e165d7462db75e667eb8
+          test "$(git hash-object research/source_audit_prior_true_residual_calibration.py)" = 19409fccd9824d8f3a0641a92195ea660147a2cd
+          test "$(git hash-object research/frozen_ppo_compound_ack_multi_belief.py)" = ddfaf4522d49f73ce926e4c6d77c7ca755f8e1b6
+          python -m py_compile research/frozen_ppo_validity_first_motion_physx_v5.py research/run_validity_first_new64.py research/audit_validity_first_new64.py research/source_audit_prior_true_residual_calibration.py
+          python -m research.source_audit_prior_true_residual_calibration
+          python - <<'PY'
+          from research.run_validity_first_new64 import check_sources,accepted
+          check_sources()
+          for task,start in (("pull_cube",940001),("stack_cube",950001)):
+              xx=[v for c in range(4) for v in accepted(task,c)]
+              assert xx==list(range(start,start+32))
+              assert all(sum((("A" if s%2==0 else "H")+("A" if (s//2)%2==0 else "H"))==k for s in xx)==8 for k in ("AA","AH","HA","HH"))
+          print("PREREG_64_FRESH_NATIVE_PHYSX_AND_OLD32_OFFLINE_CALIBRATION_SOURCE_LOCKED",True)
+          PY
+  actual-native-physx-frozen-policy-shards:
+    needs: immutable-prior-physics-calibration-and-registered-source-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 125
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      TASK: ${{ matrix.task }}
+      CHUNK: ${{ matrix.chunk }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install official real ManiSkill CPU SAPIEN PhysX and old released PPO checkpoint
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --upgrade pip
+          python -m pip install -e . huggingface_hub
+      - name: Log actual original repository commit and dependency hashes before native physics execution
+        run: |
+          git rev-parse HEAD > original_native_physx_producer_commit.txt
+          python -m pip freeze --all > original_software_environment.txt
+      - name: Actually execute 10 matched native frozen PPO controllers on 8 new heldout initial states
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python research/run_validity_first_new64.py --task "$TASK" --chunk "$CHUNK" 2>&1 | tee genuine_real_native_physx.log
+          test -s "authority_calibration_${TASK}_chunk${CHUNK}_original8.json"
+          test -s "authority_calibration_${TASK}_chunk${CHUNK}_audit.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-calibrated-vs-narrow-${{ matrix.task }}-${{ matrix.chunk }}
+          path: |
+            authority_calibration_*_original8.json
+            authority_calibration_*_audit.json
+            original_native_physx_producer_commit.txt
+            original_software_environment.txt
+            genuine_real_native_physx.log
+          retention-days: 90
+  independent-source-all64-native-physx-authority-audit:
+    needs: actual-native-physx-frozen-policy-shards
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-calibrated-vs-narrow-*
+          merge-multiple: true
+          path: /tmp/authority_new64_original_physx
+      - name: Independent all64 authentic success/read/false authorizations, train-test disjointness
+        run: |
+          python -m research.audit_validity_first_new64 --source-dir /tmp/authority_new64_original_physx --output /tmp/INDEPENDENT_64_VALIDITY_FIRST_ORIGINAL_AUDIT.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: full-original-validity-first-64-real-640-native-physx-with-independent-audit
+          path: |
+            /tmp/authority_new64_original_physx/*.json
+            /tmp/INDEPENDENT_64_VALIDITY_FIRST_ORIGINAL_AUDIT.json
+          retention-days: 90

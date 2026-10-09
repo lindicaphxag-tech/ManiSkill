@@ -1,0 +1,23 @@
+name: "Audit source-locked real PhysX true target envelope coverage vs observed wrong authority"
+on:
+  push:
+    branches: [research/validity-first-conformal-ack-new64-20261009]
+    paths:
+      - 'research/audit_true_response_model_miscoverage_original640.py'
+      - '.github/workflows/audit-original-640-model-miscoverage.yml'
+permissions:
+  contents: read
+jobs:
+  exact-original-real-physx-640-model-coverage-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reconfirm all 17 source-original PhySX JSON SHA256 and separately recompute true-target score miscoverage
+        run: |
+          set -euo pipefail
+          (cd research/frozen_policy_transfer/evidence/validity_first_prior32_new64_physx_original_940001_950032 && sha256sum --check SHA256SUMS)
+          python -m research.audit_true_response_model_miscoverage_original640
