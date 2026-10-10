@@ -1,0 +1,36 @@
+name: Strong-baseline PhysX 128-cell falsifier
+
+on:
+  push:
+    branches: [research/authority-voi-oracle-20261010]
+    paths:
+      - research/authority_strong_baseline_falsifier.py
+      - .github/workflows/authority-strong-falsifier.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reread-first-original-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Checkout frozen previous physical source, not re-simulated data
+        uses: actions/checkout@v4
+        with:
+          repository: lindicaphxag-tech/ManiSkill
+          ref: 9365a1e23e439e484f9d23832ef7d372ecfc01d9
+          path: original-128
+      - name: Audit SHAs and all original task-success / query-budget paired comparisons
+        run: |
+          python -m research.authority_strong_baseline_falsifier original-128/research/frozen_policy_transfer/evidence/strong060_prospective_original128_first_3110001_3120016/INDEPENDENT_SOURCE_RECOMPUTATION.json > audit_128_same_budget.json
+          python -c "import json; a=json.load(open('audit_128_same_budget.json')); assert a['independent_reset_clusters']==32; assert a['observed_total_read_savings']==4; assert a['paired_success_discordances']==0; assert a['top_maintrack_positive_task_gain_established'] is False; print('Completed original-source scientific falsification:',a['exploratory_two_sided_cluster_signflip_p'])"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: strong-baseline-matched-physx-falsifier-128
+          path: audit_128_same_budget.json
