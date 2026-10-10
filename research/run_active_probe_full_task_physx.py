@@ -57,7 +57,7 @@ def full_task_shard(task,chunk):
     source=importlib.import_module("research.frozen_ppo_matched_public_factorial128_physx")
     active=importlib.import_module("research.frozen_ppo_known_x_probe_task_physx")
     import frozen_ppo_action_history_observer as base
-    if (source.NAMES!=active.NAMES or source.NAMES[7:10]!=(A,B,C)
+    if (source.NAMES!=active.NAMES or source.NAMES[6:9]!=(A,B,C)
         or tuple(source.FAULT_STEPS)!=(2,3) or source.HORIZON!=50
         or active.HORIZON!=source.HORIZON
         or source.TASK_NAME!=REGISTER[task][0] or active.TASK_NAME!=source.TASK_NAME):
