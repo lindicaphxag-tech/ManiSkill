@@ -1,0 +1,44 @@
+name: Full-episode causal authority risk regression
+
+on:
+  push:
+    branches: [research/authority-voi-oracle-20261010]
+    paths:
+      - 'research/authority_budget.py'
+      - 'research/authority_family.py'
+      - 'tests/test_authority_budget.py'
+      - 'tests/test_authority_family.py'
+      - '.github/workflows/authority-risk-budget.yml'
+  pull_request:
+    paths:
+      - 'research/authority_budget.py'
+      - 'research/authority_family.py'
+      - 'tests/test_authority_budget.py'
+      - 'tests/test_authority_family.py'
+      - '.github/workflows/authority-risk-budget.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-episode-risk-and-model-shift:
+    name: End-to-end risk - ${{ matrix.os }} - Python ${{ matrix.py }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        py: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.py }}
+      - name: Full-tree counterfactual validation
+        run: python -m unittest discover -s tests -p 'test_authority_budget.py' -v
+      - name: Wrong-model adversarial family comparison
+        run: python -m unittest discover -s tests -p 'test_authority_family.py' -v
+      - name: Print constructed local-risk counterexample
+        run: python -m research.authority_budget
