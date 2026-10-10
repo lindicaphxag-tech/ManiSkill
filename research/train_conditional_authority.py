@@ -151,7 +151,7 @@ def calibration_evaluate(model,cal,variant,thresholds):
     for r in cal:
         i,p=infer_raw(model,r,variant)
         grp=thresholds[r["task"]+":"+r["probe"]]
-        accepted=(p>=grp["threshold"])
+        accepted=(grp["threshold"]<1. and p>=grp["threshold"])
         rows.append({"task":r["task"],"probe":r["probe"],"seed":r["seed"],
                      "authorized":accepted,"correct":i==r["truth_candidate_indices_AUDIT_ONLY"][0],
                      "original_A_authorized":r["original_A_authorized"],
