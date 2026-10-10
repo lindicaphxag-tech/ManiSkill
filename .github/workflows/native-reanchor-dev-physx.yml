@@ -29,8 +29,8 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git hash-object research/frozen_ppo_matched_public_factorial128_physx.py)" = 2f2fc34f492bf6d2810b48193283e0347f6bdc93
-          test "$(git hash-object research/frozen_ppo_native_reanchor_dev_physx.py)" = 8ea1f9ad5dae9484551326e7de6246a64301a0aa
-          test "$(git hash-object research/NATIVE_REANCHOR_DEV_PREOUTCOME_20261010.json)" = bff33ff4df3cf537387e2f3d8e269b695f4cf3a6
+          test "$(git hash-object research/frozen_ppo_native_reanchor_dev_physx.py)" = 4394c287c28c1c184e6663c348f5b410440a761a
+          test "$(git hash-object research/NATIVE_REANCHOR_DEV_PREOUTCOME_20261010.json)" = b065e383a9baf8a18da0474ca51064f03330d807
           python -m py_compile research/frozen_ppo_native_reanchor_dev_physx.py research/run_native_reanchor_dev_physx.py research/audit_native_reanchor_dev_physx.py
           python -m unittest discover -s tests -p 'test_native_reanchor_source_audit.py' -v
           python -m research.run_native_reanchor_dev_physx --mode preflight
@@ -38,7 +38,7 @@ jobs:
           import json
           x=json.load(open('research/NATIVE_REANCHOR_DEV_PREOUTCOME_20261010.json'))
           assert x['independent_reset_clusters']==8 and x['paired_physical_ACK_contexts']==32
-          assert x['method_runner_source_blob']=='8ea1f9ad5dae9484551326e7de6246a64301a0aa'
+          assert x['method_runner_source_blob']=='4394c287c28c1c184e6663c348f5b410440a761a'
           assert x['privileged_target_write_cost']==1
           assert x['public_achieved_pose_read_cost_samples']==1
           assert x['no_effect_claim_until_all_physical_shards_and_aggregate_audit_pass']
