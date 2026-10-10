@@ -1,0 +1,63 @@
+name: Causal authority and source-pinned PhysX review
+
+on:
+  push:
+    branches: [research/authority-voi-oracle-20261010]
+    paths:
+      - research/authority_causal.py
+      - tests/test_authority_causal.py
+      - research/review_native_probe_marginal_value.py
+      - .github/workflows/authority-causal-physx-audit.yml
+  pull_request:
+    paths:
+      - research/authority_causal.py
+      - tests/test_authority_causal.py
+      - research/review_native_probe_marginal_value.py
+      - .github/workflows/authority-causal-physx-audit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-oracle:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Exact causal planner vs explicit policy trees
+        run: python -m unittest discover -s tests -p test_authority_causal.py -v
+      - name: Synthetic demonstration, not manipulation success
+        run: python -m research.authority_causal
+
+  immutable-physx-source-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Checkout immutable author-operated 192-world source
+        uses: actions/checkout@v4
+        with:
+          repository: lindicaphxag-tech/ManiSkill
+          ref: 876f0355b01250626cf25230f560f607f95dfa5e
+          path: original-physx
+      - name: Recompute heldout paired reset statistics from SHA256-locked originals
+        run: |
+          python -m research.review_native_probe_marginal_value original-physx/research/frozen_policy_transfer/evidence/low_signal_first192_20261010 > native_probe_source_audit.json
+          python -c "import json; d=json.load(open('native_probe_source_audit.json')); assert d['independent_reset_clusters']==16; assert d['physx_heldout_worlds']==96; assert all(all(v==16 for v in b['correct_truths'].values()) for b in d['by_robot'].values()); print(d['by_robot'])"
+      - name: Preserve review-only result
+        uses: actions/upload-artifact@v4
+        with:
+          name: frozen-native-physx-probe-review
+          path: native_probe_source_audit.json
