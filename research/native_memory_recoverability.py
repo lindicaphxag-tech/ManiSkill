@@ -76,10 +76,10 @@ def diameter(belief):
         max((_angle(x.quaternion_xyzw,y.quaternion_xyzw) for x,y in pairs),default=0.))
 
 def relative_target_command(belief, *, root_translation_m, root_left_rotation_xyzw,
-                            verified_native_frame:bool):
+                            verified_native_frame:bool, delivery_attested:bool):
     """For EXACT root-relative target actions, memory diameter cannot contract."""
-    if verified_native_frame is not True:
-        raise ValueError("Controller action chart is not independently verified")
+    if verified_native_frame is not True or delivery_attested is not True:
+        raise ValueError("Controller chart AND native action delivery must be attested")
     t=_vector(root_translation_m,3);q=_quat(root_left_rotation_xyzw)
     before=diameter(belief)
     after_belief=Belief(tuple(Target(tuple(p+d for p,d in zip(h.position,t)),
