@@ -8,6 +8,8 @@ on:
       - research/frozen_ppo_native_reanchor_dev_physx.py
       - research/run_native_reanchor_dev_physx.py
       - research/audit_native_reanchor_dev_physx.py
+      - research/native_memory_funnel_certificate.py
+      - tests/test_native_memory_funnel_certificate.py
       - tests/test_native_reanchor_source_audit.py
       - .github/workflows/native-reanchor-dev-physx.yml
   workflow_dispatch:
@@ -33,6 +35,7 @@ jobs:
           test "$(git hash-object research/NATIVE_REANCHOR_DEV_PREOUTCOME_20261010.json)" = b065e383a9baf8a18da0474ca51064f03330d807
           python -m py_compile research/frozen_ppo_native_reanchor_dev_physx.py research/run_native_reanchor_dev_physx.py research/audit_native_reanchor_dev_physx.py
           python -m unittest discover -s tests -p 'test_native_reanchor_source_audit.py' -v
+          python -m unittest discover -s tests -p 'test_native_memory_funnel_certificate.py' -v
           python -m research.run_native_reanchor_dev_physx --mode preflight
           python - <<'PY'
           import json
