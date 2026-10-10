@@ -1,0 +1,136 @@
+name: IFCR physically stepped native mode-refresh pilot (no hardware claim)
+
+on:
+  push:
+    branches: [research/ifcr-verified-mode-refresh-20261010]
+    paths:
+      - research/MODE_REFRESH_DEV_PREOUTCOME_20261010.json
+      - research/native_controller_mode_refresh.py
+      - research/frozen_ppo_mode_refresh_dev_physx.py
+      - research/run_native_mode_refresh_dev_physx.py
+      - research/audit_native_mode_refresh_dev_physx.py
+      - tests/test_native_controller_mode_refresh.py
+      - tests/test_native_mode_refresh_source_audit.py
+      - .github/workflows/ifcr-native-mode-refresh-physx.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  immutable_preoutcome_contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require pre-declared source bytes and completely distinct reset IDs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/frozen_ppo_matched_public_factorial128_physx.py)" = 2f2fc34f492bf6d2810b48193283e0347f6bdc93
+          test "$(git hash-object research/MODE_REFRESH_DEV_PREOUTCOME_20261010.json)" = b77273aa63c057875be1fd1dcf7cf0ddee81eb71
+          test "$(git hash-object research/frozen_ppo_mode_refresh_dev_physx.py)" = 9fac660e1a41076a67b589d560f8a9ca316fbf34
+          test "$(git hash-object research/run_native_mode_refresh_dev_physx.py)" = dfba253db55b6c8ecc031ee1532d4553ba495b37
+          test "$(git hash-object research/native_controller_mode_refresh.py)" = 85b496c78669c2e361ad7b039f5502c4212651c4
+          python -m py_compile research/native_controller_mode_refresh.py research/frozen_ppo_mode_refresh_dev_physx.py research/run_native_mode_refresh_dev_physx.py research/audit_native_mode_refresh_dev_physx.py
+          python -m unittest discover -s tests -p 'test_native_controller_mode_refresh.py' -v
+          python -m unittest discover -s tests -p 'test_native_mode_refresh_source_audit.py' -v
+          python -m research.run_native_mode_refresh_dev_physx --mode preflight
+          python - <<'PY'
+          import json
+          p=json.load(open('research/MODE_REFRESH_DEV_PREOUTCOME_20261010.json'))
+          assert p['mode_runner_source_blob']=='9fac660e1a41076a67b589d560f8a9ca316fbf34'
+          assert p['intervention_native_mode_writes_per_trial']==2
+          assert p['intervention_hidden_target_getter_reads']==0
+          assert p['intervention_hidden_target_set_state_writes']==0
+          assert p['independent_reset_clusters']==8
+          assert p['tasks']['pull_cube']['reset_ids']==list(range(4500001,4500005))
+          assert p['tasks']['stack_cube']['reset_ids']==list(range(4600001,4600005))
+          print('DECLARED_PREOUTCOME_COHORT_AND_EXACT_SOURCE_PIN_SUCCESS')
+          PY
+
+  new_physical_mode_refresh:
+    needs: immutable_preoutcome_contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install native CPU PhysX ManiSkill and original published frozen PPO dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e . huggingface_hub
+      - name: Preserve original execution environment
+        run: |
+          git rev-parse HEAD > MODE_REFRESH_SOURCE_GIT_SHA.txt
+          python -m pip freeze --all > MODE_REFRESH_PYTHON_ENV.txt
+      - name: Actually execute ZERO and public-frame mode refresh on four fresh resets and all 4 ACK truths
+        shell: bash
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python -m research.run_native_mode_refresh_dev_physx --mode run --task "${{ matrix.task }}" 2>&1 | tee "native_mode_refresh_${{ matrix.task }}_original_terminal.log"
+          test -s "native_mode_refresh_${{ matrix.task }}_original.json"
+          sha256sum "native_mode_refresh_${{ matrix.task }}_original.json" | awk '{print $1}' > "native_mode_refresh_${{ matrix.task }}_original.sha256"
+      - name: Retain raw original trials, SHA256, runtime, and failed logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: first-native-mode-refresh-${{ matrix.task }}
+          retention-days: 90
+          path: |
+            native_mode_refresh_*.json
+            native_mode_refresh_*.sha256
+            native_mode_refresh_*_original_terminal.log
+            MODE_REFRESH_SOURCE_GIT_SHA.txt
+            MODE_REFRESH_PYTHON_ENV.txt
+
+  independent_original_physics_audit:
+    needs: new_physical_mode_refresh
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: first-native-mode-refresh-*
+          merge-multiple: true
+          path: /tmp/ifcr_mode_refresh_original
+      - name: Rehash and audit original physical task denominators, mode and getter costs
+        run: |
+          python -m research.audit_native_mode_refresh_dev_physx --root /tmp/ifcr_mode_refresh_original --out /tmp/MODE_REFRESH_ORIGINAL_SHA_AUDIT.json
+          python - <<'PY'
+          import json
+          a=json.load(open('/tmp/MODE_REFRESH_ORIGINAL_SHA_AUDIT.json'))
+          assert a['total_physx_controller_worlds']==672
+          assert a['independent_reset_clusters']==8
+          assert a['ack_trials_repeated_correlated']==32
+          assert a['success_improvement_claim_not_statistically_certified']
+          for t,r in a['by_task'].items():
+              assert r['independent_reset_clusters']==4
+              assert r['native_internal_target_writes']==0
+              assert r['charged_runtime_controller_mode_writes']==32
+          print('SOURCE_AUDITED_FIRST_IFCR_PHYSICAL_PILOT_NO_UNGROUNDED_SUCCESS_CERT')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: first-ifcr-mode-refresh-independent-sha-audit
+          retention-days: 90
+          path: /tmp/MODE_REFRESH_ORIGINAL_SHA_AUDIT.json
