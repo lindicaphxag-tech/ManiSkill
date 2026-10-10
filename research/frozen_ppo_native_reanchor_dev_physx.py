@@ -56,7 +56,7 @@ PUBLIC_ARM="fault_public_t3_fourhistory_or_t4_query"
 POST_ARM="fault_same_public_posterior_or_query"
 REANCHOR="fault_reanchor_public_achieved_target"
 BELIEF_ARMS=NAMES[3:6]+(PUBLIC_ARM,POST_ARM,REANCHOR)
-PROTO="research/ACTIVE_PROBE_TASK_ZERO_X_PREOUTCOME_20261010.json"
+PROTO="research/NATIVE_REANCHOR_DEV_PREOUTCOME_20261010.json"
 
 
 def copy_target(pose):
