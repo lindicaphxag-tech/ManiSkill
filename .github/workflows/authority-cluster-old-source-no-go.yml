@@ -1,0 +1,36 @@
+name: Native PhysX reset-cluster statistical no-go audit
+
+on:
+  push:
+    branches: [research/authority-voi-oracle-20261010]
+    paths:
+      - research/calibrate_original_physx_128.py
+      - research/reset_cluster_authority_calibration.py
+      - .github/workflows/authority-cluster-old-source-no-go.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  historical_source_cluster_power_falsifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/checkout@v4
+        with:
+          repository: lindicaphxag-tech/ManiSkill
+          ref: 9365a1e23e439e484f9d23832ef7d372ecfc01d9
+          path: first-physx-128
+      - name: Independently source hash+group original four ACK truths per reset
+        run: |
+          python -m research.calibrate_original_physx_128 first-physx-128/research/frozen_policy_transfer/evidence/strong060_prospective_original128_first_3110001_3120016/INDEPENDENT_SOURCE_RECOMPUTATION.json > ORIGINAL_RESET_CLUSTER_FAILURE_TO_CERTIFY.json
+          python -c "import json;d=json.load(open('ORIGINAL_RESET_CLUSTER_FAILURE_TO_CERTIFY.json'));assert d['independent_reset_clusters']==32;assert d['per_task']['pull_cube']['any_authorized_resets']==14;assert d['per_task']['stack_cube']['any_authorized_resets']==8;assert d['decision']['certified'] is False;print('Correct conservative no-go, not a safety claim:',d['per_task'])"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: first-physx-128-cluster-risk-coverage-power-failure
+          path: ORIGINAL_RESET_CLUSTER_FAILURE_TO_CERTIFY.json
