@@ -1,0 +1,71 @@
+{
+  "schema": "native_target_reanchor_development_pilot_v1",
+  "timestamp_utc": "2026-10-10",
+  "scope": "DEVELOPMENT ONLY: native simulator-internal privileged commanded-target write; NOT VLA, hardware, zero-cost sensor, or main-track success",
+  "previous_evidence": {
+    "old_source_audit_run": 38015149933,
+    "old_physical_producer_run": 38014679801,
+    "old_independent_reset_clusters": 32,
+    "do_not_use_for_fresh_testing": true
+  },
+  "tasks": {
+    "pull_cube": {
+      "env": "PullCube-v1",
+      "reset_ids": [
+        4300001,
+        4300002,
+        4300003,
+        4300004
+      ]
+    },
+    "stack_cube": {
+      "env": "StackCube-v1",
+      "reset_ids": [
+        4400001,
+        4400002,
+        4400003,
+        4400004
+      ]
+    }
+  },
+  "four_physical_ack_truths": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "baseline": "Original unchanged trusted upstream pretrained PPO ZERO reference A, matched-public B and always-getter C",
+  "intervention": "Before t4 ZERO action, write achieved public EE pose into native controller target via arm.set_state; reset explicit belief to KNOWN newly written target; follow frozen source PPO thereafter.",
+  "privileged_target_write_cost": 1,
+  "privileged_target_read_for_online_decision_prohibited_in_reanchor": true,
+  "native_action_at_t4": "ZERO 6D",
+  "public_achieved_pose_read_cost_samples": 1,
+  "method_runner_source_blob": "437501769f68a6322830b6e76357bfcc1911c693",
+  "base_runner_source_blob": "2f2fc34f492bf6d2810b48193283e0347f6bdc93",
+  "independent_reset_clusters": 8,
+  "paired_physical_ACK_contexts": 32,
+  "original_task_horizon_steps": 50,
+  "source_model_training": "NEVER retrain / fine tune source ActionShift PPO",
+  "primary_descriptive_endpoints": [
+    "official_success_once_original_task",
+    "success_on_baseline_ZERO_and_X_joint_failure_stratum",
+    "wrong_confident_native_target_authorizations",
+    "privileged_internal_target_write_count",
+    "privileged_getter_count",
+    "extra_public_pose_observations",
+    "new_target_vs_public_pose_audit_error"
+  ],
+  "no_effect_claim_until_all_physical_shards_and_aggregate_audit_pass": true,
+  "control_comparisons": [
+    "ZERO without target setter",
+    "ZERO with trustworthy getter",
+    "REANCHOR with one simulator-internal target write"
+  ],
+  "limitations": [
+    "Reanchor requires simulator-internal write authority, not a standard real robot hardware command",
+    "4 reset clusters per task is an underpowered development mechanism study",
+    "Successful reset of target memory does not establish task-level success or collision safety",
+    "A purely passive ZERO comparator is not authorized to read internal target",
+    "Trial implementation reuses historical controller source and is not an external independent replication"
+  ]
+}
