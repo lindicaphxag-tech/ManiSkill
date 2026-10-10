@@ -1,0 +1,37 @@
+name: Reset-cluster authority calibration (not ACK-cell IID)
+
+on:
+  push:
+    branches: [research/authority-voi-oracle-20261010]
+    paths:
+      - 'research/reset_cluster_authority_calibration.py'
+      - 'tests/test_reset_cluster_authority_calibration.py'
+      - '.github/workflows/authority-reset-cluster-calibration.yml'
+  pull_request:
+    paths:
+      - 'research/reset_cluster_authority_calibration.py'
+      - 'tests/test_reset_cluster_authority_calibration.py'
+      - '.github/workflows/authority-reset-cluster-calibration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  finite-sample-cluster-gate:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ['3.11','3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: 12 adversarial reset-cluster calibration gates
+        run: python -m unittest discover -s tests -p test_reset_cluster_authority_calibration.py -v
+      - name: Deterministic synthetic no-errors demonstration
+        run: python -m research.reset_cluster_authority_calibration

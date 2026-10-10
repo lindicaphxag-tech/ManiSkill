@@ -1,0 +1,102 @@
+name: Preregistered new PhysX causal-target probe audit
+
+on:
+  push:
+    branches: [research/authority-voi-oracle-20261010]
+    paths:
+      - research/CAUSAL_PROBE_PREREG_20261010.json
+      - research/causal_probe_physx.py
+      - research/audit_causal_probe_physx.py
+      - .github/workflows/causal-probe-new-physx.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source_preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require frozen original preoutcome and existing ABI semantics
+        run: |
+          test "$(git hash-object research/CAUSAL_PROBE_PREREG_20261010.json)" = 34cb7673a0d5acd64be25d03b926ea6b0f20b54c
+          test "$(git hash-object research/cross_robot_ack_physics.py)" = 3b2faf44e5f413911eae25ccfd0c51fbbe2d5fe7
+          python -m py_compile research/causal_probe_physx.py research/audit_causal_probe_physx.py
+      - name: Install native PhysX dependencies and check model/protocol
+        env:
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e .
+          python -m research.causal_probe_physx --mode preflight
+
+  original_96_scripted_native_physx_worlds:
+    needs: source_preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    strategy:
+      fail-fast: false
+      matrix:
+        robot: [panda, xarm6_robotiq]
+        chunk: [0, 1]
+    env:
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install actual native CPU physics dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e .
+      - name: Install genuine six-joint xArm6 URDF, not Panda surrogate
+        if: matrix.robot == 'xarm6_robotiq'
+        run: python -m mani_skill.utils.download_asset xarm6 -y
+      - name: Physically step 24 previously unseen native worlds
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m research.causal_probe_physx --mode run --robot "${{ matrix.robot }}" --chunk "${{ matrix.chunk }}" --out "causal_probe_${{ matrix.robot }}_chunk${{ matrix.chunk }}.json" 2>&1 | tee "causal_probe_${{ matrix.robot }}_chunk${{ matrix.chunk }}.log"
+          test -s "causal_probe_${{ matrix.robot }}_chunk${{ matrix.chunk }}.json"
+      - name: Preserve first-run originals and any failure diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: first-causal-probe-${{ matrix.robot }}-${{ matrix.chunk }}
+          path: |
+            causal_probe_*.json
+            causal_probe_*.log
+
+  full_native_source_audit:
+    needs: original_96_scripted_native_physx_worlds
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: first-causal-probe-*
+          path: /tmp/registered-original
+          merge-multiple: true
+      - name: Verify original 96-world population and original target interventions
+        run: |
+          python -m research.audit_causal_probe_physx --input-dir /tmp/registered-original --out /tmp/CAUSAL_PROBE_FIRST_ORIGINAL_AUDIT.json
+      - name: Preserve audit and immutable originals
+        uses: actions/upload-artifact@v4
+        with:
+          name: first-96-causal-probe-physical-source-and-audit
+          path: |
+            /tmp/registered-original/*.json
+            /tmp/CAUSAL_PROBE_FIRST_ORIGINAL_AUDIT.json

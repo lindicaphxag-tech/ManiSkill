@@ -1,0 +1,34 @@
+# L8/L9 research gate v5 — stop confusing more code with real robotics evidence
+**Timestamp:** 2026-10-10. **Status:** falsification package + newly scheduled physics, not a submitted/accepted paper.
+
+## Source-frozen hard findings
+- PREVIOUS ACTUALLY EXECUTED native ManiSkill PhysX experiment: 32 independent reset clusters (16 PullCube + 16 StackCube), each physically enumerating four ACK truths, 10 genuinely stepped comparator branches, 1,280 controller-world rollouts. SHA-pinned original source recomputation uses `INDEPENDENT_SOURCE_RECOMPUTATION.json`, SHA256 `57485114f58101a24c20d2f1155ac96482a7754693878e940a2197215cf142e8`.
+- Same sensing: A/B each 256 additional publicly measured XYZ samples; A 94 authority getter calls; B 98. Official task successes 109/128 vs 109/128, **zero paired success discordances**. Four-read advantage is neither substantive task-level gain nor a significant reset-level effect.
+- Source-stratified public authorizations under A are 21 PullCube, 13 StackCube, with 0 observed wrong complete-state labels. The 34 labels are clustered across 32 task resets. Do NOT apply an independent-event binomial tail bound to all 34 as if iid. If one nonetheless assumed iid within strata, even zero wrong would yield a 95% one-sided Clopper–Pearson error upper limit of ~13.3% for 21 Pull cases and ~20.6% for 13 Stack cases. The actual cluster dependence worsens interpretation.
+- EXPLICITLY RETAIN adverse outcome: stronger actual readback oracle 110/128 task successes, one more than A/B. Others in the repo include a real 67.6 mm wrong target authorization under a prior policy. These are important rejection risks.
+- New v4 chance-constrained action-conditioned finite planner has local standard-library tests and a distinct six-platform CI. This is a standard constrained finite POMDP reference, not new theory. A model-family veto is only as reliable as the comprehensiveness and calibration of the assumed candidate dynamics.
+- The preregistered new 96 PhysX probe-intervention worlds are **mechanism-only**: they measure whether known-delivered actions modify native commanded target memory. Even if all finish successfully, they DO NOT include frozen PPO task-level outcomes or a learned transition uncertainty model. Never list these as task-success improvements.
+
+## Accepted literature target: what must be beaten
+- [RSS 2024 TAMPURA](https://roboticsproceedings.org/rss20/p118.html): risk-aware task and motion planning with active observations and manipulation demonstrations.
+- [RSS 2025 Map Space Belief Prediction](https://roboticsproceedings.org/rss21/p039.html): learned calibrated belief propagation, better completeness and realistic zero-shot transfer.
+- [CoRL 2025 Belief-Conditioned One-Step Diffusion](https://proceedings.mlr.press/v305/puthumanaillam25a.html): just-enough sensing with real physical resource accounting.
+- [IEEE Transactions on Robotics 2025 Anytime Probabilistically Constrained Online Belief Space Planning](https://doi.org/10.1109/TRO.2025.3610176): probabilistic online constraints and proof/algorithmic convergence, substantially beyond toy risk tables.
+- [RSS 2026 Distributionally Robust Control via Stein Variational Inference for Contact-rich Manipulation](https://roboticsproceedings.org/rss22/p061.html): task-level contact-uncertainty robustness and broad parametric challenge. Its reported up-to-3x improvement is NOT our work's result.
+
+**Novelty obstacle:** belief POMDP, minimax risk, information value, and exact partition quotient are classic. The research novelty, if any, must be in a more general controller-memory authority mechanism across policies, ABIs and native task objectives, empirically harder than comparators.
+
+## Main-track experiment: scientific plan, NOT executed yet
+1. Native learning/calibration/evaluation must be separate by reset and controller (no duplicating four truth branches as four independent calibration samples). Calibration failure must force getter/refusal and count coverage loss.
+2. First show genuine native action-induced target-state changes from the **pre-existing separately frozen** 96-world test. Do not tune the transition model on these ostensibly unseen seeds and then report them as independent test performance.
+3. Use a truly fresh **frozen pretrained source PPO** PullCube/StackCube cohort. Same 32+ independent task resets for pilot, four physically injected unknown ACK truths and identical reached fault-exposure for all arms. A confirmatory main-track study requires substantially more independent reset clusters selected before model training; pilot cannot certify uncommon authorization failures.
+4. Physically execute, on matched reset/truth cells: no-query bounded action, privileged getter at task-fixed time, task-label-aware prior query policy, same-public fixed neutral action/probe, original A and B, action-conditioned exact/approximate constrained POMDP, and proposed model-validity-aware controller authority planner. No cherry-picking easy ACK truth.
+5. All arms log official 50-step source-task success, requested/delivered native action sequence, full target position AND rotation error, wrong confident authorization, refusal, public sampling events, privileged getter calls, number and duration of extra probe steps, contact/collision/force measures when simulator can attest them, and CPU execution time. Missing measures explicitly mark unavailable.
+6. Register **primary endpoint before study**: full task success with no wrong confident complete-SE(3) repair; run cluster-aware paired sensitivity, not a normal approximation treating repeated fault truths as iid. Report the full cost-success-risk Pareto frontier; an always-getter strategy must not count as scientific success for a zero-read novelty claim.
+7. Model stress: mismatched action bounds, delayed ACK, action delivery reorder, query-sensor delay, sensor bias, memory prior shift, false calibrated envelopes, and a distinct native controller (Panda-only results do not establish embodiment generalization).
+8. TRUE main-track gate: substantial positive task-level paired improvement or meaningful non-trivial correct-authorization coverage under a calibrated risk constraint, including strong B and exact action-conditioned planning; repeat under new seeds/policies by someone unaffiliated. If tied or worse, publish the negative result or redirect the paper.
+
+## Near-term triage
+- **2026 Nov–Dec:** protect mature EEG Default Regularisation / Two Laws submission efforts.
+- **2027 when real evidence exists:** robotics paper to RSS / CoRL or RA-L. Do NOT promise venue acceptance before actual task results.
+- **Current output:** source-pinned retrospective falsifier `research/authority_strong_baseline_falsifier.py`, physically new v4 96-world workflow, six-system episode-risk tests. Their statuses are separately reported and must be updated only after actually completed GitHub jobs.

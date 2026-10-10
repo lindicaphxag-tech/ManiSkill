@@ -1,0 +1,43 @@
+name: Authority VoI exact-oracle validation
+
+on:
+  push:
+    branches:
+      - research/authority-voi-oracle-20261010
+    paths:
+      - research/authority_voi.py
+      - tests/test_authority_voi.py
+      - research/authority_voi_robust.py
+      - tests/test_authority_voi_robust.py
+      - .github/workflows/authority-voi-exact-oracle.yml
+  pull_request:
+    paths:
+      - research/authority_voi.py
+      - tests/test_authority_voi.py
+      - research/authority_voi_robust.py
+      - tests/test_authority_voi_robust.py
+      - .github/workflows/authority-voi-exact-oracle.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-oracle:
+    name: Exact oracle - ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Run adversarial standard-library tests
+        run: python -m unittest discover -s tests -p test_authority_voi*.py -v
+      - name: Run standalone deterministic diagnostic
+        run: python -m research.authority_voi

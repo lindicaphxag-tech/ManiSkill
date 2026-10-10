@@ -1,0 +1,78 @@
+{
+  "schema": "causal_probe_target_shift_preregister_v1",
+  "locked_on_date": "2026-10-10",
+  "research_question": "Do known-delivered nonzero native probes change hidden commanded-target memory as well as public achieved pose after a missing ACK?",
+  "system": "ManiSkill PickCube-v1 pd_ee_target_delta_pose scripted native actions, PhysX CPU",
+  "robots": [
+    "panda",
+    "xarm6_robotiq"
+  ],
+  "new_seed_intervals_inclusive": {
+    "panda": [
+      990001,
+      990008
+    ],
+    "xarm6_robotiq": [
+      991001,
+      991008
+    ]
+  },
+  "independent_test_reset_clusters_per_robot": 8,
+  "unknown_t2_truths": [
+    "held",
+    "applied"
+  ],
+  "known_delivered_t3_probes": {
+    "zero": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "x": [
+      0.15,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "y": [
+      0,
+      0.15,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "expected_physical_worlds": 96,
+  "simulation_protocol": "Identical reset seed and t0/t1 action history; native t2 physically held/applied, actual t3 probe. Audit commanded target before and after t3 without using either getter for online decisions. Record achieved XYZ, target pose, quaternion, official ManiSkill information if available. No learned policy and no rollout task claim.",
+  "primary_outcome": "Paired within reset/truth absolute commanded-target translation delta after nonzero probe versus zero probe; evaluate both robot strata and retain all worlds.",
+  "secondary_outcomes": [
+    "public achieved XYZ response",
+    "SO3 commanded-target change",
+    "physical action-step completion",
+    "source trace integrity"
+  ],
+  "independent_unit": "robot/reset cluster; 2 truth x 3 probe observations are repeated measures",
+  "baseline": "same initial state and ACK truth zero native probe; nonzero X and Y equal nominal action-space magnitude",
+  "claim_boundaries": [
+    "No VLA learned task completion",
+    "No proof of beneficial active sensing",
+    "No formal safety guarantee",
+    "No independent external operator",
+    "No statistical superiority unless reset-cluster analysis passes"
+  ],
+  "stop_conditions": [
+    "physical setup/source drift",
+    "missing paired world",
+    "contradictory controller ABI",
+    "non-finite target/pose",
+    "audit-only oracle leaks into action choice"
+  ],
+  "frozen_prior_results": "Previously heldout 16 reset clusters zero/X/Y all achieved 32/32 ACK classifications; nonzero benefit zero",
+  "allow_post_outcome_selection": false
+}
