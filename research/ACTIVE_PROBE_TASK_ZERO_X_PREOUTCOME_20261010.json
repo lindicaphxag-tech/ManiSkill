@@ -1,0 +1,99 @@
+{
+  "schema": "active_probe_task_first_preoutcome_v1",
+  "registered_date": "2026-10-10",
+  "experiment_nature": "PROSPECTIVE PhysX CPU full frozen third-party PPO task pilot; direct physical test of intervention vs neutral probe",
+  "base_native_ppo_source_blob": "2f2fc34f492bf6d2810b48193283e0347f6bdc93",
+  "same_source_action_observer_blob": "6e039af56006827fc2fe063b541cfa3dcd1ddc89",
+  "tasks": {
+    "pull_cube": {
+      "environment": "PullCube-v1",
+      "original_reset_range": [
+        4100001,
+        4100016
+      ],
+      "published_policy_checkpoint_sha256": "74ae6a09b9af5e9e50dc71944f2e99316a8b67b02f3a96ca45df4a6d53dc1bd7"
+    },
+    "stack_cube": {
+      "environment": "StackCube-v1",
+      "original_reset_range": [
+        4200001,
+        4200016
+      ],
+      "published_policy_checkpoint_sha256": "e63cc8d8ffdca3d03553a21ea615c759b2b224493a7e7e12bee7efc29d5bad9c"
+    }
+  },
+  "chunks_per_task": 4,
+  "resets_per_chunk": 4,
+  "independent_reset_clusters": 32,
+  "ack_truths": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "known_delivered_probe_at_t4": {
+    "zero": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "x": [
+      0.15,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "probe_type_order": [
+    "zero",
+    "x"
+  ],
+  "previous_native_t2_t3_unknown_ack_fault_truth_schedule": "0 HH; 1 AH; 2 HA; 3 AA",
+  "matched_policy_arms": [
+    "fault_public_t3_fourhistory_or_t4_query",
+    "fault_same_public_posterior_or_query",
+    "fault_always_single_privileged_query"
+  ],
+  "registered_source_worlds_per_cell": 10,
+  "total_expected_actually_stepped_physx_worlds": 2560,
+  "expected_truth_probe_task_cells": 256,
+  "expected_physical_task_reset_probe_truth_arms": 2560,
+  "same_controller_and_policy_in_all_arms": true,
+  "controller_mode": "pd_ee_target_delta_pose",
+  "source_mode": "pd_ee_delta_pose",
+  "actuation_hypothesis": "Known t4 X native probe changes hidden commanded target and can reduce task success despite possible improved public observability",
+  "primary_outcome": "Paired per independent reset task-conditioned difference in official task success between X and Zero, under matched same-policy and physically realized two ACK truths; compare 3 frozen study arms separately",
+  "co_primary_safety_outcome": "Wrong confident full-target-history authorization with afterrun SE3 audit on active vs passive",
+  "secondary_outcomes": [
+    "privileged target readbacks",
+    "public XYZ events (2 in both A/B per cell)",
+    "target shift post action",
+    "actual state/target after t4",
+    "first success step",
+    "fault exposure",
+    "matched pre-t4 public observation SHA"
+  ],
+  "analysis_plan": "All 32 independent task reset clusters; four ACK truths and two probe variants are repeated measures within cluster. Full paired task and truth strata. No treating 256 contexts or 2560 trajectories as iid. Sign-flip at reset cluster and bootstrap by task; include zero effect. No post hoc parameter tuning.",
+  "stop_conditions": [
+    "source git blob mismatch",
+    "model checksum mismatch",
+    "failed physical fault injection",
+    "source initial observation SHA disagreement",
+    "probe arm mismatch within A/B/C for corresponding mode",
+    "missing trial/shard",
+    "private state getter used before decision for method"
+  ],
+  "claim_boundaries": [
+    "Pilot underpowered for rare safety failure guarantees",
+    "No robot hardware safety",
+    "Not proof against active ActionShift without implementing it",
+    "No fine tuning of original frozen PPO",
+    "No main-track superiority unless prospective effect beats strong control"
+  ],
+  "no_outcome_or_raw_results_known_before_freeze": true
+}

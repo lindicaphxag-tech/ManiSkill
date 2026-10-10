@@ -1,0 +1,72 @@
+name: Review archived 2560 PhysX task worlds without rerunning robots
+
+on:
+  push:
+    branches: [research/prospective-active-probe-task-20261010]
+    paths:
+      - 'research/audit_active_probe_full_task_physx.py'
+      - 'research/active_probe_cluster_summary.py'
+      - '.github/workflows/review-original-active-probe-source-only.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  replay_immutable_first_amended_original_source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Read ORIGINAL eight completed PhysX shard ZIP artifacts from unchanged run
+        uses: actions/download-artifact@v4
+        with:
+          repository: lindicaphxag-tech/ManiSkill
+          run-id: 38014679801
+          github-token: ${{ github.token }}
+          pattern: original-active-zero-X-*
+          merge-multiple: true
+          path: /tmp/first_task_original_archives
+      - name: Independently rehash and audit all previously physically stepped 2560 task worlds
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m research.audit_active_probe_full_task_physx --input-dir /tmp/first_task_original_archives --out /tmp/ORIGINAL_FULL_TASK_SOURCE_ONLY_REVIEW.json
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/ORIGINAL_FULL_TASK_SOURCE_ONLY_REVIEW.json'))
+          assert d['physically_executed_original_controller_worlds']==2560
+          assert d['new_independent_reset_clusters']==32
+          assert d['matched_original_PPO_task_cells']==256
+          assert len(d['all_full_actual_PPO_task_outcomes'])==384
+          assert len(d['original_shard_file_sha256'])==72
+          print('SUCCESS: EVERY frozen task/ACK/probe/controller source artifact SHA-checked')
+          print('SOURCE-ONLY TASK EFFECT, WITHOUT RE-SIMULATION:',json.dumps(d['by_task'],sort_keys=True))
+          PY
+      - name: Independently compute paired reset-level statistical analysis and failure strata
+        run: |
+          python -m research.active_probe_cluster_summary /tmp/ORIGINAL_FULL_TASK_SOURCE_ONLY_REVIEW.json /tmp/ORIGINAL_FULL_TASK_RESET_CLUSTER_STATISTICS.json
+          python - <<'PY'
+          import json
+          q=json.load(open('/tmp/ORIGINAL_FULL_TASK_RESET_CLUSTER_STATISTICS.json'))
+          assert q['n_independent_resets']==32
+          assert not q['task_success_noninferiority_certified']
+          for task,arms in q['by_task'].items():
+              for a,d in arms.items():
+                  assert d['original_independent_reset_clusters']==16
+                  assert d['paired_real_task_cells']==64
+          print('SOURCE-BASED CLUSTER STATISTICS PASS, NO INFLATED ACK-SAMPLE DENOMINATORS')
+          PY
+      - name: Preserve BOTH exact original-source independent audits
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SHA-reviewed-original-2560-native-PhysX-task-worlds
+          retention-days: 90
+          path: |
+            /tmp/ORIGINAL_FULL_TASK_SOURCE_ONLY_REVIEW.json
+            /tmp/ORIGINAL_FULL_TASK_RESET_CLUSTER_STATISTICS.json

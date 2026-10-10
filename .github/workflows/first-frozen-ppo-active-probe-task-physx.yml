@@ -1,0 +1,132 @@
+name: First prospective frozen PPO active X vs zero physical task experiment
+
+on:
+  push:
+    branches: [research/prospective-active-probe-task-20261010]
+    paths:
+      - research/ACTIVE_PROBE_TASK_ZERO_X_PREOUTCOME_20261010.json
+      - research/frozen_ppo_known_x_probe_task_physx.py
+      - research/run_active_probe_full_task_physx.py
+      - research/audit_active_probe_full_task_physx.py
+      - .github/workflows/first-frozen-ppo-active-probe-task-physx.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preoutcome_freeze_and_source_contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Immutable physical pilot cohort + policy source + registered active intervention
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/ACTIVE_PROBE_TASK_ZERO_X_PREOUTCOME_20261010.json)" = 9cbe516f24de4c363eb4b6d5ec250d79e83a207a
+          test "$(git hash-object research/frozen_ppo_matched_public_factorial128_physx.py)" = 2f2fc34f492bf6d2810b48193283e0347f6bdc93
+          test "$(git hash-object research/frozen_ppo_known_x_probe_task_physx.py)" = 669207fcdfbdff3a4ec89b3f67add774f476a571
+          test "$(git hash-object research/run_active_probe_full_task_physx.py)" = 0acd33fdd16d4873bda2f9436484f785959a16e6
+          python -m py_compile research/frozen_ppo_known_x_probe_task_physx.py research/run_active_probe_full_task_physx.py research/audit_active_probe_full_task_physx.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path("research/ACTIVE_PROBE_TASK_ZERO_X_PREOUTCOME_20261010.json").read_text())
+          assert p["independent_reset_clusters"]==32
+          assert p["total_expected_actually_stepped_physx_worlds"]==2560
+          assert p["tasks"]["pull_cube"]["original_reset_range"]==[4100001,4100016]
+          assert p["tasks"]["stack_cube"]["original_reset_range"]==[4200001,4200016]
+          src=Path("research/frozen_ppo_matched_public_factorial128_physx.py").read_text()
+          dst=Path("research/frozen_ppo_known_x_probe_task_physx.py").read_text()
+          assert len(dst)-len(src)<1600
+          assert dst.count("ticket4=beliefs[n].prepare") == 1
+          assert dst.count("expected=.015 if active else 0.")==1
+          assert src.count("KNOWN_DELIVERED_NEUTRAL_PROBE_MOVED_TARGET")==1
+          print("PREOUTCOME_CODE_IDENTITY_REGISTERED: no actual PhysX outcome consulted")
+          PY
+
+  first_2560_native_frozen_ppo_task_controller_worlds:
+    needs: preoutcome_freeze_and_source_contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        chunk: [0, 1, 2, 3]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install unchanged genuine CPU PhysX and frozen third-party PPO runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e . huggingface_hub
+      - name: Save original source, operator and runtime identity before first physics
+        run: |
+          git rev-parse HEAD > ORIGINAL_ACTUAL_SOURCE_SHA.txt
+          python -m pip freeze --all > ORIGINAL_PYTHON_ENV.txt
+          printf 'actor=%s repository=%s\n' "$GITHUB_ACTOR" "$GITHUB_REPOSITORY" > ORIGINAL_OPERATOR.txt
+      - name: ACTUALLY step 4 new reset clusters x four native ACK truths x two t4 probes x ten frozen PPO controllers
+        shell: bash
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python -m research.run_active_probe_full_task_physx --mode run --task "${{ matrix.task }}" --chunk "${{ matrix.chunk }}" 2>&1 | tee "physx_probe_${{ matrix.task }}_chunk${{ matrix.chunk }}_full_terminal.log"
+          test "$(find . -maxdepth 1 -name 'physx_probe_${{ matrix.task }}_chunk${{ matrix.chunk }}_truth*_*.json' | wc -l)" = 8
+          test -s "physx_probe_${{ matrix.task }}_chunk${{ matrix.chunk }}_provenance.json"
+          find . -maxdepth 1 -name 'physx_probe_${{ matrix.task }}_chunk${{ matrix.chunk }}_*.json' -printf '%f\n' | sort | while read -r f; do sha256sum "$f"; done > "physx_probe_${{ matrix.task }}_chunk${{ matrix.chunk }}.sha256"
+          sha256sum -c "physx_probe_${{ matrix.task }}_chunk${{ matrix.chunk }}.sha256"
+      - name: Preserve EVERY source JSON, hash manifest and original terminal including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: original-active-zero-X-${{ matrix.task }}-${{ matrix.chunk }}
+          retention-days: 90
+          path: |
+            physx_probe_*.json
+            physx_probe_*.sha256
+            physx_probe_*_full_terminal.log
+            ORIGINAL_ACTUAL_SOURCE_SHA.txt
+            ORIGINAL_PYTHON_ENV.txt
+            ORIGINAL_OPERATOR.txt
+
+  independent_full_32_reset_256_cell_original_task_audit:
+    needs: first_2560_native_frozen_ppo_task_controller_worlds
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: original-active-zero-X-*
+          path: /tmp/original-prospective-x-vs-zero
+          merge-multiple: true
+      - name: Require all 256 full-task source-truth-probe cells / genuine 2560 PhysX control worlds
+        run: |
+          python -m research.audit_active_probe_full_task_physx --input-dir /tmp/original-prospective-x-vs-zero --out /tmp/PROSPECTIVE_ZERO_X_FULL_TASK_FIRST_ORIGINAL.json
+          python - <<'PY'
+          import json
+          d=json.load(open("/tmp/PROSPECTIVE_ZERO_X_FULL_TASK_FIRST_ORIGINAL.json"))
+          assert d["physically_executed_original_controller_worlds"]==2560
+          assert d["new_independent_reset_clusters"]==32
+          assert len(d["all_full_actual_PPO_task_outcomes"])==384
+          assert len(d["original_shard_file_sha256"])==72
+          print("ACTUAL_FULL_TASK_ORIGINAL_PROSPECTIVE_RESULTS",json.dumps(d["by_task"],sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: full-first-original-active-vs-neutral-256-physx-task-cells
+          retention-days: 90
+          path: /tmp/PROSPECTIVE_ZERO_X_FULL_TASK_FIRST_ORIGINAL.json
