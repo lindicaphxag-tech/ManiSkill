@@ -105,7 +105,9 @@ def audit(directory):
                     raise ValueError("Unmatched source reset before probe")
                 for arm in ARMS:
                     zt,xt=(z["shared_neutral_probe_step4"][arm],x["shared_neutral_probe_step4"][arm])
-                    if zt["native_six_dim_arm"]!=[0.]*6 or xt["native_six_dim_arm"]!=[.15,0.,0.,0.,0.,0.]:
+                    if (len(zt["native_six_dim_arm"])!=6 or len(xt["native_six_dim_arm"])!=6
+                        or max(abs(float(a)-float(b)) for a,b in zip(zt["native_six_dim_arm"],[0.]*6))>1e-6
+                        or max(abs(float(a)-float(b)) for a,b in zip(xt["native_six_dim_arm"],[.15,0.,0.,0.,0.,0.]))>1e-6):
                         raise ValueError("Physically executed t4 action not promised")
                     if abs(zt["audit_only_target_position_delta_m"])>5e-5 or abs(xt["audit_only_target_position_delta_m"]-.015)>5e-5:
                         raise ValueError("Verified target changed unlike registered action")
