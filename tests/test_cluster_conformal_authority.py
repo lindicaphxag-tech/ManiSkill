@@ -22,7 +22,7 @@ class ConformalTests(unittest.TestCase):
         data=rows(19)
         data=[(i,t,((.05,.85,.05,.05) if i==4 and t==3 else prob),label)
               for i,t,prob,label in data]
-        cert=cluster_calibrate(data,task='stack_cube',probe='x',alpha=.1)
+        cert=cluster_calibrate(data,task='stack_cube',probe='x',alpha=.05)
         self.assertGreater(cert.max_source_nonconformity_threshold,.9)
         self.assertEqual(choose_authority((.80,.10,.06,.04),cert)[0],'QUERY')
     def test_repeated_fault_truth_duplicate_fails(self):
