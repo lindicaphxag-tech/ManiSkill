@@ -245,7 +245,10 @@ class PDEEPoseController(PDEEPosController):
         rot_action[rot_norm > 1] = torch.mul(rot_action, 1 / rot_norm[:, None])[
             rot_norm > 1
         ]
-        rot_action = rot_action * self.config.rot_lower
+        # action_space_low is the already materialized physical bound tensor.
+        # Unlike config.rot_lower, it also handles Sequence[float] scales
+        # without re-creating a host tensor on every controller step.
+        rot_action = rot_action * self.action_space_low[3:]
         return torch.hstack([pos_action, rot_action])
 
     def compute_target_pose(self, prev_ee_pose_at_base: Pose, action):
