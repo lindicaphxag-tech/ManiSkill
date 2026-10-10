@@ -1,0 +1,83 @@
+{
+  "schema": "icere_unseen_physx_selective_authority_v1",
+  "frozen_on": "2026-10-10",
+  "separation": "Author-operated source 410/420 seeds used development. Heldout new seeds 450/460 never appeared in training or calibration.",
+  "true_independent_reset_ids": {
+    "pull_cube": [
+      4500001,
+      4500016
+    ],
+    "stack_cube": [
+      4600001,
+      4600016
+    ]
+  },
+  "task_envs": {
+    "pull_cube": "PullCube-v1",
+    "stack_cube": "StackCube-v1"
+  },
+  "tasks": [
+    "pull_cube",
+    "stack_cube"
+  ],
+  "chunk_size": 4,
+  "chunk_count_each": 4,
+  "ack_truth": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "physically_known_probe_modes": [
+    "zero",
+    "x"
+  ],
+  "original_native_per_cell_control_arms": 10,
+  "registered_full_task_physical_source_worlds": 5120,
+  "registered_new_heldout_task_fault_probe_cells": 256,
+  "independent_reset_clusters": 32,
+  "reference_controls": [
+    "A_original_geometry",
+    "B_matched_public_posterior",
+    "C_same_action_privileged_getter"
+  ],
+  "new_experimental_arm": "ICERE_clipped_and_abstaining_t5",
+  "main_new_method_variant": "full",
+  "ablation_variants": [
+    "no_action_provenance",
+    "no_causal_pair_consistency",
+    "no_group_robustness"
+  ],
+  "frozen_train_source_json_sha256": "ef1706fa94db18973a9f9ed320da71a9d9bce162ac8042ee402c5df9aecc4336",
+  "training_workflow": 38017292046,
+  "model_full_weights_sha256": "bb2790c2151ab908387e826aa8a5cb30bdc61a4fae4693df7f3ff8012262549c",
+  "full_model_offline_thresholds": {
+    "pull_cube:zero": 1,
+    "pull_cube:x": 0.93,
+    "stack_cube:zero": 0.5,
+    "stack_cube:x": 0.99
+  },
+  "expert_route": {
+    "pull_cube:zero": "A_original_geometry",
+    "pull_cube:x": "ICERE_full",
+    "stack_cube:zero": "ICERE_full",
+    "stack_cube:x": "ICERE_full"
+  },
+  "selection_basis": "Fixed from SOURCE development calibration only, BEFORE ANY new 450/460 PhysX test. Zero errors in calibration are not an independent risk guarantee.",
+  "registered_primary_outcome": "official full native PhysX frozen PPO task success under actual intervention, plus wrong confident SE3 memory authorization as co-primary; separate by task and actual probe",
+  "registered_secondary_outcomes": [
+    "privileged getter count",
+    "public 2 XYZ events per A/B/ICERE cell",
+    "paired task success and nontrivial safe authorization",
+    "real commanded-target shift",
+    "fault reach",
+    "total native extra action cost",
+    "reset-cluster grouped uncertainty"
+  ],
+  "statistics": "Reset cluster is independent sampling unit, 16 per task; four ACK truths and two actual probes are correlated observations; report exact sign-flip and bootstrap descriptive, not 256 iid.",
+  "strict_online_blindness": "The oracle true target is used only AFTER physical actuation to audit; it cannot be an online feature of ICERE.",
+  "model_training_not_in_test": true,
+  "subject_to_formal_cluster_conformal_alpha95": false,
+  "posterior_thresholds_not_formal_safety_certificate": true,
+  "expected_paper_outcome": "Unknown. Store all first-source results even if learned intervention underperforms original A/B/C."
+}
