@@ -1,0 +1,30 @@
+name: Frozen PPO active probe cluster-statistics reviewer tests
+
+on:
+  push:
+    branches: [research/prospective-active-probe-task-20261010]
+    paths:
+      - 'research/active_probe_cluster_summary.py'
+      - 'tests/test_active_probe_cluster_summary.py'
+      - '.github/workflows/active-probe-cluster-science.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  independent-reset-not-repeated-ack:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        py: ['3.11','3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.py }}
+      - name: Test paired tasks and correlated ACK gate with real-data denominator contract
+        run: python -m unittest discover -s tests -p 'test_active_probe_cluster_summary.py' -v
