@@ -16,7 +16,7 @@ class NativeMemoryCapabilityContractTests(unittest.TestCase):
         before=diameter(b)
         q=(0.,sin(.2),0.,cos(.2))
         ans=relative_target_command(b,root_translation_m=(.012,-.01,.02),
-                                    root_left_rotation_xyzw=q,verified_native_frame=True)
+                                    root_left_rotation_xyzw=q,verified_native_frame=True,delivery_attested=True)
         self.assertAlmostEqual(ans.after.translation_linf_m,before.translation_linf_m,places=10)
         self.assertAlmostEqual(ans.after.rotation_geodesic_rad,before.rotation_geodesic_rad,places=7)
         self.assertEqual(ans.privileged_writes,0)
@@ -24,7 +24,7 @@ class NativeMemoryCapabilityContractTests(unittest.TestCase):
     def test_existing_funnel_negative_lower_bound_agrees_with_operator(self):
         b=Belief((target(-.04),target(.04)))
         op=relative_target_command(b,root_translation_m=(.01,0.,0.),
-                                   root_left_rotation_xyzw=I,verified_native_frame=True)
+                                   root_left_rotation_xyzw=I,verified_native_frame=True,delivery_attested=True)
         self.assertAlmostEqual(op.after.translation_linf_m,.08)
         f=assess(histories=(Pose((-.04,0.,0.),I),Pose((.04,0.,0.),I)),
                  desired=Pose((0.,0.,0.),I),delta_lower=(-.05,)*3,
@@ -60,7 +60,13 @@ class NativeMemoryCapabilityContractTests(unittest.TestCase):
         b=Belief((target(0.),))
         with self.assertRaises(ValueError):
             relative_target_command(b,root_translation_m=(0.,0.,0.),
-                 root_left_rotation_xyzw=I,verified_native_frame=False)
+                 root_left_rotation_xyzw=I,verified_native_frame=False,delivery_attested=True)
+    def test_unknown_delivery_refuses_memory_transition(self):
+        b=Belief((target(0.),target(.04)))
+        with self.assertRaises(ValueError):
+            relative_target_command(b,root_translation_m=(.01,0.,0.),
+                 root_left_rotation_xyzw=I,verified_native_frame=True,
+                 delivery_attested=False)
     def test_quaternion_sign_is_same_rotation(self):
         b=Belief((Target((0.,0.,0.),I),Target((0.,0.,0.),(0.,0.,0.,-1.))))
         self.assertAlmostEqual(diameter(b).rotation_geodesic_rad,0.,places=10)
@@ -75,7 +81,7 @@ class NativeMemoryCapabilityContractTests(unittest.TestCase):
         for i in range(12):
             b=relative_target_command(b,root_translation_m=((i%3-1)*.003,.001,0.),
                  root_left_rotation_xyzw=(0.,0.,sin(.02),cos(.02)),
-                 verified_native_frame=True).belief_after
+                 verified_native_frame=True,delivery_attested=True).belief_after
         end=diameter(b)
         self.assertAlmostEqual(start.translation_linf_m,end.translation_linf_m,places=9)
         self.assertAlmostEqual(start.rotation_geodesic_rad,end.rotation_geodesic_rad,places=7)
