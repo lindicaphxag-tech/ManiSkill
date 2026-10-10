@@ -1,0 +1,32 @@
+name: Native controller memory capability contract
+
+on:
+  push:
+    branches: [feature/native-memory-capability-contract-20261010]
+  pull_request:
+    paths:
+      - research/native_memory_funnel_certificate.py
+      - research/native_memory_recoverability.py
+      - tests/test_native_memory_funnel_certificate.py
+      - tests/test_native_memory_recoverability.py
+      - .github/workflows/native-memory-capability-contract.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run exact native chart impossibility and authority semantics tests
+        run: |
+          python -m unittest discover -s tests -p 'test_native_memory_funnel_certificate.py' -v
+          python -m unittest discover -s tests -p 'test_native_memory_recoverability.py' -v
+      - name: Compile pure standard-library reference
+        run: python -m py_compile research/native_memory_funnel_certificate.py research/native_memory_recoverability.py
