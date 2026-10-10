@@ -1,0 +1,72 @@
+name: ICERE-CIRA integrated code and immutable 2560-world portfolio falsifier
+
+on:
+  push:
+    branches: [research/ivcr-recovery-portfolio-hard-gate-20261010]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Native-controller intervention and hindsight counterfactual reference tests only
+        run: |
+          python -m unittest discover -s tests -p 'test_cira_intervention_gate.py' -v
+          python -m unittest discover -s tests -p 'test_paired_action_portfolio_ceiling.py' -v
+  source_only_portfolio_audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Read immutable prior 8 original PhysX producer shard archives
+        uses: actions/download-artifact@v4
+        with:
+          repository: lindicaphxag-tech/ManiSkill
+          run-id: 38014679801
+          github-token: {{ github.token }}
+          pattern: original-active-zero-X-*
+          merge-multiple: true
+          path: /tmp/first_task_original_archives
+      - name: Independently verify all 72 original producer SHA256 digests
+        run: python -m research.audit_active_probe_full_task_physx --input-dir /tmp/first_task_original_archives --out /tmp/ORIGINAL_SOURCE_AUDITED.json
+      - name: Compute impossible-online two-action oracle bound from true paired outcomes
+        run: |
+          python -m research.paired_action_portfolio_ceiling /tmp/ORIGINAL_SOURCE_AUDITED.json /tmp/PORTFOLIO_CEILING.json
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/PORTFOLIO_CEILING.json'))
+          A='fault_public_t3_fourhistory_or_t4_query'
+          B='fault_same_public_posterior_or_query'
+          C='fault_always_single_privileged_query'
+          assert d['historical_original_independent_resets']==32
+          for a,z,x in ((A,109,99),(B,109,102),(C,109,102)):
+              r=d['pooled'][a]
+              assert r['zero_success']==z
+              assert r['x_success']==x
+              assert r['hindsight_oracle_extra_success']==3
+              assert r['hindsight_oracle_success']==112
+              assert r['both_fail']==16
+              assert r['independent_resets']==32
+          print('Verified: ZERO/X hindsight oracle 112/128, 16/128 both failed; real recovery needs new action/controller')
+          PY
+      - name: Preserve exact original source audit and retrospective no-go proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: original-audited-controller-recovery-action-portfolio-ceiling
+          retention-days: 90
+          path: |
+            /tmp/ORIGINAL_SOURCE_AUDITED.json
+            /tmp/PORTFOLIO_CEILING.json
