@@ -1,0 +1,126 @@
+name: Native-memory reanchor PhysX development pilot (privileged write counted)
+
+on:
+  push:
+    branches: [research/native-memory-reanchor-physx-pilot-20261010]
+    paths:
+      - research/NATIVE_REANCHOR_DEV_PREOUTCOME_20261010.json
+      - research/frozen_ppo_native_reanchor_dev_physx.py
+      - research/run_native_reanchor_dev_physx.py
+      - research/audit_native_reanchor_dev_physx.py
+      - tests/test_native_reanchor_source_audit.py
+      - .github/workflows/native-reanchor-dev-physx.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source_frozen_before_first_physics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Lock original freeze, new development intervention and full cost accounting
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object research/frozen_ppo_matched_public_factorial128_physx.py)" = 2f2fc34f492bf6d2810b48193283e0347f6bdc93
+          test "$(git hash-object research/frozen_ppo_native_reanchor_dev_physx.py)" = 8ea1f9ad5dae9484551326e7de6246a64301a0aa
+          test "$(git hash-object research/NATIVE_REANCHOR_DEV_PREOUTCOME_20261010.json)" = bff33ff4df3cf537387e2f3d8e269b695f4cf3a6
+          python -m py_compile research/frozen_ppo_native_reanchor_dev_physx.py research/run_native_reanchor_dev_physx.py research/audit_native_reanchor_dev_physx.py
+          python -m unittest discover -s tests -p 'test_native_reanchor_source_audit.py' -v
+          python -m research.run_native_reanchor_dev_physx --mode preflight
+          python - <<'PY'
+          import json
+          x=json.load(open('research/NATIVE_REANCHOR_DEV_PREOUTCOME_20261010.json'))
+          assert x['independent_reset_clusters']==8 and x['paired_physical_ACK_contexts']==32
+          assert x['method_runner_source_blob']=='8ea1f9ad5dae9484551326e7de6246a64301a0aa'
+          assert x['privileged_target_write_cost']==1
+          assert x['public_achieved_pose_read_cost_samples']==1
+          assert x['no_effect_claim_until_all_physical_shards_and_aggregate_audit_pass']
+          print('DEV PILOT SOURCE, METHODS, COST AND RESET CLUSTERS REGISTERED BEFORE PHYSICS')
+          PY
+
+  genuine_native_target_reanchor_frozen_ppo_worlds:
+    needs: source_frozen_before_first_physics
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install actual CPU PhysX ManiSkill and frozen official PPO dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e . huggingface_hub
+      - name: Save original runtime identity
+        run: |
+          git rev-parse HEAD > NEW_ORIGINAL_RUNTIME_SHA.txt
+          python -m pip freeze --all > NEW_RUNTIME_PACKAGES.txt
+      - name: Physically step native target-reanchor vs original ZERO frozen policy with four ACK truths
+        shell: bash
+        run: |
+          set -o pipefail
+          PYTHONPATH="$PWD:$PWD/research" python -m research.run_native_reanchor_dev_physx --mode run --task "${{ matrix.task }}" 2>&1 | tee "native_reanchor_${{ matrix.task }}_full_terminal.log"
+          sha256sum "native_reanchor_${{ matrix.task }}_original.json" | awk '{print $1}' > "native_reanchor_${{ matrix.task }}_original.sha256"
+          test -s "native_reanchor_${{ matrix.task }}_original.json"
+      - name: Preserve all original task records, hashes and failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: first-native-memory-reanchor-dev-${{ matrix.task }}
+          retention-days: 90
+          path: |
+            native_reanchor_*.json
+            native_reanchor_*.sha256
+            native_reanchor_*_full_terminal.log
+            NEW_ORIGINAL_RUNTIME_SHA.txt
+            NEW_RUNTIME_PACKAGES.txt
+
+  post_source_audit:
+    needs: genuine_native_target_reanchor_frozen_ppo_worlds
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: first-native-memory-reanchor-dev-*
+          merge-multiple: true
+          path: /tmp/native_reanchor_original
+      - name: Independently audit original bytes and complete task/fault denominator
+        shell: bash
+        run: |
+          python -m research.audit_native_reanchor_dev_physx --root /tmp/native_reanchor_original --out /tmp/REANCHOR_FIRST_DEVELOPMENT_AUDIT.json
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/REANCHOR_FIRST_DEVELOPMENT_AUDIT.json'))
+          assert d['total_physx_controller_worlds']==672
+          assert d['independent_reset_clusters']==8
+          assert d['ack_trials_repeated_correlated']==32
+          assert d['success_improvement_claim_not_statistically_certified']
+          print('Original privileged-write pilot is complete; not an external replication or hardware result')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: first-native-reanchor-full-source-only-audit
+          retention-days: 90
+          path: /tmp/REANCHOR_FIRST_DEVELOPMENT_AUDIT.json
