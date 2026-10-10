@@ -50,3 +50,13 @@ Against these papers, a toy entropy counterexample and a one-step oracle are **n
 5. **Outside-lab reproducibility**: an unaffiliated operator chooses new seeds and independently reruns physical simulator scenarios. Do not call author-controlled Actions third-party validation.
 
 **Kill rule:** if a correctly implemented strong same-budget controller-query policy or transition-aware VoI planner matches this approach, report the negative result without shifting metrics post hoc. If a real robot probe alters h, the present one-step oracle must not directly execute that probe.
+
+## New adversarial model-shift veto (same research checkpoint)
+
+A *second* exact oracle, `research/authority_voi_robust.py`, enumerates complete observation-contingent action/query policies, scoring their **worst** expected loss over a frozen set of alternative observation likelihood models. It is a **standard finite minimax comparison**, not novel probabilistic calibration.
+
+The constructed two-state diagnostic uses a nominal 95%-correct sensor with query cost 2 and sensing cost 0.1. Under the nominal model, task-valued probing has expected loss **0.6**. If the signal mapping is reversed at deployment, blindly executing the nominal action policy incurs **9.6** *unconstrained hypothetical loss* (95% incorrect repairs). Under the explicit 10%-risk cap, such a policy is inadmissible, rather than a valid safety fallback. The two-model minimax policy instead declines to probe and pays **2.0** for a perfect native readback. This is **synthetic likelihood shift only**; not PhysX distribution-shift evidence. The model-set is an assumed set, **not** a distribution-free confidence set.
+
+The research gate is stricter: before any robotics performance claim, frozen source transitions and uncertainty bounds must be calibrated on disjoint real PhysX resets. Nonzero probes change latent state, so both one-step observation-only oracles are inadequate to control a real robot without an explicit action-dependent latent transition model.
+
+Four extra unit tests expose model shift, compare single-model minimax to the ordinary oracle and reject changed query-cost contracts. Total cross-platform target is **12 deterministic tests**, including 250 seeded exhaustive finite-policy examples.
