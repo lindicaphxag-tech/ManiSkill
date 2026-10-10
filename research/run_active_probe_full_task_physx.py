@@ -101,7 +101,7 @@ def full_task_shard(task,chunk):
                         or r["privileged_target_readback_decision_count"].get(arm) not in (0,1)):
                         raise RuntimeError("fault exposure / public sample cost / native task result corrupt")
                     actual=t4["native_six_dim_arm"]
-                    if actual!=([.15,0.,0.,0.,0.,0.] if probe=="x" else [0.]*6):
+                    if len(actual)!=6 or max(abs(float(a)-float(b)) for a,b in zip(actual,([.15,0.,0.,0.,0.,0.] if probe=="x" else [0.]*6)))>1e-6:
                         raise RuntimeError("known-delivered native t4 physical probe not as registered")
                     pos=t4["audit_only_target_position_delta_m"]
                     if abs(pos-(.015 if probe=="x" else 0))>5e-5 or t4["audit_only_target_orientation_delta_rad"]>1e-4:
