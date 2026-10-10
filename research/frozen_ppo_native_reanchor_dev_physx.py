@@ -281,6 +281,8 @@ def trial(policy,seed):
                         memp,memr=audit_pose_error(previous_unknown,written)
                         result["public_pose_reanchor_audit"][n]={
                             "step":4,"native_controller_set_state_target_write":True,
+                            "public_achieved_position_before_write_m":list(map(float,public_achieved.position)),
+                            "public_achieved_quaternion_before_write_xyzw":list(map(float,public_achieved.quaternion_xyzw)),
                             "write_authority_cost":1,
                             "public_achieved_pose_is_runtime_source":True,
                             "hidden_original_target_is_audit_only":True,
