@@ -87,6 +87,8 @@ def authorize_from_public(model:ConditionalResidualEnergy,*,threshold:float,
     """No audit-only target is in signature. Return QUERY on invalid signal or low confidence."""
     if not math.isfinite(threshold) or not 0<threshold<=1:
         raise ValueError("Invalid frozen conditional authorization threshold")
+    if threshold>=1.:
+        return Decision("QUERY",None,0.,"DISABLED_CALIBRATION_THRESHOLD")
     try:
         feature=public_features(task=task,probe=probe,epsilon_m=epsilon_m,
             residuals_m=residuals_m,public_before_xyz_m=public_before_xyz_m,
