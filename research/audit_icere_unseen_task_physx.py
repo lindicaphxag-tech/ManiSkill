@@ -55,7 +55,7 @@ def audit(original_dir):
             or shard["actually_executed_controller_worlds"]!=640
             or shard["source_only_frozen_model_sha256"]!=EXPECTED_MODEL
             or len(shard["results"])!=64
-            or not shard["original_model_heldout_training_labels_used_in_decision"]):
+            or shard["original_model_heldout_training_labels_used_in_decision"] is not False):
             raise ValueError("Wrong physical complete-shard provenance")
         control_provenance[prefix]=shard["actually_executed_controller_worlds"]
         for truth in TRUTHS:
