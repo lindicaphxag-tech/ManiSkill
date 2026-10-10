@@ -38,6 +38,14 @@ class EnergyTests(unittest.TestCase):
         m=ConditionalResidualEnergy().eval()
         d=authorize_from_public(m,threshold=1.,**kw())
         self.assertEqual(d.kind,'QUERY')
+    def test_float_softmax_rounding_to_one_never_bypasses_forced_query(self):
+        class Saturated:
+            def __call__(self,feature):
+                return torch.tensor([5000.,-5000.,-5000.,-5000.])
+        d=authorize_from_public(Saturated(),threshold=1.,**kw())
+        self.assertEqual(d.kind,'QUERY')
+        self.assertIsNone(d.candidate_index)
+        self.assertEqual(d.reason,'DISABLED_CALIBRATION_THRESHOLD')
     def test_all_four_hypotheses_are_required(self):
         v=kw();v['residuals_m']=(.001,.004,.006)
         with self.assertRaisesRegex(ValueError,'Four'):public_features(**v)
