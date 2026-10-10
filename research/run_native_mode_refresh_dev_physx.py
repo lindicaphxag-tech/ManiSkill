@@ -9,7 +9,7 @@ from __future__ import annotations
 import argparse,hashlib,importlib,json,os,random,sys
 from pathlib import Path
 
-PRE="research/NATIVE_MODE_REFRESH_DEV_PREOUTCOME_20261010.json"
+PRE="research/MODE_REFRESH_DEV_PREOUTCOME_20261010.json"
 REFERENCE_BLOB="2f2fc34f492bf6d2810b48193283e0347f6bdc93"
 NATIVE_MODE_REFRESH="fault_mode_refresh_public_achieved_target"
 A="fault_public_t3_fourhistory_or_t4_query"
@@ -150,7 +150,7 @@ def run(task):
         no_PPO_training=True,not_hardware_verified=True,
         cost_model_two_privileged_mode_writes_and_zero_hidden_state_writes=True,
         source_original_method="fully physically executed zero",
-        proposed_method="fully physically executed simulator-internal reanchor plus ZERO t4",
+        proposed_method="mode-switched public-achieved frame for exactly one physically stepped ZERO t4, no hidden target setter",
         rows=rows)
     out=Path(f"native_mode_refresh_{task}_original.json")
     out.write_text(json.dumps(record,indent=2,sort_keys=True)+"\n")
