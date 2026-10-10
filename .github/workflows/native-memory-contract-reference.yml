@@ -1,0 +1,31 @@
+name: Native memory recoverability contract (pure reference)
+
+on:
+  push:
+    branches: [research/native-memory-reanchor-physx-pilot-20261010]
+    paths:
+      - research/native_memory_recoverability.py
+      - research/native_memory_funnel_certificate.py
+      - tests/test_native_memory_recoverability.py
+      - tests/test_native_memory_funnel_certificate.py
+      - .github/workflows/native-memory-contract-reference.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-memory-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify no unsupported memory collapse under common native target deltas
+        run: |
+          python -m unittest discover -s tests -p 'test_native_memory_funnel_certificate.py' -v
+          python -m unittest discover -s tests -p 'test_native_memory_recoverability.py' -v
+      - name: Reference method compiles without ManiSkill runtime
+        run: python -m py_compile research/native_memory_recoverability.py research/native_memory_funnel_certificate.py
