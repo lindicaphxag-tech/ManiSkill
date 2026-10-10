@@ -40,9 +40,9 @@ def decide_public_authority(*,task:str,probe:str,evidence:dict)->tuple[bool,int|
         eps=evidence["prior_training_epsilon_m"]
         winners=[i for i,d in enumerate(residuals) if d<=eps+1e-12]
         good=bool(len(winners)==1 and all(d>eps+.002 for i,d in enumerate(residuals) if i!=winners[0]))
-        return good,(winners[0] if good else None),"ORIGINAL_GEOMETRY_REGISTERED_EXPERT",float("nan")
+        return good,(winners[0] if good else None),"ORIGINAL_GEOMETRY_REGISTERED_EXPERT",0.
     if p["expert_route"][key]!="ICERE_full":
-        return False,None,"UNKNOWN_EXPERT_FAIL_CLOSED",float("nan")
+        return False,None,"UNKNOWN_EXPERT_FAIL_CLOSED",0.
     try:
         result=authorize_from_public(frozen_model(),
             threshold=float(p["full_model_offline_thresholds"][key]),task=task,probe=probe,
@@ -57,4 +57,4 @@ def decide_public_authority(*,task:str,probe:str,evidence:dict)->tuple[bool,int|
         # missing public value must not silently authorize.
         if "checkpoint" in str(exc).lower() or "missing frozen" in str(exc).lower():
             raise
-        return False,None,"PUBLIC_EVIDENCE_MISSING_OR_INVALID",float("nan")
+        return False,None,"PUBLIC_EVIDENCE_MISSING_OR_INVALID",0.
