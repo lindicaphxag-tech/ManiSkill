@@ -1,0 +1,23 @@
+name: CIRA v0 reference tests (research only)
+
+on:
+  push:
+    branches:
+      - research/cira-intervention-router-v0-20261010
+  workflow_dispatch:
+
+jobs:
+  reference:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.11', '3.13']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Test independent-reset risk/utility gate (no PhysX simulation)
+        run: python -m unittest discover -s tests -p 'test_cira_intervention_gate.py' -v
