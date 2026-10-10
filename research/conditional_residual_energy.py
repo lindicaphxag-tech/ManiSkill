@@ -27,7 +27,7 @@ def public_features(*,task:str,probe:str,epsilon_m:float,
     if not math.isfinite(epsilon_m) or not 0<epsilon_m<=.1:
         raise ValueError("Invalid source-registered response noise scale")
     if len(residuals_m)!=4 or len(public_before_xyz_m)!=3 or len(public_after_xyz_m)!=3:
-        raise ValueError("Incomplete full-candidate/public observation")
+        raise ValueError("Four full-target hypotheses and complete public XYZ observations required")
     v=tuple(float(x) for x in (*residuals_m,*public_before_xyz_m,*public_after_xyz_m,rotation_spread_rad))
     if not all(math.isfinite(x) for x in v) or any(x<0 for x in residuals_m) or rotation_spread_rad<0:
         raise ValueError("Invalid public signal")
