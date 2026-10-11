@@ -1,0 +1,104 @@
+name: CRG Fresh-State Conformal Transfer Pilot V1
+
+on:
+  pull_request:
+    paths:
+      - "research/crg_core/prospective/**"
+      - "research/crg_core/paired_state_conformal_transfer.py"
+      - "tests/test_crg_transfer_conformal_fresh_pilot.py"
+      - ".github/workflows/crg-fresh-conformal-pilot.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crg-fresh-conformal-pilot-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  state:
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        reset_seed: [211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Pin exact source and official policy runtime
+        run: |
+          git clone -q https://github.com/lindicaphxag-tech/ManiSkill.git /tmp/frozen-dec-source
+          git -C /tmp/frozen-dec-source checkout -q 8207ac01c56e75ccee19cba0e75eb0978cde37b2
+          test "$(git -C /tmp/frozen-dec-source rev-parse HEAD)" = 8207ac01c56e75ccee19cba0e75eb0978cde37b2
+          git clone -q https://github.com/huggingface/lerobot.git /tmp/lerobot
+          git -C /tmp/lerobot checkout -q 3c0a209f9fac4d2a57617e686a7f2a2309144ba2
+          test "$(git -C /tmp/lerobot rev-parse HEAD)" = 3c0a209f9fac4d2a57617e686a7f2a2309144ba2
+          sed -i 's/^pyav = ">=12.0.5"/av = ">=12.0.5"/' /tmp/lerobot/pyproject.toml
+          grep -q '^av = ">=12.0.5"' /tmp/lerobot/pyproject.toml
+          python -m pip install -q -e '/tmp/lerobot[pusht]'
+          python -m pip install -q --force-reinstall --no-deps 'pymunk==6.11.1'
+          python -c 'import packaging,pymunk; assert hasattr(pymunk.Space,"add_collision_handler")'
+      - name: Run one fresh frozen PushT state (unseen seed)
+        run: |
+          mkdir -p /tmp/conformal-transfer-states
+          python /tmp/frozen-dec-source/research/eprc/real_policy/cross_policy_prospective_state.py \
+            --reset-seed ${{ matrix.reset_seed }} \
+            --output /tmp/conformal-transfer-states/state-${{ matrix.reset_seed }}.json
+      - name: Prevent test time substitutions
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          seed=int(os.environ["RESET_SEED"])
+          d=json.loads(Path(f"/tmp/conformal-transfer-states/state-{seed}.json").read_text())
+          assert d["reset_seed"]==seed
+          assert d["state_restore_protocol"]=="reset-fresh-space-block-position-4ulp-v2"
+          assert [x["heldout_id"] for x in d["pairs"]]==["A","B"]
+          assert len(d["policies"])==2
+          assert all(d["policies"][p]["query_count"]==27 for p in ("diffusion","vqbet"))
+          PY
+        env:
+          RESET_SEED: ${{ matrix.reset_seed }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fresh-transfer-state-${{ matrix.reset_seed }}
+          path: /tmp/conformal-transfer-states/state-${{ matrix.reset_seed }}.json
+          if-no-files-found: error
+          retention-days: 90
+
+  aggregate:
+    needs: state
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -q numpy pytest
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: fresh-transfer-state-*
+          path: /tmp/conformal-transfer-states
+          merge-multiple: true
+      - name: Check complete frozen split and regression
+        run: |
+          test "$(find /tmp/conformal-transfer-states -name 'state-*.json' | wc -l)" -eq 13
+          python -m pytest -q tests/test_crg_paired_state_conformal_transfer.py tests/test_crg_transfer_conformal_fresh_pilot.py
+      - name: Evaluate untouched frozen calibration/test split
+        run: |
+          python -m research.crg_core.prospective.evaluate_fresh_pilot \
+            --input-dir /tmp/conformal-transfer-states \
+            --output /tmp/conformal-transfer-states/prospective_pilot_result.json
+          cat /tmp/conformal-transfer-states/prospective_pilot_result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crg-fresh-state-conformal-pilot-v1
+          path: /tmp/conformal-transfer-states
+          if-no-files-found: error
+          retention-days: 90
