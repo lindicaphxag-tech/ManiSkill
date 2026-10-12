@@ -140,3 +140,29 @@ Thus any real novel advantage must be attributable to a *measured action
 response change* (gain, nonlinear contact, orientation/sensing interaction,
 or calibrated uncertainty), not to fabricated controller-target predictions.
 This is the falsifiable mechanism tested in the prospective design.
+
+
+## Recent external work and hard novelty boundaries (checked 2026-10-13)
+
+- [ActionShift / DualABI](https://github.com/Archerkattri/actionshift)
+  already uses finite-contract belief updates, bounded active probes and
+  task-regret-aware probe choice under hidden **action-interface semantics**.
+  Choosing informative actions or maintaining beliefs is **not a first-ever
+  contribution** here. Unknown **past execution ACK and persistent hidden
+  commanded-target memory**, not unknown permutation/sign/frame grammar,
+  distinguishes this study's problem specification.
+- [Observable quotient world models for knowledge-state abstraction under
+  partial observability](https://doi.org/10.1016/j.knosys.2026.116768),
+  *Knowledge-Based Systems*, 9 October 2026, explicitly studies
+  action-conditioned observation laws, quotient beliefs and information
+  gain. Observational equivalence and action-conditioned uncertainty
+  reduction are **not our new conceptual primitives**. The candidate
+  contribution here is a narrow, testable source-correct finite-controller
+  ACK-state decision rule coupled to action-specific physical response
+  evidence, without claiming to beat that learned world-model framework.
+
+A future method paper must demonstrate that controller-memory ambiguity,
+the source-correct action constraint, and the physical cost/false-authority
+tradeoff create measurable new value beyond strong active-system-ID
+and task-regret-driven baselines. Without that evidence the present
+method is a well-scoped engineering/research prototype, not L10 theory.
