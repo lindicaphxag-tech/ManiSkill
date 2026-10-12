@@ -24,29 +24,58 @@ def _vec3(v: Sequence[float]) -> np.ndarray:
 
 
 def segment_distance(a0, a1, b0, b1) -> float:
-    """Exact Euclidean minimum between two closed 3-D line segments.
+    """Minimum Euclidean distance between two closed 3D segments.
 
-    A convex quadratic on [0,1]^2 attains its minimum at an interior
-    stationary point or on an edge. Handle parallel/zero-length segments
-    through the four edge projections (which also cover every corner).
+    The interior stationarity solution is evaluated using cross products,
+    NOT det=(u.u)*(v.v)-(u.v)**2. The latter catastrophically cancels
+    for nearly parallel *crossing* segments, and may falsely report a
+    positive separation. The four boundary projections cover parallel,
+    degenerate and clipped interior solutions. If the floating point
+    geometry cannot be resolved, raise instead of certifying separation.
     """
     p, q, r, s = (_vec3(v) for v in (a0, a1, b0, b1))
     u, v, w = q - p, s - r, p - r
+    if not all(np.isfinite(z).all() for z in (u, v, w)):
+        raise ValueError("segment coordinate differences overflowed")
     uu, vv, uv = float(u @ u), float(v @ v), float(u @ v)
     uw, vw = float(u @ w), float(v @ w)
+    if not all(isfinite(z) for z in (uu, vv, uv, uw, vw)):
+        raise ValueError("segment geometry overflowed")
 
     candidates: list[tuple[float, float]] = []
     for t in (0.0, 1.0):
-        candidates.append((float(np.clip((t * uv - uw) / uu, 0, 1)) if uu else 0.0, t))
+        candidates.append((
+            float(np.clip((t * uv - uw) / uu, 0, 1)) if uu else 0.0, t
+        ))
     for t in (0.0, 1.0):
-        candidates.append((t, float(np.clip((vw + t * uv) / vv, 0, 1)) if vv else 0.0))
-    det = uu * vv - uv * uv
-    if det > 1e-12 * max(uu * vv, 1e-30):
-        a = (uv * vw - vv * uw) / det
-        b = (uu * vw - uv * uw) / det
+        candidates.append((
+            t, float(np.clip((vw + t * uv) / vv, 0, 1)) if vv else 0.0
+        ))
+
+    # c=u x v stays informative at tiny angles even when the subtraction
+    # uu*vv-uv**2 rounds to zero. For skew lines this finds their closest
+    # interior pair; for coplanar crossing segments it recovers distance 0.
+    c = np.cross(u, v)
+    if not np.isfinite(c).all():
+        raise ValueError("segment cross product overflowed")
+    if np.any(c != 0):
+        denom = float(c @ c)
+        if denom == 0 or not isfinite(denom):
+            raise ValueError("near-parallel interior geometry unresolved")
+        delta = r - p
+        a = float(np.cross(delta, v) @ c) / denom
+        b = float(np.cross(delta, u) @ c) / denom
+        if not isfinite(a) or not isfinite(b):
+            raise ValueError("segment interior projection overflowed")
         if 0 <= a <= 1 and 0 <= b <= 1:
             candidates.append((a, b))
-    return min(float(np.linalg.norm(w + a * u - b * v)) for a, b in candidates)
+    # For exactly parallel or point-like float64 segments, a true minimum
+    # occurs on at least one boundary, already checked above.
+    distances = [float(np.linalg.norm(w + a * u - b * v))
+                 for a, b in candidates]
+    if not all(isfinite(distance) for distance in distances):
+        raise ValueError("segment distance cannot be resolved safely")
+    return min(distances)
 
 
 @dataclass(frozen=True)
