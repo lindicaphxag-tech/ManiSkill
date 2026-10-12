@@ -166,3 +166,59 @@ the source-correct action constraint, and the physical cost/false-authority
 tradeoff create measurable new value beyond strong active-system-ID
 and task-regret-driven baselines. Without that evidence the present
 method is a well-scoped engineering/research prototype, not L10 theory.
+
+
+## Conditional minimax value-of-information gate (2026-10-13)
+
+A new CPU-only `research/ack_robust_readback_value.py` module turns the
+**negative physical probe result** into a prospectively falsifiable
+*probe versus authoritative target readback versus abstention* decision.
+It addresses **binary** prior-ACK histories and **binary** calibrated
+public signals; it is not yet a multi-history active VLA planner.
+
+Let `p=P(ACK applied)`, `a=(1-p)*C(false applied)`,
+`b=p*C(false held)`, and `q_h=P(Z=1|hidden history h, candidate action)`.
+With an observation the Bayes error loss is
+
+`R(q_held,q_applied)=min(a*q_held,b*q_applied)+min(a*(1-q_held),b*(1-q_applied))`.
+
+When each `q_h` is only known within an independent **held-out calibrated
+probability interval**, worst-case `max_q R` is obtained by a **four-variable
+linear program**, not by naively maximizing over the corners: `R` is a
+concave piecewise-linear function. For example, `q_held in [.2,.6]`
+and `q_applied in [.4,.8]` have worst classification risk **0.5**
+with balanced binary history prior and unit misclassification costs,
+but all four rectangular corners yield at most **0.4**. Corner-only
+optimism would falsely authorize a low-value probe.
+
+The method compares declared, *independently verified* nonzero probe costs
+plus robust post-observation loss against the trusted-readback cost, a
+calibrated no-probe prior decision, and explicit abstention. It enforces a
+strict maximum acceptable expected wrong-classification loss. It requires
+source-replayed single native action provenance, a genuine disjoint
+calibration receipt, a calibrated action-cost interpretation, and
+independently authoritative target-read semantics. Every undecidable
+situation may return `READBACK` or `ABSTAIN`; the return value is an
+**action choice**, never proof of a correctly inferred history.
+
+**What remains unproven:**
+
+- The 48-world Panda/xArm6 pilot provides *raw public XYZ pair differences*
+  for fixed probes. It does **NOT** estimate or validate any conditional
+  `P(Z|ACK,action)` on held-out resets. Therefore **none** of those data
+  are passed as attested likelihoods into this decision engine.
+- The tests use explicitly synthetic probabilities, costs, and provenance
+  flags. These are mathematics/implementation tests, not empirical active
+  decision improvements or deterministic controller safety certificates.
+- The rectangular probability uncertainty model, sensor symbolization,
+  true readback availability, loss calibration and policy effects need
+  prospective external verification before any performance assertion.
+
+Existing Bayesian experimental design and robust classification already
+study value of information; **the LP is not asserted to be a new theorem**.
+The potential specific research contribution is connecting real hidden
+*past execution acknowledgement and persistent controller memory* to
+action-source provenance, robust decision risk and physically matched
+action/readback budgets in one non-privileged manipulation experiment.
+If strong fixed probing / calibrated readback baselines match it, report
+the negative result and do not claim method superiority.
