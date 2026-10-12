@@ -98,3 +98,45 @@ prospectively demonstrate nontrivial baseline ambiguity and equalize or
 explicitly charge actuation magnitude, sample timing, sensing, energy,
 privileged target reads, and repeated correlated reset states. If these
 gates cannot be met, report a negative result rather than an L10 claim.
+
+
+## Source-faithful candidate generation and action-dependent observability
+
+The original `Candidate.targets` API was a **pure geometry oracle**: users
+could invent arbitrary, history-conditioned targets that no single 6D robot
+command could produce. This is unsuitable as a robotic efficacy claim.
+
+The new `research/ack_native_probe_source_adapter.py` **always replays one
+identical native 6D command** through the existing, separately published
+`ActionHistoryObserver`, once for each distinct initial commanded-target
+history. For the supported root-frame relative-target translation, its
+reconstructed XYZ displacement is identical in all histories, regardless of
+their hidden prior position and initial orientation. A forged synthetic
+history-dependent target gap is now explicitly rejected by
+`verify_candidate_against_native_source`. Predictor-source fidelity does
+NOT certify the real controller, actual motion, contact or response dynamics.
+
+The new `research/ack_action_envelope_selector.py` is the minimal logically
+permissible *conditional* extension: a **separate independently supported**
+response-gain interval and absolute sensor/model uncertainty are required
+for EACH physically source-valid action. Missing, borrowed or unattested
+per-action envelopes cannot authorize the probe. Among admitted candidates,
+the selection uses the same robust separation margin and declared action
+cost. The caller cannot turn an unknown physical energy expenditure into a
+measured budget by setting `declared_action_cost`.
+
+**Synthetic mathematical falsifiers**:
+- With identical fixed gain and noise for both native actions, the lower-cost
+  zero probe wins; a common translation alone has no pairwise separation
+  gain.
+- With hypothetically *independently calibrated* gains 0.4 for zero and 0.9
+  for nonzero, a 0.04 m hidden-target gap and 0.009 m error envelope give
+  nonseparation for zero but a positive 0.018 m conditional separation margin
+  for a source-legal nonzero action. This is **NOT an observation from PhysX**,
+  and no actual robot calibration substantiates these particular numerical
+  gains.
+
+Thus any real novel advantage must be attributable to a *measured action
+response change* (gain, nonlinear contact, orientation/sensing interaction,
+or calibrated uncertainty), not to fabricated controller-target predictions.
+This is the falsifiable mechanism tested in the prospective design.
