@@ -165,3 +165,84 @@ def test_all_original_candidates_required_and_no_posthoc_family_silence():
 def test_invalid_binomial_arguments_fail_closed(n,k,alpha):
     with pytest.raises(ValueError):
         exact_binomial_interval(k,n,alpha)
+
+
+def test_fingerprint_commits_full_native_action_family_not_only_names():
+    # A name-only evidence receipt is forgeable by silently substituting a
+    # DIFFERENT 6D command while reusing the same original calibration rows.
+    from research.ack_finite_sample_signal_calibration import (
+        simultaneous_ack_signal_calibration as bind,
+    )
+    def frozen(ps):
+        return bind(
+            ps,
+            {p.name: synthetic_perfect_rows(15) for p in ps},
+            heldout_evaluation_reset_ids=[9001, 9002],
+            frozen_binary_signal_rule="frozen: measured Z threshold",
+        )
+    first = [proposal("p0", 0.0), proposal("p1", 0.2)]
+    original = frozen(first)
+    changed = frozen([proposal("p0", 0.0), proposal("p1", 0.5)])
+    assert all(a.proposal_name == b.proposal_name
+               for a, b in zip(original, changed))
+    # Every family member's proof commits the ENTIRE action register.
+    assert all(a.source_digest_sha256 != b.source_digest_sha256
+               for a, b in zip(original, changed))
+    assert all(a.held_probability_interval == b.held_probability_interval
+               for a, b in zip(original, changed))
+    shuffled = frozen(list(reversed(first)))
+    fingerprints = {z.proposal_name: z.source_digest_sha256 for z in original}
+    assert {z.proposal_name: z.source_digest_sha256 for z in shuffled} == fingerprints
+    assert original[0].evidence.calibration_receipt == (
+        "sha256:" + original[0].source_digest_sha256
+    )
+
+
+def test_fingerprint_binds_declared_action_cost_and_history_targets():
+    from dataclasses import replace
+    from research.ack_finite_sample_signal_calibration import (
+        simultaneous_ack_signal_calibration as bind,
+    )
+
+    def fingerprint(p):
+        return bind(
+            [p], {"p0": synthetic_perfect_rows(8)},
+            heldout_evaluation_reset_ids=[9001],
+            frozen_binary_signal_rule="fixed",
+        )[0].source_digest_sha256
+
+    nominal = proposal("p0", 0.2, cost=.01)
+    altered_cost = proposal("p0", 0.2, cost=.3)
+    assert fingerprint(nominal) != fingerprint(altered_cost)
+    forged_target = replace(
+        nominal.candidate,
+        targets={
+            **nominal.candidate.targets,
+            "held": (99.0, 0.0, 0.0),
+        },
+    )
+    assert fingerprint(nominal) != fingerprint(
+        replace(nominal, candidate=forged_target)
+    )
+    bad_name = replace(forged_target, name="different")
+    with pytest.raises(ValueError, match="names disagree"):
+        fingerprint(replace(nominal, candidate=bad_name))
+    with pytest.raises(ValueError, match="source-replayed"):
+        fingerprint(replace(nominal, source_kinematics_verified=False))
+
+
+def test_fingerprint_refuses_nonfinite_forged_action_register():
+    from dataclasses import replace
+    from research.ack_finite_sample_signal_calibration import (
+        simultaneous_ack_signal_calibration as bind,
+    )
+
+    valid = proposal("p0", 0.2)
+    corrupt = replace(valid.candidate, cost=float("nan"))
+    with pytest.raises(ValueError):
+        bind(
+            [replace(valid, candidate=corrupt)],
+            {"p0": synthetic_perfect_rows(8)},
+            heldout_evaluation_reset_ids=[9001],
+            frozen_binary_signal_rule="fixed",
+        )
