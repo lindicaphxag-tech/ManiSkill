@@ -150,3 +150,70 @@ def test_positive_separation_matches_generated_bounded_response_worlds():
                 ("APPLIED", "HELD"), action, **kwargs)
             assert result.status == "UNIQUE"
             assert result.compatible_histories == (truth,)
+
+
+def test_common_fixed_gain_null_matches_prior_physical_negative_study():
+    # Under matched fixed response gain the common command translation
+    # cancels in every difference between public response centers.
+    from research.ack_robust_active_probe import audit_fixed_gain_common_probe_null
+    baseline = Candidate("zero", {"held": (0, 0, 0), "applied": (.04, .01, 0)},
+                         1.0, True, True)
+    active = Candidate("nonzero", {"held": (.15, 0, 0), "applied": (.19, .01, 0)},
+                       2.0, True, True)
+    r = audit_fixed_gain_common_probe_null(
+        baseline, active, ("held", "applied"), response_gain=.7,
+        common_gain_independently_attested=True,
+        action_invariant_noise_independently_attested=True
+    )
+    assert r.status == "NO_INCREMENTAL_PAIRWISE_SEPARATION_UNDER_FIXED_GAIN"
+    assert r.probe_has_incremental_information is False
+    assert r.center_gap_zero_m == pytest.approx(r.center_gap_probe_m)
+    assert r.cost_probe > r.cost_zero
+
+
+def test_common_gain_null_generalizes_to_four_hidden_histories():
+    from research.ack_robust_active_probe import audit_fixed_gain_common_probe_null
+    names = tuple(f"h{i}" for i in range(4))
+    original = {h: (i * .02, (-1) ** i * .01, 0.0)
+                for i, h in enumerate(names)}
+    shift = np.array((.03, -.02, .01))
+    moved = {h: (np.asarray(x) + shift).tolist() for h, x in original.items()}
+    b = Candidate("zero", original, 1, True, True)
+    p = Candidate("shift", moved, 3, True, True)
+    r = audit_fixed_gain_common_probe_null(
+        b, p, names, response_gain=.25,
+        common_gain_independently_attested=True,
+        action_invariant_noise_independently_attested=True,
+    )
+    assert r.probe_has_incremental_information is False
+    assert r.center_gap_zero_m == pytest.approx(r.center_gap_probe_m)
+
+
+def test_common_gain_null_requires_real_model_attestation_and_common_shift():
+    from research.ack_robust_active_probe import audit_fixed_gain_common_probe_null
+    b = candidate("zero", (1, 0, 0), (-1, 0, 0))
+    p = candidate("history-dependent", (2, 0, 0), (-.5, 0, 0))
+    common = candidate("translated", (2, 0, 0), (0, 0, 0))
+    def audit(probe, **kwargs):
+        return audit_fixed_gain_common_probe_null(
+            b, probe, ("APPLIED", "HELD"),
+            response_gain=.8,
+            common_gain_independently_attested=kwargs.get("gain", True),
+            action_invariant_noise_independently_attested=kwargs.get("noise", True),
+        )
+    assert audit(common).probe_has_incremental_information is False
+    assert audit(common, gain=False).status == "UNATTESTED"
+    assert audit(common, noise=False).status == "UNATTESTED"
+    assert audit(p).status == "NOT_COMMON_AFFINE_SHIFT"
+    assert audit(p).probe_has_incremental_information is None
+
+
+def test_common_gain_null_rejects_invalid_inputs():
+    from research.ack_robust_active_probe import audit_fixed_gain_common_probe_null
+    b = candidate("zero", (1, 0, 0), (-1, 0, 0))
+    with pytest.raises(ValueError, match="gain"):
+        audit_fixed_gain_common_probe_null(
+            b, b, ("APPLIED", "HELD"), response_gain=0,
+            common_gain_independently_attested=True,
+            action_invariant_noise_independently_attested=True,
+        )
