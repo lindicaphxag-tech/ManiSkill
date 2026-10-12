@@ -59,6 +59,39 @@ def exact_binomial_interval(successes: int, total: int, alpha: float
     return lower, upper
 
 
+def _source_proposal_fingerprint_entry(proposal: NativeProbeProposal) -> dict:
+    """Canonical pre-outcome action identity, not proof of physical provenance.
+
+    Include ALL source-replayed commands and all counterfactual history
+    targets for the FULL frozen proposal family. A name-only receipt can be
+    silently transplanted to a different native action with the same name.
+    """
+    candidate = proposal.candidate
+    if candidate.name != proposal.name:
+        raise ValueError("candidate and native-source proposal names disagree")
+    if not proposal.source_kinematics_verified:
+        raise ValueError("source-replayed native action required")
+    return {
+        "name": proposal.name,
+        "native_action": list(proposal.native_action),
+        "history_targets": {
+            history: list(candidate.targets[history])
+            for history in sorted(candidate.targets)
+        },
+        "declared_action_cost_not_motor_energy": float(candidate.cost),
+        "maximum_translation_deviation_m": float(
+            proposal.maximum_translation_deviation_m
+        ),
+        "source_kinematics_verified": bool(proposal.source_kinematics_verified),
+        "controller_mapping_attested_claim": bool(
+            candidate.controller_mapping_attested
+        ),
+        "physical_admissibility_attested_claim": bool(
+            candidate.physical_admissibility_attested
+        ),
+    }
+
+
 def simultaneous_ack_signal_calibration(
     proposals: Sequence[NativeProbeProposal],
     observations: Mapping[str, Sequence[tuple[int, str, int]]],
@@ -90,12 +123,22 @@ def simultaneous_ack_signal_calibration(
         isfinite(family_miscoverage) and 0 < family_miscoverage < 1
     ):
         raise ValueError("familywise miscoverage must be strictly between 0 and 1")
-    if len(proposals) == 0 or len({p.name for p in proposals}) != len(proposals):
+    if not proposals or any(
+        not isinstance(p, NativeProbeProposal) for p in proposals
+    ):
+        raise TypeError("nonempty typed native-source candidate family required")
+    if len({p.name for p in proposals}) != len(proposals):
         raise ValueError("nonempty distinct prospective candidate family required")
-    if any(not isinstance(p, NativeProbeProposal) for p in proposals):
-        raise TypeError("proposals must be actual source-replayed native actions")
     if set(observations) != {p.name for p in proposals}:
         raise ValueError("full original candidate family must be calibrated")
+    # Canonically bind *all* actual prospective actions, their replayed
+    # history targets and declared costs. Each action's receipt changes if
+    # ANY member of the frozen family changes, including a name-reused
+    # substituted action. This is a content digest, not source authentication.
+    proposal_register = [
+        _source_proposal_fingerprint_entry(p)
+        for p in sorted(proposals, key=lambda p: p.name)
+    ]
     eval_ids = set(heldout_evaluation_reset_ids)
     if len(eval_ids) != len(heldout_evaluation_reset_ids) or any(
         type(i) is not int for i in eval_ids
@@ -125,12 +168,14 @@ def simultaneous_ack_signal_calibration(
         fingerprint = sha256(
             json.dumps({
                 "signal_rule": frozen_binary_signal_rule,
-                "family": sorted(p.name for p in proposals),
+                "schema": "ack-signal-calibration-full-native-action-register-v2",
+                "family_source_register": proposal_register,
                 "proposal": proposal.name,
                 "observations": ordered,
                 "heldout": sorted(eval_ids),
                 "alpha": float(family_miscoverage),
-            }, separators=(",", ":"), sort_keys=True).encode()
+            }, separators=(",", ":"), sort_keys=True,
+                allow_nan=False).encode()
         ).hexdigest()
         n = len(held)
         h_interval = exact_binomial_interval(sum(held.values()), n, alpha)
