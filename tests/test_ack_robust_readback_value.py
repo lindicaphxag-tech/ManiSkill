@@ -182,3 +182,66 @@ def test_robust_decoder_worst_risk_matches_explicit_policy_enumeration():
         )
         assert actual_worst <= worst + 1e-7
         assert worst - actual_worst <= 2e-7 * max(1, a, b)
+
+
+def test_prior_interval_rejects_overconfident_probe_under_prior_shift():
+    # Same frozen conditional likelihood and same legal source-native action.
+    # Nominal p=.5 appears safe (worst risk=.105), but p=.95 gives .1905.
+    # A strict .12 risk cap must prefer authoritative readback.
+    evidence = candidate("signal", (.01, .01), (.8, .8), cost=.01)
+    nominal = choose([evidence],
+        maximum_acceptable_wrong_classification_risk=.12)
+    assert nominal.decision == "PROBE"
+    shifted = choose([evidence], prior_applied_interval=(.5, .95),
+        maximum_acceptable_wrong_classification_risk=.12)
+    assert shifted.decision == "READBACK"
+    assert shifted.signal_zero_decision is None
+    assert not shifted.physical_safety_certified
+
+
+def test_worst_case_prior_rule_matches_independent_vertex_oracle():
+    from research.ack_robust_readback_value import (
+        robust_binary_decision_rule_prior_interval,
+    )
+    rng = np.random.default_rng(2000013)
+    for _ in range(300):
+        priors = tuple(sorted(rng.uniform(0, 1, 2)))
+        held = tuple(sorted(rng.uniform(0, 1, 2)))
+        applied = tuple(sorted(rng.uniform(0, 1, 2)))
+        fp, fn = rng.uniform(.1, 7, 2)
+        z0, z1, risk_bound = robust_binary_decision_rule_prior_interval(
+            priors, held, applied,
+            false_applied_cost=fp, false_held_cost=fn,
+        )
+        def risk(p, q0, q1):
+            return (
+                (1-p) * fp * (
+                    (1-q0) * (z0 == "APPLIED") + q0 * (z1 == "APPLIED")
+                )
+                + p * fn * (
+                    (1-q1) * (z0 == "HELD") + q1 * (z1 == "HELD")
+                )
+            )
+        exact = max(risk(p, h, a)
+                    for p in priors for h in held for a in applied)
+        assert risk_bound == pytest.approx(exact, abs=1e-11)
+        assert risk_bound >= 0
+
+
+def test_prior_interval_no_probe_returns_actual_minimax_ack_label():
+    p = candidate("uninformative", (.5, .5), (.5, .5))
+    selected = choose([p], prior_applied=.01,
+                      prior_applied_interval=(.001, .02))
+    assert selected.decision == "NO_PROBE"
+    assert selected.no_probe_history_decision == "HELD"
+    assert selected.signal_zero_decision is None
+    assert selected.worst_classification_loss == pytest.approx(.02)
+
+
+def test_prior_interval_requires_nominal_containment_and_valid_bounds():
+    with pytest.raises(ValueError, match="outside declared"):
+        choose([], prior_applied=.5, prior_applied_interval=(.6, .8))
+    with pytest.raises(ValueError, match="interval probabilities"):
+        choose([], prior_applied=.5, prior_applied_interval=(.8, .6))
+    with pytest.raises(ValueError, match="interval probabilities"):
+        choose([], prior_applied=.5, prior_applied_interval=(0, 2))
