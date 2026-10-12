@@ -51,6 +51,7 @@ def test_perfect_synthetic_signal_prefers_real_native_candidate():
     assert v.worst_classification_loss <= 1e-8
     assert v.guaranteed_information_value == pytest.approx(.5, abs=1e-7)
     assert not v.physical_safety_certified
+    assert (v.signal_zero_decision, v.signal_one_decision) == ("HELD", "APPLIED")
 
 
 def test_unchanged_public_information_or_wide_uncertainty_prefers_readback():
@@ -129,3 +130,55 @@ def test_invalid_probability_and_provenance_contracts_fail_closed():
     with pytest.raises(ValueError, match="duplicate"):
         choose([candidate("same", (0,0), (1,1)),
                 candidate("same", (0,0), (1,1))])
+
+
+def test_fixed_decoder_cannot_adapt_to_unknown_true_likelihood():
+    from research.ack_robust_readback_value import robust_binary_decision_rule
+    for held, applied, expected in [
+        ((0, 0), (1, 1), ("HELD", "APPLIED")),
+        ((1, 1), (0, 0), ("APPLIED", "HELD")),
+    ]:
+        negative, positive, bound = robust_binary_decision_rule(
+            .5, held, applied
+        )
+        assert (negative, positive) == expected
+        assert bound < 1e-7
+
+    # Interior worst-case probability distributions must not silently
+    # produce an optimistic mapping chosen after seeing the true q.
+    negative, positive, bound = robust_binary_decision_rule(
+        .5, (.2, .6), (.4, .8)
+    )
+    assert bound == pytest.approx(.5, abs=1e-7)
+    assert (negative, positive) in (
+        ("HELD", "HELD"), ("APPLIED", "APPLIED"),
+        ("HELD", "APPLIED"), ("APPLIED", "HELD"),
+    )
+
+
+def test_robust_decoder_worst_risk_matches_explicit_policy_enumeration():
+    from research.ack_robust_readback_value import robust_binary_decision_rule
+    rng = np.random.default_rng(20261013)
+    for _ in range(200):
+        prior = float(rng.uniform(.01, .99))
+        fp, fn = rng.uniform(.2, 4, 2)
+        held = tuple(sorted(rng.uniform(0, 1, 2)))
+        applied = tuple(sorted(rng.uniform(0, 1, 2)))
+        out_zero, out_one, worst = robust_binary_decision_rule(
+            prior, held, applied,
+            false_applied_cost=fp, false_held_cost=fn,
+        )
+        a, b = (1 - prior) * fp, prior * fn
+        # This is the actual precommitted decoder's expected loss.
+        def decoder_risk(q0, q1):
+            false_applied = (1 - q0 if out_zero == "APPLIED" else 0)
+            false_applied += q0 if out_one == "APPLIED" else 0
+            false_held = (1 - q1 if out_zero == "HELD" else 0)
+            false_held += q1 if out_one == "HELD" else 0
+            return a * false_applied + b * false_held
+        actual_worst = max(
+            decoder_risk(q0, q1)
+            for q0 in held for q1 in applied
+        )
+        assert actual_worst <= worst + 1e-7
+        assert worst - actual_worst <= 2e-7 * max(1, a, b)
