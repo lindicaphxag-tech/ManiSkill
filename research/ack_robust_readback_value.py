@@ -41,6 +41,7 @@ class RobustRiskDecision:
     physical_safety_certified: bool = False
     signal_zero_decision: str | None = None
     signal_one_decision: str | None = None
+    no_probe_history_decision: str | None = None
 
 
 def _interval(values: Sequence[float]) -> tuple[float, float]:
@@ -142,6 +143,47 @@ def robust_binary_decision_rule(
     return best[1], best[2], max(float(best[0]), float(lp_bound))
 
 
+def robust_binary_decision_rule_prior_interval(
+    prior_applied_interval: Sequence[float],
+    p_signal_held: Sequence[float],
+    p_signal_applied: Sequence[float],
+    *,
+    false_applied_cost: float = 1.0,
+    false_held_cost: float = 1.0,
+) -> tuple[str, str, float]:
+    """Minimax fixed binary decoder under BOTH prior and signal uncertainty.
+
+    All four deterministic Z->ACK rules are enumerated BEFORE seeing Z.
+    For a fixed rule the expected loss is separately affine in prior p,
+    q_held and q_applied, so its maximum over the rectangular uncertainty
+    set occurs at vertices. This is a conservative deterministic policy,
+    not a claim about randomized minimax strategies or physical safety.
+    """
+    p0, p1 = _interval(prior_applied_interval)
+    h0, h1 = _interval(p_signal_held)
+    a0, a1 = _interval(p_signal_applied)
+    fp, fn = float(false_applied_cost), float(false_held_cost)
+    if not (isfinite(fp) and fp > 0 and isfinite(fn) and fn > 0):
+        raise ValueError("invalid cost for false ACK authority")
+
+    rules = [
+        ("HELD", "HELD", p1 * fn),
+        ("APPLIED", "APPLIED", (1 - p0) * fp),
+        (
+            "HELD", "APPLIED",
+            max((1 - p) * fp * h1 + p * fn * (1 - a0)
+                for p in (p0, p1)),
+        ),
+        (
+            "APPLIED", "HELD",
+            max((1 - p) * fp * (1 - h0) + p * fn * a1
+                for p in (p0, p1)),
+        ),
+    ]
+    zero, one, risk = min(rules, key=lambda row: row[2])
+    return zero, one, float(risk)
+
+
 def decide_probe_vs_readback(
     *,
     prior_applied: float,
@@ -153,6 +195,7 @@ def decide_probe_vs_readback(
     prior_externally_calibrated: bool,
     readback_state_authoritative_attested: bool,
     maximum_acceptable_wrong_classification_risk: float,
+    prior_applied_interval: tuple[float, float] | None = None,
 ) -> RobustRiskDecision:
     """Select future probe/readback/no-probe/abstention by robust expected loss.
 
@@ -169,13 +212,29 @@ def decide_probe_vs_readback(
             and isfinite(abstain) and abstain > 0
             and isfinite(limit) and limit >= 0):
         raise ValueError("invalid prior, decision costs, or risk cap")
+    # A point prior may be badly wrong after a deployment shift. An optional
+    # independently attested interval must contain that nominal estimate;
+    # the entire interval is then used for every risk and budget decision.
+    prior_lo, prior_hi = (
+        _interval(prior_applied_interval)
+        if prior_applied_interval is not None else (prior, prior)
+    )
+    if not prior_lo <= prior <= prior_hi:
+        raise ValueError("nominal prior is outside declared prior interval")
     if trusted_readback_cost is not None:
         readback_cost = float(trusted_readback_cost)
         if not isfinite(readback_cost) or readback_cost <= 0:
             raise ValueError("readback must have finite strictly positive cost")
     else:
         readback_cost = None
-    baseline = min((1 - prior) * fp, prior * fn)
+    # Worst-case no-observation risk for ONE fixed history decision.
+    # An observer cannot choose a different MAP history after learning p.
+    held_no_probe_loss = prior_hi * fn
+    applied_no_probe_loss = (1 - prior_lo) * fp
+    baseline = min(held_no_probe_loss, applied_no_probe_loss)
+    no_probe_guess = (
+        "HELD" if held_no_probe_loss <= applied_no_probe_loss else "APPLIED"
+    )
     choices = [
         (abstain, 0.0, "ABSTAIN", None, None, "no trusted data/action")
     ]
@@ -213,9 +272,15 @@ def decide_probe_vs_readback(
             cost = float(proposal.candidate.cost)
             if not isfinite(cost) or cost <= 0:
                 raise ValueError("invalid calibrated probe cost")
-            worst, _ = robust_binary_posterior_risk(
-                prior, q0, q1, false_applied_cost=fp, false_held_cost=fn,
-            )
+            if prior_applied_interval is None:
+                worst, _ = robust_binary_posterior_risk(
+                    prior, q0, q1, false_applied_cost=fp, false_held_cost=fn,
+                )
+            else:
+                _, _, worst = robust_binary_decision_rule_prior_interval(
+                    (prior_lo, prior_hi), q0, q1,
+                    false_applied_cost=fp, false_held_cost=fn,
+                )
             examined += 1
             if worst > limit:
                 continue
@@ -232,10 +297,19 @@ def decide_probe_vs_readback(
     signal_zero = signal_one = None
     if decision == "PROBE":
         chosen = next(e for e in candidates if e.proposal.name == name)
-        signal_zero, signal_one, decoder_risk = robust_binary_decision_rule(
-            prior, chosen.p_signal_held, chosen.p_signal_applied,
-            false_applied_cost=fp, false_held_cost=fn,
-        )
+        if prior_applied_interval is None:
+            signal_zero, signal_one, decoder_risk = robust_binary_decision_rule(
+                prior, chosen.p_signal_held, chosen.p_signal_applied,
+                false_applied_cost=fp, false_held_cost=fn,
+            )
+        else:
+            signal_zero, signal_one, decoder_risk = (
+                robust_binary_decision_rule_prior_interval(
+                    (prior_lo, prior_hi),
+                    chosen.p_signal_held, chosen.p_signal_applied,
+                    false_applied_cost=fp, false_held_cost=fn,
+                )
+            )
         if decoder_risk > limit + 2e-7 * max(1, fp, fn):
             raise RuntimeError("selected probe decoder exceeds risk cap")
     return RobustRiskDecision(
@@ -243,4 +317,5 @@ def decide_probe_vs_readback(
         float(max(0, baseline - error)) if decision == "PROBE" else 0.0,
         examined, reason, signal_zero_decision=signal_zero,
         signal_one_decision=signal_one,
+        no_probe_history_decision=no_probe_guess if decision == "NO_PROBE" else None,
     )
