@@ -159,7 +159,7 @@ def test_all_original_candidates_required_and_no_posthoc_family_silence():
 
 
 @pytest.mark.parametrize("n,k,alpha", [
-    (0,0,.05), (2,1,.05), (3,4,.05), (3,2,1),
+    (0,0,.05), (2,-1,.05), (3,4,.05), (3,2,1),
     (3,2,float("nan")), (3,2,0),
 ])
 def test_invalid_binomial_arguments_fail_closed(n,k,alpha):
