@@ -266,3 +266,45 @@ calibration, and risk-constrained query allocation improves real robot
 operation relative to a mandatory trusted target read and fixed probes.
 Without a genuinely independent held-out native PhysX experiment, this
 remains a transparent, CPU-validated algorithm *candidate*.
+
+
+## Prior-shift robustness and executable no-probe history
+
+The original risk selector treated the ACK execution prior as a single
+externally declared probability, which could make a calibrated binary probe
+appear safe even when ACK delivery prevalence changes between acquisition
+and deployment. It also returned `NO_PROBE` without the actual fixed
+`HELD` or `APPLIED` policy needed for execution.
+
+The backward-compatible optional `prior_applied_interval=[p_lo,p_hi]`
+now evaluates **one frozen deterministic decoding rule** against all
+priors in that interval *and* all independently bounded observation
+likelihoods. There are exactly four deterministic binary `Z -> ACK`
+rules. For each one, expected misclassification loss is multi-affine in
+`(p, q_held, q_applied)`, so its maximum over the declared product
+interval occurs at a vertex. Minimize those four worst losses; enforce
+the same action/risk budgets against the winning risk. For `NO_PROBE`,
+choose the single minimax history label under the entire interval.
+This avoids incorrectly comparing a different post-hoc MAP decision
+for every possible prior after the actual episode.
+
+Synthetic, independently enumerated 300-rectangle tests check the exact
+worst-case risk of the emitted decoder. In an explicit adversarial
+counterexample, nominal `p=.5`, conditional public-signal likelihoods
+`P(Z=1|HELD)=.01` and `P(Z=1|APPLIED)=.8` imply a fixed-decoder
+error risk of `0.105`. At `p=.95`, the **same fixed decoder** has
+error risk `0.1905`. Under a declared `0.12` risk cap, a probe
+authorized using only the nominal prior is therefore refused when
+`p in [.5,.95]` is the stated uncertainty, and the selector instead
+uses independently authoritative READBACK if available and cheaper
+than abstention. This is a **synthetic decision counterexample**, not
+a measured robot prior shift or method-success outcome.
+
+Both the **prior support interval** and the per-action observation
+probability intervals require external, disjoint, population-relevant
+calibration. This implementation does NOT estimate a prior interval
+from the 48 previously completed PhysX worlds. A nominal user flag or
+hash cannot prove stationarity, actual hardware safety or per-decision
+correctness. Mathematical prior/likelihood robustness is established
+decision theory, not a claimed original theorem; research value would
+depend on prospective physically valid cost reductions and task outcomes.
