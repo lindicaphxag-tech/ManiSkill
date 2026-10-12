@@ -11,9 +11,6 @@ from dataclasses import dataclass
 from math import isfinite
 from typing import Sequence
 
-import numpy as np
-from scipy.optimize import linprog
-
 from research.ack_native_probe_source_adapter import NativeProbeProposal
 
 
@@ -61,44 +58,49 @@ def robust_binary_posterior_risk(
     false_applied_cost: float = 1.0,
     false_held_cost: float = 1.0,
 ) -> tuple[float, float]:
-    """Exact worst-case binary Bayes risk, then no-observation Bayes risk.
+    """Exact O(1) minimax Bayes risk under rectangular binary uncertainty.
 
-    Let a=P(held)*C(false applied), b=P(applied)*C(false held), and
-    q0=P(Z=1|held), q1=P(Z=1|applied). For known q,
-      R(q0,q1)=min(a*q0,b*q1)+min(a*(1-q0),b*(1-q1)).
-    Maximizing this concave piecewise-linear function over a rectangle
-    CANNOT generally be done by evaluating only rectangle corners.
-    The small LP maximizes t1+t0 with
-      t1<=a*q0, t1<=b*q1,
-      t0<=a*(1-q0), t0<=b*(1-q1).
+    With a=(1-p)*C(false APPLIED), b=p*C(false HELD), and independently
+    uncertain q0=P(Z=1|HELD) in [h0,h1], q1=P(Z=1|APPLIED) in [a0,a1],
+    minimize the worst expected loss over the FOUR possible deterministic
+    pre-outcome maps Z->{HELD,APPLIED}. The corresponding worst losses are:
+
+    always HELD                 b
+    always APPLIED              a
+    Z=1 -> APPLIED              a*h1 + b*(1-a0)
+    Z=1 -> HELD                 a*(1-h0) + b*a1
+
+    Their minimum equals max_{q0,q1} min_{decoder} Bayes-risk for this
+    rectangular binary model (the former four-variable HiGHS LP).
+    Unlike a corner-only max of min(Bayes risks), this is exact:
+    the least-favourable q may be in the INTERIOR. This is a special
+    binary-case identity, NOT a general replacement for robust Bayes LPs.
+
+    Never rely on learned/uncalibrated probability bounds as physical
+    evidence; this routine only computes conditional mathematical risk.
     """
     prior, fp, fn = map(float, (
         prior_applied, false_applied_cost, false_held_cost
     ))
-    q0, q1 = _interval(p_signal_held), _interval(p_signal_applied)
+    h0, h1 = _interval(p_signal_held)
+    a0, a1 = _interval(p_signal_applied)
     if not (isfinite(prior) and 0 <= prior <= 1
             and isfinite(fp) and fp > 0 and isfinite(fn) and fn > 0):
         raise ValueError("invalid prior or false-authority loss")
     a, b = (1 - prior) * fp, prior * fn
-    unprobed = min(a, b)
-    if unprobed == 0:
+    baseline = min(a, b)
+    if baseline == 0:
         return 0.0, 0.0
-    result = linprog(
-        [0, 0, -1, -1],
-        A_ub=[[-a, 0, 1, 0], [0, -b, 1, 0],
-              [a, 0, 0, 1], [0, b, 0, 1]],
-        b_ub=[0, 0, a, b],
-        bounds=[q0, q1, (0, None), (0, None)],
-        method="highs",
-        options={"primal_feasibility_tolerance": 1e-9,
-                 "dual_feasibility_tolerance": 1e-9},
+    exact = min(
+        b,
+        a,
+        a * h1 + b * (1 - a0),
+        a * (1 - h0) + b * a1,
     )
-    if not result.success or not np.isfinite(result.fun):
-        raise RuntimeError("cannot validate robust binary ACK risk LP")
-    # Never credit information gain from an approximate LP solve.
-    worst = float(np.clip(-result.fun + 1e-9 * max(1, a, b), 0, unprobed))
-    return worst, unprobed
-
+    # Preserve the old solver's conservative numerical guard: never
+    # credit improvement from tiny uncertain floating-point differences.
+    worst = min(baseline, max(0.0, exact + 1e-9 * max(1.0, a, b)))
+    return float(worst), float(baseline)
 
 def robust_binary_decision_rule(
     prior_applied: float,
