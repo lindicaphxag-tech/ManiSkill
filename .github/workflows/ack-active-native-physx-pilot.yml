@@ -1,0 +1,76 @@
+name: Frozen new native ACK active-probe PhysX pilot
+
+on:
+  push:
+    branches:
+      - "research/ack-robust-active-probe-20261013"
+    paths:
+      - "research/ACK_ACTIVE_NATIVE_PROBE_PILOT_PREREG_20261013.json"
+      - "research/ack_active_native_probe_physx_pilot.py"
+      - "research/audit_ack_active_native_probe_physx_pilot.py"
+      - ".github/workflows/ack-active-native-physx-pilot.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-native-physx:
+    name: frozen PhysX / ${{ matrix.robot }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    strategy:
+      fail-fast: false
+      matrix:
+        robot: [panda, xarm6_robotiq]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Native CPU PhysX requirements
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --disable-pip-version-check -e .
+      - name: Execute ALL precommitted paired native worlds, no case selection
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: |
+          set -o pipefail
+          python -m research.ack_active_native_probe_physx_pilot --robot ${{ matrix.robot }} 2>&1 | tee "ack_native_probe_${{ matrix.robot }}_first_run.log"
+          test -s "ack_native_probe_physx_pilot_${{ matrix.robot }}.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frozen-ack-native-physx-${{ matrix.robot }}
+          path: |
+            ack_native_probe_physx_pilot_${{ matrix.robot }}.json
+            ack_native_probe_${{ matrix.robot }}_first_run.log
+
+  complete-source-only-audit:
+    name: independent complete 48-world source audit
+    needs: original-native-physx
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: frozen-ack-native-physx-*
+          merge-multiple: true
+          path: /tmp/frozen-native-ack-pilot
+      - name: Verify every prescribed reset, truth, real native probe and audit-only read
+        run: |
+          python -m research.audit_ack_active_native_probe_physx_pilot --input-dir /tmp/frozen-native-ack-pilot --output /tmp/frozen-native-ack-pilot-audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frozen-native-ack-pilot-full-denominator-audit
+          path: |
+            /tmp/frozen-native-ack-pilot/*.json
+            /tmp/frozen-native-ack-pilot/*.log
+            /tmp/frozen-native-ack-pilot-audit.json
