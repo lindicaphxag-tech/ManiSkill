@@ -210,3 +210,83 @@ def infer_after_probe(
         "AMBIGUOUS" if surviving else "MODEL_FALSIFIED"
     )
     return Inference(status, tuple(surviving), residuals)
+
+
+@dataclass(frozen=True)
+class FixedGainNullAudit:
+    """Conditional invariance witness, NOT a general physical no-gain theorem."""
+    status: str
+    center_gap_zero_m: float | None
+    center_gap_probe_m: float | None
+    cost_zero: float
+    cost_probe: float
+    probe_has_incremental_information: bool | None
+
+
+def audit_fixed_gain_common_probe_null(
+    zero_probe: Candidate,
+    proposed_probe: Candidate,
+    histories: Sequence[str],
+    *,
+    response_gain: float,
+    common_gain_independently_attested: bool,
+    action_invariant_noise_independently_attested: bool,
+    common_shift_tolerance_m: float = 1e-9,
+) -> FixedGainNullAudit:
+    """Expose the rigorous fixed-gain affine NO-INFORMATION null.
+
+    Assume y_h(a) = x + alpha * (m_h(0) + u(a) - x) + e_h,
+    with the SAME known alpha for every history/candidate and the SAME
+    translation u(a) for all histories, and probe-independent noise support.
+    Then every pairwise center difference is alpha*(m_i(0)-m_j(0)),
+    independent of the common action, so probing cannot improve pairwise
+    response-ball separation. Neither action admissibility nor physical
+    state calibration follows from this arithmetic check.
+    """
+    names = tuple(histories)
+    if len(names) < 2 or len(set(names)) != len(names):
+        raise ValueError("need distinct hidden histories")
+    gain, tol = float(response_gain), float(common_shift_tolerance_m)
+    if not (isfinite(gain) and 0 < gain <= 1 and isfinite(tol) and tol >= 0):
+        raise ValueError("invalid gain or numerical tolerance")
+    if not isinstance(zero_probe, Candidate) or not isinstance(
+        proposed_probe, Candidate
+    ):
+        raise TypeError("two typed probes required")
+    if set(zero_probe.targets) != set(names) or set(proposed_probe.targets) != set(names):
+        raise ValueError("history sets must agree")
+    if not (isfinite(zero_probe.cost) and zero_probe.cost > 0
+            and isfinite(proposed_probe.cost) and proposed_probe.cost > 0):
+        raise ValueError("both probe costs must be positive and finite")
+
+    untrusted = not (
+        common_gain_independently_attested is True
+        and action_invariant_noise_independently_attested is True
+        and zero_probe.controller_mapping_attested is True
+        and proposed_probe.controller_mapping_attested is True
+    )
+    if untrusted:
+        return FixedGainNullAudit("UNATTESTED", None, None,
+            zero_probe.cost, proposed_probe.cost, None)
+
+    base = np.stack([_vec3(zero_probe.targets[h]) for h in names])
+    probe = np.stack([_vec3(proposed_probe.targets[h]) for h in names])
+    shifts = probe - base
+    if not np.all(np.linalg.norm(shifts - shifts[0], axis=1) <= tol):
+        return FixedGainNullAudit("NOT_COMMON_AFFINE_SHIFT", None, None,
+            zero_probe.cost, proposed_probe.cost, None)
+
+    d_zero = min(
+        float(np.linalg.norm(gain * (base[i] - base[j])))
+        for i in range(len(names)) for j in range(i + 1, len(names))
+    )
+    d_probe = min(
+        float(np.linalg.norm(gain * (probe[i] - probe[j])))
+        for i in range(len(names)) for j in range(i + 1, len(names))
+    )
+    if not np.isclose(d_zero, d_probe, rtol=1e-12, atol=2 * tol):
+        raise AssertionError("common-translation response-center invariant broken")
+    return FixedGainNullAudit(
+        "NO_INCREMENTAL_PAIRWISE_SEPARATION_UNDER_FIXED_GAIN",
+        d_zero, d_probe, zero_probe.cost, proposed_probe.cost, False
+    )
