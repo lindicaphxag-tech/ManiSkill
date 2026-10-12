@@ -345,3 +345,33 @@ retains HiGHS as an **independent numerical oracle**.
 - This optimization remains an implementation of established robust
   binary decision mathematics, not a claimed original theorem or
   independent clinical/robot safety verification.
+
+
+## Precommitted calibration receipt must bind the complete native probe chart
+
+**Source integrity correction (2026-10-13).** The initial SHA256 source
+receipt included frozen signal name, *candidate NAME list*, calibration
+binary observations and test-reset IDs, but omitted the six-dimensional
+action vectors, replayed counterfactual targets and action costs. A different
+action reusing the same name and observations could therefore carry the
+SAME receipt despite referring to a different physical intervention.
+
+The corrected `ack_finite_sample_signal_calibration.py` receipt hashes a
+versioned canonical register of the ENTIRE frozen family: each unique
+candidate name, precise native six-action, every named historical
+counterfactual target, source-replayed controller mapping claim, external
+physical admissibility claim, declared cost and common-translation
+residual, together with the precommitted observation rule, actual paired
+binary rows, held-out reset IDs and simultaneous-coverage error budget.
+Canonical sorting means reordering the same frozen proposal list leaves
+its receipts unchanged, whereas substituting any member's action even
+without renaming it changes every member's digest. Forged nonfinite
+registers fail closed.
+
+The committed adversarial regressions additionally test target swaps,
+action-cost tampering, mismatched source-name claims and an unattested
+source-provenance field. This is **integrity binding only**, not a
+cryptographic signature by a trusted experiment operator: labels,
+simulation source, iid resets, calibration availability, physical
+admissibility and cost authentication remain separate assumptions.
+No new PhysX performance or increased model reliability is inferred.
