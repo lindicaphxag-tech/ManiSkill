@@ -62,3 +62,39 @@ The engineering goal is to transform observed *passive non-identifiability*
 into a falsifiable **action-conditioned hypothesis separation method**; its
 novelty and value must still be demonstrated against established active
 system-identification and set-membership methods.
+
+
+## CRITICAL prior physical negative control (must not be omitted)
+
+A **previously completed and precommitted** Panda+xArm6 original PhysX study
+ran 16 reset clusters x two actual hidden ACK truths x two executed probes
+(zero versus fixed +0.15 native X), producing 64 test worlds.
+Both probes recovered **32/32 correct histories**, with zero wrong-confident
+answers, zero abstentions, and 32/32 corrected native target XYZ.
+The nonzero arm increased average observed separation by only ~0.415 mm
+(Panda) and ~0.444 mm (xArm6) and **did not improve any decision**.
+Source: `research/frozen_policy_transfer/ZERO_VS_NONZERO_PROBE_PANDA_XARM6_ORIGINAL64_RESULTS.md`.
+This is scripted native control, not learned PPO/VLA task success, and does
+not independently calibrate a deterministic physical-response envelope.
+
+**Null certificate added in this branch:** For
+`y_h(a) = x + alpha*(m_h(0) + u(a) - x) + e_h` with fixed shared
+`alpha`, history-independent common shift `u(a)`, and action-invariant
+bounded noise support, every pair of response centers has separation
+`alpha*(m_h(0)-m_k(0))`, independent of the probe. Thus an expensive
+common probe cannot improve ideal observation-ball pairwise separation.
+The module explicitly tests the common-shift assumption and refuses the
+claim when the physical gain/noise assumptions lack external attestation.
+This identity is elementary algebra **not claimed to be a new theorem**.
+It does not extend unchanged to uncertain shared gain, contact dynamics
+or history/action-dependent nonlinear response distributions.
+
+**Scientific consequence:** A positive gain from the new method requires
+an action that changes history-*relative* observability under a genuinely
+measured response model, not an arbitrary translation of the targets.
+Under the old high-SNR Panda/xArm6 task, there is no room to improve the
+32/32 classification count. Any new experimental protocol must first
+prospectively demonstrate nontrivial baseline ambiguity and equalize or
+explicitly charge actuation magnitude, sample timing, sensing, energy,
+privileged target reads, and repeated correlated reset states. If these
+gates cannot be met, report a negative result rather than an L10 claim.
