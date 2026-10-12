@@ -1,0 +1,48 @@
+name: ManiSkill upstream #1495 exact rotation ABI CPU checks
+
+on:
+  push:
+    branches:
+      - validation/upstream-1495-rotation-20261013
+    paths:
+      - .github/workflows/upstream-1495-exact-native-rotation-tests.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-native-controller:
+    name: source SHA / Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: e44585fdce57e51f7f8e9a880b265e12a5fda6e7
+          persist-credentials: false
+      - name: Fail if source is not the official ManiSkill #1495 patch
+        run: |
+          actual="$(git rev-parse HEAD)"
+          expected="e44585fdce57e51f7f8e9a880b265e12a5fda6e7"
+          echo "Exact converter source: $actual"
+          test "$actual" = "$expected"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install native SAPIEN/torch controller converter environment
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --disable-pip-version-check -e . "pytest>=8,<9.1"
+      - name: Run actual upstream quaternion/rotation-action mapping tests
+        env:
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+          PYTHONUNBUFFERED: "1"
+        run: |
+          python -m pytest -q tests/test_action_conversion.py \
+            --maxfail=1 --disable-warnings
