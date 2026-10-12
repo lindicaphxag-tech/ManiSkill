@@ -217,3 +217,33 @@ def test_common_gain_null_rejects_invalid_inputs():
             common_gain_independently_attested=True,
             action_invariant_noise_independently_attested=True,
         )
+
+
+@pytest.mark.parametrize("epsilon", [1e-4, 1e-7, 1e-9, 1e-13])
+def test_near_parallel_crossing_has_zero_distance_not_false_gap(epsilon):
+    # Old uu*vv-(u.v)^2 cancellation produced about 1e-7 meters
+    # for epsilon=1e-7, despite an exact intersection at the origin.
+    actual = segment_distance(
+        (-1, 0, 0), (1, 0, 0),
+        (-1, epsilon, 0), (1, -epsilon, 0),
+    )
+    assert actual <= 1e-12
+
+
+def test_near_parallel_skew_segments_do_not_invent_intersection():
+    # Almost parallel 3-D segments with a genuine normal offset.
+    distance = segment_distance(
+        (-1, 0, 0), (1, 0, 0),
+        (-1, 1e-7, .03), (1, -1e-7, .03),
+    )
+    assert distance == pytest.approx(.03, abs=1e-12)
+
+
+def test_segment_distance_rejects_unresolvable_large_arithmetic():
+    # Inputs are technically finite, but taking differences and cross
+    # products would overflow float64. Never return a huge positive gap.
+    with pytest.raises(ValueError, match="overflow"):
+        segment_distance(
+            (-1e308, 0, 0), (1e308, 0, 0),
+            (0, -1e308, 0), (0, 1e308, 0),
+        )
