@@ -36,6 +36,10 @@ jobs:
       - name: Execute ALL precommitted paired native worlds, no case selection
         env:
           PYTHONUNBUFFERED: "1"
+          # The xArm6 Robotiq URDF is an optional ManiSkill asset; GitHub Actions
+          # has no stdin for the interactive download prompt. This changes ONLY
+          # noninteractive asset provisioning, not seeds/probes/model/protocol.
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
         run: |
           set -o pipefail
           python -m research.ack_active_native_probe_physx_pilot --robot ${{ matrix.robot }} 2>&1 | tee "ack_native_probe_${{ matrix.robot }}_first_run.log"
