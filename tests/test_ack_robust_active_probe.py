@@ -95,3 +95,58 @@ def test_invalid_contracts_fail_closed():
         choose_probe((float("inf"), 0, 0), ("a", "b"), [],
             alpha_min=0, alpha_max=1, model_and_sensor_error_m=0,
             maximum_cost=1, response_envelope_independently_attested=True)
+
+
+def test_closed_loop_identifies_only_nonoverlapping_response_history():
+    from research.ack_robust_active_probe import infer_after_probe
+
+    active = candidate("separating", (1, 0, 0), (-1, 0, 0))
+    kwargs = dict(alpha_min=1, alpha_max=1, model_and_sensor_error_m=.01,
+                  response_envelope_independently_attested=True,
+                  actual_probe_dispatch_confirmed=True,
+                  fresh_public_observation_confirmed=True)
+    def infer(y, **extra):
+        return infer_after_probe((0, 0, 0), y, ("APPLIED", "HELD"),
+                                 active, **(kwargs | extra))
+    assert infer((1.005, 0, 0)).compatible_histories == ("APPLIED",)
+    assert infer((-1.005, 0, 0)).compatible_histories == ("HELD",)
+    assert infer((0, 0, 0)).status == "MODEL_FALSIFIED"
+    assert infer((1, 0, 0), actual_probe_dispatch_confirmed=False).status == "UNATTESTED"
+    assert infer((1, 0, 0), fresh_public_observation_confirmed=False).status == "UNATTESTED"
+    assert not infer((1, 0, 0)).physical_safety_certified
+
+
+def test_closed_loop_refuses_ambiguous_history_and_unknown_dynamics():
+    from research.ack_robust_active_probe import infer_after_probe
+
+    overlapping = candidate("overlap", (1, 0, 0), (2, 0, 0))
+    d = infer_after_probe((0, 0, 0), (.5, 0, 0),
+        ("APPLIED", "HELD"), overlapping,
+        alpha_min=.2, alpha_max=.8, model_and_sensor_error_m=0,
+        response_envelope_independently_attested=True,
+        actual_probe_dispatch_confirmed=True,
+        fresh_public_observation_confirmed=True)
+    assert d.status == "AMBIGUOUS"
+    assert d.compatible_histories == ("APPLIED", "HELD")
+
+
+def test_positive_separation_matches_generated_bounded_response_worlds():
+    from research.ack_robust_active_probe import infer_after_probe
+
+    rng = np.random.default_rng(42003)
+    action = candidate("a", (1, .5, 0), (-1, -.5, 0))
+    kwargs = dict(alpha_min=.8, alpha_max=1, model_and_sensor_error_m=.02,
+                  response_envelope_independently_attested=True,
+                  actual_probe_dispatch_confirmed=True,
+                  fresh_public_observation_confirmed=True)
+    assert design([action], noise=.02, alpha=(.8, 1)).candidate == "a"
+    for truth, target in action.targets.items():
+        for _ in range(100):
+            a = rng.uniform(.8, 1)
+            noise = rng.uniform(0, .02) * rng.normal(size=3)
+            noise = noise / max(np.linalg.norm(noise), 1e-12) * min(np.linalg.norm(noise), .02)
+            y = a * np.asarray(target) + noise
+            result = infer_after_probe((0, 0, 0), y,
+                ("APPLIED", "HELD"), action, **kwargs)
+            assert result.status == "UNIQUE"
+            assert result.compatible_histories == (truth,)
