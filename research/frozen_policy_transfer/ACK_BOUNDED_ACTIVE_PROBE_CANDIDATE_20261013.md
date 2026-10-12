@@ -222,3 +222,47 @@ action-source provenance, robust decision risk and physically matched
 action/readback budgets in one non-privileged manipulation experiment.
 If strong fixed probing / calibrated readback baselines match it, report
 the negative result and do not claim method superiority.
+
+
+## Familywise finite-sample calibration — never certify from 4 resets
+
+The risk-based probe/readback selector requires interval-bounded
+`P(Z=1 | ACK history, prospective native action)`. The initial prototype
+accepted those bounds from callers; that is **not a statistical certificate**
+and could hide invented confidence intervals.
+
+`research/ack_finite_sample_signal_calibration.py` now constructs exact
+two-sided **Clopper–Pearson binomial intervals** from an enumerated original
+calibration denominator, for *both* held/applied histories under *every*
+frozen candidate action. Allocate family error probability
+`delta/(2*K)` to each of `2*K` marginal intervals (K actions) by the
+Bonferroni union bound, yielding at least `1-delta` simultaneous
+coverage **conditional on iid independent reset-level Bernoulli outcomes,
+a precommitted binary observation rule, and no reused evaluation resets**.
+A SHA256 digest preserves the source arithmetic; it does NOT authenticate
+real robot logs or independence. The code refuses duplicated, missing,
+mixed-ACK or evaluation-overlapping reset rows; no posthoc candidate
+subsetting is covered without a new error budget.
+
+CPU adversarial/coverage tests enumerate exact discrete binomial sampling
+distributions and demonstrate a key decision effect:
+
+- A synthetic four-reset dataset with perfect apparent separation produces
+  very wide intervals and forces **trusted READBACK**, not unsupported
+  confident active probing.
+- A synthetic one-hundred-reset iid dataset with the same apparent outcomes
+  gives tighter intervals, and the conditional robust risk engine can select
+  a legal, independently cost-calibrated probe under a declared risk cap.
+- This is a finite-sample uncertainty *mechanism*, not measured physical
+  success. The 48-world Panda/xArm6 pilot had only four separate reset
+  clusters per robot, did not precommit a binary signal threshold, and is
+  **NOT reused as a positive calibration set**.
+
+Clopper–Pearson confidence intervals, multiple-comparison corrections and
+robust Bayesian decisions are existing statistical concepts, NOT new
+theoretical inventions. The research hypothesis is whether connecting
+source-faithful hidden target-memory uncertainty, disjoint physical
+calibration, and risk-constrained query allocation improves real robot
+operation relative to a mandatory trusted target read and fixed probes.
+Without a genuinely independent held-out native PhysX experiment, this
+remains a transparent, CPU-validated algorithm *candidate*.
