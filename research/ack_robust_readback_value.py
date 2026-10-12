@@ -39,6 +39,8 @@ class RobustRiskDecision:
     considered_valid_probes: int
     reason: str
     physical_safety_certified: bool = False
+    signal_zero_decision: str | None = None
+    signal_one_decision: str | None = None
 
 
 def _interval(values: Sequence[float]) -> tuple[float, float]:
@@ -95,6 +97,49 @@ def robust_binary_posterior_risk(
     # Never credit information gain from an approximate LP solve.
     worst = float(np.clip(-result.fun + 1e-9 * max(1, a, b), 0, unprobed))
     return worst, unprobed
+
+
+def robust_binary_decision_rule(
+    prior_applied: float,
+    p_signal_held: Sequence[float],
+    p_signal_applied: Sequence[float],
+    *,
+    false_applied_cost: float = 1.0,
+    false_held_cost: float = 1.0,
+) -> tuple[str, str, float]:
+    """Freeze ONE deployable deterministic observation-to-history mapping.
+
+    Evaluate the four fixed binary decoders against worst permissible
+    observation probabilities, without seeing their true distributions.
+    For this rectangular independent binary model, the lowest fixed-decoder
+    worst-case loss equals the linear program's maximum Bayes loss;
+    numerically cross-check instead of assuming clairvoyant decoding.
+    This EXPECTED error loss is not a per-decision physical safety bound.
+    """
+    prior, fp, fn = map(float, (
+        prior_applied, false_applied_cost, false_held_cost
+    ))
+    held_lo, held_hi = _interval(p_signal_held)
+    applied_lo, applied_hi = _interval(p_signal_applied)
+    if not (isfinite(prior) and 0 <= prior <= 1
+            and isfinite(fp) and fp > 0 and isfinite(fn) and fn > 0):
+        raise ValueError("invalid prior or decision loss")
+    a, b = (1 - prior) * fp, prior * fn
+    # The two outputs are specified for Z=0 and Z=1, respectively.
+    rules = [
+        (b, "HELD", "HELD"),
+        (a, "APPLIED", "APPLIED"),
+        (a * held_hi + b * (1 - applied_lo), "HELD", "APPLIED"),
+        (a * (1 - held_lo) + b * applied_hi, "APPLIED", "HELD"),
+    ]
+    best = min(rules, key=lambda row: row[0])
+    lp_bound, _ = robust_binary_posterior_risk(
+        prior, (held_lo, held_hi), (applied_lo, applied_hi),
+        false_applied_cost=fp, false_held_cost=fn,
+    )
+    if abs(best[0] - lp_bound) > 2e-7 * max(1, a, b):
+        raise RuntimeError("robust decoder/LP mismatch: refuse ACK authority")
+    return best[1], best[2], max(float(best[0]), float(lp_bound))
 
 
 def decide_probe_vs_readback(
@@ -183,8 +228,19 @@ def decide_probe_vs_readback(
     total, error, decision, name, action, reason = min(
         choices, key=lambda row: (row[0], order[row[2]], row[3] or "")
     )
+    # Commit the actual observation decoding rule BEFORE seeing a signal.
+    signal_zero = signal_one = None
+    if decision == "PROBE":
+        chosen = next(e for e in candidates if e.proposal.name == name)
+        signal_zero, signal_one, decoder_risk = robust_binary_decision_rule(
+            prior, chosen.p_signal_held, chosen.p_signal_applied,
+            false_applied_cost=fp, false_held_cost=fn,
+        )
+        if decoder_risk > limit + 2e-7 * max(1, fp, fn):
+            raise RuntimeError("selected probe decoder exceeds risk cap")
     return RobustRiskDecision(
         decision, name, action, float(total), float(error), float(baseline),
         float(max(0, baseline - error)) if decision == "PROBE" else 0.0,
-        examined, reason,
+        examined, reason, signal_zero_decision=signal_zero,
+        signal_one_decision=signal_one,
     )
