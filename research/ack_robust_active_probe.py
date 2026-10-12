@@ -144,3 +144,69 @@ def choose_probe(
                       None, 0.0, evaluated)
     return Choice(best.candidate, best.reason, best.certified_gap_m,
                   best.worst_pair, best.score, evaluated)
+
+
+@dataclass(frozen=True)
+class Inference:
+    """Post-execution conditional set-membership decision, not task safety."""
+    status: str
+    compatible_histories: tuple[str, ...]
+    residuals_m: Mapping[str, float]
+    physical_safety_certified: bool = False
+
+
+def infer_after_probe(
+    before_xyz: Sequence[float],
+    after_xyz: Sequence[float],
+    histories: Sequence[str],
+    executed_candidate: Candidate,
+    *,
+    alpha_min: float,
+    alpha_max: float,
+    model_and_sensor_error_m: float,
+    numerical_guard_m: float = 1e-9,
+    response_envelope_independently_attested: bool,
+    actual_probe_dispatch_confirmed: bool,
+    fresh_public_observation_confirmed: bool,
+) -> Inference:
+    """Eliminate only ACK hypotheses incompatible with observed XYZ.
+
+    A zero-survivor result FALSIFIES the asserted response envelope: it is
+    not evidence that some unmodeled history can safely be chosen. All flags
+    require independently authenticated evidence outside this pure module.
+    """
+    x, y = _vec3(before_xyz), _vec3(after_xyz)
+    names = tuple(histories)
+    lo, hi = float(alpha_min), float(alpha_max)
+    eps, guard = float(model_and_sensor_error_m), float(numerical_guard_m)
+    if len(names) < 2 or len(set(names)) != len(names):
+        raise ValueError("at least two unique hypotheses required")
+    if not all(isfinite(z) for z in (lo, hi, eps, guard)) or not (
+        0 <= lo <= hi <= 1 and eps >= 0 and guard >= 0
+    ):
+        raise ValueError("invalid declared response envelope")
+    if not isinstance(executed_candidate, Candidate) or (
+        set(executed_candidate.targets) != set(names)
+    ):
+        raise ValueError("candidate histories mismatch")
+    if not all(flag is True for flag in (
+        response_envelope_independently_attested,
+        executed_candidate.controller_mapping_attested,
+        executed_candidate.physical_admissibility_attested,
+        actual_probe_dispatch_confirmed,
+        fresh_public_observation_confirmed,
+    )):
+        return Inference("UNATTESTED", names, {})
+    residuals = {}
+    surviving = []
+    for h in names:
+        target = _vec3(executed_candidate.targets[h])
+        s0, s1 = x + lo * (target - x), x + hi * (target - x)
+        residual = segment_distance(y, y, s0, s1)
+        residuals[h] = residual
+        if residual <= eps + guard:
+            surviving.append(h)
+    status = "UNIQUE" if len(surviving) == 1 else (
+        "AMBIGUOUS" if surviving else "MODEL_FALSIFIED"
+    )
+    return Inference(status, tuple(surviving), residuals)
