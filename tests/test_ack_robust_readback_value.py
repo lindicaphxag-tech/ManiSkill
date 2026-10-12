@@ -245,3 +245,51 @@ def test_prior_interval_requires_nominal_containment_and_valid_bounds():
         choose([], prior_applied=.5, prior_applied_interval=(.8, .6))
     with pytest.raises(ValueError, match="interval probabilities"):
         choose([], prior_applied=.5, prior_applied_interval=(0, 2))
+
+
+def test_closed_form_minimax_matches_independent_highs_lp():
+    # Regression oracle intentionally retains an independently solved
+    # linear program after the production hot-path no longer calls HiGHS.
+    from scipy.optimize import linprog
+    from research.ack_robust_readback_value import robust_binary_posterior_risk
+    rng = np.random.default_rng(2026101304)
+    for _ in range(220):
+        p = float(rng.uniform(.0001, .9999))
+        fp, fn = (float(v) for v in rng.uniform(.1, 5, 2))
+        h = tuple(sorted(rng.uniform(0, 1, 2)))
+        a_interval = tuple(sorted(rng.uniform(0, 1, 2)))
+        a = (1 - p) * fp
+        b = p * fn
+        lp = linprog(
+            [0, 0, -1, -1],
+            A_ub=[[-a, 0, 1, 0], [0, -b, 1, 0],
+                  [a, 0, 0, 1], [0, b, 0, 1]],
+            b_ub=[0, 0, a, b],
+            bounds=[h, a_interval, (0, None), (0, None)],
+            method="highs",
+        )
+        assert lp.success
+        expected = min(min(a, b), max(
+            0.0, -lp.fun + 1e-9 * max(1, a, b),
+        ))
+        measured, baseline = robust_binary_posterior_risk(
+            p, h, a_interval,
+            false_applied_cost=fp, false_held_cost=fn,
+        )
+        assert baseline == pytest.approx(min(a, b))
+        assert measured == pytest.approx(expected, abs=1e-7, rel=1e-7)
+
+
+def test_closed_form_minimax_handles_interior_adversary_and_degenerate_priors():
+    from research.ack_robust_readback_value import robust_binary_posterior_risk
+    worst, no_probe = robust_binary_posterior_risk(
+        .5, (.2, .6), (.4, .8),
+    )
+    assert worst == pytest.approx(.5)
+    assert no_probe == pytest.approx(.5)
+    for p in (0.0, 1.0):
+        worst, no_probe = robust_binary_posterior_risk(
+            p, (.001, .999), (.001, .999),
+        )
+        assert worst == 0.0
+        assert no_probe == 0.0
