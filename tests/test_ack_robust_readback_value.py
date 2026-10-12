@@ -98,7 +98,8 @@ def test_robust_error_budget_and_probe_cost_cannot_be_ignored():
     assert choose([candidate("accurate", (.01,.01), (.99,.99), cost=.01)],
                   maximum_acceptable_wrong_classification_risk=.005).decision == "READBACK"
     assert choose([candidate("accurate", (.01,.01), (.99,.99), cost=.01)],
-                  false_applied_cost=9.0).decision == "PROBE"
+                  false_applied_cost=9.0,
+                  maximum_acceptable_wrong_classification_risk=.06).decision == "PROBE"
 
 
 def test_unattested_prior_or_probes_are_never_accepted_as_physical_evidence():
