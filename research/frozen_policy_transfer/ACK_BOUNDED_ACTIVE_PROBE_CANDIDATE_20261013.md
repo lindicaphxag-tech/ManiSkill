@@ -308,3 +308,40 @@ hash cannot prove stationarity, actual hardware safety or per-decision
 correctness. Mathematical prior/likelihood robustness is established
 decision theory, not a claimed original theorem; research value would
 depend on prospective physically valid cost reductions and task outcomes.
+
+
+## Constant-time binary robust risk hot path
+
+The prior prototype called SciPy HiGHS `linprog` for EACH prospective
+candidate when scoring a two-history, binary-observation ACK probe.
+For this narrow rectangular-uncertainty setting, exact risk is
+
+`min(b, a, a*h_upper + b*(1-a_lower), a*(1-h_lower) + b*a_upper)`
+
+where `a=(1-p)*C(false-applied)`, `b=p*C(false-held)`,
+`h=P(Z=1|held)` and `a_lower/a_upper` in the fourth term's
+variable naming refer to the **applied-class signal-probability bounds**,
+not the weighted loss `a`. More explicitly the last term is
+`a*(1-h_lower)+b*applied_upper`; the third is
+`a*held_upper+b*(1-applied_lower)`.
+
+This is the exact minimax loss of the four precommitted deterministic
+decoders, and equals the former four-variable LP for **two histories,
+one binary observation and independent rectangular probability bounds**.
+It is NOT generally valid for >2 states, multi-symbol sensing,
+nonrectangular coupling or physical dynamics. A small conservative
+rounding guard preserves the previous behavior. The implementation
+eliminates the `scipy.optimize.linprog` hot-path dependency; the test suite
+retains HiGHS as an **independent numerical oracle**.
+
+- 220 fresh independent random HiGHS LP comparisons were committed as
+  ordinary unit tests, in addition to prior dense-grid, posterior and
+  per-decision decoder tests.
+- Local same-process timing over 350 synthetic candidate intervals:
+  closed form **0.00418 s** total versus SciPy HiGHS **0.41675 s**,
+  around **99.6x** faster for those tiny risk evaluations. This is a
+  local Python/SciPy microbenchmark, **not** a measured robot-task
+  throughput increase or a general hardware-independent speedup claim.
+- This optimization remains an implementation of established robust
+  binary decision mathematics, not a claimed original theorem or
+  independent clinical/robot safety verification.
