@@ -27,12 +27,13 @@ def registered():
     if source_sha!=PLAN_BLOB:
         raise RuntimeError("Prospectively frozen protocol was altered")
     p=json.loads(PLAN.read_text(encoding="utf-8"))
+    e=p["fixed_environments"]
     if (p["freeze"]!="BEFORE_ORIGINAL_TEST_OUTPUT"
-        or p["ack_history_lengths"]!=[3,4]
-        or p["morphologies"]!=["Panda-like","xArm6-like"]
-        or p["observation_quantizations"]!=[0.8,1.4,2.1]
-        or p["noise_radius_fraction_of_quantization"]!=[0.,.08]
-        or p["seed_ids"]!=list(range(111,123))):
+        or e["ack_history_lengths"]!=[3,4]
+        or e["morphologies"]!=["Panda-like","xArm6-like"]
+        or e["observation_quantizations"]!=[0.8,1.4,2.1]
+        or e["noise_radius_fraction_of_quantization"]!=[0.,.08]
+        or e["seed_ids"]!=list(range(111,123))):
         raise RuntimeError("Incorrect frozen scenario and cohort")
     return p
 
@@ -217,8 +218,8 @@ def execute(output):
     cases=[
         analyze_case(m,h,seed,q,e)
         for m,h,seed,q,e in product(
-            range(2),p["ack_history_lengths"],
-            p["seed_ids"],range(3),range(2)
+            range(2),p["fixed_environments"]["ack_history_lengths"],
+            p["fixed_environments"]["seed_ids"],range(3),range(2)
         )
     ]
     if len(cases)!=288:
