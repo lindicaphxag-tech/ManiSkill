@@ -1,0 +1,40 @@
+name: ACK robust active-probe CPU contract
+
+on:
+  pull_request:
+    paths:
+      - "research/ack_robust_active_probe.py"
+      - "research/ack_native_probe_source_adapter.py"
+      - "research/ack_action_envelope_selector.py"
+      - "research/ack_robust_readback_value.py"
+      - "research/ack_finite_sample_signal_calibration.py"
+      - "research/ack_multihistory_minimax.py"
+      - "tests/test_ack_robust_active_probe.py"
+      - "tests/test_ack_native_probe_source_adapter.py"
+      - "tests/test_ack_action_envelope_selector.py"
+      - "tests/test_ack_robust_readback_value.py"
+      - "tests/test_ack_finite_sample_signal_calibration.py"
+      - "tests/test_ack_multihistory_minimax.py"
+      - "research/audit_ack_active_native_probe_physx_pilot.py"
+      - "tests/test_ack_active_native_probe_pilot_audit.py"
+      - ".github/workflows/ack-robust-active-probe-cpu.yml"
+  push:
+    branches:
+      - "research/ack-robust-active-probe-20261013"
+
+jobs:
+  bounded-response-geometry:
+    name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install --disable-pip-version-check "numpy>=1.26,<3" "scipy>=1.11,<2" "pytest>=8,<10"
+      - run: python -m pytest -q tests/test_ack_robust_active_probe.py tests/test_ack_native_probe_source_adapter.py tests/test_ack_action_envelope_selector.py tests/test_ack_robust_readback_value.py tests/test_ack_finite_sample_signal_calibration.py tests/test_ack_multihistory_minimax.py tests/test_ack_active_native_probe_pilot_audit.py

@@ -1,0 +1,98 @@
+{
+  "schema": "prospective_native_ack_action_response_pilot_v1",
+  "freeze_date": "2026-10-13",
+  "status": "FROZEN_BEFORE_NEW_PHYSX_OUTCOMES",
+  "scope": "Exploratory original PhysX raw response, NOT validated active policy, deterministic safety certificate, or official upstream",
+  "robots": [
+    "panda",
+    "xarm6_robotiq"
+  ],
+  "task": "PickCube-v1",
+  "control_mode": "pd_ee_target_delta_pose",
+  "backend": "physx_cpu",
+  "seed_register": {
+    "panda": [
+      5601001,
+      5601002,
+      5601003,
+      5601004
+    ],
+    "xarm6_robotiq": [
+      5701001,
+      5701002,
+      5701003,
+      5701004
+    ]
+  },
+  "world_conditions": {
+    "unknown_fault_step": 2,
+    "fault_native_arm_six": [
+      0.025,
+      -0.02,
+      0.01,
+      0,
+      0,
+      0
+    ],
+    "truths": [
+      "applied",
+      "held"
+    ],
+    "probe_step": 3,
+    "probes": {
+      "zero": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "native_x": [
+        0.15,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "native_y": [
+        0,
+        0.15,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "prefix_steps": [
+      0,
+      1
+    ],
+    "prefix_source": "research/cross_robot_ack_physics.py::requested_native",
+    "total_reset_clusters": 8,
+    "total_physical_truth_probe_worlds": 48
+  },
+  "measurements": [
+    "pre_t2 and pre_t3 achieved EE XYZ",
+    "post_t3 achieved EE XYZ",
+    "real native arm and gripper command provenance",
+    "source reconstructed target XYZ from each of two ACK histories",
+    "post_t3 privileged true target XYZ audit ONLY after action",
+    "official env success only descriptive, not task policy efficiency",
+    "one-step two-truth paired public XYZ separation per probe and robot/seed"
+  ],
+  "primary_descriptive_estimate": "for each robot and reset seed, Euclidean public XYZ gap (applied versus held) under same probe; compare nonzero_x minus zero and nonzero_y minus zero with 4 paired seed values per robot",
+  "preregistered_pilot_go_no_go": "Treat any 5mm or larger public response-gap benefit on >=3 of 4 new reset seeds in BOTH robot bodies as justification for independent calibration followup; otherwise publish a negative/inconclusive pilot; NOT significance or publication proof.",
+  "cost_and_dependency": "All three probes have four actual physical steps but NOT equal native displacement, motor energy, contact or sensory cost; record arm L2 native amplitude and do NOT claim equal-cost.",
+  "forbidden": [
+    "No data-informed changes to declared fault/probe/seed set",
+    "No replacing pilot cases that fail or collide",
+    "No deterministic response bounds inferred from eight seeds",
+    "No privileged hidden target during diagnosis",
+    "No novel VLA task recovery claim",
+    "No 48 independent episodes: only eight reset clusters",
+    "No zero-vs-nonzero gain if observed null",
+    "No claim of physical contact safety"
+  ]
+}
