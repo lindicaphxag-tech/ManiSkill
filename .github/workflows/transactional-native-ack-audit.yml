@@ -1,0 +1,42 @@
+name: Independent blind 256-native-PhysX transactional ACK audit
+on:
+  push:
+    branches: ["research/transactional-execution-receipts-20261013"]
+    paths:
+      - research/audit_transactional_native_ack_receipts.py
+      - .github/workflows/transactional-native-ack-audit.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  independent-simulation-and-logic-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --disable-pip-version-check numpy scipy
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: 38388979357
+          pattern: original-transactional-physx-*
+          path: /tmp/original_unseen_transactional
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: 38363869998
+          pattern: actual-native-physx-receipt-*
+          path: /tmp/old_only_train_robo_receipts
+      - name: Rebuild original all 256 PhysX corrections, train codebook minima and communication balances
+        run: |
+          python -m research.audit_transactional_native_ack_receipts --originals /tmp/original_unseen_transactional --training /tmp/old_only_train_robo_receipts --out original_256_physx_receipt_independent_audit.json
+          test -s original_256_physx_receipt_independent_audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: independent-original-256-physx-transactional-audit
+          path: original_256_physx_receipt_independent_audit.json
