@@ -65,3 +65,16 @@ Causal specificity requires: same data, same information budget, same public obs
 - No official community L8/L9/L10 ranking or admissions prediction can be inferred from these raw links.
 
 **This ledger is research accounting. External reviewers will decide which parts are publishable or adoptable.**
+
+
+## Registered eight-subject decision-certificate reality check: NEGATIVE
+
+The hard-case study was **properly registered before outcomes**, and is now complete:
+
+- [Full frozen protocol, 8 new people S029–S036](https://github.com/lindicaphxag-tech/moabb/blob/research/eeg-gain-shift-cert-unseen-20261013/research/UNSEEN_EEG_TRAIN_GAIN_DECISION_CERT_PREREG_20261013.json), 16 original EDF files, 80 clean heldout EEGMI event trials. Three fixed synthetic **training-channel** gains (+5%, +20%, +50%), matched reference data, λ-only bound and Hessian tighter bound; no source test windows changed. The earlier zero-flip study used a different **test-source** perturbation and cannot be pooled.
+- [Primary original four-shard study SUCCESS](https://github.com/lindicaphxag-tech/moabb/actions/runs/38355519800), 8 independent people, 240 **correlated repeated condition decisions**; 14 actual post-retraining prediction flips, but only 2 extra Hessian-covered decisions (both within the first two-person shard, ultimately **one person** with incremental benefit).
+- [Separate original-artifact independent audit SUCCESS on its rerun](https://github.com/lindicaphxag-tech/moabb/actions/runs/38355642342): complete original 16 EDF SHA256 fingerprints, 48 registered EDF-run×gain conditions, no reported false certifications. Its first attempt failed because it started **before** original artifacts were uploaded; the original outcomes and frozen protocol were not altered, and the exact failed audit job was rerun after upstream experiment completion.
+- Frozen **positive research gate = 5 percentage point or greater** mean person-level advantage + improvement in **at least 2 independent people**, zero unsafe certificates. Result: **+0.8333 pp**, improved in **1/8 people**, zero false claims, precommitted go/no-go **FALSE**. The person's cluster-bootstrap descriptive 95% interval is **0 to +2.5 pp**. This is a **failed practical-method superiority hypothesis**, not a new PhD flagship algorithm. Source [complete, honest original negative report](https://github.com/lindicaphxag-tech/moabb/blob/research/eeg-gain-shift-cert-unseen-20261013/research/PHYSIONET_8_UNSEEN_TRAIN_GAIN_CERT_NEGATIVE_20261013.md).
+- By a PhD-level causal-chain standard, this specific work has **(1) bounded observed retraining decision failure: YES**, **(2) mathematically sound but first-novel algorithm mechanism: NOT ESTABLISHED**, **(3) preregistered independently audited full real-data source evidence: YES (negative superiority result)**, **(4) independent outside researcher/maintainer adoption: NO**. **Stop** marketing it as a complete original research flagship.
+
+**Cross-line lesson:** GitHub upstream acceptance on Braindecode #1200 or 28 historical merged PRs cannot serve as external adoption of the new MOABB certificate. External recognition, novelty and experimental effect must apply to the **same** proposed research mechanism, not be assembled from unrelated work.
