@@ -1,0 +1,37 @@
+name: Independent complete SO3 strong-baseline original-320 audit
+on:
+  push:
+    branches:
+      - "research/two-ack-so3-source-vs-reset-20261013"
+    paths:
+      - "research/audit_two_ack_so3_strong_baselines.py"
+      - ".github/workflows/audit-two-ack-so3-strong-baselines.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  independent-all-world-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --disable-pip-version-check "numpy>=1.26,<3" "scipy>=1.11,<2"
+      - name: Re-read both original robot artifacts, do not use producer summaries alone
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: 38335458988
+          pattern: new-so3-physx-strong-baselines-*
+          merge-multiple: true
+          path: /tmp/so3_independent_original_artifacts
+      - name: Independently recompute all 320 histories, limits, outputs and no-go
+        run: |
+          python -m research.audit_two_ack_so3_strong_baselines --input-dir /tmp/so3_independent_original_artifacts --output independently_verified_so3_320_worlds.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: independently-audited-original-320-so3-worlds
+          path: independently_verified_so3_320_worlds.json
