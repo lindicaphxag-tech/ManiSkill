@@ -1,0 +1,37 @@
+name: Independent native PhysX 64-world receipt reconstruction audit
+on:
+  push:
+    branches: ["research/zero-error-execution-receipts-20261013"]
+    paths:
+      - research/audit_real_physx_execution_receipt.py
+      - .github/workflows/real-physx-execution-receipt-independent-audit.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  cross-robot-paired-physics-receipt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --disable-pip-version-check numpy scipy
+      - name: Get full original robot PhysX artifacts from successful frozen original run
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: 38363869998
+          pattern: actual-native-physx-receipt-*
+          path: /tmp/native_robot_receipt_both_origins
+      - name: Independently recompute public EE quaternion chart and all 96 receipt graph minima
+        run: |
+          python -m research.audit_real_physx_execution_receipt --originals /tmp/native_robot_receipt_both_origins --output full_independent_native_receipt_audit.json
+          test -s full_independent_native_receipt_audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: independent-native-physx-execution-receipt-audit
+          path: full_independent_native_receipt_audit.json
