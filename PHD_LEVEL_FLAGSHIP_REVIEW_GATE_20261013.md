@@ -33,10 +33,11 @@
 
 1. Freeze primary endpoint, datasets, heldout people/environments, statistical unit, missing-case rule, negative-control and exclusion criteria **before** inspection.
 2. Use truly unseen *independent data units*. Repeated trials, windows, action histories and conditions nested within one person/reset are correlated. Subject/reset-cluster bootstrap or hierarchical mixed models; report paired confidence intervals and effect sizes, not only p-values.
-3. At least two fundamentally different data-generating environments or public source cohorts if the target claim is general; same PhysioNet EEGBCI files with different subjects establish *within-source* reproducibility, **not cross-dataset generalization**.
-4. Strong comparisons: equal source information, equal budgets, equal hyperparameter tuning, standard Bayesian/AGT/analytical/production baselines, positive + deliberately hard negative cases, meaningful end-task outputs.
-5. Never report desired uplift as actually observed. Failure to beat controls => transparent **negative** result and redefine/stop the mechanism.
-6. Report wall-clock runtime, CPU/GPU memory, maintenance burden, seed/participant variance, model calibration, abstention/false intervention, raw sources and complete independent reproduction.
+3. **Quantify how much a null result truly rules out:** the 20 unseen EEG participants all had zero changed-class predictions under this precise perturbation. If, hypothetically, each participant were an independent Bernoulli draw for the event "at least one flipped prediction under this study's registered two runs", a one-sided exact 95% upper bound on the *population participant event rate* is `1-0.05^(1/20)=0.1391` (**13.9%**). Zero observed out of four new certificate participants similarly admits an upper bound `1-0.05^(1/4)=52.7%`. These are *illustrative conditional binomial bounds* only: representative sampling, heterogeneous sessions, and population transport are not proven. **Zero flips in 200 correlated epochs is not a justified 0/200 independent Bernoulli error rate.**
+4. At least two fundamentally different data-generating environments or public source cohorts if the target claim is general; same PhysioNet EEGBCI files with different subjects establish *within-source* reproducibility, **not cross-dataset generalization**.
+5. Strong comparisons: equal source information, equal budgets, equal hyperparameter tuning, standard Bayesian/AGT/analytical/production baselines, positive + deliberately hard negative cases, meaningful end-task outputs.
+6. Never report desired uplift as actually observed. Failure to beat controls => transparent **negative** result and redefine/stop the mechanism.
+7. Report wall-clock runtime, CPU/GPU memory, maintenance burden, seed/participant variance, model calibration, abstention/false intervention, raw sources and complete independent reproduction.
 
 ### Gate D: external scrutiny and adoption
 
