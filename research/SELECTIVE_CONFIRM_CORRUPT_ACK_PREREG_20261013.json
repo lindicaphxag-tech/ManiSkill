@@ -1,0 +1,82 @@
+{
+  "schema": "provenance_bounded_corrupt_ACK_selective_confirmation_v1",
+  "date": "2026-10-13",
+  "frozen": "BEFORE_ANY_NEW_NATIVE_PHYSX_OUTCOME",
+  "scientific_question": "When two-bit executed-ACK receipts can suffer zero or one malicious/stale bit substitution, how little extra trusted confirmation must an action controller request to guarantee source-valid corrective commands under bounded public state sensing?",
+  "previous_original_controller_frozen_blob": "44f770ecabe87e894eb7a3fa94dde3e94a730734",
+  "new_native_test_seed_clusters": {
+    "panda": [
+      6800401,
+      6800402,
+      6800403,
+      6800404
+    ],
+    "xarm6_robotiq": [
+      6900401,
+      6900402,
+      6900403,
+      6900404
+    ]
+  },
+  "task": "PickCube-v1",
+  "controller": "pd_ee_target_delta_pose",
+  "native_PhysX_backend": "physx_cpu",
+  "actual_command_variants": [
+    "A",
+    "B"
+  ],
+  "hidden_ack_histories": [
+    "00",
+    "01",
+    "10",
+    "11"
+  ],
+  "native_worlds": 64,
+  "sensor_quantum_radians": [
+    0.005,
+    0.015,
+    0.04
+  ],
+  "bounded_per_axis_so3_log_noise_radians": [
+    0.001,
+    0.004
+  ],
+  "error_channels": [
+    "correct",
+    "flip_first_bit",
+    "flip_second_bit"
+  ],
+  "max_corrupt_hamming_bits": 1,
+  "conditions": "2 distinct robot models x 4 novel independent reset seeds x 2 variants x 3 quantum sizes x 2 noise bounds = 96 groups, each contains four actual native ACK histories and 3 delivered receipt messages. Observation uncertainty must consider every possible quantized observation bin, not only sampled nominal bin.",
+  "policy": {
+    "proposed": "Feasible-action-set selective confirmation: candidate histories must match delivered receipt within <=1 Hamming bit AND produce the observed sensor quantization bin within declared bounded noise. If all candidates require identical 6D native correction, execute without any trusted confirmation. Otherwise query exactly ceil(log2(number of distinct feasible native correction actions)) feedback payload bits from a trusted history-knowing sender, then choose the correction. The query request overhead and trust anchor are explicitly not included in reported response payload bits.",
+    "baseline_1": "always query exact 2-bit full trusted ACK (same request/handshake overhead omitted)",
+    "baseline_2": "naively trust received 2-bit receipt without any bounded-corruption correction",
+    "baseline_3": "Bayes-optimal MAP corrective command given exact same observed receipt and sensor support under uniform hidden ACK, and specified correct/one-bit-flip delivery probabilities (1/2,1/4,1/4), with zero additional confirmation; not a zero-error policy",
+    "baseline_4": "Bayes-optimal minimax zero-error selective verification lower bound for each receiver (receipt, sensor-bin) information cell; proposed method must attain this exact lower bound, cannot claim to beat mathematical oracle."
+  },
+  "cost_scope": "Evaluate only trusted reply payload bits after both baselines incur identical query request overhead; no wall-clock, network RTT or cryptographic authentication measured.",
+  "preregistered_primary": "mean registered receiver-cell trusted-reply payload saving vs always-full-ACK >=0.5 bit in BOTH robot models, with 0 unsafe accepted corrections in ALL registered feasible sensor/receipt cells; must report both per-model and per-independent-reset cluster.",
+  "preregistered_secondary": [
+    "fraction of sensor/receipt cells uniquely recoverable with 0 extra bits",
+    "Bayes MAP error under nominal 50% corruption model",
+    "absolute worst-case erroneous action rate of naive receipt and MAP with same info",
+    "no-data dropout and source-corrupt false safety alarms",
+    "independent exhaustive recomputation of 96 graphs with original physical source artifacts"
+  ],
+  "comparator_fairness": "Bayes MAP minimizes expected errors without verification, not worst-case error at equal feedback cost; best zero-error selective confirmation under same information is an EXACT ORACLE and MUST TIE if method correct. No novelty over exact oracle, only operational costs. Comparing robust zero error to unrestricted MAP as if it outperforms at the same objective is forbidden.",
+  "theory_prior_art": [
+    "Zero-error source coding with decoder side information (IEEE TIT 2003)",
+    "Zero-error source coding with feedback (Bakshi and Effros 2010)",
+    "Robotics execution-uncertainty methods (REMAC ICLR 2026 and CA3C 2026)"
+  ],
+  "unsafe_claims": [
+    "new mathematical theorem",
+    "real-hardware robot or camera safety proof",
+    "actual tampered/cryptographically authenticated receipt system",
+    "end-task PickCube success uplift",
+    "SOTA performance versus REMAC/CA3C/PACE",
+    "independent academic outside-group adoption"
+  ],
+  "stop_rule": "Original 96-group and all feasible sensor/receipt cells must be included; if gate fails or oracle baselines tie, publish negative result; cannot tune sensor bounds after outcomes"
+}
