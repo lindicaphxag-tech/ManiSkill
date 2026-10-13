@@ -246,3 +246,60 @@ def test_fingerprint_refuses_nonfinite_forged_action_register():
             heldout_evaluation_reset_ids=[9001],
             frozen_binary_signal_rule="fixed",
         )
+
+
+
+def test_optimistic_cp_feasibility_matches_independent_exact_beta_intervals():
+    """External SciPy CP oracle; physical pilot is NOT calibration evidence."""
+    from research.ack_finite_sample_signal_calibration import (
+        optimistic_perfect_signal_binary_ack_risk,
+        minimum_resets_per_truth_for_optimistic_ack_risk,
+    )
+    from research.ack_robust_readback_value import robust_binary_decision_rule
+
+    for k in (1, 3, 8):
+        alpha = .05 / (2 * k)
+        for n in (1, 4, 8, 16, 32, 64, 107, 160):
+            held = exact_binomial_interval(0, n, alpha)
+            applied = exact_binomial_interval(n, n, alpha)
+            z0, z1, worst = robust_binary_decision_rule(
+                .5, held, applied
+            )
+            optimistic = optimistic_perfect_signal_binary_ack_risk(n, k)
+            assert optimistic == pytest.approx(worst, abs=1e-8)
+            assert optimistic == pytest.approx(
+                min(.5, held[1]), abs=1e-10,
+            )
+            assert (z0, z1) in (
+                ("HELD", "APPLIED"), ("HELD", "HELD"),
+                ("APPLIED", "APPLIED"), ("APPLIED", "HELD"),
+            )
+    assert optimistic_perfect_signal_binary_ack_risk(4, 3) == .5
+    assert optimistic_perfect_signal_binary_ack_risk(8, 3) == pytest.approx(
+        .49595002819431944, abs=1e-10
+    )
+    assert minimum_resets_per_truth_for_optimistic_ack_risk(.05, 3) == 107
+
+
+def test_optimistic_minimum_is_necessary_not_claimed_sufficient():
+    from research.ack_finite_sample_signal_calibration import (
+        optimistic_perfect_signal_binary_ack_risk as worst,
+        minimum_resets_per_truth_for_optimistic_ack_risk as required,
+    )
+    for probes in (1, 2, 3, 5, 10):
+        for cap in (.02, .05, .1, .2):
+            n = required(cap, probes)
+            assert n >= 1
+            assert worst(n, probes) <= cap + 1e-12
+            assert n == 1 or worst(n-1, probes) > cap
+    assert required(.05, 10) > required(.05, 3)
+    for illegal in (0, -.1, .5, 1, float("nan")):
+        with pytest.raises(ValueError, match="risk target"):
+            required(illegal, 3)
+    for illegal in (0, -1, 1.5, True):
+        with pytest.raises(ValueError):
+            worst(8, illegal)
+    with pytest.raises(ValueError):
+        worst(0, 3)
+    with pytest.raises(ValueError):
+        required(.05, 3, family_miscoverage=1.0)
