@@ -177,3 +177,123 @@ def test_invalid_bounds_loss_and_duplicate_action_rejected():
         _choose(hs, prior, loss, [
             _probe("invalid", {h: (0.8, 0.2) for h in hs})
         ])
+
+
+def test_four_unknown_ack_histories_need_four_distinct_labels_for_zero_one_loss():
+    from research.ack_multihistory_minimax import (
+        optimistic_signal_capacity_floor,
+        minimum_signal_outcomes_for_risk_cap,
+    )
+    hs = ("held-held", "held-applied", "applied-held", "applied-applied")
+    prior = {h: (.25, .25) for h in hs}
+    loss = {h: {d: float(h != d) for d in hs} for h in hs}
+    expected = {1: .75, 2: .5, 3: .25, 4: 0, 6: 0}
+    for outcomes, floor in expected.items():
+        result = optimistic_signal_capacity_floor(
+            hs, prior, loss, distinct_signal_outcomes=outcomes
+        )
+        assert result.optimistic_minimax_loss == pytest.approx(floor)
+        assert not result.empirical_response_calibrated
+    assert minimum_signal_outcomes_for_risk_cap(
+        hs, prior, loss, maximum_worst_case_loss=.05
+    ) == 4
+    # An ideal binary sensor is not a four-way history identifier.
+    assert optimistic_signal_capacity_floor(
+        hs, prior, loss, distinct_signal_outcomes=2
+    ).optimistic_minimax_loss > .05
+
+
+def test_task_equivalent_histories_do_not_need_identical_history_labels():
+    from research.ack_multihistory_minimax import (
+        optimistic_signal_capacity_floor,
+        minimum_signal_outcomes_for_risk_cap,
+    )
+    hs = ("held-held", "held-applied", "applied-held", "applied-applied")
+    prior = {h: (.25, .25) for h in hs}
+    # First ACK determines the only task-relevant correction here.
+    # Two histories sharing the correction have zero *declared* task loss.
+    loss = {
+        h: {d: float(h.split("-")[0] != d.split("-")[0]) for d in hs}
+        for h in hs
+    }
+    out = optimistic_signal_capacity_floor(
+        hs, prior, loss, distinct_signal_outcomes=2
+    )
+    assert out.optimistic_minimax_loss == 0.0
+    assert minimum_signal_outcomes_for_risk_cap(
+        hs, prior, loss, maximum_worst_case_loss=0
+    ) == 2
+    assert optimistic_signal_capacity_floor(
+        hs, prior, loss, distinct_signal_outcomes=1
+    ).optimistic_minimax_loss == .5
+
+
+def test_signal_capacity_with_bounded_priors_against_independent_highs():
+    from itertools import combinations
+    from research.ack_multihistory_minimax import optimistic_signal_capacity_floor
+
+    rng = np.random.default_rng(2026101309)
+    for k in (2, 3, 4, 5):
+        hs = tuple(f"history{i}" for i in range(k))
+        for _ in range(30):
+            nominal = rng.dirichlet(np.ones(k))
+            lo = nominal * rng.uniform(.4, 1.0, k)
+            hi = nominal + (1 - nominal) * rng.uniform(0, 1, k)
+            prior = {h: (float(lo[i]), float(hi[i])) for i, h in enumerate(hs)}
+            raw_loss = rng.uniform(0, 5, size=(k, k))
+            np.fill_diagonal(raw_loss, 0)
+            loss = {
+                h: {d: float(raw_loss[i, j]) for j, d in enumerate(hs)}
+                for i, h in enumerate(hs)
+            }
+            for m in range(1, k + 1):
+                actual = optimistic_signal_capacity_floor(
+                    hs, prior, loss, distinct_signal_outcomes=m
+                )
+                oracle = []
+                for chosen in combinations(range(k), m):
+                    best_per_truth = np.min(raw_loss[:, chosen], axis=1)
+                    lp = linprog(
+                        -best_per_truth, A_eq=[np.ones(k)], b_eq=[1],
+                        bounds=list(zip(lo, hi)), method="highs"
+                    )
+                    assert lp.success
+                    oracle.append(-lp.fun)
+                assert actual.optimistic_minimax_loss == pytest.approx(
+                    min(oracle), abs=1e-9
+                )
+
+
+def test_signal_capacity_fail_closed_for_invalid_inputs():
+    from research.ack_multihistory_minimax import (
+        optimistic_signal_capacity_floor,
+        minimum_signal_outcomes_for_risk_cap,
+    )
+    hs = ("held", "applied", "other")
+    prior, loss, _ = _data(hs)
+    for m in (0, -1, 1.5, True):
+        with pytest.raises(ValueError, match="positive integer"):
+            optimistic_signal_capacity_floor(
+                hs, prior, loss, distinct_signal_outcomes=m
+            )
+    with pytest.raises(ValueError, match="identity mismatch"):
+        optimistic_signal_capacity_floor(
+            hs, {"held": (.3, .3)}, loss, distinct_signal_outcomes=2
+        )
+    invalid = {h: dict(row) for h, row in loss.items()}
+    invalid["other"]["held"] = float("nan")
+    with pytest.raises(ValueError, match="nonfinite"):
+        optimistic_signal_capacity_floor(
+            hs, prior, invalid, distinct_signal_outcomes=2
+        )
+    for cap in (float("nan"), float("inf"), -1):
+        with pytest.raises(ValueError, match="risk cap"):
+            minimum_signal_outcomes_for_risk_cap(
+                hs, prior, loss, maximum_worst_case_loss=cap
+            )
+    # A recovery action class that is inherently always costly cannot
+    # meet zero task risk, even with one unique signal per history.
+    unavoidable = {h: {d: 1.0 for d in hs} for h in hs}
+    assert minimum_signal_outcomes_for_risk_cap(
+        hs, prior, unavoidable, maximum_worst_case_loss=0.0
+    ) is None
