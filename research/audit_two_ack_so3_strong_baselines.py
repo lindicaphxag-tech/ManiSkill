@@ -169,8 +169,10 @@ def inspect_original_artifacts(directory):
         means={}
         for p in POLICIES:
             subset=[x for x in rows if x["policy"]==p]
+            if len(subset)!=32:
+                raise ValueError("Wrong per-robot policy world denominator")
             means[p]=sum(x["achieved_recovery_orientation_error_rad"]
-                         for x in subset)/40
+                         for x in subset)/len(subset)
             count=None if p=="NO_ACTION" else sum(
                 x["predicted_history_or_null"]==x["true_history_audit_only"]
                 for x in subset
