@@ -179,3 +179,107 @@ def choose_minimax_ack_decision(
         mode, name, z0, z1, float(risk), float(total),
         float(no_probe_risk), examined
     )
+
+
+@dataclass(frozen=True)
+class SignalCapacityFloor:
+    """Best-case lower bound, not an achieved experimental risk."""
+    maximum_distinct_signals: int
+    optimistic_minimax_loss: float
+    allowed_recovery_outputs: tuple[str, ...]
+    # An outcome can mean multiple distinct hidden histories if the SAME
+    # selected recovery decision causes no task loss for those histories.
+    empirical_response_calibrated: bool = False
+
+
+def optimistic_signal_capacity_floor(
+    histories: Sequence[str],
+    prior_bounds: Mapping[str, Sequence[float]],
+    loss_by_true_history: Mapping[str, Mapping[str, float]],
+    *,
+    distinct_signal_outcomes: int,
+) -> SignalCapacityFloor:
+    """Exact optimistic task-loss floor of a finite-alphabet observation.
+
+    Before observing, freeze any deterministic decision rule g: Z -> H.
+    With at most M distinct values of Z, its RANGE has at most M recovery
+    decisions. Even a perfect, freely designed observation mapping cannot
+    beat min_{S: |S|<=M} max_{p in prior polytope}
+      sum_h p_h min_{d in S} L(h,d).
+    The outer min is over recovery decisions, not over hidden histories.
+    This bound is independent of probe design, sample count and classifier.
+    It is a LOWER bound on worst-case error, not a performance guarantee.
+    An "action equivalence" arises when one recovery d has zero cost for
+    several histories; hence M < |H| need not impose positive task loss.
+
+    It assumes the listed recovery decisions are the only admissible actions
+    and that the nonnegative task-loss matrix is a meaningful, frozen
+    counterfactual cost model. No robot/task evidence is authenticated here.
+    """
+    from itertools import combinations
+    hs = tuple(histories)
+    if len(hs) < 2 or len(hs) != len(set(hs)) or any(
+        not isinstance(h, str) or not h for h in hs
+    ):
+        raise ValueError("at least two distinct named histories required")
+    if type(distinct_signal_outcomes) is not int or distinct_signal_outcomes < 1:
+        raise ValueError("number of observation outcomes must be a positive integer")
+    if set(prior_bounds) != set(hs) or set(loss_by_true_history) != set(hs):
+        raise ValueError("prior or loss history identity mismatch")
+    bounds = [_interval(prior_bounds[h]) for h in hs]
+    if sum(a for a, _ in bounds) > 1 + 1e-10 or (
+        sum(b for _, b in bounds) < 1 - 1e-10
+    ):
+        raise ValueError("bounded prior simplex is empty")
+    losses = []
+    for h in hs:
+        row = loss_by_true_history[h]
+        if set(row) != set(hs):
+            raise ValueError("loss matrix must cover every recovery decision")
+        entries = [float(row[d]) for d in hs]
+        if any(not isfinite(v) or v < 0 for v in entries):
+            raise ValueError("nonfinite or negative task loss")
+        losses.append(entries)
+    # At most M outcomes can select at most M distinct recovery decisions.
+    m = min(len(hs), distinct_signal_outcomes)
+    best = None
+    for indices in combinations(range(len(hs)), m):
+        floor_per_history = [
+            min(losses[i][j] for j in indices) for i in range(len(hs))
+        ]
+        value = _prior_worst_case(floor_per_history, bounds)
+        candidate = (value, indices)
+        if best is None or candidate < best:
+            best = candidate
+    assert best is not None
+    return SignalCapacityFloor(
+        distinct_signal_outcomes, float(best[0]),
+        tuple(hs[j] for j in best[1]),
+    )
+
+
+def minimum_signal_outcomes_for_risk_cap(
+    histories: Sequence[str],
+    prior_bounds: Mapping[str, Sequence[float]],
+    loss_by_true_history: Mapping[str, Mapping[str, float]],
+    *,
+    maximum_worst_case_loss: float,
+) -> int | None:
+    """Smallest alphabet that is NOT ruled out by the optimistic lower bound.
+
+    This is necessary, not sufficient; None denotes an invalid/impossible
+    decision class even with one unique observation for each history.
+    No inference about physical sensing resolution or causal identifiability.
+    """
+    cap = float(maximum_worst_case_loss)
+    if not isfinite(cap) or cap < 0:
+        raise ValueError("risk cap must be finite and nonnegative")
+    hs = tuple(histories)
+    for m in range(1, len(hs) + 1):
+        bound = optimistic_signal_capacity_floor(
+            hs, prior_bounds, loss_by_true_history,
+            distinct_signal_outcomes=m,
+        )
+        if bound.optimistic_minimax_loss <= cap + 1e-12:
+            return m
+    return None
