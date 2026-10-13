@@ -1,0 +1,38 @@
+name: Independent prospective 128-world public ACK policy audit
+
+on:
+  push:
+    branches:
+      - "research/twoack-heldout-source-normalized-20261013"
+    paths:
+      - "research/audit_two_ack_heldout_source_normalized.py"
+      - ".github/workflows/audit-two-ack-heldout-source-normalized.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  independent-heldout-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: 38332965278
+          pattern: new-physx-heldout-source-normalized-*
+          merge-multiple: true
+          path: /tmp/two_ack_new_holdout_raw
+      - name: Recompute classifier decisions from frozen public-only inputs
+        run: |
+          python -m research.audit_two_ack_heldout_source_normalized --input-dir /tmp/two_ack_new_holdout_raw --output independently_audited_heldout_policy.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: independently-audited-two-ack-heldout
+          path: independently_audited_heldout_policy.json
