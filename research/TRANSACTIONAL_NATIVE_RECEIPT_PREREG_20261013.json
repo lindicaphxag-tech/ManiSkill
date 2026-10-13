@@ -80,5 +80,13 @@
     "LeRobot RTC reset_epoch already drops stale in-flight chunks",
     "Known sequence numbering and zero-error graph coding"
   ],
-  "external_acceptance": "No maintainer Merge or outside academic peer review pre-implied by success"
+  "external_acceptance": "No maintainer Merge or outside academic peer review pre-implied by success",
+  "training_observation_contract": {
+    "original_training_physx_run": 38363869998,
+    "data_scope": "Use PRIOR 64 original native PhysX worlds from separate Oct13 experiment ONLY to derive robot×variant×history quantized observation-support UNION and stable required-correction equivalence. Original new seeds 6000501... /6100501... may NEVER fit graph, thresholds, Bayes table, or coverage.",
+    "codebook_learning": "For each robot, variant, and ACK history, union the bounded-noise sensor-bin supports across all four older training reset clusters. Build a graph from these TRAIN-only unions, and choose one deterministic DSATUR code, fixed across the four NEW unseen reset clusters for same robot+variant. If correction vectors differ across training conditions, mark distinct history labels rather than merging.",
+    "inference": "At new test seed, policy sees ONLY its own public achieved EE orientation bin, registered variant/robot, receipt tag+epoch and learned pre-test map. It does not observe other possible histories' physical outcomes or access true history except the trusted sender's tag or explicitly charged fresh full ACK. If observation+tag is absent or ambiguous under training model, guard queries fresh full ACK; cannot assert zero-error from extrapolation.",
+    "strong_baselines": "Sensor-only Bayes uses identical train-union observation support and registered uniform history prior; epoch-full ACK uses same sender and epoch overhead; epoch-blind compressed uses same frozen test-independent code without checking epoch.",
+    "guaranteed_vs_empirical": "The training-union graph is guaranteed zero-error ONLY for observations in its TRAIN support, not for all unseen PhysX variations. On unseen support, algorithm must abstain/requery. Do not call this a universal zero-error theorem."
+  }
 }
