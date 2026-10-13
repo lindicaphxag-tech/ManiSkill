@@ -50,3 +50,14 @@ The prior per-reset hindsight `χ(G)` may permit 1-bit/0-bit codes for many cond
 - An independently implemented auditor of same original 256 worlds remains **software verification**, not outside-lab academic recognition. No accepted manuscript, new official upstream PR or external research-group adoption from this experiment is claimed.
 
 **Decision:** the new training/test generalization and paid-communication comparison invalidates the earlier favorable practical-compression interpretation for deployment. Preserve original results and this negative result together, without hiding either. The correct next action is to stop marketing graph-code compression as a new original doctoral-level algorithm; future work would need physical-controller execution provenance integrated into a real chunk policy and performance on completed robot tasks.
+
+
+## Successful independent physical-artifact audit
+
+[Separate original-artifact auditor #38389862807: SUCCESS](https://github.com/lindicaphxag-tech/ManiSkill/actions/runs/38389862807), run on the COMPLETE original 256 treatment worlds, without calling the primary receipt decoder or online policy. It recomputed public pre-control quaternion matching, every physical achieved-to-goal SO3 angle, submitted native6 versus truthful source correction vectors, prior TRAIN-only codebook lower chromatic bound, payload+epoch+full-ACK retransmission bits and all eight independent reset-seed comparisons.
+
+**Final frozen result:** `precommitted_original_gate_passed: false`, even though `prospective_success_cluster_count=8/8` and all guarded native commands match the full trusted ACK comparator. Both robots pay **4.0 bits on average** for the guarded method versus **3.0 for the stronger full ACK**.
+
+**Decisive optimal Bayes comparator also checked:** On the original 32 testing conditions per robot assigned to zero-receipt Bayes (8 per new reset ×4 independent reset clusters), the ***SENSOR_ONLY_OPTIMAL_BAYES*** policy issued **0 mismatched native commands on Panda** and **4 on xArm6**; it sends **zero ACK bits**. These counts are specific to the registered finite source-prior and eight newly heldout physical reset clusters, not proofs about all worlds. In Panda, the overengineered compressed receipt protocol cannot claim practical action correctness superiority over this fully informed zero-bit strong baseline. In xArm6, a residual 4-case action-identification weakness motivates explicit risk-aware abstention, not proof that the proposed receipt is cost-optimal.
+
+Independent checks succeeded, not independent external *research-group* adoption. The original study's negative gate and all archived physical worlds are preserved.
