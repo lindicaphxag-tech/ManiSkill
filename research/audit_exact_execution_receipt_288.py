@@ -103,9 +103,13 @@ def audit(folder):
             or item["original_finite_controller_cases"]!=288
             or len(item["all_cases"])!=288):
             raise AssertionError(f"OS result not complete: {os}")
-        outputs[os]=(hashlib.sha256(raw).hexdigest(),item)
+        # Windows text-mode Path.write_text uses CRLF, while Linux/macOS
+        # write LF. Compare full decoded JSON semantics and a canonical
+        # stable hash instead of falsely demanding byte-identical newlines.
+        canonical=json.dumps(item,sort_keys=True,separators=(",",":")).encode()
+        outputs[os]=(hashlib.sha256(canonical).hexdigest(),item)
     if len({a[0] for a in outputs.values()})!=1:
-        raise AssertionError("Unstable 288-case cross-OS original artifacts")
+        raise AssertionError("Original decoded 288-case records disagree across OS")
     output=outputs["ubuntu-latest"][1]
     rows=output["all_cases"]
     keys={(r["morphology"],r["history_bits"],r["seed"],
