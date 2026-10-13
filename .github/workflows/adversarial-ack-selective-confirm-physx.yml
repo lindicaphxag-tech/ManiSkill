@@ -1,0 +1,47 @@
+name: Original new-reset PhysX selective confirmation under one-bit corrupted ACK
+on:
+  push:
+    branches: ["research/adversarial-ack-selective-confirm-20261013"]
+    paths:
+      - "research/SELECTIVE_CONFIRM_CORRUPT_ACK_PREREG_20261013.json"
+      - "research/adversarial_ack_selective_confirmation_physx.py"
+      - "research/test_adversarial_ack_selective_confirmation_physx.py"
+      - ".github/workflows/adversarial-ack-selective-confirm-physx.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  new-native-robot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        robot: [panda, xarm6_robotiq]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Real CPU PhysX ManiSkill prerequisite
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -qq -y libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --disable-pip-version-check -e . pytest
+      - name: Check all policy/side information baselines on synthetic counterexamples
+        run: python -m pytest -q research/test_adversarial_ack_selective_confirmation_physx.py
+      - name: Run 32 NEW PhysX worlds per robot and enumerate every valid corrupt receipt/observation
+        env:
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+          PYTHONUNBUFFERED: "1"
+        run: |
+          set -o pipefail
+          python -m research.adversarial_ack_selective_confirmation_physx --robot ${{ matrix.robot }} 2>&1 | tee "corrupt_ACK_native_${{ matrix.robot }}.log"
+          test -s "corrupt_ACK_native_${{ matrix.robot }}.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unseen-native-corrupt-ACK-${{ matrix.robot }}
+          path: |
+            corrupt_ACK_native_${{ matrix.robot }}.json
+            corrupt_ACK_native_${{ matrix.robot }}.log
