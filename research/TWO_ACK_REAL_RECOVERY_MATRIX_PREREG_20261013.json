@@ -1,0 +1,83 @@
+{
+  "schema": "source_grounded_two_ack_recovery_loss_matrix_v1",
+  "freeze_date": "2026-10-13",
+  "state": "FROZEN_BEFORE_NEW_PHYSX_OUTCOMES",
+  "scientific_question": "Can multiple hidden native target histories be task-equivalent under an identical recovery controller goal, and what actual achieved EE penalty follows selecting a wrong history-specific correction?",
+  "robots": [
+    "panda",
+    "xarm6_robotiq"
+  ],
+  "task": "PickCube-v1",
+  "control_mode": "pd_ee_target_delta_pose",
+  "backend": "physx_cpu",
+  "reset_seeds": {
+    "panda": [
+      5602001,
+      5602002,
+      5602003,
+      5602004
+    ],
+    "xarm6_robotiq": [
+      5702001,
+      5702002,
+      5702003,
+      5702004
+    ]
+  },
+  "prefix_steps": [
+    0,
+    1
+  ],
+  "prefix_source": "research/cross_robot_ack_physics.py::requested_native",
+  "ambiguous_actions": {
+    "t2": [
+      0.25,
+      -0.15,
+      0.18,
+      0,
+      0,
+      0
+    ],
+    "t3": [
+      -0.12,
+      0.18,
+      0.1,
+      0,
+      0,
+      0
+    ]
+  },
+  "histories": [
+    "00",
+    "01",
+    "10",
+    "11"
+  ],
+  "history_bits_meaning": "1 applies the frozen native action at this step, 0 is executed native zero corresponding to previous target hold in pinned symmetric controller mapping",
+  "candidate_decisions": [
+    "00",
+    "01",
+    "10",
+    "11",
+    "NO_ACTION"
+  ],
+  "candidate_protocol": "For hypothesized history d, replay both hidden commands from public pre-fault target; use one source-inverted native XYZ command so the predicted target matches the all-applied (11) goal; common zero rotation. NO_ACTION sends zero native command.",
+  "followup_zero_native_steps": 8,
+  "primary_loss": "achieved end-effector XYZ Euclidean distance to source reconstructed all-applied controller target after recovery and 8 identical hold-control steps",
+  "secondary_loss": "post-recovery private true controller-target XYZ Euclidean residual to common goal, audit only; official PickCube success descriptive",
+  "denominator": {
+    "independent_reset_clusters": 8,
+    "worlds_per_reset": 20,
+    "physical_worlds_total": 160
+  },
+  "go_no_go": "Exploratory descriptive real PhysX assay; preregister no positive policy-gain threshold. Reject task-level recovery superiority claims. Define any equivalent corrections only after reporting full truth-by-decision loss matrix without selection or posthoc grouping.",
+  "forbidden_claims": [
+    "Not a real packet-drop or hardware transport test: HELD is realized as zero native action",
+    "Not adaptive binary-probe decision: chooser gets hypothesized history, not inferred true history",
+    "Not VLA policy success or dataset generalization",
+    "Not 160 independent resets",
+    "No privileged target getter during action selection",
+    "Do not silently discard failed resets/IK/collisions",
+    "Do not infer physical safety certificate from task-space XYZ distance"
+  ]
+}
