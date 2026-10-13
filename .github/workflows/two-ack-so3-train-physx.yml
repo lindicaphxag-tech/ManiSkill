@@ -1,0 +1,45 @@
+name: Frozen SO3 two-ACK native PhysX train cohort
+on:
+  push:
+    branches: ["research/two-ack-so3-source-vs-reset-20261013"]
+    paths:
+      - "research/two_ack_so3_native_protocol.py"
+      - "research/two_ack_so3_frozen_train_physx.py"
+      - "research/TWO_ACK_SO3_VS_RESET_STRONG_PREREG_20261013.json"
+      - ".github/workflows/two-ack-so3-train-physx.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-so3-train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        robot: [panda, xarm6_robotiq]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install native CPU PhysX support
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --disable-pip-version-check -e .
+      - name: Train source-only frozen original SO3 response prototypes
+        env:
+          PYTHONUNBUFFERED: "1"
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+        run: |
+          set -o pipefail
+          python -m research.two_ack_so3_frozen_train_physx --robot ${{ matrix.robot }} 2>&1 | tee "two_ack_so3_train_${{ matrix.robot }}.log"
+          test -s "two_ack_so3_original_train_${{ matrix.robot }}.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-so3-original-train-${{ matrix.robot }}
+          path: |
+            two_ack_so3_original_train_${{ matrix.robot }}.json
+            two_ack_so3_train_${{ matrix.robot }}.log
