@@ -1,0 +1,82 @@
+{
+  "schema": "finite_hidden_ack_execution_receipt_graph_benchmark_v1",
+  "registered_date": "2026-10-13",
+  "freeze": "BEFORE_ORIGINAL_TEST_OUTPUT",
+  "motivation": "Original source-reconstructed SO3 history has no advantage against matched known-coordinate baseline. New, distinct question: minimal explicit acknowledgment bits necessary for guaranteeing correct controller anchor restoration when observation is quantized and receipt sender knows executed binary ACK history.",
+  "fundamental_prior_art": "Orlitsky–Roche zero-error functional computation with receiver side information and characteristic/confusability graph; this is NOT a first new theorem or novel graph coloring algorithm.",
+  "fixed_environments": {
+    "morphologies": [
+      "Panda-like",
+      "xArm6-like"
+    ],
+    "ack_history_lengths": [
+      3,
+      4
+    ],
+    "seed_ids": [
+      111,
+      112,
+      113,
+      114,
+      115,
+      116,
+      117,
+      118,
+      119,
+      120,
+      121,
+      122
+    ],
+    "observation_quantizations": [
+      0.8,
+      1.4,
+      2.1
+    ],
+    "noise_radius_fraction_of_quantization": [
+      0,
+      0.08
+    ]
+  },
+  "controller_model": "Latent executed action history h is H binary acknowledgements. Actual controller anchor = sum_i bit_i*step_i where step_i is sampled from a fixed finite list independently per seed and morphology. Visible endpoint is controller anchor plus bounded sensor noise quantized by floor((position+noise)/resolution). Safe next correction requires the exact anchor (distinct history with equal anchor is same safe action).",
+  "steps_pool_panda": [
+    0.2,
+    0.3,
+    0.4,
+    0.6,
+    0.7
+  ],
+  "steps_pool_xarm6": [
+    0.3,
+    0.45,
+    0.5,
+    0.75,
+    0.9
+  ],
+  "seed_formula": "Python Random(20261013 + seed*19 + H*7 + morphology_index*101) choices(with_replacement), use Decimal integer scaled by 20 to avoid floating graph ambiguity",
+  "sensor_support": "For each history observation z, enumerate all integer bins floor((anchor+noise)/quantization) possible for noise in closed [-epsilon,+epsilon] using integer arithmetic; include exact interval endpoints",
+  "conflict_graph": "An edge connects two ACK histories precisely if possible quantized observations intersect AND required exact controller anchor differs",
+  "codec": "Deterministic exact branch-and-bound DSATUR chromatic coloring, one fixed-length bit string per hidden ACK history, independent of observation; decoder uses tag + observation to recover required anchor",
+  "baselines": [
+    "uncompressed H-bit full-ACK receipt (zero-error)",
+    "no receipt: optimal MAP anchor given quantized observation, assuming uniform hidden histories and uniform finite observation bins",
+    "fixed number-of-executed-actions bit-count receipt (with observation)",
+    "simple greedy conflict graph coloring"
+  ],
+  "principal_metrics": [
+    "guaranteed_zero_alias_errors for all history/observation pairs",
+    "minimal receipt bits = ceil(log2 chromatic_number) under this exact model",
+    "full-ack minus minimal receipt bits",
+    "MAP no-receipt decision correctness over explicitly enumerated history-observation tuples",
+    "baseline fixed count receipt ambiguity",
+    "DSATUR exact-coloring optimality verified by independent brute assignment for all H=3 cases"
+  ],
+  "predeclared_research_gate": "at least 25% receipt-bit saving in at least half of 288 environment cases (2 morphologies x 2 H x 12 seeds x 3 resolutions x 2 sensor radii); retain all zero-gain cases; zero safety decoding errors; no performance claim outside finite quantized model",
+  "scientific_limits": [
+    "No native PhysX or hardware rollout in this phase; do not claim task-success improvement",
+    "Encoder is assumed to know actual ACK execution history by trusted telemetry; without it no receipt can be generated",
+    "The graph-coloring theorem and zero-error side-information concept are prior art; novelty is at most systems-specific formulation/integration",
+    "Integer sensor support is idealized and bounded-noise; real unbounded noise invalidates zero-error guarantee",
+    "This is an informational/communication cost study, not a novel posterior algorithm or demonstration beating optimal Bayesian policy given the same information"
+  ],
+  "external_status": "Fork-only theoretical simulator until native controller instrumentation and outside maintainer review"
+}
