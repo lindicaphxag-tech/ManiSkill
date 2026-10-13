@@ -132,6 +132,23 @@ def inspect_original_artifacts(directory):
             rel=(Rotation.from_quat(observed)*
                  Rotation.from_quat(reset).inv()).as_quat()
             if x["policy"]=="SOURCE_SO3_HYPOTHESES":
+                # NON-TUNED strict SO3 right-invariance control, disclosed
+                # before physical test outcomes. The analytic reset-centered
+                # templates recover EXACTLY the same source-hypothesis dists.
+                qreset=Rotation.from_quat(reset)
+                qobs=Rotation.from_quat(observed)
+                relative=qobs*qreset.inv()
+                for h in HISTORY:
+                    expected=Rotation.from_quat(
+                        x["source_candidate_quaternions"][h]
+                    )
+                    expected_rel=expected*qreset.inv()
+                    d_source=float((qobs*expected.inv()).magnitude())
+                    d_reset=float((relative*expected_rel.inv()).magnitude())
+                    if abs(d_source-d_reset)>1e-10:
+                        raise ValueError(
+                            "Analytic reset SO3 equivalence counterexample"
+                        )
                 predicted=_nearest(observed,x["source_candidate_quaternions"])
             elif x["policy"]=="RESET_SO3_BY_VARIANT":
                 predicted=_nearest(rel,frozen["by_variant"][x["variant"]])
@@ -191,6 +208,7 @@ def inspect_original_artifacts(directory):
             "heldout_reset_clusters":4,
             "actual_physical_conditions":160,
             "source_replay_blind_and_comparator_pairing_audited":True,
+            "source_reset_analytic_equivalence_checked_on_all_source_worlds":True,
             "mean_error_rad":means,
             "accuracies":{p:(None if p=="NO_ACTION" else sum(
                 x["predicted_history_or_null"]==x["true_history_audit_only"]
