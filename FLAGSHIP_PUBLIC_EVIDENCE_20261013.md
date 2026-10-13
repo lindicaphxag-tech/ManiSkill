@@ -158,3 +158,15 @@ A distinct question was tested after the previous source-vs-command-aware SO3 no
 - **Private DefaultReg-EEG science must remain private:** a separate unpublished working branch explored an independent-source-basis, digamma log spectral-ratio finite-sample correction against 1,440 preregistered Gaussian conditions, local reexecution found **9/12** >=50% bias reductions but only **3/12** met stringent |bias|<=0.01, hence **FAILED its full original gate**. Its unpublished code/data/manuscript are **not mirrored here**; the only public statement is a high-level negative boundary, not internal manuscript disclosure.
 
 **Core four-gate update**: this new LeRobot review currently G1 concrete newly reproducible failure YES, G2 candidate targeted causal mechanism YES, G3 two-OS RED/GREEN independent software runs YES, G4 outside maintainer adoption **not yet**. Keep engineering review rigor distinct from publication-level original algorithm scientific novelty.
+
+
+## 2026-10-13 exact-head Braindecode #1320 broad test-suite independence
+
+The current officially **OPEN**, **not approved**, **not merged** Braindecode [EEGCLIP DDP global negatives PR #1320](https://github.com/braindecode/braindecode/pull/1320) has latest head `b3a30049eaf5542988f8abd708505d8f32754fd5`.
+
+- [Independent fork workflow on original exact source head](https://github.com/lindicaphxag-tech/braindecode/actions/runs/38372468341) has **3/3 jobs SUCCESS**. Only test orchestration was added in a **separate validation branch**, with a Git parent-HEAD assertion verifying original production source unmodified.
+- Broad non-network, non-compiled-model test suite under Ubuntu Py3.12 CPU: **5,509 tests passed, 151 skipped, 1 xfailed**, no unexpected failures. The original 5,509 tests ran under `pytest -vv -x -ra -n 2 --dist worksteal --timeout=160 --durations=25 test/ -k "not test_model_compiled and not network"` in **963.52s**. Independent full actual package installation and all selected tests, not a toy smoke test.
+- EEGCLIP unit/model regression subset: **14/14 pass on Ubuntu** and **14/14 pass on Windows** on that same source head. Prior real two-rank unequal 2+3 and zero-local 0+5 Gloo DDP gradient-oracle validations remain separate.
+- The official [upstream full-coverage workflow](https://github.com/braindecode/braindecode/actions/runs/38342524442) still shows an **in-progress full test job**, while its official acceptance/style/docs/etc have passed. No claim that the fork noncompiled subset proves official compiled-model tests. The external maintainer still controls review and Merge.
+- [Official PR summary updated](https://github.com/braindecode/braindecode/pull/1320) with the exact unchanged-head test evidence and the remaining API owner decision. It remains **open**.
+- External upstream author merged count **28**, no new Merge established by this independent test.
