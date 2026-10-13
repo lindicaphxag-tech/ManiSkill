@@ -19,7 +19,9 @@ def toy_worlds(feature_by_history=None, action_by_history=None):
                            for i,h in enumerate(HISTORY_ORDER)}
     return {h:{
         "public_relative_rotation_log_rad":feature_by_history[h],
-        "source_announced_corrective_native_actions":action_by_history,
+        "source_announced_corrective_native_actions":{
+            k:list(v) for k,v in action_by_history.items()
+        },
     } for h in HISTORY_ORDER}
 
 
