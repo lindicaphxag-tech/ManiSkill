@@ -1,0 +1,50 @@
+name: Prospective source-normalized two-ACK heldout PhysX validation
+
+on:
+  push:
+    branches:
+      - "research/twoack-heldout-source-normalized-20261013"
+    paths:
+      - "research/TWO_ACK_HELDOUT_TRAIN_PROTOTYPES_20261013.json"
+      - "research/TWO_ACK_HELDOUT_SOURCE_NORMALIZED_PREREG_20261013.json"
+      - "research/two_ack_heldout_source_normalized_physx.py"
+      - ".github/workflows/two-ack-heldout-source-normalized-physx.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prospective-heldout-physx:
+    name: 64 true-new worlds / ${{ matrix.robot }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        robot: [panda, xarm6_robotiq]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pinned robot library and original native PhysX requirements
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --disable-pip-version-check -e .
+      - name: Execute all frozen new-reset counterfactual policy arms
+        env:
+          PYTHONUNBUFFERED: "1"
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+        run: |
+          set -o pipefail
+          python -m research.two_ack_heldout_source_normalized_physx --robot ${{ matrix.robot }} 2>&1 | tee "source_normalized_new_holdout_${{ matrix.robot }}.log"
+          test -s "source_normalized_two_ack_new_holdout_${{ matrix.robot }}.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: new-physx-heldout-source-normalized-${{ matrix.robot }}
+          path: |
+            source_normalized_two_ack_new_holdout_${{ matrix.robot }}.json
+            source_normalized_new_holdout_${{ matrix.robot }}.log
