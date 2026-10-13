@@ -156,7 +156,7 @@ def one_native_sensor_contract(worlds,quantum,epsilon):
 
 def run_robot(robot,output):
     p=frozen()
-    old,_=load_native_protocol()
+    _,old=load_native_protocol()
     if robot not in p["robot_models"]:
         raise ValueError("Unregistered native controller")
     torch.set_num_threads(1)
