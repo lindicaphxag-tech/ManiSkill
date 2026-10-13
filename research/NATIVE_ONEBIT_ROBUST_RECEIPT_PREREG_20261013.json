@@ -1,0 +1,77 @@
+{
+  "schema": "native_physx_1bit_error_tolerant_execution_receipt_v1",
+  "frozen_at": "2026-10-13",
+  "freeze": "before any new reset outcomes, source native Pose histories not yet read",
+  "robot_models": [
+    "panda",
+    "xarm6_robotiq"
+  ],
+  "task": "PickCube-v1",
+  "control_mode": "pd_ee_target_delta_pose",
+  "new_reset_seeds": {
+    "panda": [
+      5800411,
+      5800412,
+      5800413,
+      5800414
+    ],
+    "xarm6_robotiq": [
+      5900411,
+      5900412,
+      5900413,
+      5900414
+    ]
+  },
+  "variants": [
+    "A",
+    "B"
+  ],
+  "ack_histories": [
+    "00",
+    "01",
+    "10",
+    "11"
+  ],
+  "total_new_native_PhysX_worlds": 64,
+  "independent_reset_clusters": 8,
+  "quantizers_rad": [
+    0.005,
+    0.015,
+    0.04
+  ],
+  "bounded_component_noise_rad": [
+    0.001,
+    0.004
+  ],
+  "total_graph_cases": 96,
+  "fault_model": "Trusted sender knows ACTUAL executed ACK history but an adversary may corrupt at most ONE transmitted binary receipt bit before decoder receives it. Public real achieved EE orientation is quantized and has synthetic bounded error, same as the earlier frozen native controller model. Sender bit-flip fault is independent of observation error.",
+  "corrective_action_equivalence": "Two candidate native corrective 6D target actions equivalent if Euclidean norm difference <=1e-6; accuracy required for all supported quantized observations",
+  "confusability": "Two hidden executed histories are adjacent iff their supported quantized EE observations overlap AND needed corrective 6D native commands differ.",
+  "receipt_codec": "For each graph G of exactly 4 original histories, exhaustively search minimal fixed binary length ell from 0 through 5, assigning binary codewords so all adjacent histories have Hamming distance >= 3; decoder exhaustively validates each allowed (observation,codeword or codeword with any one bit flipped) against correct native action",
+  "strong_baselines": [
+    "optimal full-ACK four-message 1-error-correcting binary block code length FIVE bits (A(4,3)=4), not weak naive six-bit triplication",
+    "unprotected previous chromatic receipt, as unsafe lower bit cost",
+    "known decoder side information graph coding without error, as lower theoretical cost comparator",
+    "no receipt Bayes posterior (insufficient for universal zero-error when edges exist)"
+  ],
+  "primary_outcome": "number of original 96 independent-condition graphs for which exact one-error-tolerant side-informed receipt uses at most 3 bits (saves >=2 bits vs the optimal length-5 full-ACK protected four-symbol code), with zero supported observed-error unsafe aliases.",
+  "prospective_gate": "at least 48/96 such condition graphs, at least 16/48 in each native robot, and zero unsafe aliases. Graph cases within reset groups are correlated; independent robot-reset clusters are eight, NOT ninety-six.",
+  "secondary_outcomes": [
+    "minimum protected receipt bit length",
+    "difference protected versus unprotected bits",
+    "number of exact native commanded corrective modes",
+    "source public achieved geometry controls"
+  ],
+  "negative_controls": [
+    "any chosen 2-bit unprotected code is not incorrectly described as single-error tolerant when action confusability edges exist",
+    "all four ACK histories executed with equal original reset seed, no cherry-picked cases",
+    "both morphologies retained even if one fails"
+  ],
+  "novelty_boundary": "binary distance-3 codes, zero-error graph coloring with side information and Hamming code bounds are established theory, this is only a controller-specific composite contract; cannot claim first mathematics theorem",
+  "scientific_limitations": [
+    "real PhysX simulation and hypothetical quantized sensor not actual D435i/ZED camera",
+    "trusted sender and worst-case bit flip assumed rather than an actual hardware acknowledgment channel",
+    "no full native PickCube success comparison / task-level recovery",
+    "no adoption from robotics maintainer or independent lab yet"
+  ]
+}
