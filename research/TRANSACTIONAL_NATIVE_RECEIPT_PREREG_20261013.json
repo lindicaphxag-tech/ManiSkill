@@ -1,0 +1,84 @@
+{
+  "schema": "fresh_rolling_epoch_action_receipt_native_physx_v1",
+  "registered": "2026-10-13",
+  "status": "FROZEN_BEFORE_TEST_NATIVE_WORLDS",
+  "scientific_problem": "Partial/reordered action execution makes a queued command's assumed origin wrong; public end-effector quantization may alias distinct required corrective actions. Prior exact graph side-information receipts assume trustworthy fresh ACK. How to verify freshness within a finite one-outstanding-packet model while minimizing paid bits?",
+  "originality_boundary": "Sequence numbers, stale-message detection, exact characteristic graph coding, active query and Bayesian MAP are prior art; novelty claim restricted to robust native controller integration and measured benefit. Must not state original mathematical theorem, new general optimal planning, or global robot success advantage.",
+  "robot_ids": [
+    "panda",
+    "xarm6_robotiq"
+  ],
+  "source_plan_sha": "44f770ecabe87e894eb7a3fa94dde3e94a730734",
+  "actual_physx_plan_sha": "ece6ee56331c5855e6362c5505c8d145bdb968c3",
+  "new_reset_seeds": {
+    "panda": [
+      6000501,
+      6000502,
+      6000503,
+      6000504
+    ],
+    "xarm6_robotiq": [
+      6100501,
+      6100502,
+      6100503,
+      6100504
+    ]
+  },
+  "variants": [
+    "A",
+    "B"
+  ],
+  "truth_histories": [
+    "00",
+    "01",
+    "10",
+    "11"
+  ],
+  "original_distinct_robot_reset_clusters": 8,
+  "latent_condition_denominator": 64,
+  "physx_policy_world_denominator": 256,
+  "quantizer_cell_rad": 0.04,
+  "sensor_component_noise_support_rad": 0.004,
+  "actual_sensor_observation_rule": "Use the measured public achieved orientation log relative to reset, unmodified (noise=0); classify its integer bins with math.floor(component/q). Bounded±.004 defines the possible obs support for guaranteed decoding, not real sensor calibration.",
+  "packet_status_rule": "History index 0,3 use fresh epoch receipt, index 1,2 receive one previously-issued history from cyclic neighbor (stale); for ALL methods, the bit carrying epoch is charged. Assume at most one outstanding packet so single bit session parity rejects any stale delivery; this is a strong fixed transport assumption.",
+  "sender_privilege": "Trusted receipt sender is external controller executing actual ACK history; gets true history only to encode receipt packet. No policy accesses private target state. On stale packet transaction-gated method requests a fresh full 2-bit ACK from sender.",
+  "policies": [
+    "EPOCH_FULL_ACK",
+    "EPOCH_BLIND_COMPRESSED",
+    "EPOCH_GUARDED_COMPRESSED",
+    "SENSOR_ONLY_OPTIMAL_BAYES"
+  ],
+  "information_cost": {
+    "EPOCH_FULL_ACK": "one epoch bit plus two trusted ACK bits => 3 bits per original correction",
+    "EPOCH_BLIND_COMPRESSED": "one epoch bit plus the minimum graph coloring bits; no request even stale; required action may be unavailable/incorrect",
+    "EPOCH_GUARDED_COMPRESSED": "one epoch bit + compressed tag originally received; if stale, request an additional two-bit reliable fresh ACK and wait before acting",
+    "SENSOR_ONLY_OPTIMAL_BAYES": "zero ACK bits, chooses Bayes-MAP required command from public observation and registered uniform four-history+uniform-support law"
+  },
+  "physical_execution": "Always run one requested native 6D correction from that policy followed by previously frozen recovery_hold_steps, starting from a new identical actual PhysX reset and ACK truth. Report achieved EE-to-source all-ACK goal quaternion SO3 angular distance (radians), and official PickCube success separately (do not claim task-success gain).",
+  "primary_endpoint": "Per independent seed-cluster paired achieved post-recovery angular error for guarded compression versus blind stale-compression, along with zero unsafe/infeasible corrected action classes; charge all receipt+epoch+requery bits.",
+  "required_hard_gate": "In at least 6/8 independent reset clusters, guarded policy strictly reduces mean angular recovery error over epoch-blind stale compression by >=.001 rad, incurs no worse than .001 rad relative to full trusted 2-bit ACK, and average paid communication bits are <=3 bits per world on both native robots.",
+  "secondary": [
+    "fraction stale packets detected exactly",
+    "source command mode mistakes",
+    "Bayes sensor-only optimal baseline correction accuracy",
+    "bits per world/per independent reset cluster",
+    "native correction orientation and PickCube official success",
+    "requery rate and 2-bit request overhead",
+    "with same session metadata count full ACK + epoch at 3 bits"
+  ],
+  "stop_rules": [
+    "No selection of variants/histories based on measured outcome",
+    "All four methods evaluated on every same robot/reset/variant/truth condition",
+    "Any missing native world, private target use, unregistered seed, invalid sensor support or nonfinite post-recovery pose is a complete experiment failure",
+    "Zero-error guarantee limited to matched epoch and bounded physical-state model; guard stale resends only under its trusted sender assumption",
+    "No treating 256 dependent worlds as 256 independent reset clusters"
+  ],
+  "prior_art": [
+    "RACE ICLR2026 action chunk alignment",
+    "REMAC ICLR2026 masked action chunking",
+    "PACE May2026 phase-aware chunk execution",
+    "LeRobot RTC reset_epoch already drops stale in-flight chunks",
+    "Known sequence numbering and zero-error graph coding"
+  ],
+  "external_acceptance": "No maintainer Merge or outside academic peer review pre-implied by success"
+}
