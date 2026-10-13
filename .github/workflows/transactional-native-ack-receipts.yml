@@ -1,0 +1,52 @@
+name: Prospective 256-world transactional ACK recovery native PhysX
+on:
+  push:
+    branches: ["research/transactional-execution-receipts-20261013"]
+    paths:
+      - research/TRANSACTIONAL_NATIVE_RECEIPT_PREREG_20261013.json
+      - research/transactional_ack_receipt_native_physx.py
+      - .github/workflows/transactional-native-ack-receipts.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  real-physx-controller:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        robot: [panda, xarm6_robotiq]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install real ManiSkill CPU PhysX backend
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --disable-pip-version-check -e .
+      - name: Download source-only actual PhysX training worlds (not new heldout)
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: 38363869998
+          pattern: actual-native-physx-receipt-*
+          path: /tmp/preregistered_original_physx_training_data
+      - name: Verify 4 new independent reset clusters per robot and execute 128 original worlds
+        env:
+          PYTHONUNBUFFERED: "1"
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+        run: |
+          set -o pipefail
+          python -m research.transactional_ack_receipt_native_physx --robot ${{ matrix.robot }} --train /tmp/preregistered_original_physx_training_data 2>&1 | tee "transactional_physx_${{ matrix.robot }}.log"
+          test -s "transactional_physx_${{ matrix.robot }}.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-transactional-physx-${{ matrix.robot }}
+          path: |
+            transactional_physx_${{ matrix.robot }}.json
+            transactional_physx_${{ matrix.robot }}.log
