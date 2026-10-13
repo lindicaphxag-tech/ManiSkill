@@ -1,0 +1,47 @@
+name: Fresh native PhysX ACK receipts under one corrupted bit
+on:
+  push:
+    branches: ["research/native-one-bit-robust-receipts-20261013"]
+    paths:
+      - "research/NATIVE_ONEBIT_ROBUST_RECEIPT_PREREG_20261013.json"
+      - "research/robust_onebit_native_receipt.py"
+      - "research/test_robust_onebit_native_receipt.py"
+      - ".github/workflows/native-robust-onebit-receipt.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fresh-native-physx-morphologies:
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    strategy:
+      fail-fast: false
+      matrix:
+        robot: [panda, xarm6_robotiq]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install original CPU PhysX and real ManiSkill controller dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --disable-pip-version-check -e . pytest
+      - name: Inspect immutable preregistration and exact Hamming-protected baseline
+        run: python -m pytest -q research/test_robust_onebit_native_receipt.py
+      - name: Run NEW physically simulated histories, all onebit corruptions, and strong optimal 5bit full ACK control
+        env:
+          PYTHONUNBUFFERED: "1"
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+        run: |
+          set -o pipefail
+          python -m research.robust_onebit_native_receipt --robot ${{ matrix.robot }} --out "original_onebit_robust_${{ matrix.robot }}.json" 2>&1 | tee "original_onebit_robust_${{ matrix.robot }}.log"
+          test -s "original_onebit_robust_${{ matrix.robot }}.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fresh-original-native-onebit-${{ matrix.robot }}
+          path: |
+            original_onebit_robust_${{ matrix.robot }}.json
+            original_onebit_robust_${{ matrix.robot }}.log
