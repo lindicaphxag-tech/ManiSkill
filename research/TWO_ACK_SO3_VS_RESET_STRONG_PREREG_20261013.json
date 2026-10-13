@@ -1,0 +1,129 @@
+{
+  "schema": "two_ack_native_so3_vs_reset_centered_strong_baseline_v1",
+  "date": "2026-10-13",
+  "state": "FROZEN_PRE_OUTCOME",
+  "question": "Can source-reconstructed noncommutative target-relative SO3 hypotheses outperform a per-variant trained, reset-relative SO3 nearest-prototype baseline in real PhysX hidden ACK recovery?",
+  "task": "PickCube-v1",
+  "mode": "pd_ee_target_delta_pose",
+  "chart": "root_translation:root_aligned_body_rotation",
+  "backend": "physx_cpu",
+  "robots": [
+    "panda",
+    "xarm6_robotiq"
+  ],
+  "training_seeds": {
+    "panda": [
+      5800101,
+      5800102,
+      5800103,
+      5800104
+    ],
+    "xarm6_robotiq": [
+      5900101,
+      5900102,
+      5900103,
+      5900104
+    ]
+  },
+  "heldout_seeds": {
+    "panda": [
+      5800201,
+      5800202,
+      5800203,
+      5800204
+    ],
+    "xarm6_robotiq": [
+      5900201,
+      5900202,
+      5900203,
+      5900204
+    ]
+  },
+  "history_register": [
+    "00",
+    "01",
+    "10",
+    "11"
+  ],
+  "action_variants": {
+    "A": {
+      "t2": [
+        0,
+        0,
+        0,
+        0.13,
+        -0.09,
+        0.07
+      ],
+      "t3": [
+        0,
+        0,
+        0,
+        -0.07,
+        0.15,
+        0.08
+      ]
+    },
+    "B": {
+      "t2": [
+        0,
+        0,
+        0,
+        -0.12,
+        0.07,
+        0.12
+      ],
+      "t3": [
+        0,
+        0,
+        0,
+        0.14,
+        0.06,
+        -0.09
+      ]
+    }
+  },
+  "prefix_steps": [
+    0,
+    1
+  ],
+  "observation_hold_steps": 6,
+  "recovery_hold_steps": 8,
+  "training_conditions_per_robot": 32,
+  "frozen_training_conditions_total": 64,
+  "testing_policies": [
+    "SOURCE_SO3_HYPOTHESES",
+    "RESET_SO3_BY_VARIANT",
+    "RESET_SO3_POOLED",
+    "NO_ACTION",
+    "PRIVILEGED_ORACLE"
+  ],
+  "new_test_conditions_per_robot": 160,
+  "new_test_conditions_total": 320,
+  "test_unique_reset_clusters_total": 8,
+  "training_unique_reset_clusters_total": 8,
+  "primary_endpoint": "achieved public EE orientation angular geodesic difference in radians relative to the source-reconstructed all-applied goal, after history-conditioned controller correction and eight zero-hold steps",
+  "supplementary_endpoints": [
+    "history accuracy of each nonprivileged classifier",
+    "per-test-seed paired mean geodesic error",
+    "orientation recovery after/initially",
+    "achieved XYZ error descriptive",
+    "official PickCube success descriptive only"
+  ],
+  "training_prototype_rule": "For RESET_SO3_BY_VARIANT and RESET_SO3_POOLED train deterministic unit-quaternion signed-aligned arithmetic-average prototype per true ACK history on training seeds; all features are measured EE orientation * inverse(public achieved reset EE orientation), no private controller targets. SOURCE_SO3_HYPOTHESES requires NO training, computes source-predicted four target quaternions directly for announced variant.",
+  "classifier_metric": "scipy Rotation geodesic distance; tie break history order [00,01,10,11] to within 1e-12",
+  "recovery_mechanism": "For predicted target quaternion Q_guess and desired Q_goal, compute delta=Q_goal * inverse(Q_guess), express in source's XYZ Euler chart; normalize by controller signed rot_lower and refuse norm>1, apply common source-valid 6D native action.",
+  "prospective_novelty_gate": "SOURCE_SO3_HYPOTHESES mean heldout orientation error lower than RESET_SO3_BY_VARIANT and NO_ACTION on >=3 of 4 independent reset seeds FOR EACH robot, with absolute per-seed improvement at least 0.01 rad versus variant-aware baseline. Failure disproves unique source reconstruction advantage for this constrained task.",
+  "high_priority_negative_interpretation": "If per-variant trained reset-relative SO3 performs equally well, source residual does NOT demonstrate unique novelty even if it greatly beats pooled reset baseline.",
+  "independence_statement": "Training/test seed cohorts disjoint; 2 nominal variant families and 4 hidden histories under the same seed are repeated paired conditions, NOT 8 independent physical subjects per seed.",
+  "forbidden_claims": [
+    "source novel if equally good as per-variant reset baseline",
+    "trained VLA or ToM model deployed",
+    "true hardware packet delivery faults; held simulated by zero native command",
+    "robot safety certificate",
+    "PickCube grasp success unless official flag has actual successes",
+    "external scholarly peer review or published paper",
+    "320 independent reset clusters",
+    "retuning after examining heldout outcomes"
+  ]
+}
