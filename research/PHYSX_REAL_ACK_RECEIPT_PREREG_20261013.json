@@ -1,0 +1,82 @@
+{
+  "schema": "new_physx_two_robot_zero_error_ack_receipt_sideinfo_v1",
+  "frozen_at": "2026-10-13",
+  "status": "FROZEN_BEFORE_NATIVE_PHYSX_OUTCOMES",
+  "source_controller_prereg_blob": "44f770ecabe87e894eb7a3fa94dde3e94a730734",
+  "task": "PickCube-v1",
+  "control_mode": "pd_ee_target_delta_pose",
+  "backend": "physx_cpu",
+  "robots": [
+    "panda",
+    "xarm6_robotiq"
+  ],
+  "seeds": {
+    "panda": [
+      5800401,
+      5800402,
+      5800403,
+      5800404
+    ],
+    "xarm6_robotiq": [
+      5900401,
+      5900402,
+      5900403,
+      5900404
+    ]
+  },
+  "action_variants": [
+    "A",
+    "B"
+  ],
+  "histories": [
+    "00",
+    "01",
+    "10",
+    "11"
+  ],
+  "original_native_PhysX_worlds": 64,
+  "independent_reset_clusters_per_robot": 4,
+  "sensor_model": "For each actually measured public achieved EE orientation, use rotation log relative to public reset achieved quaternion; quantize each of 3 SO3 exponential-coordinate components. Independent bounded uncertainty on each component ∈[-epsilon,+epsilon] (synthetic sensor error support), not a claim of actual camera noise calibration.",
+  "sensor_cell_radians": [
+    0.005,
+    0.015,
+    0.04
+  ],
+  "independent_sensor_component_error_bounds_radians": [
+    0.001,
+    0.004
+  ],
+  "report_cases": 96,
+  "controller_state_target_for_recovery": "Original source-reconstructed hypothetical commanded target quaternions for each ACK history; required native6 correction from that candidate target to all-ACK target '11'. Two histories need different receipts iff their native corrections differ by >1e-6 Euclidean AND possible sensor observation-bin sets intersect.",
+  "trusted_sender_assumption": "Receipt sender knows actual executed simulated ACK bits; decoder only receives receipt code and quantized public EE observation. Without trusted sender this protocol is not executable.",
+  "no_private_controller_target_policy_access": true,
+  "baselines": [
+    "full two-bit ACK receipt",
+    "no receipt optimal Bayes anchor/required command under uniform four registered histories, uniform possible quantized sensor bins",
+    "popcount executed ACK receipt + observation",
+    "exact fixed-length graph-color minimum with side information"
+  ],
+  "primary_endpoint": "out of 96 matched original (robot,reset_seed,variant,resolution,noise) cases, number saving at least one full-ACK bit with exact zero required-correction decision errors",
+  "predeclared_gate": "At least 48/96 native controller graphs must save at least one bit of full two-bit ACK while all 96 zero error; both morphologies must each have >=16 such cases (of 48), all 8 reset-seed clusters retained.",
+  "secondary_endpoints": [
+    "Bayes no receipt policy probability correct under idealized uniform finite sensor support",
+    "source-vs-real public observation max geodesic discrepancy descriptive only",
+    "actual official PickCube success only descriptive; a no-recovery source probe does NOT show task completion advantage",
+    "number of distinct commands versus confusability-graph chromatic number"
+  ],
+  "stop_rules": [
+    "source-original protocol SHA must match",
+    "no dropout of an ACK history or robot/reset/variant condition",
+    "no after-inspection changes to quantization, noise support or action variant",
+    "exclude no worlds based on positive receipt result",
+    "any private target field must not enter receipt decoding"
+  ],
+  "non_claims": [
+    "This is original real CPU PhysX native controller simulation, not hardware execution",
+    "Quantized noise bounds hypothetical, not measured D435i/ZED real camera noise",
+    "Graph coloring and zero error functional source coding are known information theory",
+    "Not a trained VLA, ToM belief or action-chunk policy",
+    "No task success uplift until a prospective actual recovery endtask comparison and strong Bayesian baseline is run",
+    "Same previous controller chart may make full observation sufficient; if 0-bit receipt is enough do not claim necessity of receipt"
+  ]
+}
