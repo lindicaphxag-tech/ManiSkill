@@ -1,0 +1,36 @@
+name: Independent original three-OS exact-receipt minimum-audit
+on:
+  push:
+    branches: ["research/zero-error-execution-receipts-20261013"]
+    paths:
+      - "research/audit_exact_execution_receipt_288.py"
+      - ".github/workflows/execution-receipt-independent-audit.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  full-cohort-color-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Retrieve ALL THREE original OS reports from completed original study
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: 38362714720
+          pattern: full-288-execution-receipt-controller-results-*
+          path: /tmp/original_receipt_three_os
+      - name: Independently reconstruct and exactly color all 288 original aliases
+        run: |
+          python -m research.audit_exact_execution_receipt_288 --originals /tmp/original_receipt_three_os --out full_independent_receipt_audit.json
+          test -s full_independent_receipt_audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: independent-original-three-os-288-receipt-audit
+          path: full_independent_receipt_audit.json
