@@ -92,6 +92,92 @@ def _source_proposal_fingerprint_entry(proposal: NativeProbeProposal) -> dict:
     }
 
 
+
+def _optimistic_family_error_limit(
+    independent_reset_clusters_per_truth: int,
+    precommitted_probe_count: int,
+    family_miscoverage: float,
+) -> float:
+    """Exact two-sided CP perfect-signal tail after Bonferroni correction.
+
+    CONDITIONAL thought experiment: every held sample has Z=0, every applied
+    sample Z=1, both histories have the same n independent reset clusters
+    and all K prospective actions are calibrated (2*K binomial intervals).
+    This is the *best possible* data for this fixed CP/Bonferroni procedure,
+    not a physical likelihood bound from the 48-world pilot.
+    """
+    n, k, delta = (
+        independent_reset_clusters_per_truth,
+        precommitted_probe_count,
+        family_miscoverage,
+    )
+    if type(n) is not int or n < 1 or type(k) is not int or k < 1:
+        raise ValueError("positive integer independent-reset and candidate counts required")
+    if not isinstance(delta, (int, float)) or not isfinite(delta) or not 0 < delta < 1:
+        raise ValueError("family miscoverage must lie strictly between 0 and 1")
+    # For 0/n events the two-sided CP upper endpoint is
+    # 1-(alpha/2)^(1/n), where alpha=delta/(2*K). Compute robustly near zero.
+    from math import expm1, log
+    return float(-expm1(log(float(delta) / (4 * k)) / n))
+
+
+def optimistic_perfect_signal_binary_ack_risk(
+    independent_reset_clusters_per_truth: int,
+    precommitted_probe_count: int,
+    *,
+    family_miscoverage: float = 0.05,
+) -> float:
+    """Best achievable *certified* symmetric binary error for this protocol.
+
+    Exactly balanced known prior p=0.5, unit false-history costs, an ideal
+    separating binary signal and equal n IID reset-level samples per truth.
+    Under the current two-sided Clopper-Pearson + Bonferroni family bounds,
+    minimax classification risk is min(1/2, CP extreme-probability tail).
+    Real sensors, unknown priors and clustered dependence can be worse.
+    This is NOT a universal information-theoretic impossibility theorem.
+    """
+    e = _optimistic_family_error_limit(
+        independent_reset_clusters_per_truth, precommitted_probe_count,
+        family_miscoverage,
+    )
+    return min(0.5, e)
+
+
+def minimum_resets_per_truth_for_optimistic_ack_risk(
+    maximum_wrong_history_risk: float,
+    precommitted_probe_count: int,
+    *,
+    family_miscoverage: float = 0.05,
+) -> int:
+    """Necessary IID reset count *for this CP/Bonferroni method*, best case.
+
+    Returns n per true ACK history AND per precommitted action; the same
+    reset seeds may be paired across truths/probes, but are not n*K*2
+    statistically independent reset clusters. Never use this number to
+    assert that sufficient observations, physical costs or safety exist.
+    """
+    from math import ceil, log, log1p
+    cap = float(maximum_wrong_history_risk)
+    if not isfinite(cap) or not 0 < cap < 0.5:
+        raise ValueError("symmetric wrong-history risk target must be in (0,0.5)")
+    # Validate K, delta without requiring a fake observed dataset.
+    _optimistic_family_error_limit(1, precommitted_probe_count,
+                                   family_miscoverage)
+    n = max(1, ceil(log(float(family_miscoverage) /
+                        (4 * precommitted_probe_count)) / log1p(-cap)))
+    while optimistic_perfect_signal_binary_ack_risk(
+        n, precommitted_probe_count,
+        family_miscoverage=family_miscoverage,
+    ) > cap:
+        n += 1
+    while n > 1 and optimistic_perfect_signal_binary_ack_risk(
+        n - 1, precommitted_probe_count,
+        family_miscoverage=family_miscoverage,
+    ) <= cap:
+        n -= 1
+    return n
+
+
 def simultaneous_ack_signal_calibration(
     proposals: Sequence[NativeProbeProposal],
     observations: Mapping[str, Sequence[tuple[int, str, int]]],
