@@ -1,0 +1,111 @@
+{
+  "schema": "prospective_two_ack_source_normalized_policy_validation_v1",
+  "preregistered": "2026-10-13",
+  "status": "FROZEN_BEFORE_TEST_PHYSX_OUTCOMES",
+  "prior_exploratory_run": 38331837905,
+  "frozen_training_prototypes_git_blob": "48000e2831537c178262835b17748b37672b10d4",
+  "prior_train_seeds": {
+    "panda": [
+      5602001,
+      5602002,
+      5602003,
+      5602004
+    ],
+    "xarm6_robotiq": [
+      5702001,
+      5702002,
+      5702003,
+      5702004
+    ]
+  },
+  "new_holdout_test_seeds": {
+    "panda": [
+      5603001,
+      5603002,
+      5603003,
+      5603004
+    ],
+    "xarm6_robotiq": [
+      5703001,
+      5703002,
+      5703003,
+      5703004
+    ]
+  },
+  "robots": [
+    "panda",
+    "xarm6_robotiq"
+  ],
+  "task": "PickCube-v1",
+  "controller": "pd_ee_target_delta_pose",
+  "sim_backend": "physx_cpu",
+  "source_action_mapping": "research/cross_robot_ack_physics.py, pinned git blob 3b2faf44e5f413911eae25ccfd0c51fbbe2d5fe7",
+  "uncertain_source_actions": {
+    "t2": [
+      0.25,
+      -0.15,
+      0.18,
+      0,
+      0,
+      0
+    ],
+    "t3": [
+      -0.12,
+      0.18,
+      0.1,
+      0,
+      0,
+      0
+    ]
+  },
+  "prefix_steps": [
+    0,
+    1
+  ],
+  "histories": [
+    "00",
+    "01",
+    "10",
+    "11"
+  ],
+  "policies": [
+    "ABSOLUTE_XYZ",
+    "SOURCE_RELATIVE_XYZ",
+    "NO_ACTION",
+    "PRIVILEGED_ORACLE"
+  ],
+  "frozen_features": {
+    "ABSOLUTE_XYZ": "Measured public EE position before correction in robot base XYZ coordinates; Euclidean distance to four raw trained centroids.",
+    "SOURCE_RELATIVE_XYZ": "Measured public EE XYZ minus source-only reconstructed all-applied canonical target XYZ; Euclidean distance to four source-normalized trained centroids.",
+    "NO_ACTION": "Always execute zero native 6D action.",
+    "PRIVILEGED_ORACLE": "Diagnostic ceiling only: use simulator-set true ACK history; this policy is not deployable and must not enter selection training."
+  },
+  "frozen_classifier": "single nearest centroid by Euclidean distance among [00,01,10,11] in listed order, ties choose the earliest; prototypes pinned from previous original 4 reset clusters per morphology; NEVER recalibrate on new test seeds",
+  "native_recovery": "for classified history, invert controller's documented signed per-axis target-relative root translation from predicted history's source-replayed target to all-applied source target, zero rotation; reject unrepresentable and malformed mapping",
+  "hold_steps_after_recovery": 8,
+  "primary_endpoint": "paired achieved EE XYZ distance in meters to source-reconstructed all-applied canonical goal after same recovery and eight zero native steps",
+  "secondary_endpoints": [
+    "ACK history accuracy from public-observation-only classifiers on heldout seeds",
+    "per-reset paired XYZ-error difference vs absolute XYZ and NO_ACTION",
+    "private controller-target state used only as post-action audit",
+    "official PickCube success descriptive only"
+  ],
+  "statistical_unit": "Reset seed within fixed robot; four hidden histories and four policies within a seed are repeated factorial conditions not 16 independent reset clusters",
+  "denominator": {
+    "independent_holdout_reset_clusters_total": 8,
+    "worlds_per_seed": 16,
+    "real_physx_worlds_total": 128,
+    "train_reset_clusters_total": 8
+  },
+  "preregistered_positive_gate": "SOURCE_RELATIVE_XYZ should have lower mean achieved EE error than BOTH ABSOLUTE_XYZ and NO_ACTION in >=3 of 4 heldout reset seeds for EACH robot morphology; full descriptive effect and every failed seed mandatory. Do not interpret this as statistically significant from n=4.",
+  "fail_closed": [
+    "Do not replace any holdout seed or remove any failed/collided case",
+    "No hidden true ACK or privileged controller target provided to either public classifier",
+    "Never use current test seed's observed data to alter frozen prototypes",
+    "No test-set threshold/feature selection after inspecting outcomes",
+    "No label-conditional selection in public policies; only PRIVILEGED_ORACLE permitted to access true history as ceiling",
+    "Do not claim actual autonomous PickCube success, hardware safety, or external peer adoption",
+    "4 holdout seeds per robot cannot support narrow population confidence intervals",
+    "Explicitly report if the prospective benefit threshold is not met"
+  ]
+}
