@@ -1,0 +1,36 @@
+name: Independent original two-ACK PhysX artifact audit
+on:
+  push:
+    branches:
+      - "research/multiack-real-recovery-matrix-20261013"
+    paths:
+      - "research/audit_two_ack_real_recovery_physx.py"
+      - ".github/workflows/audit-two-ack-real-recovery.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  audit-original-160:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Fetch artifacts from immutable original 160-world run
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: 38331837905
+          pattern: original-two-ack-physx-*
+          merge-multiple: true
+          path: /tmp/two_ack_original_raw
+      - name: Recompute all 160 row identities and task-loss floors
+        run: |
+          python -m research.audit_two_ack_real_recovery_physx --input-dir /tmp/two_ack_original_raw --output audited_two_ack_real_recovery.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: audited-original-two-ack-160
+          path: audited_two_ack_real_recovery.json
