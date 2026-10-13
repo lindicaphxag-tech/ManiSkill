@@ -1,0 +1,44 @@
+name: Native PhysX public-orientation zero-error receipt test (64 original worlds)
+on:
+  push:
+    branches: ["research/zero-error-execution-receipts-20261013"]
+    paths:
+      - research/PHYSX_REAL_ACK_RECEIPT_PREREG_20261013.json
+      - research/real_physx_ack_receipt_observability.py
+      - .github/workflows/real-physx-execution-receipt.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  actual-robot-native-controller:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        robot: [panda, xarm6_robotiq]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install native CPU PhysX and actual ManiSkill robot contracts
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install --disable-pip-version-check -e .
+      - name: Execute 32 original PhysX ACK worlds and 48 prior-fixed side-information graphs
+        env:
+          PYTHONUNBUFFERED: "1"
+          MS_SKIP_ASSET_DOWNLOAD_PROMPT: "1"
+        run: |
+          set -o pipefail
+          python -m research.real_physx_ack_receipt_observability --robot ${{ matrix.robot }} 2>&1 | tee "real_physx_ack_receipt_${{ matrix.robot }}.log"
+          test -s "physx_native_receipt_${{ matrix.robot }}.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: actual-native-physx-receipt-${{ matrix.robot }}
+          path: |
+            physx_native_receipt_${{ matrix.robot }}.json
+            real_physx_ack_receipt_${{ matrix.robot }}.log
