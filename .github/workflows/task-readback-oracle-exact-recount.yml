@@ -1,0 +1,54 @@
+name: Exact three-task retrospective readback frontier (NO new PhysX)
+on:
+  push:
+    branches: [research/causal-readback-frontier-20261014]
+    paths:
+      - research/exact_task_readback_oracle_frontier.py
+      - tests/test_exact_task_readback_oracle_frontier.py
+      - .github/workflows/task-readback-oracle-exact-recount.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  exhaustive-math:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install pytest
+      - run: python -m pytest -q tests/test_exact_task_readback_oracle_frontier.py
+  original-physical-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Download original physically stepped owner-run files only (no simulation)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p _receipts/_development _receipts/_new_task _receipts/pull_cube _receipts/stack_cube _receipts/pick_cube
+          gh run download 38546430880 -R lindicaphxag-tech/ManiSkill -p 'reachable-so3-original-*' -D _receipts/_development
+          gh run download 38550286593 -R lindicaphxag-tech/ManiSkill -p 'first-pickcube-task-physx-*' -D _receipts/_new_task
+          for name in pull_cube stack_cube; do
+            for shard in 0 1 2 3; do
+              cp "_receipts/_development/reachable-so3-original-${name}-${shard}/reachable_${name}_${shard}.log" "_receipts/${name}/"
+            done
+          done
+          find _receipts/_new_task -type f -name 'pickcube_so3_pick_cube_chunk*_original8.json' -exec cp {} _receipts/pick_cube/ \;
+          test "$(find _receipts/pick_cube -name 'pickcube_so3_pick_cube_chunk*_original8.json' | wc -l)" -eq 4
+      - name: Recount all original 96 reset clusters with SHA and compute exact DP
+        run: python -m research.exact_task_readback_oracle_frontier _receipts --out audited_96_actual_physx_task_budget.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: physically-verified-restricted-two-policy-frontier-96
+          path: audited_96_actual_physx_task_budget.json
