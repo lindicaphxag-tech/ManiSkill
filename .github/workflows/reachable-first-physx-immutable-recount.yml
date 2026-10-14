@@ -1,0 +1,31 @@
+name: Original 64 PhysX post-crash NEGATIVE evidence recount
+on:
+  push:
+    branches: [research/reachable-so3-first-run-negative-audit-20261014]
+    paths:
+      - research/audit_reachable_first_run_crash_logs.py
+      - .github/workflows/reachable-first-physx-immutable-recount.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  audit-first-execution-no-resimulation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Retrieve first execution logs from original failed post-summary run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p _frozen_original
+          gh run download 38546430880 -R lindicaphxag-tech/ManiSkill -p 'reachable-so3-original-*' -D _frozen_original
+      - name: Verify eight SHA-locked first logs and 64 genuine episode outcomes
+        run: python -m research.audit_reachable_first_run_crash_logs _frozen_original reachable_first64_verified_negative.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: only-first-64-physx-negative-recovery-audit
+          path: reachable_first64_verified_negative.json
