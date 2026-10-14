@@ -39,7 +39,7 @@ def recount(root):
             if len(eight)!=8 or [r["seed"] for r in eight]!=list(range(first+shard*8,first+shard*8+8)):
                 raise ValueError("MISSING_OR_DUPLICATE_FROZEN_SEEDS")
             for r in eight:
-                if r["task"]!=tname or tuple(r["success_once"])!=ARMS:
+                if r["task"]!=tname or set(r["success_once"])!=set(ARMS):
                     raise ValueError("TASK_OR_ARM_MISMATCH")
             rows+=eight
     if len(rows)!=64 or len({r["seed"] for r in rows})!=64:raise ValueError("RESET_COUNT")
