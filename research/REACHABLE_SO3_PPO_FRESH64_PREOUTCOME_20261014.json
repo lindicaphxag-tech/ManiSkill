@@ -1,0 +1,46 @@
+{
+  "schema": "reachable_native_so3_uncertain_ack_new64_preoutcome_v1",
+  "date": "2026-10-14",
+  "status": "PREOUTCOME_FROZEN_BEFORE_NEW_PHYSX_WORKFLOWS",
+  "question": "Does source-only constrained native SO3 reachable-action search increase query-free task continuation over the original finite-midpoint certificate, while preserving official task success versus proper fixed-t4 authoritative target read?",
+  "source_family": "Two published pretrained ActionShift PPO policies, PullCube-v1 and StackCube-v1; released SHA256 frozen in existing original source; NO retraining, no policy weight tuning",
+  "unseen_seeds": {
+    "pull_cube": [
+      2026220001,
+      2026220032
+    ],
+    "stack_cube": [
+      2026230001,
+      2026230032
+    ]
+  },
+  "shards": 4,
+  "unique_reset_states": 64,
+  "paired_real_controller_worlds_per_reset": 4,
+  "arms": [
+    "source_no_fault",
+    "fault_robust_then_single_privileged_query",
+    "fault_fixed_readback_canonical",
+    "fault_reachable_then_single_privileged_query"
+  ],
+  "fault_steps": [
+    2,
+    3
+  ],
+  "fault_action": "real zero-arm target hold, NOT packet loss",
+  "horizon": 50,
+  "position_budget_m": 0.05,
+  "rotation_budget_rad": 0.05,
+  "new_method": "same source-complete multi-target hypotheses; position Chebyshev exact; candidate SO3 target action under native XYZ Euler normalized L2<1; retain old finite candidate family plus bounded local search if original fails; every allowed command exact all-hypothesis target recurrence checked",
+  "strong_baselines": [
+    "fixed one trusted t4 target read and belief singleton reset",
+    "original robust finite midpoint and one read on refusal",
+    "unfaulted source PPO competence ceiling"
+  ],
+  "primary": "Paired official task success at 64 original frozen-policy reset states, 32 per task; exact real privileged decision target-read counts; compare method-vs-old and method-vs-fixed separately",
+  "secondary": "actual controller native chart, complete history count, concrete authorized actions, refusal count, commanded-target audit after dispatch, failed fault exposure, early term",
+  "gate": "Promote ONLY if complete 64 original reset states with physical injection; new task successes not lower than corrected fixed-t4 comparator, at least 4 fewer real reads than original finite-midpoint-selective comparator, no unapproved/incorrect setpoint; otherwise negative outcome",
+  "statistics": "Paired successes/matched discordances by task and cluster; exact McNemar exploratory; no claim of clinical/hardware safety or cross-task academic replication",
+  "information_firewall": "No target memory read to decide search. A privileged read is allowed only after the method refuses or for the readback comparator. All post-step memory audit reads excluded from policy count.",
+  "honesty": "Precommitting next cohort does NOT imply a new algorithm is proven, genuine task success superior, global optimizer, external approval, or accepted paper."
+}
