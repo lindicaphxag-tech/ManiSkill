@@ -1,0 +1,66 @@
+{
+  "schema": "PICKCUBE_EXTERNAL_TASK_NATIVE_SO3_20261014_V1",
+  "date_utc": "2026-10-14",
+  "status": "FROZEN_BEFORE_NEW_PICKCUBE_RESULTS",
+  "task": "PickCube-v1",
+  "novelty_scope": "different heldout TASK; same Panda morphology and source task family; NOT unseen robot hardware",
+  "unseen_seed_first": 2026440001,
+  "unseen_seed_last": 2026440032,
+  "unique_reset_clusters": 32,
+  "shards": 4,
+  "per_shard": 8,
+  "controllers_per_reset": 5,
+  "expected_total_native_physx_worlds": 160,
+  "externally_released_policy": {
+    "repo": "kattri15/actionshift-baselines",
+    "filename": "ppo/pick_cube_final_ckpt.pt",
+    "revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+    "sha256": "3e6c95d63a2132843323e24cf7ba962b8cf2610f04b2a5a43f3efb6fef8497a8"
+  },
+  "task_not_used_in_reachable_SO3_algorithm_choice": true,
+  "fault_semantics": "two target-command holds at t=2,3; not actual communication packet loss",
+  "fault_steps": [
+    2,
+    3
+  ],
+  "horizon": 50,
+  "physx_backend": "physx_cpu",
+  "source_policy_control": "pd_ee_delta_pose",
+  "destination_policy_control": "pd_ee_target_delta_pose",
+  "position_tol_m": 0.05,
+  "rotation_tol_rad": 0.05,
+  "all_arms": [
+    "source_no_fault",
+    "fault_oracle_private_target",
+    "fault_robust_then_single_privileged_query",
+    "fault_fixed_readback_canonical",
+    "fault_reachable_then_single_privileged_query"
+  ],
+  "primary_outcomes": [
+    "official task success per reset",
+    "pairwise exact success difference",
+    "actual privileged decision-time target reads",
+    "fault exposure",
+    "no unauthorized target error"
+  ],
+  "gate": {
+    "complete_32_true_fault_exposure": true,
+    "all_runners_completed": true,
+    "new_success_at_least_corrected_fixed": true,
+    "new_reads_at_least_4_fewer_than_fixed": true,
+    "new_success_at_least_old": true,
+    "new_reads_at_least_2_fewer_than_old": true
+  },
+  "oracle_interpretation": "Always access private controller target as diagnostic comparator, not free online oracle. Do NOT pretend it is a theoretical optimal task policy.",
+  "new_algorithm_training_status": "no policy training; same native-SO3 candidate optimization frozen from Pull/Stack diagnostics",
+  "external_validation_required": "independently operated third-party lab and peer review absent",
+  "do_not_change_after_outcomes": [
+    "heldout task",
+    "seeds",
+    "arms",
+    "limits",
+    "checkpoint",
+    "gates",
+    "failure inclusion"
+  ]
+}
