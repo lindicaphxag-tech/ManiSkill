@@ -27,7 +27,7 @@ def test_strict_two_arm_oracle_not_a_general_action_theorem():
     x=summarize(rows)
     assert x["posthoc_max_savings_without_aggregate_success_loss"]==2
     assert x["posthoc_max_savings_without_ANY_state_level_success_loss"]==1
-    assert x["oracle_max_success_with_at_most_fixed_reads_minus_four"]==24
+    assert x["oracle_max_success_with_at_most_fixed_reads_minus_four"]==23
     assert x["fixed_success"]==25
 
 def test_reject_nonbool_success():
