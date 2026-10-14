@@ -1,0 +1,35 @@
+name: Native PhysX original eight-reset certificate audit
+on:
+  push:
+    branches: [research/uncertain-ack-common-goal-authority-20261014]
+    paths:
+      - research/audit_common_goal_native_prior_48.py
+      - research/terminal_common_action_certificate.py
+      - .github/workflows/uncertain-ack-native-retrospective-audit.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  original-physx-retrospective:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install numpy
+      - name: Fetch ORIGINAL unchanged PhysX data from workflow 38294905276
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p _native_original/panda _native_original/xarm
+          gh run download 38294905276 -R lindicaphxag-tech/ManiSkill -n frozen-ack-native-physx-panda -D _native_original/panda
+          gh run download 38294905276 -R lindicaphxag-tech/ManiSkill -n frozen-ack-native-physx-xarm6_robotiq -D _native_original/xarm
+      - name: Audit exact original artifact SHA and 8 unique reset clusters
+        run: |
+          python -m research.audit_common_goal_native_prior_48 --panda _native_original/panda/ack_native_probe_physx_pilot_panda.json --xarm _native_original/xarm/ack_native_probe_physx_pilot_xarm6_robotiq.json --out common_goal_original8_diagnostic.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: common-goal-original8-conditional-not-physical-safety
+          path: common_goal_original8_diagnostic.json
