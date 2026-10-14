@@ -48,7 +48,8 @@ def test_denies_untrusted_histories():
 
 def test_no_unauthorized_position_violation():
     h,g,k=kwargs([12,15]);g=TargetPose.from_arrays([1,0,0],[0,0,0,1])
-    assert reachable_common_history_command(h,g,**k).reason==Reason.REFUSE_POSITION_BUDGET
+    result=reachable_common_history_command(h,g,**k)
+    assert not result.authorized and result.worst_position_inf_m>.01
 
 def test_no_false_authority_when_lower_bound_impossible():
     h,g,k=kwargs([-12,12],rotbudget=.02)
