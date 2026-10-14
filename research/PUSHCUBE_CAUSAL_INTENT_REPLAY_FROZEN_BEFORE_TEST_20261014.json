@@ -1,0 +1,62 @@
+{
+  "schema": "intent_replay_newtask_pushcube_holdout_v1",
+  "date": "2026-10-14",
+  "status": "FROZEN_BEFORE_PUSH_TASK_ROLLOUT",
+  "question": "When the controller target is authenticated at t4 but two physically held commands have lost action intent, can task-consistent delayed-intent compensation generate new task trajectories with higher success than fixed-readback and continuously informed comparator?",
+  "task": "PushCube-v1",
+  "source_policy": {
+    "repo": "kattri15/actionshift-baselines",
+    "path": "ppo/push_cube_final_ckpt.pt",
+    "revision": "6bdeb28810330ab5425ccd629bb561c58a56ff85",
+    "sha256": "a4a02198b309e73cb877959079023d967d5f63ec78380de9703a10c9efafc0cf"
+  },
+  "test_seed_first": 2026760001,
+  "test_seed_last": 2026760032,
+  "independent_resets": 32,
+  "shards": 4,
+  "task_used_in_prior_algorithm_development": "PushCube single native controller-target geometry witness in earlier research; NOT used for 32-state frozen-PPO task-level performance or delayed-intent replay choice; not a never-before-mentioned task",
+  "task_new_to_tasklevel_outcome_replay": true,
+  "fault_held_arm_steps": [
+    2,
+    3
+  ],
+  "force_true_exposure": true,
+  "goal": "official success ever within horizon",
+  "horizon": 50,
+  "per_reset_real_physx_arms": [
+    "source_no_fault",
+    "fault_oracle_private_target",
+    "fault_fixed_readback_canonical",
+    "fault_robust_then_single_privileged_query",
+    "fault_replay_unconditional_one_readback",
+    "fault_replay_alignment_gated_one_readback"
+  ],
+  "method_frozen_before_outcomes": {
+    "entry": "research/causal_native_intent_replay.py",
+    "history": "save only frozen PPO own public desired-native arm normalized 6D commands during two known fault steps without reading real hidden target",
+    "readback": "one explicit actual target_pose read after two holds at source step=4, same as corrected fixed policy",
+    "replay_gain": 0.5,
+    "cosine_threshold": 0.25,
+    "alignment_candidate": "0.5 times the sum of two held source translational normalized deltas, projected onto the current trusted readback-adjusted native translation direction; if mismatched do not inject",
+    "safe_action_contract": "clip root-native translational normalized coordinates to [-1,1]; never add Euler rotation commands; gripper unchanged; action entirely generated from public source policy history plus counted fixed target read",
+    "unconditional_control": "same gain and same held source translation average but without positive alignment gate; true distinct physically executed baseline"
+  },
+  "primary_metric": "full-denominator official task success across 32 independent seed clusters; no test-time threshold tuning",
+  "success_gate": "new aligned method strictly more successes than BOTH corrected fixed readback AND continuous true-target oracle, with no more decision private reads than fixed (32); hard negative otherwise",
+  "secondary": [
+    "full native action trace divergence on at least 1 reset",
+    "actual fault-injection coverage 32/32",
+    "readback count including query cases",
+    "paired McNemar exact confidence",
+    "unsaturated fraction, changes and refuse reasons"
+  ],
+  "scientific_limits": [
+    "mechanistic nonlearned intervention; does not constitute novel dissertation algorithm by itself",
+    "not true network packet loss",
+    "not new robot embodiment",
+    "does not guarantee collision/contact/hardware safety",
+    "no independent external lab"
+  ],
+  "information_firewall": "All post hoc true target reads are audit only; online method reads the controller target once at t4 exactly like fixed baseline. Never use test success, fault truth or privileged oracle stream to choose new replay action.",
+  "negative_reporting": "retain ALL failures, unexposed faults, interrupted and incomplete original resets; do not reclassify a broken run as positive."
+}
