@@ -1,0 +1,98 @@
+name: Frozen 64 unseen actual PhysX tasks reachable-SO3 vs strong readback
+on:
+  push:
+    branches: [research/reachable-so3-ppo-20261014]
+    paths:
+      - research/REACHABLE_SO3_PPO_FRESH64_PREOUTCOME_20261014.json
+      - research/reachable_native_so3_robust.py
+      - research/frozen_ppo_reachable_so3_fresh64.py
+      - research/audit_reachable_so3_physx_new64.py
+      - .github/workflows/reachable-so3-actual-physx-new64.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-protocol-preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          python -m py_compile research/reachable_native_so3_robust.py research/frozen_ppo_reachable_so3_fresh64.py research/audit_reachable_so3_physx_new64.py
+          python - <<'PY'
+          import json
+          p=json.load(open('research/REACHABLE_SO3_PPO_FRESH64_PREOUTCOME_20261014.json'))
+          assert p['status']=='PREOUTCOME_FROZEN_BEFORE_NEW_PHYSX_WORKFLOWS'
+          assert p['unique_reset_states']==64 and p['paired_real_controller_worlds_per_reset']==4
+          assert p['unseen_seeds']=={'pull_cube':[2026220001,2026220032],'stack_cube':[2026230001,2026230032]}
+          assert p['fault_steps']==[2,3]
+          PY
+  actual-physx:
+    needs: source-protocol-preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pull_cube, stack_cube]
+        shard: [0,1,2,3]
+    env:
+      ABI_TASK: ${{ matrix.task }}
+      ABI_SHARD: ${{ matrix.shard }}
+      PYTHONUNBUFFERED: '1'
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install native ManiSkill and the fixed published PPO dependency
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e . huggingface_hub
+      - name: Execute exactly eight newly frozen real controller reset clusters
+        run: |
+          set -o pipefail
+          export PYTHONPATH="$PWD:$PWD/research"
+          python - <<'PY' 2>&1 | tee "reachable_${ABI_TASK}_${ABI_SHARD}.log"
+          import importlib,os,pathlib
+          task=os.environ['ABI_TASK'];shard=int(os.environ['ABI_SHARD'])
+          m=importlib.import_module('research.frozen_ppo_reachable_so3_fresh64')
+          first=2026220001 if task=='pull_cube' else 2026230001
+          seeds=tuple(range(first+8*shard,first+8*shard+8))
+          m.SEEDS=seeds
+          m.main()
+          pathlib.Path(f'reachable_so3_{task}_original8.json').rename(f'reachable_so3_{task}_chunk{shard}_original8.json')
+          PY
+          test -s "reachable_so3_${ABI_TASK}_chunk${ABI_SHARD}_original8.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reachable-so3-original-${{ matrix.task }}-${{ matrix.shard }}
+          path: |
+            reachable_so3_*_chunk*_original8.json
+            reachable_*.log
+  complete-blinded-count:
+    needs: actual-physx
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: reachable-so3-original-*
+          merge-multiple: true
+          path: /tmp/true_physx
+      - name: Recount all official outcomes, original faults and physically spent reads
+        run: python -m research.audit_reachable_so3_physx_new64 /tmp/true_physx reachable_so3_original64_complete.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reachable-so3-all64-strong-baseline-accounting
+          path: reachable_so3_original64_complete.json
