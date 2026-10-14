@@ -1,0 +1,94 @@
+name: PickCube third-task truly unseen 32 original PhysX controls
+on:
+  push:
+    branches: [research/task-external-pickcube-so3-20261014]
+    paths:
+      - research/PICKCUBE_UNSEEN_TASK_FROZEN_BEFORE_RESULTS_20261014.json
+      - research/frozen_ppo_reachable_so3_external_pickcube.py
+      - research/audit_pickcube_unseen_native_physx.py
+      - .github/workflows/pickcube-unseen-task-original-so3.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  strict-preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          python -m py_compile research/frozen_ppo_reachable_so3_external_pickcube.py research/audit_pickcube_unseen_native_physx.py
+          python - <<'PY'
+          import json
+          p=json.load(open('research/PICKCUBE_UNSEEN_TASK_FROZEN_BEFORE_RESULTS_20261014.json'))
+          assert p['status']=='FROZEN_BEFORE_NEW_PICKCUBE_RESULTS'
+          assert p['unique_reset_clusters']==32 and p['controllers_per_reset']==5
+          assert p['unseen_seed_first']==2026440001 and p['unseen_seed_last']==2026440032
+          assert p['fault_steps']==[2,3] and p['task']=='PickCube-v1'
+          assert p['externally_released_policy']['sha256']=='3e6c95d63a2132843323e24cf7ba962b8cf2610f04b2a5a43f3efb6fef8497a8'
+          PY
+  new-genuine-physx:
+    needs: strict-preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0,1,2,3]
+    env:
+      ABI_TASK: pick_cube
+      PYTHONUNBUFFERED: '1'
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install native official ManiSkill PhysX and released frozen PPO
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e . huggingface_hub
+      - name: Execute all five paired PhysX controllers on eight new seed states
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          set -o pipefail
+          export PYTHONPATH="$PWD:$PWD/research"
+          python - <<'PY' 2>&1 | tee "pickcube_heldout_shard${SHARD}.log"
+          import importlib,os,pathlib
+          m=importlib.import_module('research.frozen_ppo_reachable_so3_external_pickcube')
+          shard=int(os.environ['SHARD'])
+          seeds=tuple(range(2026440001+8*shard,2026440001+8*shard+8))
+          m.SEEDS=seeds
+          m.main()
+          pathlib.Path('pickcube_so3_pick_cube_original8.json').rename(f'pickcube_so3_pick_cube_chunk{shard}_original8.json')
+          PY
+          test -s "pickcube_so3_pick_cube_chunk${SHARD}_original8.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: first-pickcube-task-physx-${{ matrix.shard }}
+          path: |
+            pickcube_so3_pick_cube_chunk*_original8.json
+            pickcube_heldout_shard*.log
+  frozen-task-summary:
+    needs: new-genuine-physx
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: first-pickcube-task-physx-*
+          merge-multiple: true
+          path: /tmp/original_pickcube
+      - run: python -m research.audit_pickcube_unseen_native_physx /tmp/original_pickcube pickcube_precommitted_unseen32_audit.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pickcube-32-original-full-denominator-all-five-arms
+          path: pickcube_precommitted_unseen32_audit.json
