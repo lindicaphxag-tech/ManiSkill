@@ -5,6 +5,8 @@ on:
     paths:
       - research/terminal_common_action_certificate.py
       - tests/test_terminal_common_action_certificate.py
+      - research/invariant_target_memory_spread.py
+      - tests/test_invariant_target_memory_spread.py
       - .github/workflows/uncertain-ack-common-position-oracle.yml
   workflow_dispatch:
 permissions:
@@ -25,4 +27,4 @@ jobs:
       - name: Install only mathematics and test tools
         run: python -m pip install numpy scipy pytest
       - name: Verify 250 random cases against independent SciPy HiGHS LP solver
-        run: python -m pytest -q tests/test_terminal_common_action_certificate.py
+        run: python -m pytest -q tests/test_terminal_common_action_certificate.py tests/test_invariant_target_memory_spread.py
