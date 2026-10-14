@@ -1,0 +1,99 @@
+name: Unseen PushCube real PhysX intent replay against full target oracle
+on:
+  push:
+    branches: [research/pushcube-intent-replay-20261014]
+    paths:
+      - research/frozen_ppo_pushcube_intent_replay32.py
+      - research/causal_native_intent_replay.py
+      - research/PUSHCUBE_CAUSAL_INTENT_REPLAY_FROZEN_BEFORE_TEST_20261014.json
+      - research/audit_pushcube_intent_replay32.py
+      - tests/test_causal_native_intent_replay.py
+      - .github/workflows/pushcube-intent-replay-original32.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-only-invariant-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install numpy scipy pytest
+      - run: python -m pytest -q tests/test_causal_native_intent_replay.py
+      - run: |
+          python -m py_compile research/frozen_ppo_pushcube_intent_replay32.py research/audit_pushcube_intent_replay32.py
+          python - <<'PY'
+          import json
+          p=json.load(open('research/PUSHCUBE_CAUSAL_INTENT_REPLAY_FROZEN_BEFORE_TEST_20261014.json'))
+          assert p['status']=='FROZEN_BEFORE_PUSH_TASK_ROLLOUT'
+          assert p['independent_resets']==32 and p['fault_held_arm_steps']==[2,3]
+          assert p['source_policy']['sha256']=='a4a02198b309e73cb877959079023d967d5f63ec78380de9703a10c9efafc0cf'
+          assert p['test_seed_first']==2026760001 and p['test_seed_last']==2026760032
+          assert len(p['per_reset_real_physx_arms'])==6
+          PY
+  original-real-physx:
+    needs: source-only-invariant-preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0,1,2,3]
+    env:
+      ABI_TASK: push_cube
+      PYTHONUNBUFFERED: '1'
+      MS_SKIP_ASSET_DOWNLOAD_PROMPT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install genuine ManiSkill CPU PhysX and pretrained PPO runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libvulkan1 mesa-vulkan-drivers libgl1 libosmesa6
+          python -m pip install -e . huggingface_hub
+      - name: Execute eight original PushCube matched reset experiments
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          set -o pipefail
+          export PYTHONPATH="$PWD:$PWD/research"
+          python - <<'PY' 2>&1 | tee "push_original_shard${SHARD}.log"
+          import importlib,os,pathlib
+          m=importlib.import_module('research.frozen_ppo_pushcube_intent_replay32')
+          shard=int(os.environ['SHARD'])
+          m.SEEDS=tuple(range(2026760001+8*shard,2026760001+8*shard+8))
+          m.main()
+          pathlib.Path('pushcube_causal_replay_push_cube_original8.json').rename(f'pushcube_causal_replay_push_cube_chunk{shard}_original8.json')
+          PY
+          test -s "pushcube_causal_replay_push_cube_chunk${SHARD}_original8.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frozen-pushcube-original-real-physx-shard${{ matrix.shard }}
+          path: |
+            pushcube_causal_replay_push_cube_chunk*_original8.json
+            push_original_shard*.log
+  complete-32-independent-reset-audit:
+    needs: original-real-physx
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: frozen-pushcube-original-real-physx-*
+          merge-multiple: true
+          path: /tmp/push
+      - run: python -m research.audit_pushcube_intent_replay32 /tmp/push all32_push_native_physics_replay_summary.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pushcube32-all-six-arm-truth-and-frozen-gates
+          path: all32_push_native_physics_replay_summary.json
